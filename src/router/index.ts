@@ -33,6 +33,15 @@ const routes: RouteRecordRaw[] = [
       requiresAuth: false,
     },
   },
+  {
+    path: '/monitoring/vital-focus',
+    name: 'VitalFocus',
+    component: () => import('@/views/monitoring/vital-focus/VitalFocus.vue'),
+    meta: {
+      title: '生命体征监控',
+      requiresAuth: true,
+    },
+  },
 ]
 
 const router = createRouter({

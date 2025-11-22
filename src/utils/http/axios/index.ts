@@ -13,22 +13,19 @@ import { setObjToUrlParams, deepMerge } from '@/utils'
 import { joinTimestamp, formatRequestDate } from './helper'
 import { AxiosRetry } from './axiosRetry'
 
-// TODO: 需要实现以下功能
-// - getToken: 从 store 或 localStorage 获取 token
-// - useMessage: 消息提示 hook
-// - useI18n: 国际化 hook
-// - useUserStoreWithOut: 用户 store
-// - router: 路由实例
-// - useGlobSetting: 全局配置 hook
-
 // 临时配置，后续需要从环境变量或配置中读取
 const apiUrl = import.meta.env.VITE_API_URL || ''
 const urlPrefix = import.meta.env.VITE_URL_PREFIX || ''
 
-// 临时 token 获取函数，后续需要从 store 中获取
+// 从 store 获取 token（同步函数，因为 store getter 是同步的）
 function getToken(): string | null {
-  // TODO: 从 store 或 localStorage 获取 token
-  return localStorage.getItem('token')
+  try {
+    // 尝试从 localStorage 直接获取（避免循环依赖）
+    // Store 会在设置 token 时同步更新 localStorage
+    return localStorage.getItem('ACCESS_TOKEN')
+  } catch (error) {
+    return null
+  }
 }
 
 // TODO: 实现 Token 刷新逻辑时使用

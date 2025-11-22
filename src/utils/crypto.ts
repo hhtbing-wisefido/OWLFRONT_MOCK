@@ -24,18 +24,20 @@ export async function sha256(text: string): Promise<string> {
  * Security: This hash is sent to backend instead of plain password
  * Backend can compare this hash with stored hash to identify the account
  * 
- * Normalization rules:
- * - Username: Convert to lowercase (case-insensitive)
- * - Email: Convert to lowercase (case-insensitive, standard practice)
- * - Phone: Keep as-is (phone numbers are not case-sensitive)
+ * Normalization rules (for user-friendly experience):
+ * - ALL accounts (username/email/phone): Convert to lowercase before hashing
+ *   This ensures consistent hash regardless of user input case (e.g., "S1" vs "s1" → same hash)
+ *   Humans often make case mistakes, so this provides better UX
+ * - Phone numbers: toLowerCase() has no effect (they're numeric), but applied for consistency
  * - Password: Keep as-is (passwords are case-sensitive)
  * 
- * @param account The account (username/email/phone)
+ * @param account The account (username/email/phone) - will be normalized to lowercase
  * @param password The password (case-sensitive)
- * @returns Promise<string> The hex-encoded hash of account + password
+ * @returns Promise<string> The hex-encoded hash of normalized_account + password
  */
 export async function hashAccountPassword(account: string, password: string): Promise<string> {
-  // Normalize account: lowercase for username/email, keep phone as-is
+  // Normalize account to lowercase for consistent hashing
+  // This ensures "S1" and "s1" produce the same hash (better UX, humans make case mistakes)
   // Password remains case-sensitive
   // Format: normalized_account:password
   const normalizedAccount = account.trim().toLowerCase()
@@ -47,18 +49,19 @@ export async function hashAccountPassword(account: string, password: string): Pr
  * Hash account for institution search
  * Backend uses this to query email_hash or phone_hash in database
  * 
- * Normalization rules:
- * - Username: Convert to lowercase (case-insensitive)
- * - Email: Convert to lowercase (case-insensitive, standard practice)
- * - Phone: Keep as-is (phone numbers are not case-sensitive)
+ * Normalization rules (for user-friendly experience):
+ * - ALL accounts (username/email/phone): Convert to lowercase before hashing
+ *   This ensures consistent hash regardless of user input case (e.g., "S1" vs "s1" → same hash)
+ *   Humans often make case mistakes, so this provides better UX
+ * - Phone numbers: toLowerCase() has no effect (they're numeric), but applied for consistency
  * 
- * @param account The account (username/email/phone)
- * @returns Promise<string> The hex-encoded hash
+ * @param account The account (username/email/phone) - will be normalized to lowercase
+ * @returns Promise<string> The hex-encoded hash of normalized account
  */
 export async function hashAccount(account: string): Promise<string> {
-  // Normalize: lowercase for username/email, keep phone as-is
-  // Phone numbers are numeric, so toLowerCase() has no effect on them
-  // This ensures consistent hash calculation for username and email
+  // Normalize account to lowercase for consistent hashing
+  // This ensures "S1" and "s1" produce the same hash (better UX, humans make case mistakes)
+  // Phone numbers are numeric, so toLowerCase() has no effect on them, but applied for consistency
   const normalized = account.trim().toLowerCase()
   return sha256(normalized)
 }

@@ -47,7 +47,7 @@ describe('登录功能测试', () => {
         account: login.testAccounts.staff.singleInstitution,
         password: login.testPasswords.correct,
         userType: 'staff',
-        institutionId: 'tenant-001',
+        tenant_id: 'tenant-001',
       })
 
       expect(result.userType).toBe('staff')
@@ -61,7 +61,7 @@ describe('登录功能测试', () => {
           account: login.testAccounts.staff.singleInstitution,
           password: login.testPasswords.wrong,
           userType: 'staff',
-          institutionId: 'tenant-001',
+          tenant_id: 'tenant-001',
         }),
       ).rejects.toThrow(login.loginErrorWrongPassword.message)
     })
@@ -72,7 +72,7 @@ describe('登录功能测试', () => {
           account: login.testAccounts.staff.notFound,
           password: login.testPasswords.correct,
           userType: 'staff',
-          institutionId: 'tenant-001',
+          tenant_id: 'tenant-001',
         }),
       ).rejects.toThrow()
     })

@@ -32,11 +32,11 @@
             <!-- Institution Name (REQUIRED) -->
             <AFormItem
               label="Institution Name"
-              name="institutionName"
+              name="tenant_name"
               :help="'Required to prevent duplicate accounts across institutions'"
             >
               <AInput
-                v-model:value="step1Form.institutionName"
+                v-model:value="step1Form.tenant_name"
                 placeholder="Enter your institution name (e.g., Sunset Care Center)"
                 size="large"
                 @blur="handleInstitutionBlur"
@@ -72,7 +72,7 @@
                 size="large"
                 block
                 :loading="sendingCode"
-                :disabled="!step1Form.institutionName || !step1Form.account"
+                :disabled="!step1Form.tenant_name || !step1Form.account"
                 @click="handleSendCode"
                 class="submit-button"
               >
@@ -261,7 +261,7 @@ const currentStep = ref(1)
 // Step 1: Institution and Account
 const step1Form = reactive({
   userType: 'staff' as 'staff' | 'resident',
-  institutionName: '',
+  tenant_name: '',
   account: '',
 })
 
@@ -294,7 +294,7 @@ const step1Rules: Record<string, Rule[]> = {
   userType: [
     { required: true, message: 'Please select user type', trigger: 'change' },
   ],
-  institutionName: [
+  tenant_name: [
     { required: true, message: 'Please enter institution name', trigger: 'blur' },
     { min: 2, message: 'Institution name must be at least 2 characters', trigger: 'blur' },
   ],
@@ -399,7 +399,7 @@ const passwordHelp = computed(() => {
 // Handlers
 const handleInstitutionBlur = () => {
   // When institution name is entered, fetch admin email (if available)
-  if (step1Form.institutionName) {
+  if (step1Form.tenant_name) {
     // This will be handled by backend when sending verification code
     // For now, we'll get it from the API response
   }
@@ -407,7 +407,7 @@ const handleInstitutionBlur = () => {
 
 // Debounced send code function
 const debouncedSendCode = debounce(async () => {
-  if (!step1Form.institutionName || !step1Form.account) {
+  if (!step1Form.tenant_name || !step1Form.account) {
     return
   }
 
@@ -418,7 +418,7 @@ const debouncedSendCode = debounce(async () => {
     const result = await sendVerificationCodeApi({
       account: step1Form.account.trim(),
       userType: step1Form.userType,
-      institutionName: step1Form.institutionName.trim(),
+      tenant_name: step1Form.tenant_name.trim(),
     })
 
     if (result.success) {
@@ -438,7 +438,7 @@ const debouncedSendCode = debounce(async () => {
 }, 300)
 
 const handleAccountBlur = () => {
-  if (step1Form.institutionName && step1Form.account) {
+  if (step1Form.tenant_name && step1Form.account) {
     debouncedSendCode()
   }
 }
@@ -474,7 +474,7 @@ const handleVerifyCode = async () => {
       account: step1Form.account.trim(),
       code: step2Form.code.trim(),
       userType: step1Form.userType,
-      institutionName: step1Form.institutionName.trim(),
+      tenant_name: step1Form.tenant_name.trim(),
     })
 
     if (result.success) {
@@ -497,7 +497,7 @@ const handleResendCode = async () => {
     const result = await sendVerificationCodeApi({
       account: step1Form.account.trim(),
       userType: step1Form.userType,
-      institutionName: step1Form.institutionName.trim(),
+      tenant_name: step1Form.tenant_name.trim(),
     })
 
     if (result.success) {
@@ -544,7 +544,7 @@ const handleResetPassword = async () => {
       code: step2Form.code.trim(),
       newPassword: step3Form.newPassword,
       userType: step1Form.userType,
-      institutionName: step1Form.institutionName.trim(),
+      tenant_name: step1Form.tenant_name.trim(),
     })
 
     if (result.success) {

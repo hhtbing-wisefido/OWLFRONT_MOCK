@@ -105,13 +105,13 @@ export const loginSuccessStaff: LoginResult = {
   accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test-token-staff',
   refreshToken: 'refresh-token-staff-12345',
   userId: 'user-001',
+  user_account: 'S1', // 用户账号（非敏感，用于显示和标识）
   userType: 'staff',
-  institutionId: 'tenant-001',
-  institutionName: 'Sunset Care Center',
+  tenant_id: institutions.sunset.id, // UUID 格式
+  tenant_name: institutions.sunset.name,
   role: 'Nurse',
-  username: 'nurse.john',
-  email: 'nurse.john@sunset-care.com',
-  phone: '+1234567890',
+  nickName: 'John Doe',
+  homePath: '/dashboard',
 }
 
 // 成功场景：Resident 登录
@@ -119,9 +119,11 @@ export const loginSuccessResident: LoginResult = {
   accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test-token-resident',
   refreshToken: 'refresh-token-resident-12345',
   userId: 'resident-001',
+  user_account: 'R1', // 用户账号（非敏感，用于显示和标识）
   userType: 'resident',
-  institutionId: 'tenant-001',
-  institutionName: 'Sunset Care Center',
+  tenant_id: institutions.sunset.id, // UUID 格式
+  tenant_name: institutions.sunset.name,
+  homePath: '/resident/dashboard',
 }
 
 // 失败场景：密码错误
@@ -185,7 +187,7 @@ export const testAccounts = {
       email: 's1@test.com',
       password: 'Ts123@123',
       institution: 'Sunset',
-      institutionId: 'tenant-001',
+      institutionId: institutions.sunset.id, // UUID 格式
     },
     // S2: 多个机构（Sunset + Golden）- 跨机构账号
     s2: {
@@ -194,7 +196,7 @@ export const testAccounts = {
       email: 's2@test.com',
       password: 'Ts123@123',
       institutions: ['Sunset', 'Golden'],
-      institutionIds: ['tenant-001', 'tenant-002'],
+      institutionIds: [institutions.sunset.id, institutions.golden.id], // UUID 格式
     },
     // S3: 不同机构（Winds）- 注意：username 相同但 password 不同
     s3: {
@@ -203,7 +205,7 @@ export const testAccounts = {
       email: 's3@test.com',
       password: 'Ts123@121', // 与 S2 不同
       institution: 'Winds',
-      institutionId: 'tenant-003',
+      institutionId: institutions.winds.id, // UUID 格式
     },
     // 兼容旧版本的测试账号（保留）
     singleInstitution: 's1@test.com', // S1
@@ -219,7 +221,7 @@ export const testAccounts = {
       email: 'R1@test.com',
       password: 'Ts123@123',
       institution: 'Sunset',
-      institutionId: 'tenant-001',
+      institutionId: institutions.sunset.id, // UUID 格式
     },
     // R2: 多个机构（Sunset + Golden）- 跨机构账号
     r2: {
@@ -228,7 +230,7 @@ export const testAccounts = {
       email: 'R2@test.com',
       password: 'Ts123@123',
       institutions: ['Sunset', 'Golden'],
-      institutionIds: ['tenant-001', 'tenant-002'],
+      institutionIds: [institutions.sunset.id, institutions.golden.id], // UUID 格式
     },
     // R3: 不同机构（Winds）- 注意：username 相同但 password 不同
     r3: {
@@ -237,7 +239,7 @@ export const testAccounts = {
       email: 'R3@test.com',
       password: 'Ts123@121', // 与 R2 不同
       institution: 'Winds',
-      institutionId: 'tenant-003',
+      institutionId: institutions.winds.id, // UUID 格式
     },
     // 兼容旧版本的测试账号（保留）
     singleInstitution: 'R1@test.com', // R1

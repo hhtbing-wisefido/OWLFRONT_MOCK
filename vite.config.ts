@@ -10,8 +10,8 @@ export default defineConfig({
       '@': resolve(__dirname, 'src'),
       // 支持 /#/ 路径别名，与原项目保持一致
       '/#': resolve(__dirname, 'types'),
-      // 支持 @/test 路径别名，指向 test 目录
-      '@/test': resolve(__dirname, 'test'),
+      // 支持 @test 路径别名，指向 test 目录（用于动态导入测试数据）
+      '@test': resolve(__dirname, 'test'),
     },
     extensions: ['.mjs', '.js', '.mts', '.ts', '.jsx', '.tsx', '.json', '.vue'],
   },

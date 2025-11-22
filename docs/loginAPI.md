@@ -69,7 +69,7 @@ const accountPasswordHash = sha256(`${account.toLowerCase().trim()}:${password}`
   accountHash: string,          // SHA-256 hash of account (phone/email/username) - NO raw PHI
   accountPasswordHash: string,  // SHA-256 hash of account:password - NO raw password
   userType: 'staff' | 'resident',  // 用户类型
-  institutionId?: string        // 机构 ID（当匹配到多个机构时必填）
+  tenant_id?: string             // 机构 ID（对应 tenants.tenant_id，当匹配到多个机构时必填）
 }
 ```
 
@@ -79,23 +79,38 @@ const accountHash = sha256(account.toLowerCase().trim())
 const accountPasswordHash = sha256(`${account.toLowerCase().trim()}:${password}`)
 ```
 
-**返回数据**:
+**返回数据（一次性返回完整用户信息）**:
 ```typescript
 {
   code: 200,
   result: {
+    // 认证信息
     accessToken: string,         // JWT Access Token
     refreshToken: string,        // JWT Refresh Token
+    
+    // 用户基本信息
     userId: string,              // 用户 ID
     userType: 'staff' | 'resident',  // 用户类型
-    institutionId?: string,      // 机构 ID
-    institutionName?: string,    // 机构名称
+    residentType?: 'home' | 'institution',  // Resident 子类型（仅 Resident 需要）
+    locationType?: 'home' | 'institution',  // Location 类型
+    role?: string,               // 角色编码（如 'Admin', 'Nurse', 'Caregiver'）
+    nickName?: string,           // 昵称/显示名称
     
-    // Staff 用户特有字段
-    role?: string,               // 角色
-    username?: string,           // 用户名
-    email?: string,              // 邮箱
-    phone?: string               // 电话
+    // 机构信息（Tenant 表）
+    tenant_id?: string,           // 机构 ID（对应 tenants.tenant_id）
+    tenant_name?: string,          // 机构名称（对应 tenants.tenant_name）
+    domain?: string,              // 机构域名（对应 tenants.domain）
+    
+    // Location 信息（避免地址泄漏，仅存储非敏感的位置标识）
+    locationTag?: string,         // 位置标签（对应 locations.location_tag）
+    locationName?: string,        // 位置名称（对应 locations.location_name）
+    
+    // 其他信息
+    homePath?: string,            // 用户首页路径（用于登录后跳转，由后端根据 userType 和 role 计算）
+    avatar?: string              // 头像 URL（可选）
+    
+    // 注意：以下敏感信息不返回（HIPAA 合规）
+    // username, email, phone 等敏感信息不包含在响应中
   },
   message: 'Login successful',
   type: 'success'
@@ -111,19 +126,22 @@ const accountPasswordHash = sha256(`${account.toLowerCase().trim()}:${password}`
     "refreshToken": "refresh-token-12345",
     "userId": "user-001",
     "userType": "staff",
-    "institutionId": "tenant-001",
-    "institutionName": "Sunset Care Center",
-    "role": "admin",
-    "username": "S1",
-    "email": "s1@test.com",
-    "phone": "720101201"
+    "role": "Admin",
+    "nickName": "John Doe",
+    "tenant_id": "550e8400-e29b-41d4-a716-446655440000",
+    "tenant_name": "Sunset Care Center",
+    "domain": "sunset-care.com",
+    "locationTag": "A 院区主楼",
+    "locationName": "E203",
+    "homePath": "/dashboard",
+    "avatar": "https://example.com/avatars/user-001.jpg"
   },
   "message": "Login successful",
   "type": "success"
 }
 ```
 
-**成功响应示例（Resident）**:
+**成功响应示例（Resident - Institution）**:
 ```json
 {
   "code": 200,
@@ -132,8 +150,38 @@ const accountPasswordHash = sha256(`${account.toLowerCase().trim()}:${password}`
     "refreshToken": "refresh-token-12345",
     "userId": "resident-001",
     "userType": "resident",
-    "institutionId": "tenant-001",
-    "institutionName": "Sunset Care Center"
+    "residentType": "institution",
+    "locationType": "institution",
+    "nickName": "Jane Smith",
+    "tenant_id": "550e8400-e29b-41d4-a716-446655440000",
+    "tenant_name": "Sunset Care Center",
+    "domain": "sunset-care.com",
+    "locationTag": "Spring 区域组SP",
+    "locationName": "201",
+    "homePath": "/resident/dashboard"
+  },
+  "message": "Login successful",
+  "type": "success"
+}
+```
+
+**成功响应示例（Resident - Home）**:
+```json
+{
+  "code": 200,
+  "result": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refreshToken": "refresh-token-12345",
+    "userId": "resident-002",
+    "userType": "resident",
+    "residentType": "home",
+    "locationType": "home",
+    "nickName": "Bob Johnson",
+    "tenant_id": "550e8400-e29b-41d4-a716-446655440000",
+    "tenant_name": "Sunset Care Center",
+    "locationTag": "Home Care",
+    "locationName": "Home-001",
+    "homePath": "/resident/home"
   },
   "message": "Login successful",
   "type": "success"

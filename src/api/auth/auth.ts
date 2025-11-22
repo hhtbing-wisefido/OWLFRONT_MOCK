@@ -57,7 +57,7 @@ export async function loginApi(params: LoginParams, mode: ErrorMessageMode = 'mo
         accountHash: accountHash.substring(0, 16) + '...', // Show partial hash for debugging
         accountPasswordHash: accountPasswordHash.substring(0, 16) + '...', // Show partial hash for debugging
         userType: params.userType,
-        institutionId: params.institutionId,
+        tenant_id: params.tenant_id,
         note: 'Only hashes are sent, no raw PHI (phone/email) transmitted',
       })
       
@@ -85,7 +85,7 @@ export async function loginApi(params: LoginParams, mode: ErrorMessageMode = 'mo
         accountHash, // Hash of account (phone/email/username) - NO raw PHI
         accountPasswordHash, // Hash of account:password - NO raw password
         userType: params.userType,
-        institutionId: params.institutionId,
+        tenant_id: params.tenant_id,
       },
     },
     {
@@ -191,8 +191,8 @@ export async function sendVerificationCodeApi(
       console.log('%c[Mock] Send Verification Code API Request', 'color: #1890ff; font-weight: bold', {
         account: params.account,
         userType: params.userType,
-        institutionName: params.institutionName,
-        institutionId: params.institutionId,
+        tenant_name: params.tenant_name,
+        tenant_id: params.tenant_id,
         note: 'Raw phone/email transmitted via HTTPS for verification code delivery',
       })
       
@@ -217,8 +217,8 @@ export async function sendVerificationCodeApi(
       params: {
         account: params.account, // Raw phone/email (HTTPS encrypted)
         userType: params.userType,
-        institutionName: params.institutionName, // REQUIRED
-        institutionId: params.institutionId,
+        tenant_name: params.tenant_name, // REQUIRED
+        tenant_id: params.tenant_id,
       },
     },
     {
@@ -244,7 +244,7 @@ export async function verifyCodeApi(
         account: params.account,
         code: params.code,
         userType: params.userType,
-        institutionName: params.institutionName,
+        tenant_name: params.tenant_name,
       })
       
       return forgotPassword.mockVerifyCode(params).then((result: any) => {
@@ -269,8 +269,8 @@ export async function verifyCodeApi(
         account: params.account,
         code: params.code,
         userType: params.userType,
-        institutionName: params.institutionName, // REQUIRED
-        institutionId: params.institutionId,
+        tenant_name: params.tenant_name, // REQUIRED
+        tenant_id: params.tenant_id,
       },
     },
     {
@@ -301,7 +301,7 @@ export async function resetPasswordApi(
         account: params.account,
         code: params.code,
         userType: params.userType,
-        institutionName: params.institutionName,
+        tenant_name: params.tenant_name,
         newPasswordLength: params.newPassword.length,
         note: 'New password will be hashed by backend',
       })
@@ -329,8 +329,8 @@ export async function resetPasswordApi(
         code: params.code,
         newPassword: params.newPassword, // Raw password (HTTPS encrypted, will be hashed by backend)
         userType: params.userType,
-        institutionName: params.institutionName, // REQUIRED
-        institutionId: params.institutionId,
+        tenant_name: params.tenant_name, // REQUIRED
+        tenant_id: params.tenant_id,
       },
     },
     {

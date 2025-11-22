@@ -26,7 +26,7 @@ describe('Login API 测试', () => {
       })
       
       expect(result).toHaveLength(1)
-      expect(result[0].name).toBe('Sunset Care Center')
+      expect(result[0]?.name).toBe('Sunset Care Center')
     })
 
     it('应该返回多个机构（Staff）', async () => {
@@ -70,7 +70,7 @@ describe('Login API 测试', () => {
         account: login.testAccounts.staff.singleInstitution,
         password: login.testPasswords.correct,
         userType: 'staff' as const,
-        institutionId: 'tenant-001',
+        tenant_id: 'tenant-001',
       }
       
       console.log('📥 输入:', { ...params, password: '***' })
@@ -80,8 +80,8 @@ describe('Login API 测试', () => {
       console.log('📤 输出:', {
         userType: result.userType,
         userId: result.userId,
-        institutionId: result.institutionId,
-        institutionName: result.institutionName,
+        tenant_id: result.tenant_id,
+        tenant_name: result.tenant_name,
         role: result.role,
         hasToken: !!result.accessToken,
       })
@@ -89,7 +89,7 @@ describe('Login API 测试', () => {
       expect(result.userType).toBe('staff')
       expect(result.accessToken).toBeDefined()
       expect(result.role).toBeDefined()
-      expect(result.institutionId).toBe('tenant-001')
+      expect(result.tenant_id).toBe('tenant-001')
     })
 
     it('应该成功登录（Resident）', async () => {
@@ -97,7 +97,7 @@ describe('Login API 测试', () => {
         account: login.testAccounts.resident.singleInstitution,
         password: login.testPasswords.correct,
         userType: 'resident',
-        institutionId: 'tenant-001',
+        tenant_id: 'tenant-001',
       })
 
       expect(result.userType).toBe('resident')
@@ -110,7 +110,7 @@ describe('Login API 测试', () => {
           account: login.testAccounts.staff.singleInstitution,
           password: login.testPasswords.wrong,
           userType: 'staff',
-          institutionId: 'tenant-001',
+          tenant_id: 'tenant-001',
         }),
       ).rejects.toThrow('Invalid username or password')
     })
@@ -121,7 +121,7 @@ describe('Login API 测试', () => {
           account: login.testAccounts.staff.notFound,
           password: login.testPasswords.correct,
           userType: 'staff',
-          institutionId: 'tenant-001',
+          tenant_id: 'tenant-001',
         }),
       ).rejects.toThrow(login.loginErrorAccountNotFound.message)
     })
@@ -132,7 +132,7 @@ describe('Login API 测试', () => {
           account: login.testAccounts.staff.disabled,
           password: login.testPasswords.correct,
           userType: 'staff',
-          institutionId: 'tenant-001',
+          tenant_id: 'tenant-001',
         }),
       ).rejects.toThrow(login.loginErrorAccountDisabled.message)
     })

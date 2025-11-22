@@ -54,7 +54,7 @@
     >
       <!-- Display institution name to user (not ID) -->
       <AInput
-        v-model:value="formData.institutionName"
+        v-model:value="formData.tenant_name"
         placeholder="Leave empty for auto-detection"
         size="large"
         readonly
@@ -69,7 +69,7 @@
             :key="inst.id"
             @click="selectInstitution(inst)"
             class="institution-item"
-            :class="{ 'selected': formData.institutionId === inst.id }"
+            :class="{ 'selected': formData.tenant_id === inst.id }"
           >
             {{ inst.name }}
           </div>
@@ -105,7 +105,8 @@ import { ref, reactive, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Form, Input, Button, Radio, Checkbox, Select, message } from 'ant-design-vue'
 import type { Rule } from 'ant-design-vue/es/form'
-import { loginApi, searchInstitutionsApi } from '@/api/auth/auth'
+import { searchInstitutionsApi } from '@/api/auth/auth'
+import { useUserStore } from '@/store/modules/user'
 import type { Institution } from '@/api/auth/model/authModel'
 import { debounce } from 'lodash-es'
 import { setCookie, getCookie, deleteCookie } from '@/utils/cookie'
@@ -128,8 +129,8 @@ const formData = reactive({
   account: '',
   password: '',
   // Institution: Store both ID (for API) and Name (for display)
-  institutionId: undefined as string | undefined, // For API submission (e.g., "tenant-001")
-  institutionName: undefined as string | undefined, // For user display (e.g., "Sunset")
+  tenant_id: undefined as string | undefined, // For API submission (e.g., "tenant-001")
+  tenant_name: undefined as string | undefined, // For user display (e.g., "Sunset")
   rememberMe: false,
 })
 
@@ -146,17 +147,20 @@ const matchedInstitutions = ref<Institution[]>([])
 const accountError = ref('')
 
 // Form rules
-// Note: Frontend only checks for non-empty and max length (based on DB constraints)
+// Note: Frontend only checks for length range (based on DB constraints)
 // Detailed security validation (password strength, etc.) is handled by backend/DB
-// DB constraints: username VARCHAR(255), email VARCHAR(255), phone VARCHAR(50), password typically 8-128 chars
+// DB constraints: user_account VARCHAR(100), resident_account VARCHAR(100), password_hash BYTEA
+// Validation rules: 1 <= account length <= 100, 4 <= password length <= 100
 const formRules: Record<string, Rule[]> = {
   account: [
     { required: true, message: 'Please enter your username, email, or phone', trigger: 'blur' },
-    { max: 255, message: 'Account must not exceed 255 characters', trigger: 'blur' },
+    { min: 1, message: 'Account must be at least 1 character', trigger: 'blur' },
+    { max: 100, message: 'Account must not exceed 100 characters', trigger: 'blur' },
   ],
   password: [
     { required: true, message: 'Please enter your password', trigger: 'blur' },
-    { max: 128, message: 'Password must not exceed 128 characters', trigger: 'blur' },
+    { min: 4, message: 'Password must be at least 4 characters', trigger: 'blur' },
+    { max: 100, message: 'Password must not exceed 100 characters', trigger: 'blur' },
   ],
   userType: [
     { required: true, message: 'Please select user type', trigger: 'change' },
@@ -164,8 +168,8 @@ const formRules: Record<string, Rule[]> = {
   institution: [
     {
       validator: (_rule: any, _value: any) => {
-        // Validate institutionId (not institutionName)
-        if (matchedInstitutions.value.length > 1 && !formData.institutionId) {
+        // Validate tenant_id (not tenant_name)
+        if (matchedInstitutions.value.length > 1 && !formData.tenant_id) {
           return Promise.reject('Please select an institution')
         }
         return Promise.resolve()
@@ -176,7 +180,7 @@ const formRules: Record<string, Rule[]> = {
 }
 
 // Note: Rate limiting is handled by backend, not frontend
-// Frontend only does basic input validation (account length >= 2, password length >= 4)
+// Frontend only does basic input validation (1 <= account length <= 100, 4 <= password length <= 100)
 
 // Debounced search function (500ms delay)
 // Note: Requires both account and password to distinguish accounts with same username
@@ -188,46 +192,56 @@ const debouncedSearchInstitutions = debounce(async (account: string, password: s
     userType,
   })
   
-  // Frontend basic validation: Check non-empty and max length (based on DB constraints)
-  // DB constraints: username VARCHAR(255), email VARCHAR(255), phone VARCHAR(50)
+  // Frontend basic validation: Check length range (based on DB constraints)
+  // DB constraints: user_account VARCHAR(100), resident_account VARCHAR(100)
+  // Validation rules: 1 <= account length <= 100, 4 <= password length <= 100
   // Note: Detailed security validation is handled by backend/DB
-  if (!account || !account.trim()) {
-    console.log('%c[LoginForm] Account is empty, skipping search', 'color: #ff4d4f; font-weight: bold')
+  const accountTrimmed = account.trim()
+  const passwordTrimmed = password.trim()
+  
+  if (!accountTrimmed || accountTrimmed.length < 1) {
+    console.log('%c[LoginForm] Account is empty or too short, skipping search', 'color: #ff4d4f; font-weight: bold', {
+      accountLength: accountTrimmed.length,
+      minimum: 1,
+    })
     matchedInstitutions.value = []
-    formData.institutionId = undefined
-    formData.institutionName = undefined
+    formData.tenant_id = undefined
+    formData.tenant_name = undefined
     return
   }
 
-  if (account.trim().length > 255) {
+  if (accountTrimmed.length > 100) {
     console.log('%c[LoginForm] Account too long, skipping search', 'color: #ff4d4f; font-weight: bold', {
-      accountLength: account.trim().length,
-      maximum: 255,
+      accountLength: accountTrimmed.length,
+      maximum: 100,
     })
     matchedInstitutions.value = []
-    formData.institutionId = undefined
-    formData.institutionName = undefined
+    formData.tenant_id = undefined
+    formData.tenant_name = undefined
     return
   }
 
-  // Frontend basic validation: Check non-empty and max length
+  // Frontend basic validation: Check length range
   // Note: Detailed password strength validation is handled by backend/DB
-  if (!password || !password.trim()) {
-    console.log('%c[LoginForm] Password is empty, skipping search', 'color: #ff4d4f; font-weight: bold')
+  if (!passwordTrimmed || passwordTrimmed.length < 4) {
+    console.log('%c[LoginForm] Password is empty or too short, skipping search', 'color: #ff4d4f; font-weight: bold', {
+      passwordLength: passwordTrimmed.length,
+      minimum: 4,
+    })
     matchedInstitutions.value = []
-    formData.institutionId = undefined
-    formData.institutionName = undefined
+    formData.tenant_id = undefined
+    formData.tenant_name = undefined
     return
   }
 
-  if (password.trim().length > 128) {
+  if (passwordTrimmed.length > 100) {
     console.log('%c[LoginForm] Password too long, skipping search', 'color: #ff4d4f; font-weight: bold', {
-      passwordLength: password.trim().length,
-      maximum: 128,
+      passwordLength: passwordTrimmed.length,
+      maximum: 100,
     })
     matchedInstitutions.value = []
-    formData.institutionId = undefined
-    formData.institutionName = undefined
+    formData.tenant_id = undefined
+    formData.tenant_name = undefined
     return
   }
 
@@ -244,7 +258,7 @@ const debouncedSearchInstitutions = debounce(async (account: string, password: s
       userType,
     })
     
-    const institutions = await searchInstitutionsApi(account.trim(), password.trim(), userType)
+    const institutions = await searchInstitutionsApi(accountTrimmed, passwordTrimmed, userType)
     
     console.log('%c[LoginForm] Institutions found', 'color: #52c41a; font-weight: bold', {
       count: institutions.length,
@@ -257,14 +271,14 @@ const debouncedSearchInstitutions = debounce(async (account: string, password: s
       // Security: Don't reveal if account exists or not
       // Just show a generic message
       accountError.value = ''
-      formData.institutionId = undefined
-      formData.institutionName = undefined
+      formData.tenant_id = undefined
+      formData.tenant_name = undefined
     } else if (institutions.length === 1 && institutions[0]) {
       // Auto-fill if only one institution found (user can still modify)
-      if (!formData.institutionId) {
+      if (!formData.tenant_id) {
         // Only auto-fill if user hasn't manually entered a value
-        formData.institutionId = institutions[0].id
-        formData.institutionName = institutions[0].name
+        formData.tenant_id = institutions[0].id
+        formData.tenant_name = institutions[0].name
       }
       accountError.value = ''
     } else {
@@ -273,8 +287,8 @@ const debouncedSearchInstitutions = debounce(async (account: string, password: s
         label: inst.name,
         value: inst.id,
       }))
-      formData.institutionId = undefined // Clear selection, force user to choose
-      formData.institutionName = undefined
+      formData.tenant_id = undefined // Clear selection, force user to choose
+      formData.tenant_name = undefined
       accountError.value = ''
     }
   } catch (error: any) {
@@ -289,8 +303,8 @@ const debouncedSearchInstitutions = debounce(async (account: string, password: s
     }
     
     matchedInstitutions.value = []
-    formData.institutionId = undefined
-    formData.institutionName = undefined
+    formData.tenant_id = undefined
+    formData.tenant_name = undefined
   } finally {
     institutionLoading.value = false
   }
@@ -314,8 +328,8 @@ const handleAccountInput = () => {
     debouncedSearchInstitutions(account, password, formData.userType)
   } else {
     matchedInstitutions.value = []
-    formData.institutionId = undefined
-    formData.institutionName = undefined
+    formData.tenant_id = undefined
+    formData.tenant_name = undefined
   }
 }
 
@@ -336,8 +350,8 @@ const handlePasswordInput = () => {
     debouncedSearchInstitutions(account, password, formData.userType)
   } else {
     matchedInstitutions.value = []
-    formData.institutionId = undefined
-    formData.institutionName = undefined
+    formData.tenant_id = undefined
+    formData.tenant_name = undefined
   }
 }
 
@@ -361,8 +375,8 @@ watch(
   () => {
     if (formData.account && formData.password) {
       matchedInstitutions.value = []
-      formData.institutionId = undefined
-      formData.institutionName = undefined
+      formData.tenant_id = undefined
+      formData.tenant_name = undefined
       debouncedSearchInstitutions(formData.account, formData.password, formData.userType)
     }
   },
@@ -370,8 +384,8 @@ watch(
 
 // Select institution from matched list
 const selectInstitution = (institution: Institution) => {
-  formData.institutionId = institution.id // Store ID for API (e.g., "tenant-001")
-  formData.institutionName = institution.name // Store name for display (e.g., "Sunset")
+  formData.tenant_id = institution.id // Store ID for API (e.g., "tenant-001")
+  formData.tenant_name = institution.name // Store name for display (e.g., "Sunset")
 }
 
 // Handle forgot password navigation
@@ -379,18 +393,21 @@ const handleForgotPassword = () => {
   router.push('/forgot-password')
 }
 
+// Get user store
+const userStore = useUserStore()
+
 // Handle login
 const handleLogin = async () => {
   try {
     loading.value = true
     await formRef.value?.validate()
 
-    // Submit institutionId (not name) to backend
-    const result = await loginApi({
+    // Submit tenant_id (not name) to backend
+    const result = await userStore.login({
       account: formData.account,
       password: formData.password,
       userType: formData.userType,
-      institutionId: formData.institutionId || undefined, // Send ID to backend (e.g., "tenant-001")
+      tenant_id: formData.tenant_id || undefined, // Send ID to backend (e.g., "tenant-001")
     })
 
     if (result) {
@@ -401,23 +418,23 @@ const handleLogin = async () => {
         setCookie('rememberMe', 'true', 30)
         setCookie('savedAccount', formData.account, 30)
         setCookie('savedUserType', formData.userType, 30)
-        if (formData.institutionId) {
-          setCookie('savedInstitutionId', formData.institutionId, 30)
+        if (formData.tenant_id) {
+          setCookie('savedTenantId', formData.tenant_id, 30)
         }
-        if (formData.institutionName) {
-          setCookie('savedInstitutionName', formData.institutionName, 30)
+        if (formData.tenant_name) {
+          setCookie('savedTenantName', formData.tenant_name, 30)
         }
       } else {
         // Clear cookies if "Remember me" is unchecked
         deleteCookie('rememberMe')
         deleteCookie('savedAccount')
         deleteCookie('savedUserType')
-        deleteCookie('savedInstitutionId')
-        deleteCookie('savedInstitutionName')
+        deleteCookie('savedTenantId')
+        deleteCookie('savedTenantName')
       }
       
-      // TODO: Navigate to dashboard
-      // router.push('/dashboard')
+      // Navigate to dashboard using store's afterLoginAction
+      await userStore.afterLoginAction(true)
     }
   } catch (error: any) {
     if (error?.errorFields) {
@@ -437,8 +454,8 @@ onMounted(() => {
     formData.rememberMe = true
     const savedAccount = getCookie('savedAccount')
     const savedUserType = getCookie('savedUserType')
-    const savedInstitutionId = getCookie('savedInstitutionId')
-    const savedInstitutionName = getCookie('savedInstitutionName')
+    const savedTenantId = getCookie('savedTenantId')
+    const savedTenantName = getCookie('savedTenantName')
     
     if (savedAccount) {
       formData.account = savedAccount
@@ -446,11 +463,11 @@ onMounted(() => {
     if (savedUserType === 'staff' || savedUserType === 'resident') {
       formData.userType = savedUserType
     }
-    if (savedInstitutionId) {
-      formData.institutionId = savedInstitutionId
+    if (savedTenantId) {
+      formData.tenant_id = savedTenantId
     }
-    if (savedInstitutionName) {
-      formData.institutionName = savedInstitutionName
+    if (savedTenantName) {
+      formData.tenant_name = savedTenantName
     }
     
           // Trigger institution search if both account and password are saved

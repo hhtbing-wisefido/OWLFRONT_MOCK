@@ -11,6 +11,7 @@
 // 功能模块测试数据
 export * as login from './login'
 export * as forgotPassword from './forgot-password'
+export * as vitalFocus from './vital-focus'
 export * as resident from './resident'
 export * as staff from './staff'
 

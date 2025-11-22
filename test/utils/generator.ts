@@ -25,25 +25,24 @@ export function generateInstitutions(count: number): Institution[] {
  */
 export function generateLoginSuccess(
   userType: 'staff' | 'resident',
-  institutionId: string,
-  institutionName: string,
+  tenant_id: string,
+  tenant_name: string,
 ): LoginResult {
   const baseResult: LoginResult = {
     accessToken: `token-${userType}-${Date.now()}`,
     refreshToken: `refresh-${userType}-${Date.now()}`,
     userId: `${userType}-001`,
     userType,
-    institutionId,
-    institutionName,
+    tenant_id,
+    tenant_name,
   }
 
   if (userType === 'staff') {
     return {
       ...baseResult,
       role: 'Nurse',
-      username: 'test.user',
-      email: 'test@example.com',
-      phone: '+1234567890',
+      nickName: 'Test User',
+      homePath: '/dashboard',
     }
   }
 

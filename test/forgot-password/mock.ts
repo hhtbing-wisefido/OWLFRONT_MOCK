@@ -50,11 +50,13 @@ function getVerificationCode(key: string): string | null {
 function createCodeKey(
   account: string,
   userType: string,
-  institutionName: string, // Should be the matched institution name
+  tenant_name: string, // Should be the matched institution name
 ): string {
+  // Normalize account to lowercase for consistent key matching (humans make case mistakes)
+  const normalizedAccount = account.trim().toLowerCase()
   // Normalize institution name to lowercase for consistent key matching
-  const normalizedInstitutionName = institutionName.trim().toLowerCase()
-  return `${account}:${userType}:${normalizedInstitutionName}`
+  const normalizedTenantName = tenant_name.trim().toLowerCase()
+  return `${normalizedAccount}:${userType}:${normalizedTenantName}`
 }
 
 // Get matched institution name (case-insensitive match)
@@ -76,12 +78,12 @@ export async function mockSendVerificationCode(
   console.log('%c[Mock] mockSendVerificationCode called', 'color: #1890ff; font-weight: bold', {
     account: params.account,
     userType: params.userType,
-    institutionName: params.institutionName,
+    tenant_name: params.tenant_name,
   })
 
   // Validate institution name (case-insensitive, supports partial match)
   // Example: "sunset" matches "Sunset Care Center", "SUNSET" matches "Sunset Care Center"
-  const institutionNameLower = params.institutionName.trim().toLowerCase()
+  const institutionNameLower = params.tenant_name.trim().toLowerCase()
   const institution = Object.values(dataModule.institutions).find(
     (inst: any) => inst.name.toLowerCase().includes(institutionNameLower) ||
                   institutionNameLower.includes(inst.name.toLowerCase()),
@@ -93,16 +95,19 @@ export async function mockSendVerificationCode(
   // Use the matched institution name for account lookup (case-insensitive)
   const matchedInstitutionName = institution.name
 
-  // Check if account exists in this institution
+  // Normalize account to lowercase for case-insensitive matching (humans make case mistakes)
+  const normalizedAccount = params.account.trim().toLowerCase()
+  
+  // Check if account exists in this institution (case-insensitive matching)
   const accountExists =
     Object.values(dataModule.testAccounts.staff).some(
       (acc: any) =>
-        (acc.phone === params.account || acc.email === params.account) &&
+        (acc.phone === normalizedAccount || acc.email.toLowerCase() === normalizedAccount) &&
         acc.institution.toLowerCase() === matchedInstitutionName.toLowerCase(),
     ) ||
     Object.values(dataModule.testAccounts.resident).some(
       (acc: any) =>
-        (acc.phone === params.account || acc.email === params.account) &&
+        (acc.phone === normalizedAccount || acc.email.toLowerCase() === normalizedAccount) &&
         acc.institution.toLowerCase() === matchedInstitutionName.toLowerCase(),
     )
 
@@ -141,11 +146,11 @@ export async function mockVerifyCode(params: VerifyCodeParams): Promise<ForgotPa
     account: params.account,
     code: params.code,
     userType: params.userType,
-    institutionName: params.institutionName,
+    tenant_name: params.tenant_name,
   })
 
   // Get matched institution name (case-insensitive)
-  const matchedInstitutionName = getMatchedInstitutionName(params.institutionName)
+  const matchedInstitutionName = getMatchedInstitutionName(params.tenant_name)
   if (!matchedInstitutionName) {
     throw new Error(errors.institutionNotFound.message)
   }
@@ -199,12 +204,12 @@ export async function mockResetPassword(params: ResetPasswordParams): Promise<Fo
     account: params.account,
     code: params.code,
     userType: params.userType,
-    institutionName: params.institutionName,
+    tenant_name: params.tenant_name,
     newPasswordLength: params.newPassword.length,
   })
 
   // Get matched institution name (case-insensitive)
-  const matchedInstitutionName = getMatchedInstitutionName(params.institutionName)
+  const matchedInstitutionName = getMatchedInstitutionName(params.tenant_name)
   if (!matchedInstitutionName) {
     throw new Error(errors.institutionNotFound.message)
   }
@@ -214,7 +219,7 @@ export async function mockResetPassword(params: ResetPasswordParams): Promise<Fo
     account: params.account,
     code: params.code,
     userType: params.userType,
-    institutionName: matchedInstitutionName,
+    tenant_name: matchedInstitutionName,
   }
 
   try {
@@ -240,7 +245,7 @@ export async function mockResetPassword(params: ResetPasswordParams): Promise<Fo
   // Password reset successful
   console.log('%c[Mock] Password reset successful', 'color: #52c41a; font-weight: bold', {
     account: params.account,
-    institutionName: params.institutionName,
+    tenant_name: params.tenant_name,
     note: 'In production, password would be hashed and stored in database',
   })
 

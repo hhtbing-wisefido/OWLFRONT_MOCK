@@ -7,7 +7,7 @@
     "paths": {
       "@/*": ["./src/*"],
       "/#/*": ["./types/*"],
-      "@/test": ["./test/index"]
+      "@test/*": ["./test/*"]
     },
 
     /* Linting */

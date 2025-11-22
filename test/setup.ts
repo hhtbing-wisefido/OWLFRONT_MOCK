@@ -5,6 +5,37 @@
 
 import { config } from '@vue/test-utils'
 import { vi } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
+import { createRouter, createWebHistory } from 'vue-router'
+
+// 初始化 Pinia
+const pinia = createPinia()
+setActivePinia(pinia)
+
+// 创建测试用的 Router
+const router = createRouter({
+  history: createWebHistory(),
+  routes: [
+    {
+      path: '/',
+      name: 'home',
+      component: { template: '<div>Home</div>' },
+    },
+    {
+      path: '/login',
+      name: 'login',
+      component: { template: '<div>Login</div>' },
+    },
+    {
+      path: '/monitoring/vital-focus',
+      name: 'vital-focus',
+      component: { template: '<div>Vital Focus</div>' },
+    },
+  ],
+})
+
+// 配置全局插件
+config.global.plugins = [pinia, router]
 
 // 配置 Ant Design Vue 组件
 config.global.stubs = {

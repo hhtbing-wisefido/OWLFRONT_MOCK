@@ -177,7 +177,7 @@ export async function mockLogin(params: LoginParams): Promise<LoginResult> {
         throw new Error('Invalid username or password')
       }
       // 检查机构
-      if (!params.institutionId || params.institutionId === testAccounts.staff.s1.institutionId) {
+      if (!params.tenant_id || params.tenant_id === testAccounts.staff.s1.institutionId) {
         return loginSuccessStaff
       }
       throw new Error('Institution mismatch')
@@ -195,29 +195,25 @@ export async function mockLogin(params: LoginParams): Promise<LoginResult> {
       if (params.password !== testAccounts.staff.s2.password) {
         throw new Error('Invalid username or password')
       }
-      if (params.institutionId === testAccounts.staff.s2.institutionIds[0]) {
+      if (params.tenant_id === testAccounts.staff.s2.institutionIds[0]) {
         // Sunset
         return {
           ...loginSuccessStaff,
           userId: 'user-s2',
-          username: testAccounts.staff.s2.username,
-          email: testAccounts.staff.s2.email,
-          phone: testAccounts.staff.s2.phone,
-          institutionId: testAccounts.staff.s2.institutionIds[0],
-          institutionName: 'Sunset',
+          user_account: 'S2', // 用户账号
+          tenant_id: testAccounts.staff.s2.institutionIds[0],
+          tenant_name: 'Sunset Care Center',
         }
-      } else if (params.institutionId === testAccounts.staff.s2.institutionIds[1]) {
+      } else if (params.tenant_id === testAccounts.staff.s2.institutionIds[1]) {
         // Golden
         return {
           ...loginSuccessStaff,
           userId: 'user-s2',
-          username: testAccounts.staff.s2.username,
-          email: testAccounts.staff.s2.email,
-          phone: testAccounts.staff.s2.phone,
-          institutionId: testAccounts.staff.s2.institutionIds[1],
-          institutionName: 'Golden',
+          user_account: 'S2', // 用户账号
+          tenant_id: testAccounts.staff.s2.institutionIds[1],
+          tenant_name: 'Golden Care Center',
         }
-      } else if (!params.institutionId && testAccounts.staff.s2.institutionIds.length > 1) {
+      } else if (!params.tenant_id && testAccounts.staff.s2.institutionIds.length > 1) {
         // 多个机构但未选择，返回错误
         throw new Error('Multiple institutions found, please select one')
       }
@@ -237,11 +233,9 @@ export async function mockLogin(params: LoginParams): Promise<LoginResult> {
       return {
         ...loginSuccessStaff,
         userId: 'user-s3',
-        username: testAccounts.staff.s3.username,
-        email: testAccounts.staff.s3.email,
-        phone: testAccounts.staff.s3.phone,
-        institutionId: testAccounts.staff.s3.institutionId,
-        institutionName: testAccounts.staff.s3.institution,
+        user_account: 'S2', // 用户账号（注意：S3 使用 S2 作为 username）
+        tenant_id: testAccounts.staff.s3.institutionId,
+        tenant_name: 'Winds Care Center',
       }
     }
 
@@ -271,7 +265,7 @@ export async function mockLogin(params: LoginParams): Promise<LoginResult> {
         throw new Error('Invalid username or password')
       }
       // 检查机构
-      if (!params.institutionId || params.institutionId === testAccounts.resident.r1.institutionId) {
+      if (!params.tenant_id || params.tenant_id === testAccounts.resident.r1.institutionId) {
         return loginSuccessResident
       }
       throw new Error('Institution mismatch')
@@ -289,23 +283,25 @@ export async function mockLogin(params: LoginParams): Promise<LoginResult> {
       if (params.password !== testAccounts.resident.r2.password) {
         throw new Error('Invalid username or password')
       }
-      if (params.institutionId === testAccounts.resident.r2.institutionIds[0]) {
+      if (params.tenant_id === testAccounts.resident.r2.institutionIds[0]) {
         // Sunset
         return {
           ...loginSuccessResident,
           userId: 'resident-r2',
-          institutionId: testAccounts.resident.r2.institutionIds[0],
-          institutionName: 'Sunset',
+          user_account: 'R2', // 用户账号
+          tenant_id: testAccounts.resident.r2.institutionIds[0],
+          tenant_name: 'Sunset Care Center',
         }
-      } else if (params.institutionId === testAccounts.resident.r2.institutionIds[1]) {
+      } else if (params.tenant_id === testAccounts.resident.r2.institutionIds[1]) {
         // Golden
         return {
           ...loginSuccessResident,
           userId: 'resident-r2',
-          institutionId: testAccounts.resident.r2.institutionIds[1],
-          institutionName: 'Golden',
+          user_account: 'R2', // 用户账号
+          tenant_id: testAccounts.resident.r2.institutionIds[1],
+          tenant_name: 'Golden Care Center',
         }
-      } else if (!params.institutionId && testAccounts.resident.r2.institutionIds.length > 1) {
+      } else if (!params.tenant_id && testAccounts.resident.r2.institutionIds.length > 1) {
         // 多个机构但未选择，返回错误
         throw new Error('Multiple institutions found, please select one')
       }
@@ -325,8 +321,9 @@ export async function mockLogin(params: LoginParams): Promise<LoginResult> {
       return {
         ...loginSuccessResident,
         userId: 'resident-r3',
-        institutionId: testAccounts.resident.r3.institutionId,
-        institutionName: testAccounts.resident.r3.institution,
+        user_account: 'R2', // 用户账号（注意：R3 使用 R2 作为 account）
+        tenant_id: testAccounts.resident.r3.institutionId,
+        tenant_name: 'Winds Care Center',
       }
     }
 

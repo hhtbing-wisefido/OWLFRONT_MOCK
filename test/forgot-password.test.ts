@@ -16,7 +16,7 @@ describe('Forgot Password API 测试', () => {
       const params = {
         account: forgotPassword.testAccounts.staff.s1.phone,
         userType: 'staff' as const,
-        institutionName: 'Sunset Care Center',
+        tenant_name: 'Sunset Care Center',
       }
 
       console.log('📥 输入:', { ...params, account: params.account })
@@ -38,7 +38,7 @@ describe('Forgot Password API 测试', () => {
       const params = {
         account: forgotPassword.testAccounts.resident.r1.phone,
         userType: 'resident' as const,
-        institutionName: 'Sunset Care Center',
+        tenant_name: 'Sunset Care Center',
       }
 
       const result = await forgotPassword.mockSendVerificationCode(params)
@@ -51,7 +51,7 @@ describe('Forgot Password API 测试', () => {
       const params = {
         account: forgotPassword.testAccounts.staff.s1.phone,
         userType: 'staff' as const,
-        institutionName: 'NonExistent Institution',
+        tenant_name: 'NonExistent Institution',
       }
 
       await expect(forgotPassword.mockSendVerificationCode(params)).rejects.toThrow(
@@ -63,7 +63,7 @@ describe('Forgot Password API 测试', () => {
       const params = {
         account: '9999999999',
         userType: 'staff' as const,
-        institutionName: 'Sunset Care Center',
+        tenant_name: 'Sunset Care Center',
       }
 
       await expect(forgotPassword.mockSendVerificationCode(params)).rejects.toThrow(
@@ -75,7 +75,7 @@ describe('Forgot Password API 测试', () => {
       const params = {
         account: forgotPassword.testAccounts.staff.s1.phone,
         userType: 'staff' as const,
-        institutionName: 'sunset care center', // 小写
+        tenant_name: 'sunset care center', // 小写
       }
 
       const result = await forgotPassword.mockSendVerificationCode(params)
@@ -90,7 +90,7 @@ describe('Forgot Password API 测试', () => {
       const sendParams = {
         account: forgotPassword.testAccounts.staff.s1.phone,
         userType: 'staff' as const,
-        institutionName: 'Sunset Care Center',
+        tenant_name: 'Sunset Care Center',
       }
       await forgotPassword.mockSendVerificationCode(sendParams)
 
@@ -99,7 +99,7 @@ describe('Forgot Password API 测试', () => {
         account: forgotPassword.testAccounts.staff.s1.phone,
         code: forgotPassword.testVerificationCodes.correct,
         userType: 'staff' as const,
-        institutionName: 'Sunset Care Center',
+        tenant_name: 'Sunset Care Center',
       }
 
       console.log('📥 输入:', { ...verifyParams, account: verifyParams.account })
@@ -120,7 +120,7 @@ describe('Forgot Password API 测试', () => {
       const sendParams = {
         account: forgotPassword.testAccounts.staff.s1.phone,
         userType: 'staff' as const,
-        institutionName: 'Sunset Care Center',
+        tenant_name: 'Sunset Care Center',
       }
       await forgotPassword.mockSendVerificationCode(sendParams)
 
@@ -129,7 +129,7 @@ describe('Forgot Password API 测试', () => {
         account: forgotPassword.testAccounts.staff.s1.phone,
         code: forgotPassword.testVerificationCodes.wrong,
         userType: 'staff' as const,
-        institutionName: 'Sunset Care Center',
+        tenant_name: 'Sunset Care Center',
       }
 
       await expect(forgotPassword.mockVerifyCode(verifyParams)).rejects.toThrow(
@@ -143,7 +143,7 @@ describe('Forgot Password API 测试', () => {
         account: forgotPassword.testAccounts.staff.s1.phone,
         code: forgotPassword.testVerificationCodes.expired,
         userType: 'staff' as const,
-        institutionName: 'Sunset Care Center',
+        tenant_name: 'Sunset Care Center',
       }
 
       // 当验证码不存在时，mock 函数返回 "Invalid verification code"
@@ -160,7 +160,7 @@ describe('Forgot Password API 测试', () => {
       const sendParams = {
         account: forgotPassword.testAccounts.staff.s1.phone,
         userType: 'staff' as const,
-        institutionName: 'Sunset Care Center',
+        tenant_name: 'Sunset Care Center',
       }
       await forgotPassword.mockSendVerificationCode(sendParams)
 
@@ -169,7 +169,7 @@ describe('Forgot Password API 测试', () => {
         account: forgotPassword.testAccounts.staff.s1.phone,
         code: forgotPassword.testVerificationCodes.correct,
         userType: 'staff' as const,
-        institutionName: 'Sunset Care Center',
+        tenant_name: 'Sunset Care Center',
       }
       await forgotPassword.mockVerifyCode(verifyParams)
 
@@ -179,7 +179,7 @@ describe('Forgot Password API 测试', () => {
         code: forgotPassword.testVerificationCodes.correct,
         newPassword: forgotPassword.testPasswords.valid,
         userType: 'staff' as const,
-        institutionName: 'Sunset Care Center',
+        tenant_name: 'Sunset Care Center',
       }
 
       console.log('📥 输入:', {
@@ -187,7 +187,7 @@ describe('Forgot Password API 测试', () => {
         code: resetParams.code,
         newPasswordLength: resetParams.newPassword.length,
         userType: resetParams.userType,
-        institutionName: resetParams.institutionName,
+        tenant_name: resetParams.tenant_name,
       })
 
       const result = await forgotPassword.mockResetPassword(resetParams)
@@ -206,7 +206,7 @@ describe('Forgot Password API 测试', () => {
       const sendParams = {
         account: forgotPassword.testAccounts.staff.s1.phone,
         userType: 'staff' as const,
-        institutionName: 'Sunset Care Center',
+        tenant_name: 'Sunset Care Center',
       }
       await forgotPassword.mockSendVerificationCode(sendParams)
 
@@ -214,7 +214,7 @@ describe('Forgot Password API 测试', () => {
         account: forgotPassword.testAccounts.staff.s1.phone,
         code: forgotPassword.testVerificationCodes.correct,
         userType: 'staff' as const,
-        institutionName: 'Sunset Care Center',
+        tenant_name: 'Sunset Care Center',
       }
       await forgotPassword.mockVerifyCode(verifyParams)
 
@@ -224,7 +224,7 @@ describe('Forgot Password API 测试', () => {
         code: forgotPassword.testVerificationCodes.correct,
         newPassword: forgotPassword.testPasswords.tooShort,
         userType: 'staff' as const,
-        institutionName: 'Sunset Care Center',
+        tenant_name: 'Sunset Care Center',
       }
 
       await expect(forgotPassword.mockResetPassword(resetParams)).rejects.toThrow(
@@ -237,7 +237,7 @@ describe('Forgot Password API 测试', () => {
       const sendParams = {
         account: forgotPassword.testAccounts.staff.s1.phone,
         userType: 'staff' as const,
-        institutionName: 'Sunset Care Center',
+        tenant_name: 'Sunset Care Center',
       }
       await forgotPassword.mockSendVerificationCode(sendParams)
 
@@ -247,7 +247,7 @@ describe('Forgot Password API 测试', () => {
         code: forgotPassword.testVerificationCodes.wrong,
         newPassword: forgotPassword.testPasswords.valid,
         userType: 'staff' as const,
-        institutionName: 'Sunset Care Center',
+        tenant_name: 'Sunset Care Center',
       }
 
       await expect(forgotPassword.mockResetPassword(resetParams)).rejects.toThrow(
