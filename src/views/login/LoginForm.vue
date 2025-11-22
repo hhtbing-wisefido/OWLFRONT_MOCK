@@ -10,7 +10,7 @@
     <!-- User Type Selection (without label, with logo icon) -->
     <AFormItem name="userType" class="user-type-item">
       <div class="user-type-with-logo">
-        <img src="/logo-icon.png" alt="Wisefido OWL" class="logo-icon-inline" />
+        <img src="@/assets/images/logo-icon.png" alt="Wisefido OWL" class="logo-icon-inline" />
         <ARadioGroup v-model:value="formData.userType" button-style="solid" class="user-type-group">
           <ARadioButton value="staff">Staff</ARadioButton>
           <ARadioButton value="resident">Resident</ARadioButton>

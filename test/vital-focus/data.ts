@@ -32,14 +32,29 @@
  * 测试卡片汇总（方便统一修改）
  * ========================================
  * 
- * Card 1: ActiveBed - R1 (Sunset)
+ * Card 1: ActiveBed - R1 (Sunset) - E203
  *   - card_id: UUID (see below)
  *   - card_name: 'Smith'
  *   - card_address: 'A - E203 - BedA'
  *   - tenant_id: institutions.sunset.id
  *   - resident: R1 (Smith, L2)
- *   - devices: Radar-001, Sleepace-001 (both online)
- *   - status: in bed, light sleep, HR: 72, RR: 18
+ *   - devices: 
+ *     * Sleepace-001 (绑床, online, deepsleep, HR=-, RR=20) - 没有检测到HR
+ *     * Radar-002 (绑床, online, HR=72, RR=22)
+ *     * Radar-012 (绑location, online) - E203的bathroom
+ *   - status: in bed (bed_status=0), deep sleep
+ *   - 后端合并逻辑（根据card_creation_rules场景A）:
+ *     * 根据规则，Card 1包含该location下所有设备（绑床设备 + 未绑床设备）
+ *     * HR/RR合并：两者同时收到呼吸心率，优先使用sleepad
+ *       - HR: 72 (from Radar-002, 因为Sleepace-001没有HR)
+ *       - RR: 20 (from Sleepace-001, 优先使用sleepad)
+ *       - heart_source: 'r', breath_source: 's'
+ *     * person_count和postures：合并所有雷达设备的tracking_id（不去重）
+ *       - Radar-002 (绑床): tracking_id=0 (standing, posture=4) - 1个人
+ *       - Radar-012 (bathroom): tracking_id=0 (standing, posture=4), tracking_id=1 (sitting, posture=3) - 2个人
+ *       - 合并后：person_count=3（所有雷达tracking_id的总数，不去重：Radar-002的tracking_id=0 + Radar-012的tracking_id=0 + Radar-012的tracking_id=1）
+ *       - postures=[4,4,3]（每个tracking_id对应一个姿态，只显示有tracking_id的姿态）
+ *       - 注意：各雷达是各雷达的，不是同一个人，不能去重
  * 
  * Card 2: ActiveBed - R2 (Golden)
  *   - card_id: UUID (see below)
@@ -83,6 +98,9 @@
  *   - residents: none (public space)
  *   - devices: Radar-005 (online)
  *   - status: 0 persons, no alarms
+ * 
+ * 注意：根据card_creation_rules场景A，E203下只有1个ActiveBed时，
+ *       Radar-012（bathroom）应该属于Card 1，不创建单独的Location卡片
  */
 
 import type {
@@ -232,21 +250,28 @@ export const card1_ActiveBed_R1: VitalFocusCard = {
   ],
   devices: [
     {
-      device_id: 'device-radar-001',
-      device_name: 'Radar-001',
-      device_type: 2, // radar
-      device_model: 'Radar-V2',
-      binding_type: 'direct',
-    },
-    {
       device_id: 'device-sleepace-001',
       device_name: 'Sleepace-001',
-      device_type: 1, // sleepace
+      device_type: 1, // sleepace (sleepad)
       device_model: 'Sleepace-Pro',
-      binding_type: 'direct',
+      binding_type: 'direct', // 绑床设备
+    },
+    {
+      device_id: 'device-radar-002',
+      device_name: 'Radar-002',
+      device_type: 2, // radar
+      device_model: 'Radar-V2',
+      binding_type: 'direct', // 绑床设备
+    },
+    {
+      device_id: 'device-radar-012',
+      device_name: 'Radar-012',
+      device_type: 2, // radar
+      device_model: 'Radar-V2',
+      binding_type: 'indirect', // 绑location，未绑床（E203的bathroom）
     },
   ],
-  device_count: 2,
+  device_count: 3, // Sleepace-001, Radar-002 (绑床), Radar-012 (绑location)
   resident_count: 1,
   // 未处理报警统计（5个级别）
   unhandled_alarm_0: 0, // EMERG(0)
@@ -258,17 +283,26 @@ export const card1_ActiveBed_R1: VitalFocusCard = {
   // 报警显示控制
   icon_alarm_level: 3, // 默认 3 (ERR)
   pop_alarm_emerge: 0, // 默认 0 (EMERG)
-  r_connection: 1, // online
-  s_connection: 1, // online
-  breath: 18,
-  heart: 72,
-  bed_status: 0, // in bed
+  r_connection: 1, // Radar-002, Radar-012 online
+  s_connection: 1, // Sleepace-001 online
+  // 后端合并后的数据（根据card_creation_rules：两者同时收到呼吸心率，优先使用sleepad）
+  breath: 20, // from Sleepace-001 (RR=20), 优先使用sleepad，Radar-002 has RR=22 but sleepad takes priority
+  heart: 72, // from Radar-002 (HR=72), Sleepace-001 has no HR (HR=-)
+  bed_status: 0, // in bed (active, 床上有1人)
   timestamp: Date.now() - 3600000, // 1 hour ago
-  sleep_stage: 2, // light sleep
-  heart_source: 'sleepace',
-  breath_source: 'sleepace',
-  person_count: 1,
-  postures: [],
+  sleep_stage: 1, // awake
+  heart_source: 'r', // from Radar-002 (小写字母，与v1.0一致)
+  breath_source: 's', // from Sleepace-001 (小写字母，与v1.0一致，优先使用sleepad)
+  // person_count和postures：合并所有雷达设备的tracking_id（根据card_creation_rules场景A）
+  // 规则：只显示有tracking_id的姿态，person_count是所有雷达tracking_id的总数（不去重）
+  // 注意：各雷达是各雷达的，不是同一个人，不能去重
+  // 示例：
+  //   - Radar-002 (绑床): tracking_id=0 (standing, posture=4) - 1个人
+  //   - Radar-012 (bathroom): tracking_id=0 (standing, posture=4), tracking_id=1 (sitting, posture=3) - 2个人
+  //   - 合并后：person_count=3（所有雷达tracking_id的总数，不去重：Radar-002的tracking_id=0 + Radar-012的tracking_id=0 + Radar-012的tracking_id=1）
+  //   - postures=[4,4,3]（每个tracking_id对应一个姿态，只显示有tracking_id的姿态）
+  person_count: 3, // 所有雷达tracking_id的总数（不去重）：Radar-002(tracking_id=0) + Radar-012(tracking_id=0,1) = 3个tracking_id（3个人）
+  postures: [4, 4, 3], // 只显示有tracking_id的姿态：Radar-002(tracking_id=0, posture=4) + Radar-012(tracking_id=0, posture=4; tracking_id=1, posture=3) = [4,4,3]
   alarms: [],
 }
 
@@ -319,7 +353,7 @@ export const card2_ActiveBed_R2: VitalFocusCard = {
   heart: 85,
   bed_status: 0,
   timestamp: Date.now() - 1800000, // 30 minutes ago
-  sleep_stage: 1, // awake
+  sleep_stage: 4, // deep sleep
   heart_source: 'radar',
   breath_source: 'radar',
   person_count: 1,
@@ -505,6 +539,7 @@ export const allTestCards: VitalFocusCard[] = [
   card3_ActiveBed_R3,
   card4_Location_MultiPerson,
   card5_Location_PublicSpace,
+  // 注意：根据card_creation_rules场景A，Radar-012（bathroom）属于Card 1，不创建单独的Location卡片
 ]
 
 /**

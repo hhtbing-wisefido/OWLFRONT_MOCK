@@ -7,7 +7,7 @@
           <div class="forgot-password-header">
             <h1 class="title">
               Reset Password
-              <img src="/logo-icon.png" alt="Wisefido OWL" class="logo-icon" />
+              <img src="@/assets/images/logo-icon.png" alt="Wisefido OWL" class="logo-icon" />
             </h1>
             <p class="subtitle">Enter your information to reset your password</p>
           </div>
@@ -725,7 +725,7 @@ const handleResetPassword = async () => {
   justify-content: center;
   padding: 36px 37.5px; /* 高度缩小到60%: 60px * 0.6 = 36px, 宽度缩小到75%: 50px * 0.75 = 37.5px */
   position: relative;
-  background-image: url('/login-bg.png');
+  background-image: url('@/assets/images/login-bg.png');
   background-size: cover;
   background-position: center;
 }

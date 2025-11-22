@@ -86,34 +86,40 @@
         />
       </a-button>
       
-      <!-- SelectCard: 选择监控卡片 -->
+      <!-- Focus: 选择监控卡片 -->
       <a-button
         type="default"
         @click="showSelectCardModal = true"
       >
-        SelectCard
+        Focus
       </a-button>
     </div>
     
-    <!-- SelectCard Modal -->
+    <!-- Focus Modal -->
     <a-modal
       v-model:visible="showSelectCardModal"
-      title="Select Card"
+      title="Focus"
       :width="600"
       :footer="null"
     >
+      <!-- All/Invert 按钮 -->
+      <div style="margin-bottom: 12px; display: flex; gap: 8px;">
+        <a-button size="small" @click="selectAllCards">all</a-button>
+        <a-button size="small" @click="invertCardSelection">Invert</a-button>
+      </div>
+      
       <div style="max-height: 400px; overflow-y: auto;">
         <div
           v-for="card in allCards"
           :key="card.card_id"
           style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #f0f0f0; cursor: pointer;"
-          @click="goToAllVitalFocus(card)"
+          @click="toggleCardSelection(card.card_id)"
         >
           <div>
             <div style="font-weight: 500;">{{ card.card_name }}</div>
             <div style="font-size: 12px; color: #999;">{{ card.card_address }}</div>
           </div>
-          <a-checkbox :checked="false" @click.stop />
+          <a-checkbox :checked="selectedCardIds.includes(card.card_id)" @click.stop="toggleCardSelection(card.card_id)" />
         </div>
       </div>
     </a-modal>
@@ -171,8 +177,12 @@
                 style="margin-right: 10px; width: 20px; height: 20px; border: solid 1px red; border-radius: 50%;"
               />
             </div>
-            <!-- Alarm Status Icon (右上角图标) -->
-            <div :style="{ fontSize: '20px', color: getIconAlarmColor(item) }">
+            <!-- Alarm Status Icon (右上角图标) - 点击跳转到详情页 -->
+            <div 
+              :style="{ fontSize: '20px', color: getIconAlarmColor(item), cursor: 'pointer' }"
+              @click.stop="goDetail(item)"
+              :title="'Click to view details'"
+            >
               <AlertFilled />
             </div>
           </div>
@@ -242,10 +252,22 @@
                       flex-wrap: wrap;
                     "
                   >
-                    <!-- Sleep Stage (simplified - using bed_status for now) -->
+                    <!-- Sleep Stage (根据 sleep_stage 显示不同状态，与 v1.0 一致) -->
                     <div>
-                      <div v-if="item.bed_status === 0" style="font-size: 30px">
+                      <div v-if="item.sleep_stage === 1" style="font-size: 30px">
                         <img src="@/assets/images/awake.gif" style="margin-right: 10px" />
+                      </div>
+                      <div v-else-if="item.sleep_stage === 2" style="font-size: 30px">
+                        <img
+                          src="@/assets/images/light_sleep.gif"
+                          style="margin-right: 10px"
+                        />
+                      </div>
+                      <div v-else-if="item.sleep_stage === 4" style="font-size: 30px">
+                        <img
+                          src="@/assets/images/deep_sleep.gif"
+                          style="margin-right: 10px"
+                        />
                       </div>
                       <div v-else style="font-size: 30px">
                         <img
@@ -262,6 +284,7 @@
                           <span class="status-number">{{
                             item?.heart && item.heart > 0 && item.heart < 255 ? item.heart : '--'
                           }}</span>
+                          <span v-if="item?.heart_source" class="number-badge">{{ item.heart_source }}</span>
                         </div>
                         <span> bpm</span>
                       </div>
@@ -271,6 +294,7 @@
                           <span class="status-number">{{
                             item?.breath && item.breath > 0 && item.breath < 255 ? item.breath : '--'
                           }}</span>
+                          <span v-if="item?.breath_source" class="number-badge">{{ item.breath_source }}</span>
                         </div>
                         <span> rpm</span>
                       </div>
@@ -290,6 +314,41 @@
                       </div>
                     </div>
                   </div>
+                </div>
+              </div>
+              <!-- Postures (姿态数据) - 右侧显示 (与v1.0一致) -->
+              <div
+                v-if="(item.person_count ?? 0) > 0 && item.postures && item.postures.length > 0"
+                style="display: flex; flex-direction: column; align-items: center"
+              >
+                <div v-for="posture in item.postures" :key="posture">
+                  <img v-if="posture === 1" src="@/assets/images/walk.png" class="posture-img" />
+                  <img
+                    v-else-if="posture === 2"
+                    src="@/assets/images/suspected-fall.png"
+                    class="posture-img"
+                  />
+                  <img
+                    v-else-if="posture === 3"
+                    src="@/assets/images/sitting.svg"
+                    class="posture-img"
+                  />
+                  <img
+                    v-else-if="posture === 4"
+                    src="@/assets/images/stand.png"
+                    class="posture-img"
+                  />
+                  <img
+                    v-else-if="posture === 5"
+                    src="@/assets/images/fall.png"
+                    class="posture-img"
+                  />
+                  <img
+                    v-else-if="posture === 6"
+                    src="@/assets/images/lying.svg"
+                    class="posture-img"
+                  />
+                  <img v-else src="@/assets/images/unknown.png" class="posture-img" />
                 </div>
               </div>
             </div>
@@ -313,9 +372,31 @@
             </div>
           </div>
         </div>
-        <!-- Location Cards: Person Count and Postures (simplified) -->
+        <!-- Location Cards: Person Count and Postures (与v1.0一致) -->
         <div v-else style="display: flex; flex-direction: column; align-items: center">
-          <div style="font-size: 18px">{{ item.resident_count || 0 }} Person{{ (item.resident_count || 0) > 1 ? 's' : '' }}</div>
+          <div style="font-size: 18px">{{ item.person_count ?? 0 }} Person</div>
+          <div
+            v-if="(item.person_count ?? 0) > 0 && item.postures && item.postures.length > 0"
+            style="display: flex; flex-direction: row; align-items: center"
+          >
+            <div v-for="posture in item.postures" :key="posture">
+              <img v-if="posture === 1" src="@/assets/images/walk.png" style="margin-right: 10px" />
+              <img
+                v-else-if="posture === 2"
+                src="@/assets/images/suspected-fall.png"
+                class="posture-img"
+              />
+              <img
+                v-else-if="posture === 3"
+                src="@/assets/images/sitting.png"
+                class="posture-img"
+              />
+              <img v-else-if="posture === 4" src="@/assets/images/stand.png" class="posture-img" />
+              <img v-else-if="posture === 5" src="@/assets/images/fall.png" class="posture-img" />
+              <img v-else-if="posture === 6" src="@/assets/images/lying.png" class="posture-img" />
+              <img v-else src="@/assets/images/unknown.png" class="posture-img" />
+            </div>
+          </div>
         </div>
 
         <!-- Section 3: Event & Alert - Alarm Bar (下端弹出项) -->
@@ -374,6 +455,40 @@ const isTimerRunning = ref(false)
 // Filter state
 const activeFilter = ref<string | null>(null) // 'unhand' | 'outofroom' | 'leftbed' | 'visitor' | 'awake' | 'sleep' | null
 const showSelectCardModal = ref(false)
+
+// Selected card IDs (默认所有卡片都被选中)
+const selectedCardIds = ref<string[]>([])
+
+// Focus 选择状态的 localStorage key
+const FOCUS_SELECTED_CARDS_KEY = 'vitalFocus_selectedCardIds'
+
+/**
+ * Load selected card IDs from localStorage (从本地存储加载选中的卡片ID)
+ */
+const loadSelectedCardIds = () => {
+  try {
+    const saved = localStorage.getItem(FOCUS_SELECTED_CARDS_KEY)
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      if (Array.isArray(parsed)) {
+        selectedCardIds.value = parsed
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load selected card IDs from localStorage:', error)
+  }
+}
+
+/**
+ * Save selected card IDs to localStorage (保存选中的卡片ID到本地存储)
+ */
+const saveSelectedCardIds = () => {
+  try {
+    localStorage.setItem(FOCUS_SELECTED_CARDS_KEY, JSON.stringify(selectedCardIds.value))
+  } catch (error) {
+    console.error('Failed to save selected card IDs to localStorage:', error)
+  }
+}
 
 // Card settings (for showing/hiding detail numbers)
 const cardSettings = ref<Record<string, number>>({})
@@ -714,7 +829,64 @@ const handleAlarm = (item: VitalFocusCard, alarm?: any) => {
 const refreshData = async () => {
   try {
     const data = await getVitalFocusCardsApi('none')
+    
+    // Process data similar to v1.0: extract fields from statuses object if needed
+    // Note: If backend returns data directly (not in statuses), this processing may not be needed
+    // But we ensure heart_source and breath_source are lowercase 's' or 'r' as in v1.0
+    if (data?.items) {
+      data.items.forEach((item: any) => {
+        // If backend returns statuses object (like v1.0), extract from it
+        // Otherwise, use direct fields (v1.5 structure)
+        if (item.statuses && typeof item.statuses === 'object') {
+          // Extract from statuses object (v1.0 style)
+          item.heart = item.statuses.heart || item.heart || 0
+          item.breath = item.statuses.breath || item.breath || 0
+          item.heart_source = item.statuses.heartSource || item.statuses.heart_source || item.heart_source || ''
+          item.breath_source = item.statuses.breathSource || item.statuses.breath_source || item.breath_source || ''
+          item.bed_status = item.statuses.bedStatus || item.statuses.bed_status || item.bed_status
+          item.sleep_stage = item.statuses.sleepStage || item.statuses.sleep_stage || item.sleep_stage
+          item.timestamp = item.statuses.timestamp || item.timestamp
+          item.person_count = item.statuses.personCount || item.statuses.person_count || item.person_count
+          
+          // Process postures (may come as comma-separated string)
+          if (item.statuses.postures) {
+            if (typeof item.statuses.postures === 'string') {
+              item.postures = item.statuses.postures.split(',').map(Number)
+            } else if (Array.isArray(item.statuses.postures)) {
+              item.postures = item.statuses.postures
+            }
+          }
+        }
+        
+        // Ensure heart_source and breath_source are lowercase 's' or 'r' (as in v1.0)
+        if (item.heart_source) {
+          item.heart_source = item.heart_source.toLowerCase().charAt(0) // 's' or 'r'
+        }
+        if (item.breath_source) {
+          item.breath_source = item.breath_source.toLowerCase().charAt(0) // 's' or 'r'
+        }
+      })
+    }
+    
     dataSource.value = data
+    
+    // 初始化选中状态：
+    // 1. 先尝试从 localStorage 加载
+    loadSelectedCardIds()
+    
+    // 2. 如果没有保存的选择，且当前没有选中任何卡片，则默认选中所有卡片
+    if (data?.items && selectedCardIds.value.length === 0) {
+      selectedCardIds.value = data.items.map((item: VitalFocusCard) => item.card_id)
+      saveSelectedCardIds() // 保存默认选择
+    } else if (data?.items) {
+      // 如果有保存的选择，但数据更新了（可能有新卡片），将新卡片也加入选中列表
+      const currentCardIds = data.items.map((item: VitalFocusCard) => item.card_id)
+      const newCardIds = currentCardIds.filter(id => !selectedCardIds.value.includes(id))
+      if (newCardIds.length > 0) {
+        selectedCardIds.value = [...selectedCardIds.value, ...newCardIds]
+        saveSelectedCardIds()
+      }
+    }
   } catch (error: any) {
     console.error('Failed to fetch vital focus cards:', error)
     message.error('Failed to load cards. Please try again.')
@@ -807,11 +979,44 @@ const goDetail = (card: VitalFocusCard) => {
 }
 
 /**
- * Get all cards (for SelectCard modal)
+ * Get all cards (for Focus modal)
  */
 const allCards = computed(() => {
   return dataSource.value?.items || []
 })
+
+/**
+ * Toggle card selection (切换卡片选中状态)
+ */
+const toggleCardSelection = (cardId: string) => {
+  const index = selectedCardIds.value.indexOf(cardId)
+  if (index > -1) {
+    selectedCardIds.value.splice(index, 1)
+  } else {
+    selectedCardIds.value.push(cardId)
+  }
+  // 保存到 localStorage
+  saveSelectedCardIds()
+}
+
+/**
+ * Select all cards (全选所有卡片)
+ */
+const selectAllCards = () => {
+  selectedCardIds.value = allCards.value.map(card => card.card_id)
+  // 保存到 localStorage
+  saveSelectedCardIds()
+}
+
+/**
+ * Invert card selection (反选所有卡片)
+ */
+const invertCardSelection = () => {
+  const allCardIds = allCards.value.map(card => card.card_id)
+  selectedCardIds.value = allCardIds.filter(id => !selectedCardIds.value.includes(id))
+  // 保存到 localStorage
+  saveSelectedCardIds()
+}
 
 /**
  * Toggle filter (切换过滤器)
@@ -827,12 +1032,19 @@ const toggleFilter = (filterType: string) => {
 
 /**
  * Get filtered cards (根据当前过滤器过滤卡片)
+ * 同时应用 Focus 选择过滤（只显示被选中的卡片）
  */
 const filteredCards = computed(() => {
-  const cards = dataSource.value?.items || []
+  let cards = dataSource.value?.items || []
   
+  // 首先应用 Focus 选择过滤：只显示被选中的卡片
+  if (selectedCardIds.value.length > 0) {
+    cards = cards.filter((card) => selectedCardIds.value.includes(card.card_id))
+  }
+  
+  // 然后应用其他过滤器（unhand, outofroom, leftbed, visitor, awake, sleep）
   if (!activeFilter.value) {
-    return cards // 无过滤器，显示所有卡片
+    return cards // 无过滤器，显示所有被选中的卡片
   }
   
   switch (activeFilter.value) {
@@ -1020,6 +1232,8 @@ const goToAllVitalFocus = (card: VitalFocusCard) => {
 }
 
 onMounted(async () => {
+  // 先加载保存的选择状态
+  loadSelectedCardIds()
   await refreshData()
   startTimer()
 })
@@ -1085,6 +1299,20 @@ onUnmounted(() => {
   position: relative;
 }
 
+.number-badge {
+  font-size: 12px;
+  color: #a2afb58a;
+  position: absolute;
+  right: 3px;
+  bottom: 8px;
+}
+
+.posture-img {
+  width: 30px;
+  height: 30px;
+  margin-right: 4px;
+}
+
 .status-icon-text {
   font-size: 18px;
   display: flex;
@@ -1119,6 +1347,11 @@ onUnmounted(() => {
 
 .red-floating-bar span {
   font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
 }
 
 .red-handle-button {
@@ -1153,6 +1386,11 @@ onUnmounted(() => {
 
 .yellow-floating-bar span {
   font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
 }
 
 .yellow-handle-button {

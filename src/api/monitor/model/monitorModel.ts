@@ -83,13 +83,15 @@ export interface VitalFocusCard {
   s_connection?: number  // Sleepace connection: 0=offline, 1=online
   
   // Real-time data (to be added when real-time API is ready)
+  // Note: Backend may return data directly or in a 'statuses' object (for v1.0 compatibility)
+  statuses?: Record<string, any>  // Optional: statuses object (v1.0 style) - contains real-time data
   breath?: number
   heart?: number
   bed_status?: number
   timestamp?: number  // Last update timestamp
   sleep_stage?: number  // Sleep stage: 1=awake, 2=light sleep, 4=deep sleep
-  heart_source?: string  // Source of heart rate data (e.g., 'sleepace', 'radar')
-  breath_source?: string  // Source of breath rate data
+  heart_source?: string  // Source of heart rate data (lowercase: 's'=sleepace, 'r'=radar) - as in v1.0
+  breath_source?: string  // Source of breath rate data (lowercase: 's'=sleepace, 'r'=radar) - as in v1.0
   person_count?: number  // Number of persons detected (for Location cards)
   postures?: number[]  // Posture array: 1=walk, 2=suspected-fall, 3=sitting, 4=stand, 5=fall, 6=lying
   

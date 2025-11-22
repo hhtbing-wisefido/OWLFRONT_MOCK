@@ -68,7 +68,7 @@ import LoginForm from './LoginForm.vue'
 .login-right {
   /* 支持背景图片（PNG支持透明），如果没有图片则使用渐变背景 */
   background: 
-    url('/login-bg.png') center/cover no-repeat,
+    url('@/assets/images/login-bg.png') center/cover no-repeat,
     linear-gradient(180deg, #87ceeb 0%, #4682b4 100%);
   /* 回退颜色（如果图片加载失败） */
   background-color: #87ceeb;
