@@ -71,6 +71,7 @@ const emit = defineEmits<{
 const resourceTypes = [
   'vital_monitor', // Vital-Monitor: 是否允许查看 vitalFocus 卡片
   'roles',
+  'role_permissions',
   'users',
   'residents',
   'resident_phi',

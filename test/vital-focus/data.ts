@@ -287,7 +287,8 @@ export const card1_ActiveBed_R1: VitalFocusCard = {
   breath: 20, // from Sleepace-001 (RR=20), 优先使用sleepad，Radar-002 has RR=22 but sleepad takes priority
   heart: 72, // from Radar-002 (HR=72), Sleepace-001 has no HR (HR=-)
   bed_status: 0, // in bed (active, 床上有1人)
-  timestamp: Date.now() - 3600000, // 1 hour ago
+  bed_status_timestamp: '04:30:00', // 1 hour ago (formatted by backend)
+  status_duration: '01:00', // 1 hour duration (formatted by backend)
   sleep_stage: 1, // awake
   heart_source: 'r', // from Radar-002 (小写字母，与v1.0一致)
   breath_source: 's', // from Sleepace-001 (小写字母，与v1.0一致，优先使用sleepad)
@@ -350,7 +351,8 @@ export const card2_ActiveBed_R2: VitalFocusCard = {
   breath: 20,
   heart: 85,
   bed_status: 0,
-  timestamp: Date.now() - 1800000, // 30 minutes ago
+  bed_status_timestamp: '05:00:00', // 30 minutes ago (formatted by backend)
+  status_duration: '00:30', // 30 minutes duration (formatted by backend)
   sleep_stage: 4, // deep sleep
   heart_source: 'r', // radar
   breath_source: 'r', // radar
@@ -413,7 +415,8 @@ export const card3_ActiveBed_R3: VitalFocusCard = {
   breath: 0,
   heart: 0,
   bed_status: 1, // not in bed
-  timestamp: Date.now() - 7200000, // 2 hours ago
+  bed_status_timestamp: '03:00:00', // 2 hours ago (formatted by backend)
+  status_duration: '02:00', // 2 hours duration (formatted by backend)
   sleep_stage: 0,
   heart_source: '-', // no data available
   breath_source: '-', // no data available
@@ -468,7 +471,8 @@ export const card4_Location_MultiPerson: VitalFocusCard = {
   pop_alarm_emerge: 1, // 设置为 1 (ALERT) - ALERT级别会弹出
   r_connection: 1,
   s_connection: 0,
-  timestamp: Date.now() - 900000, // 15 minutes ago
+  bed_status_timestamp: '05:15:00', // 15 minutes ago (formatted by backend)
+  status_duration: '00:15', // 15 minutes duration (formatted by backend)
   person_count: 2,
   postures: [6, 6], // both lying
   alarms: [
@@ -522,7 +526,8 @@ export const card5_Location_PublicSpace: VitalFocusCard = {
   pop_alarm_emerge: 0, // 默认 0 (EMERG)
   r_connection: 1,
   s_connection: 0,
-  timestamp: Date.now() - 600000, // 10 minutes ago
+  bed_status_timestamp: '05:20:00', // 10 minutes ago (formatted by backend)
+  status_duration: '00:10', // 10 minutes duration (formatted by backend)
   person_count: 0,
   postures: [],
   alarms: [],
@@ -569,7 +574,6 @@ export function generateCardsResponse(
 
   return {
     items: paginatedCards,
-    timestamp: Date.now(),
     pagination,
   }
 }

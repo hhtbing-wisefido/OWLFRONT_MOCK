@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
+import { useUserStoreWithOut } from '@/store/modules/user'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -65,6 +66,36 @@ const routes: RouteRecordRaw[] = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
+})
+
+// 路由守卫：检查页面访问权限
+router.beforeEach((to, from, next) => {
+  const userStore = useUserStoreWithOut()
+  
+  // 检查是否需要认证
+  if (to.meta.requiresAuth) {
+    // 检查是否已登录
+    if (!userStore.getToken) {
+      next({
+        path: '/login',
+        query: { redirect: to.fullPath },
+      })
+      return
+    }
+    
+    // 检查页面访问权限
+    // 确保 to.path 是字符串类型
+    const routePath = to.path || ''
+    if (!userStore.hasPagePermission(routePath)) {
+      // 无权限访问，重定向到默认首页
+      next({
+        path: '/monitoring/vital-focus',
+      })
+      return
+    }
+  }
+  
+  next()
 })
 
 export default router

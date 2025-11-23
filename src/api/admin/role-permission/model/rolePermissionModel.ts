@@ -95,8 +95,10 @@ export interface UpdateRolePermissionStatusParams {
  * 资源类型选项（用于下拉选择）
  */
 export const RESOURCE_TYPES = [
-  'tenants',
+  'vital_monitor',
   'roles',
+  'role_permissions',
+  'tenants',
   'users',
   'locations',
   'rooms',

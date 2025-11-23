@@ -72,6 +72,7 @@ export const mockRolePermissionsData: RolePermission[] = [
   // ========== Admin（超级管理员）==========
   { permission_id: '0', role_code: 'Admin', resource_type: 'vital_monitor', permission_type: 'manage', scope: 'all', is_active: true },
   { permission_id: '0-1', role_code: 'Admin', resource_type: 'roles', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: '0-1-1', role_code: 'Admin', resource_type: 'role_permissions', permission_type: 'manage', scope: 'all', is_active: true },
   { permission_id: '0-2', role_code: 'Admin', resource_type: 'users', permission_type: 'manage', scope: 'all', is_active: true },
   { permission_id: '0-3', role_code: 'Admin', resource_type: 'residents', permission_type: 'manage', scope: 'all', is_active: true },
   { permission_id: '0-4', role_code: 'Admin', resource_type: 'resident_phi', permission_type: 'manage', scope: 'all', is_active: true },
@@ -88,7 +89,9 @@ export const mockRolePermissionsData: RolePermission[] = [
   { permission_id: '0-15', role_code: 'Admin', resource_type: 'devices', permission_type: 'manage', scope: 'all', is_active: true },
 
   // ========== Director（院长）==========
-  { permission_id: '1', role_code: 'Director', resource_type: 'vital_monitor', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: '1', role_code: 'Director', resource_type: 'vital_monitor', permission_type: 'read', scope: 'all', is_active: true },
+  { permission_id: '1-1', role_code: 'Director', resource_type: 'roles', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: '1-1-1', role_code: 'Director', resource_type: 'role_permissions', permission_type: 'read', scope: 'all', is_active: true },
   { permission_id: '2', role_code: 'Director', resource_type: 'users', permission_type: 'manage', scope: 'all', is_active: true },
   { permission_id: '3', role_code: 'Director', resource_type: 'residents', permission_type: 'manage', scope: 'all', is_active: true },
   { permission_id: '4', role_code: 'Director', resource_type: 'resident_phi', permission_type: 'manage', scope: 'all', is_active: true },
@@ -105,7 +108,9 @@ export const mockRolePermissionsData: RolePermission[] = [
   { permission_id: '15', role_code: 'Director', resource_type: 'devices', permission_type: 'manage', scope: 'all', is_active: true },
 
   // ========== DON（护士长）==========
-  { permission_id: '16', role_code: 'DON', resource_type: 'vital_monitor', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: '16', role_code: 'DON', resource_type: 'vital_monitor', permission_type: 'read', scope: 'all', is_active: true },
+  { permission_id: '16-1', role_code: 'DON', resource_type: 'roles', permission_type: 'read', scope: 'all', is_active: true },
+  { permission_id: '16-2', role_code: 'DON', resource_type: 'role_permissions', permission_type: 'read', scope: 'all', is_active: true },
   { permission_id: '17', role_code: 'DON', resource_type: 'users', permission_type: 'manage', scope: 'all', is_active: true },
   { permission_id: '18', role_code: 'DON', resource_type: 'residents', permission_type: 'manage', scope: 'all', is_active: true },
   { permission_id: '19', role_code: 'DON', resource_type: 'resident_phi', permission_type: 'manage', scope: 'all', is_active: true },
@@ -122,7 +127,7 @@ export const mockRolePermissionsData: RolePermission[] = [
   { permission_id: '30', role_code: 'DON', resource_type: 'devices', permission_type: 'manage', scope: 'all', is_active: true },
 
   // ========== CM（护理主管）==========
-  { permission_id: '31', role_code: 'CM', resource_type: 'vital_monitor', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: '31', role_code: 'CM', resource_type: 'vital_monitor', permission_type: 'read', scope: 'all', is_active: true },
   { permission_id: '32', role_code: 'CM', resource_type: 'users', permission_type: 'manage', scope: 'all', is_active: true },
   { permission_id: '33', role_code: 'CM', resource_type: 'residents', permission_type: 'manage', scope: 'all', is_active: true },
   { permission_id: '34', role_code: 'CM', resource_type: 'resident_phi', permission_type: 'manage', scope: 'all', is_active: true },
@@ -143,7 +148,7 @@ export const mockRolePermissionsData: RolePermission[] = [
   { permission_id: '49', role_code: 'CM', resource_type: 'devices', permission_type: 'update', scope: 'all', is_active: true },
 
   // ========== CS（临床主管）==========
-  { permission_id: '50', role_code: 'CS', resource_type: 'vital_monitor', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: '50', role_code: 'CS', resource_type: 'vital_monitor', permission_type: 'read', scope: 'all', is_active: true },
   { permission_id: '51', role_code: 'CS', resource_type: 'residents', permission_type: 'manage', scope: 'all', is_active: true },
   { permission_id: '52', role_code: 'CS', resource_type: 'resident_phi', permission_type: 'manage', scope: 'all', is_active: true },
   { permission_id: '53', role_code: 'CS', resource_type: 'resident_contacts', permission_type: 'manage', scope: 'all', is_active: true },
@@ -162,6 +167,7 @@ export const mockRolePermissionsData: RolePermission[] = [
   // ========== CO（合规官）==========
   { permission_id: '65', role_code: 'CO', resource_type: 'vital_monitor', permission_type: 'read', scope: 'all', is_active: true },
   { permission_id: '66', role_code: 'CO', resource_type: 'roles', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: '66-1', role_code: 'CO', resource_type: 'role_permissions', permission_type: 'manage', scope: 'all', is_active: true },
   { permission_id: '67', role_code: 'CO', resource_type: 'users', permission_type: 'read', scope: 'all', is_active: true },
   { permission_id: '68', role_code: 'CO', resource_type: 'residents', permission_type: 'read', scope: 'all', is_active: true },
   { permission_id: '69', role_code: 'CO', resource_type: 'resident_phi', permission_type: 'read', scope: 'all', is_active: true },
@@ -178,8 +184,9 @@ export const mockRolePermissionsData: RolePermission[] = [
   { permission_id: '80', role_code: 'CO', resource_type: 'devices', permission_type: 'read', scope: 'all', is_active: true },
 
   // ========== IT（IT支持）==========
-  { permission_id: '81', role_code: 'IT', resource_type: 'vital_monitor', permission_type: 'read', scope: 'all', is_active: true },
+  // IT 没有 vital_monitor 权限（根据权限表）
   { permission_id: '82', role_code: 'IT', resource_type: 'roles', permission_type: 'read', scope: 'all', is_active: true },
+  { permission_id: '82-1', role_code: 'IT', resource_type: 'role_permissions', permission_type: 'read', scope: 'all', is_active: true },
   { permission_id: '83', role_code: 'IT', resource_type: 'users', permission_type: 'manage', scope: 'all', is_active: true },
   { permission_id: '84', role_code: 'IT', resource_type: 'residents', permission_type: 'read', scope: 'all', is_active: true },
   { permission_id: '85', role_code: 'IT', resource_type: 'resident_caregivers', permission_type: 'read', scope: 'all', is_active: true },
@@ -230,7 +237,7 @@ export const mockRolePermissionsData: RolePermission[] = [
   { permission_id: '126', role_code: 'Caregiver', resource_type: 'devices', permission_type: 'read', scope: 'all', is_active: true },
 
   // ========== ResidentsFamily（住户及家属）==========
-  { permission_id: '127', role_code: 'ResidentsFamily', resource_type: 'vital_monitor', permission_type: 'read', scope: 'all', is_active: true },
+  { permission_id: '127', role_code: 'ResidentsFamily', resource_type: 'vital_monitor', permission_type: 'read', scope: 'assigned_only', is_active: true },
   { permission_id: '128', role_code: 'ResidentsFamily', resource_type: 'resident_contacts', permission_type: 'manage', scope: 'assigned_only', is_active: true },
   { permission_id: '129', role_code: 'ResidentsFamily', resource_type: 'resident_caregivers', permission_type: 'read', scope: 'all', is_active: true },
   { permission_id: '130', role_code: 'ResidentsFamily', resource_type: 'locations', permission_type: 'read', scope: 'all', is_active: true },

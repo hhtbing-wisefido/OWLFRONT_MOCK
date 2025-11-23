@@ -360,7 +360,7 @@
                 <div v-if="item.bed_status === 1">Left bed time</div>
                 <div v-else>Went to Bed</div>
               </div>
-              <div>{{ formatTimestampToTime(item.timestamp || Date.now()) }}</div>
+              <div>{{ item.bed_status_timestamp || '-' }}</div>
             </div>
             <div class="status-time">
               <div>
@@ -368,7 +368,7 @@
                 <div v-else-if="item.bed_status === 0">Awake</div>
                 <div v-else>Analysing</div>
               </div>
-              <div>{{ formatDurationToTime((dataSource?.timestamp || Date.now()) - (item.timestamp || Date.now())) }}</div>
+              <div>{{ item.status_duration || '-' }}</div>
             </div>
           </div>
         </div>
@@ -582,30 +582,6 @@ const getServiceLevelTooltip = (card: VitalFocusCard): string => {
   return ''
 }
 
-/**
- * Format timestamp to time string
- */
-const formatTimestampToTime = (timestamp: number): string => {
-  const date = new Date(timestamp)
-  return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-}
-
-/**
- * Format duration to time string
- */
-const formatDurationToTime = (duration: number): string => {
-  const seconds = Math.floor(duration / 1000)
-  const minutes = Math.floor(seconds / 60)
-  const hours = Math.floor(minutes / 60)
-  
-  if (hours > 0) {
-    return `${hours}h ${minutes % 60}m`
-  } else if (minutes > 0) {
-    return `${minutes}m`
-  } else {
-    return `${seconds}s`
-  }
-}
 
 /**
  * Check if should show detail numbers

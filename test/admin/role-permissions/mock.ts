@@ -18,8 +18,27 @@ import { mockRolePermissionsData } from './data'
 import { delay } from '../../utils/generator'
 
 // 模拟内存存储（用于模拟创建、更新、删除操作）
-let permissionsStore: RolePermission[] = [...mockRolePermissionsData]
-let nextPermissionId = 19 // 下一个可用的权限ID
+// 初始化时确保数据已加载
+let permissionsStore: RolePermission[] = []
+let nextPermissionId = 200 // 默认起始ID
+
+// 初始化权限存储
+function initializePermissionsStore() {
+  if (permissionsStore.length === 0 && mockRolePermissionsData.length > 0) {
+    permissionsStore = [...mockRolePermissionsData]
+    // 计算下一个可用的权限ID（基于现有数据的最大ID + 1）
+    const maxId = Math.max(...mockRolePermissionsData.map(p => {
+      const id = parseInt(p.permission_id)
+      return isNaN(id) ? 0 : id
+    }), 0)
+    nextPermissionId = maxId + 1
+    console.log('[Mock] Initialized permissionsStore with', permissionsStore.length, 'permissions')
+    console.log('[Mock] Next permission ID will be:', nextPermissionId)
+  }
+}
+
+// 立即初始化
+initializePermissionsStore()
 
 /**
  * Mock: 获取角色权限列表
@@ -28,10 +47,18 @@ let nextPermissionId = 19 // 下一个可用的权限ID
 export async function mockGetRolePermissions(
   params?: GetRolePermissionsParams,
 ): Promise<GetRolePermissionsResult> {
+  // 确保权限存储已初始化
+  initializePermissionsStore()
+  
   // 模拟网络延迟
   await delay(300)
 
   let filteredPermissions = [...permissionsStore]
+  
+  // 调试日志
+  console.log('[Mock] mockGetRolePermissions - permissionsStore length:', permissionsStore.length)
+  console.log('[Mock] mockGetRolePermissions - mockRolePermissionsData length:', mockRolePermissionsData.length)
+  console.log('[Mock] mockGetRolePermissions - params:', params)
 
   // 根据参数过滤
   if (params?.role_code) {

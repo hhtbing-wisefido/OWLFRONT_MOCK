@@ -26,7 +26,7 @@ import { message } from 'ant-design-vue'
 import { getRolePermissionsApi } from '@/api/admin/role-permission/rolePermission'
 import type { RolePermission } from '@/api/admin/role-permission/model/rolePermissionModel'
 import { ROLES } from '@test/admin/role-permissions/data'
-import RoleCard from './components/RoleCard.vue'
+import RoleCard from '@/views/admin/permissions/components/RoleCard.vue'
 
 // 所有角色
 const roles = ROLES
@@ -46,8 +46,9 @@ const rolePermissions = computed(() => {
   })
 
   allPermissions.value.forEach((perm) => {
-    if (result[perm.role_code]) {
-      result[perm.role_code].push(perm)
+    const roleCode = perm.role_code
+    if (roleCode && result[roleCode]) {
+      result[roleCode].push(perm)
     }
   })
 
@@ -84,7 +85,10 @@ const handleSave = async (roleCode: string, permissions: RolePermission[]) => {
 const fetchPermissions = async () => {
   try {
     const result = await getRolePermissionsApi()
+    console.log('[RolePermissionList] Fetched permissions:', result)
+    console.log('[RolePermissionList] Permissions count:', result.items.length)
     allPermissions.value = result.items
+    console.log('[RolePermissionList] allPermissions.value length:', allPermissions.value.length)
   } catch (error: any) {
     console.error('Failed to fetch permissions:', error)
     message.error(error?.message || 'Failed to fetch permissions')

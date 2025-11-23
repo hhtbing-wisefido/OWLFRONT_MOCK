@@ -287,18 +287,16 @@ const handleSave = () => {
 
 .main-permissions {
   padding: 20px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px 8px;
 }
 
 .permission-item {
   display: flex;
   align-items: center;
-  margin-bottom: 8px;
   font-size: 14px;
   color: #595959;
-}
-
-.permission-item:last-child {
-  margin-bottom: 0;
 }
 
 .permission-icon {

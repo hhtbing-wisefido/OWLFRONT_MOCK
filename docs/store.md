@@ -157,6 +157,19 @@ export interface InstitutionInfo {
 - **真实的权限控制仍在后台**（role_permissions 表）
 - 前端仅用于 UI 展示控制，不用于安全验证
 
+#### 关于页面访问权限的说明
+
+- `pagePermissions` 存储页面访问权限配置：`{ routePath: [allowedRoles] }`
+- 登录时自动初始化：调用 `initPagePermissions()` 设置默认页面权限配置
+- **Admin 模块访问控制**：
+  - 整个 `/admin` 路径下的所有页面仅对 `staff` 用户开放
+  - `residents` 用户无法访问 admin 模块（在 `hasPagePermission()` 中检查 `userType`）
+  - 在 staff 用户中，还需要检查角色权限（如 admin/Director/CO/IT）
+- 权限检查流程：
+  1. 首先检查用户类型（admin 模块仅允许 staff）
+  2. 然后检查用户角色是否在允许列表中
+  3. 如果不符合条件，路由守卫会重定向到用户首页
+
 #### 关于 residentType 和 locationType 的说明
 
 - `residentType`: 对应 `residents.is_institutional` (TRUE = 'institution', FALSE = 'home')
@@ -203,6 +216,7 @@ interface UserState {
   accessToken: string | null
   refreshToken: string | null
   roleList: string[]
+  pagePermissions: Record<string, string[]>  // 页面访问权限：{ routePath: [allowedRoles] }
   lastUpdateTime: number
   // 注意：PIN 码不存储在 state 中（仅内存，不持久化）
   // 注意：locationTag 和 locationName 存储在 userInfo 中
@@ -215,6 +229,7 @@ export const useUserStore = defineStore('user', {
     accessToken: null,
     refreshToken: null,
     roleList: [],
+    pagePermissions: {},  // 页面访问权限
     lastUpdateTime: 0,
   }),
 
@@ -255,6 +270,32 @@ export const useUserStore = defineStore('user', {
     
     getLastUpdateTime(): number {
       return this.lastUpdateTime
+    },
+    
+    // 检查是否有页面访问权限
+    hasPagePermission(routePath: string): boolean {
+      const userInfo = this.getUserInfo
+      if (!userInfo) {
+        return false
+      }
+      
+      // Admin 模块仅允许 staff 用户访问
+      if (routePath.startsWith('/admin')) {
+        if (userInfo.userType !== 'staff') {
+          return false
+        }
+      }
+      
+      const allowedRoles = this.pagePermissions[routePath]
+      if (!allowedRoles || allowedRoles.length === 0) {
+        // 如果没有配置权限，默认允许访问
+        return true
+      }
+      const userRole = userInfo.role
+      if (!userRole) {
+        return false
+      }
+      return allowedRoles.includes(userRole)
     },
   },
 
@@ -309,6 +350,24 @@ export const useUserStore = defineStore('user', {
         localStorage.removeItem('ROLES')
       }
     },
+    
+    // 设置页面访问权限
+    setPagePermissions(permissions: Record<string, string[]>) {
+      this.pagePermissions = permissions
+      // 页面权限可以存储在 localStorage 中，但通常不需要持久化（每次登录时重新设置）
+    },
+    
+    // 初始化页面访问权限（根据角色配置）
+    initPagePermissions() {
+      // 默认页面权限配置
+      // 注意：Admin 模块仅允许 staff 用户访问（在 hasPagePermission 中检查 userType）
+      const defaultPermissions: Record<string, string[]> = {
+        '/admin/roles': ['Admin', 'Director', 'CO', 'IT'],
+        '/admin/role-permissions': ['Admin', 'Director', 'CO', 'IT'],
+        // 可以根据需要添加更多 admin 页面的权限配置
+      }
+      this.setPagePermissions(defaultPermissions)
+    },
 
     // 登录
     async login(params: LoginParams): Promise<LoginResult> {
@@ -344,6 +403,14 @@ export const useUserStore = defineStore('user', {
         avatar: result.avatar,
       })
       
+      // 设置角色列表
+      if (result.role) {
+        this.setRoleList([result.role])
+      }
+      
+      // 初始化页面访问权限
+      this.initPagePermissions()
+      
       return result
     },
 
@@ -360,6 +427,9 @@ export const useUserStore = defineStore('user', {
       if (userInfo.role) {
         this.setRoleList([userInfo.role])
       }
+      
+      // 初始化页面访问权限
+      this.initPagePermissions()
       
       return userInfo
     },
@@ -443,6 +513,7 @@ export const useUserStore = defineStore('user', {
       this.accessToken = null
       this.refreshToken = null
       this.roleList = []
+      this.pagePermissions = {}
       this.lastUpdateTime = 0
       clearAuthCache()
     },

@@ -54,7 +54,7 @@ export function getRolePermissionsApi(
         'color: #1890ff; font-weight: bold',
         { params },
       )
-      return rolePermissions.mockGetRolePermissions(params).then((result) => {
+      return rolePermissions.mock.mockGetRolePermissions(params).then((result) => {
         console.log(
           '%c[Mock] Get Role Permissions API - Success',
           'color: #52c41a; font-weight: bold',
@@ -101,7 +101,7 @@ export function createRolePermissionApi(
         'color: #1890ff; font-weight: bold',
         { params },
       )
-      return rolePermissions.mockCreateRolePermission(params).then((result) => {
+      return rolePermissions.mock.mockCreateRolePermission(params).then((result) => {
         console.log(
           '%c[Mock] Create Role Permission API - Success',
           'color: #52c41a; font-weight: bold',
@@ -148,7 +148,7 @@ export function batchCreateRolePermissionsApi(
         'color: #1890ff; font-weight: bold',
         { params },
       )
-      return rolePermissions.mockBatchCreateRolePermissions(params).then((result) => {
+      return rolePermissions.mock.mockBatchCreateRolePermissions(params).then((result) => {
         console.log(
           '%c[Mock] Batch Create Role Permissions API - Success',
           'color: #52c41a; font-weight: bold',
@@ -197,7 +197,7 @@ export function updateRolePermissionApi(
         'color: #1890ff; font-weight: bold',
         { permissionId, params },
       )
-      return rolePermissions.mockUpdateRolePermission(permissionId, params).then((result) => {
+      return rolePermissions.mock.mockUpdateRolePermission(permissionId, params).then((result) => {
         console.log(
           '%c[Mock] Update Role Permission API - Success',
           'color: #52c41a; font-weight: bold',
@@ -241,7 +241,7 @@ export function deleteRolePermissionApi(permissionId: string, mode: ErrorMessage
         'color: #1890ff; font-weight: bold',
         { permissionId },
       )
-      return rolePermissions.mockDeleteRolePermission(permissionId).then((result) => {
+      return rolePermissions.mock.mockDeleteRolePermission(permissionId).then((result) => {
         console.log(
           '%c[Mock] Delete Role Permission API - Success',
           'color: #52c41a; font-weight: bold',
@@ -289,7 +289,7 @@ export function changeRolePermissionStatusApi(
         'color: #1890ff; font-weight: bold',
         { permissionId, params },
       )
-      return rolePermissions.mockChangeRolePermissionStatus(permissionId, params).then((result) => {
+      return rolePermissions.mock.mockChangeRolePermissionStatus(permissionId, params).then((result) => {
         console.log(
           '%c[Mock] Change Role Permission Status API - Success',
           'color: #52c41a; font-weight: bold',
