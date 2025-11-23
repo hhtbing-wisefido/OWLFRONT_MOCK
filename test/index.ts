@@ -14,6 +14,8 @@ export * as forgotPassword from './forgot-password'
 export * as vitalFocus from './vital-focus'
 export * as resident from './resident'
 export * as staff from './staff'
+export * as roles from './admin/roles'
+export * as rolePermissions from './admin/role-permissions'
 
 // 工具函数
 export * from './utils/generator'

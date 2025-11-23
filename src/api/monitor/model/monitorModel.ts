@@ -1,9 +1,32 @@
 /**
  * Monitor API models
  * Note: All field names use snake_case to match database schema (PostgreSQL standard)
+ * 
+ * Data Source Strategy:
+ * - Real-time data: Redis cache (priority) → TimescaleDB (fallback)
+ *   - Query condition: data_type = 'observation' (monitoring data, no danger level)
+ * - Alarm data: PostgreSQL (direct query from alarm_events table)
+ * 
+ * Data Format:
+ * - Observation (data_type = 'observation'): 
+ *   - vital-signs: HR, RR (raw values)
+ *   - activity: posture, sleep state, behavior events
+ * - Alarm (data_type = 'alarm', stored in alarm_events):
+ *   - safety: Fall, SuspectedFall, ProlongedStay, NoActivity24h
+ *   - clinical: Tachycardia, Bradycardia, Apnea
+ *   - behavioral: NoTurning2H, NoBodyMovement2H, Wandering
+ *   - device: OfflineAlarm, DeviceFailure, LowBattery
+ * 
+ * FHIR Category:
+ * - Observation Category: vital-signs, activity, social-history
+ * - Flag Category: safety, clinical, behavioral, device
+ * 
+ * See: owlRD/docs/06_FHIR_Simple_Conversion_Guide.md for detailed documentation
+ * See: owlRD/db/12_iot_timeseries.sql for database schema
+ * See: owlRD/db/24_alarm_events.sql for alarm events schema
  */
 
-import { BackendPagination } from '@/api/model/pagination'
+import type { BackendPagination } from '@/api/model/pagination'
 
 /**
  * Service Level Info (from service_levels table)
@@ -82,28 +105,58 @@ export interface VitalFocusCard {
   r_connection?: number  // Radar connection: 0=offline, 1=online
   s_connection?: number  // Sleepace connection: 0=offline, 1=online
   
-  // Real-time data (to be added when real-time API is ready)
+  // Real-time data (from iot_timeseries table via Redis cache or TimescaleDB)
   // Note: Backend may return data directly or in a 'statuses' object (for v1.0 compatibility)
+  // Query condition: data_type = 'observation' (monitoring data, no danger level)
   statuses?: Record<string, any>  // Optional: statuses object (v1.0 style) - contains real-time data
-  breath?: number
-  heart?: number
-  bed_status?: number
-  timestamp?: number  // Last update timestamp
+  
+  // Physiological data (from iot_timeseries.heart_rate, respiratory_rate, category: 'vital-signs')
+  breath?: number  // Respiratory rate (次/分钟) - from iot_timeseries.respiratory_rate
+  heart?: number   // Heart rate (bpm) - from iot_timeseries.heart_rate
+  breath_source?: 's' | 'r' | '-'  // Source: 's'=sleepace, 'r'=radar, '-'=no data (lowercase, as in v1.0)
+  heart_source?: 's' | 'r' | '-'   // Source: 's'=sleepace, 'r'=radar, '-'=no data (lowercase, as in v1.0)
+  
+  // Sleep state (from iot_timeseries.sleep_state_snomed_code, category: 'activity')
+  // Note: Sleep state is always pushed together with HR/RR data
   sleep_stage?: number  // Sleep stage: 1=awake, 2=light sleep, 4=deep sleep
-  heart_source?: string  // Source of heart rate data (lowercase: 's'=sleepace, 'r'=radar) - as in v1.0
-  breath_source?: string  // Source of breath rate data (lowercase: 's'=sleepace, 'r'=radar) - as in v1.0
-  person_count?: number  // Number of persons detected (for Location cards)
-  postures?: number[]  // Posture array: 1=walk, 2=suspected-fall, 3=sitting, 4=stand, 5=fall, 6=lying
+  sleep_state_snomed_code?: string  // SNOMED CT code (see owlRD/docs/06_FHIR_Simple_Conversion_Guide.md)
+  sleep_state_display?: string       // Display name (通用英文标准名称): 'Awake', 'Light sleep', 'Deep sleep'
+  
+  // Bed status (from iot_timeseries.event_type: 'ENTER_BED', 'LEFT_BED', category: 'activity')
+  bed_status?: number  // 0=in bed, 1=out of bed
+  
+  // Posture data (from iot_timeseries.posture_snomed_code, category: 'activity', for Location cards)
+  person_count?: number  // Number of persons detected (sum of all tracking_ids from all radars, no deduplication)
+  postures?: number[]    // Posture array: 1=walk, 2=suspected-fall, 3=sitting, 4=stand, 5=fall, 6=lying
+  
+  // Time information (for ActiveBed cards, formatted by backend with location timezone consideration)
+  // Note: When bed_status changes (ENTER_BED or LEFT_BED event), record the event timestamp
+  bed_status_timestamp?: string  // Bed status change event local time (formatted, timezone-aware): e.g., "05:52:30" (hh:mm:ss format)
+  status_duration?: string       // Duration from bed status change event to current time (formatted): e.g., "01:10" (HH:MM format, 1h 10m) or "00:45" (45m)
   
   // Alarm items (from alarm_events table, for alarm bar display)
+  // Note: Alarm events correspond to FHIR Flag resources
   alarms?: Array<{
-    event_id: string  // UUID
-    event_type: string  // e.g., 'Fall', 'Radar_AbnormalHeartRate', 'OfflineAlarm'
+    event_id: string  // UUID (from alarm_events.event_id)
+    event_type: string  // e.g., 'Fall', 'Radar_AbnormalHeartRate', 'SleepPad_LeftBed', 'OfflineAlarm'
+    category?: 'safety' | 'clinical' | 'behavioral' | 'device'  // FHIR Flag Category (not TDP Tag Category)
     alarm_level: string | number  // '0'/'EMERG', '1'/'ALERT', '2'/'CRIT', '3'/'ERR', '4'/'WARNING'
     alarm_status: 'active' | 'acknowledged'  // 报警状态
-    triggered_at: number  // timestamp
+    triggered_at: number  // timestamp (from alarm_events.triggered_at)
+    triggered_by?: string  // Device name (e.g., 'Radar01') or 'Cloud'
+    trigger_data?: {
+      heart_rate?: number
+      respiratory_rate?: number
+      posture?: string  // Posture display name (通用英文标准名称)
+      event_type?: string
+      confidence?: number
+      duration_sec?: number
+      threshold?: { min?: number; max?: number }
+      snomed_code?: string  // SNOMED CT code (see owlRD/docs/06_FHIR_Simple_Conversion_Guide.md)
+      snomed_display?: string  // SNOMED display name (通用英文标准名称)
+    }
+    iot_timeseries_id?: number  // Associated iot_timeseries record ID (for tracing original data)
   }>
-  // ... other real-time fields
 }
 
 /**
@@ -111,7 +164,6 @@ export interface VitalFocusCard {
  */
 export interface GetVitalFocusCardsModel {
   items: VitalFocusCard[]
-  timestamp: number
   pagination: BackendPagination
 }
 

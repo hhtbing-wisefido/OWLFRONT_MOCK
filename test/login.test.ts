@@ -70,7 +70,7 @@ describe('Login API 测试', () => {
         account: login.testAccounts.staff.singleInstitution,
         password: login.testPasswords.correct,
         userType: 'staff' as const,
-        tenant_id: 'tenant-001',
+        tenant_id: login.testAccounts.staff.s1.institutionId, // 使用正确的 institutionId (UUID)
       }
       
       console.log('📥 输入:', { ...params, password: '***' })
@@ -89,7 +89,7 @@ describe('Login API 测试', () => {
       expect(result.userType).toBe('staff')
       expect(result.accessToken).toBeDefined()
       expect(result.role).toBeDefined()
-      expect(result.tenant_id).toBe('tenant-001')
+      expect(result.tenant_id).toBe(login.testAccounts.staff.s1.institutionId)
     })
 
     it('应该成功登录（Resident）', async () => {
@@ -97,7 +97,7 @@ describe('Login API 测试', () => {
         account: login.testAccounts.resident.singleInstitution,
         password: login.testPasswords.correct,
         userType: 'resident',
-        tenant_id: 'tenant-001',
+        tenant_id: login.testAccounts.resident.r1.institutionId, // 使用正确的 institutionId (UUID)
       })
 
       expect(result.userType).toBe('resident')
@@ -110,7 +110,7 @@ describe('Login API 测试', () => {
           account: login.testAccounts.staff.singleInstitution,
           password: login.testPasswords.wrong,
           userType: 'staff',
-          tenant_id: 'tenant-001',
+          tenant_id: login.testAccounts.staff.s1.institutionId, // 使用正确的 institutionId (UUID)
         }),
       ).rejects.toThrow('Invalid username or password')
     })
@@ -121,7 +121,7 @@ describe('Login API 测试', () => {
           account: login.testAccounts.staff.notFound,
           password: login.testPasswords.correct,
           userType: 'staff',
-          tenant_id: 'tenant-001',
+          tenant_id: login.testAccounts.staff.s1.institutionId, // 使用正确的 institutionId (UUID)
         }),
       ).rejects.toThrow(login.loginErrorAccountNotFound.message)
     })
@@ -132,7 +132,7 @@ describe('Login API 测试', () => {
           account: login.testAccounts.staff.disabled,
           password: login.testPasswords.correct,
           userType: 'staff',
-          tenant_id: 'tenant-001',
+          tenant_id: login.testAccounts.staff.s1.institutionId, // 使用正确的 institutionId (UUID)
         }),
       ).rejects.toThrow(login.loginErrorAccountDisabled.message)
     })

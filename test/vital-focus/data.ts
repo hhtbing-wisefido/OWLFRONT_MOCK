@@ -105,8 +105,6 @@
 
 import type {
   VitalFocusCard,
-  CardResident,
-  CardDevice,
   ServiceLevelInfo,
   GetVitalFocusCardsModel,
 } from '@/api/monitor/model/monitorModel'
@@ -354,8 +352,8 @@ export const card2_ActiveBed_R2: VitalFocusCard = {
   bed_status: 0,
   timestamp: Date.now() - 1800000, // 30 minutes ago
   sleep_stage: 4, // deep sleep
-  heart_source: 'radar',
-  breath_source: 'radar',
+  heart_source: 'r', // radar
+  breath_source: 'r', // radar
   person_count: 1,
   postures: [],
   alarms: [
@@ -417,8 +415,8 @@ export const card3_ActiveBed_R3: VitalFocusCard = {
   bed_status: 1, // not in bed
   timestamp: Date.now() - 7200000, // 2 hours ago
   sleep_stage: 0,
-  heart_source: '',
-  breath_source: '',
+  heart_source: '-', // no data available
+  breath_source: '-', // no data available
   person_count: 0,
   postures: [],
   alarms: [],

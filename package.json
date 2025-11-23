@@ -12,7 +12,8 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:login": "vitest run test/login.test.ts",
-    "test:forgot-password": "vitest run test/forgot-password.test.ts"
+    "test:forgot-password": "vitest run test/forgot-password.test.ts",
+    "test:vital-focus": "vitest run src/views/monitoring/vital-focus/__tests__/VitalFocus.test.ts"
   },
   "dependencies": {
     "@ant-design/icons-vue": "^7.0.1",

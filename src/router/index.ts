@@ -34,6 +34,24 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/admin/roles',
+    name: 'RoleList',
+    component: () => import('@/views/admin/roles/RoleList.vue'),
+    meta: {
+      title: '角色管理',
+      requiresAuth: true,
+    },
+  },
+  {
+    path: '/admin/role-permissions',
+    name: 'RolePermissionList',
+    component: () => import('@/views/admin/permissions/RolePermissionList.vue'),
+    meta: {
+      title: '角色权限管理',
+      requiresAuth: true,
+    },
+  },
+  {
     path: '/monitoring/vital-focus',
     name: 'VitalFocus',
     component: () => import('@/views/monitoring/vital-focus/VitalFocus.vue'),

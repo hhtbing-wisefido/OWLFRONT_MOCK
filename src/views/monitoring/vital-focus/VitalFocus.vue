@@ -284,7 +284,7 @@
                           <span class="status-number">{{
                             item?.heart && item.heart > 0 && item.heart < 255 ? item.heart : '--'
                           }}</span>
-                          <span v-if="item?.heart_source" class="number-badge">{{ item.heart_source }}</span>
+                          <span v-if="item?.heart_source && item.heart_source !== '-'" class="number-badge">{{ item.heart_source }}</span>
                         </div>
                         <span> bpm</span>
                       </div>
@@ -294,7 +294,7 @@
                           <span class="status-number">{{
                             item?.breath && item.breath > 0 && item.breath < 255 ? item.breath : '--'
                           }}</span>
-                          <span v-if="item?.breath_source" class="number-badge">{{ item.breath_source }}</span>
+                          <span v-if="item?.breath_source && item.breath_source !== '-'" class="number-badge">{{ item.breath_source }}</span>
                         </div>
                         <span> rpm</span>
                       </div>
@@ -377,25 +377,25 @@
           <div style="font-size: 18px">{{ item.person_count ?? 0 }} Person</div>
           <div
             v-if="(item.person_count ?? 0) > 0 && item.postures && item.postures.length > 0"
-            style="display: flex; flex-direction: row; align-items: center"
+            style="display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; max-width: 240px; max-height: 110px; overflow: hidden;"
           >
-            <div v-for="posture in item.postures" :key="posture">
-              <img v-if="posture === 1" src="@/assets/images/walk.png" style="margin-right: 10px" />
+            <template v-for="(posture, index) in item.postures" :key="index">
+              <img v-if="posture === 1" src="@/assets/images/walk.png" style="width: 50px; height: 50px;" />
               <img
                 v-else-if="posture === 2"
                 src="@/assets/images/suspected-fall.png"
-                class="posture-img"
+                style="width: 50px; height: 50px;"
               />
               <img
                 v-else-if="posture === 3"
                 src="@/assets/images/sitting.png"
-                class="posture-img"
+                style="width: 50px; height: 50px;"
               />
-              <img v-else-if="posture === 4" src="@/assets/images/stand.png" class="posture-img" />
-              <img v-else-if="posture === 5" src="@/assets/images/fall.png" class="posture-img" />
-              <img v-else-if="posture === 6" src="@/assets/images/lying.png" class="posture-img" />
-              <img v-else src="@/assets/images/unknown.png" class="posture-img" />
-            </div>
+              <img v-else-if="posture === 4" src="@/assets/images/stand.png" style="width: 50px; height: 50px;" />
+              <img v-else-if="posture === 5" src="@/assets/images/fall.png" style="width: 50px; height: 50px;" />
+              <img v-else-if="posture === 6" src="@/assets/images/lying.png" style="width: 50px; height: 50px;" />
+              <img v-else src="@/assets/images/unknown.png" style="width: 50px; height: 50px;" />
+            </template>
           </div>
         </div>
 
@@ -841,8 +841,8 @@ const refreshData = async () => {
           // Extract from statuses object (v1.0 style)
           item.heart = item.statuses.heart || item.heart || 0
           item.breath = item.statuses.breath || item.breath || 0
-          item.heart_source = item.statuses.heartSource || item.statuses.heart_source || item.heart_source || ''
-          item.breath_source = item.statuses.breathSource || item.statuses.breath_source || item.breath_source || ''
+          item.heart_source = item.statuses.heartSource || item.statuses.heart_source || item.heart_source || '-'
+          item.breath_source = item.statuses.breathSource || item.statuses.breath_source || item.breath_source || '-'
           item.bed_status = item.statuses.bedStatus || item.statuses.bed_status || item.bed_status
           item.sleep_stage = item.statuses.sleepStage || item.statuses.sleep_stage || item.sleep_stage
           item.timestamp = item.statuses.timestamp || item.timestamp
@@ -859,10 +859,11 @@ const refreshData = async () => {
         }
         
         // Ensure heart_source and breath_source are lowercase 's' or 'r' (as in v1.0)
-        if (item.heart_source) {
+        // '-' means no data, keep it as is
+        if (item.heart_source && item.heart_source !== '-') {
           item.heart_source = item.heart_source.toLowerCase().charAt(0) // 's' or 'r'
         }
-        if (item.breath_source) {
+        if (item.breath_source && item.breath_source !== '-') {
           item.breath_source = item.breath_source.toLowerCase().charAt(0) // 's' or 'r'
         }
       })
@@ -1215,22 +1216,6 @@ const sleepCount = computed(() => {
  * - 实现路由跳转逻辑
  * - 测试跳转功能
  */
-const goToAllVitalFocus = (card: VitalFocusCard) => {
-  // TODO: 实现跳转到AllVitalFocus页面
-  console.log('Navigate to AllVitalFocus for card:', card.card_id, card.card_name)
-  
-  // 占位符实现
-  message.info('AllVitalFocus page will be implemented soon')
-  showSelectCardModal.value = false
-  
-  // 示例实现（需要根据实际路由配置调整）：
-  // router.push({
-  //   name: 'AllVitalFocus',
-  //   query: { cardId: card.card_id }
-  // })
-  // showSelectCardModal.value = false
-}
-
 onMounted(async () => {
   // 先加载保存的选择状态
   loadSelectedCardIds()
@@ -1300,7 +1285,7 @@ onUnmounted(() => {
 }
 
 .number-badge {
-  font-size: 12px;
+  font-size: 14px;
   color: #a2afb58a;
   position: absolute;
   right: 3px;

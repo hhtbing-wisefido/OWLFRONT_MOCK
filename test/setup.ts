@@ -31,6 +31,11 @@ const router = createRouter({
       name: 'vital-focus',
       component: { template: '<div>Vital Focus</div>' },
     },
+    {
+      path: '/monitoring/vital-focus/:cardId',
+      name: 'VitalFocusDetail',
+      component: { template: '<div>Vital Focus Detail</div>' },
+    },
   ],
 })
 
