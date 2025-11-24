@@ -168,7 +168,17 @@ export interface InstitutionInfo {
 - 权限检查流程：
   1. 首先检查用户类型（admin 模块仅允许 staff）
   2. 然后检查用户角色是否在允许列表中
-  3. 如果不符合条件，路由守卫会重定向到用户首页
+  3. 如果不符合条件，路由守卫会重定向到用户首页（通过 `getUserHomePath()` getter 获取）
+
+#### 关于首页路径的说明
+
+- `homePath` 字段存储用户首页路径（由后端根据 userType 和 role 计算）
+- `getUserHomePath()` getter 用于获取用户首页路径：
+  - 优先使用后端返回的 `homePath`
+  - 如果用户没有 `homePath`，返回默认首页 `/monitoring/vital-focus`
+- 使用场景：
+  - 登录后跳转：`afterLoginAction()` 使用 `getUserHomePath` 跳转
+  - 无权限重定向：路由守卫使用 `getUserHomePath()` 重定向到用户首页
 
 #### 关于 residentType 和 locationType 的说明
 
@@ -270,6 +280,17 @@ export const useUserStore = defineStore('user', {
     
     getLastUpdateTime(): number {
       return this.lastUpdateTime
+    },
+    
+    // 获取用户首页路径
+    getUserHomePath(): string {
+      const userInfo = this.getUserInfo
+      // 优先使用后端返回的 homePath
+      if (userInfo?.homePath) {
+        return userInfo.homePath
+      }
+      // 默认首页：所有用户都使用 /monitoring/vital-focus
+      return '/monitoring/vital-focus'
     },
     
     // 检查是否有页面访问权限
@@ -453,9 +474,10 @@ export const useUserStore = defineStore('user', {
       // }
       
       // 跳转到首页（如果需要）
+      // 使用 getUserHomePath getter 获取首页路径（优先使用后端返回的 homePath）
       if (goHome) {
         const router = (await import('@/router')).default
-        router.push(userInfo?.homePath || '/dashboard')
+        router.push(this.getUserHomePath)
       }
       
       return userInfo

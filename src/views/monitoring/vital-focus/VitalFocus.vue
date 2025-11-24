@@ -101,11 +101,16 @@
       title="Focus"
       :width="600"
       :footer="null"
+      @open="onFocusModalOpen"
+      @cancel="onFocusModalCancel"
     >
-      <!-- All/Invert 按钮 -->
+      <!-- All/Invert/Save 按钮 -->
       <div style="margin-bottom: 12px; display: flex; gap: 8px;">
         <a-button size="small" @click="selectAllCards">all</a-button>
         <a-button size="small" @click="invertCardSelection">Invert</a-button>
+        <a-button type="primary" size="small" @click="saveFocusSelection" :loading="savingFocus">
+          Save
+        </a-button>
       </div>
       
       <div style="max-height: 400px; overflow-y: auto;">
@@ -119,7 +124,7 @@
             <div style="font-weight: 500;">{{ card.card_name }}</div>
             <div style="font-size: 12px; color: #999;">{{ card.card_address }}</div>
           </div>
-          <a-checkbox :checked="selectedCardIds.includes(card.card_id)" @click.stop="toggleCardSelection(card.card_id)" />
+          <a-checkbox :checked="tempSelectedCardIds.includes(card.card_id)" @click.stop="toggleCardSelection(card.card_id)" />
         </div>
       </div>
     </a-modal>
@@ -427,7 +432,7 @@ import { useRouter } from 'vue-router'
 import { AlertFilled } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import type { GetVitalFocusCardsModel, VitalFocusCard } from '@/api/monitor/model/monitorModel'
-import { getVitalFocusCardsApi } from '@/api/monitor/monitor'
+import { getVitalFocusCardsApi, saveVitalFocusSelectionApi } from '@/api/monitor/monitor'
 import {
   parseAlarmLevel,
   getAlarmColor,
@@ -457,7 +462,9 @@ const activeFilter = ref<string | null>(null) // 'unhand' | 'outofroom' | 'leftb
 const showSelectCardModal = ref(false)
 
 // Selected card IDs (默认所有卡片都被选中)
-const selectedCardIds = ref<string[]>([])
+const selectedCardIds = ref<string[]>([]) // 已保存的选择（从 localStorage 加载）
+const tempSelectedCardIds = ref<string[]>([]) // 临时选择（Modal 中的选择，未保存）
+const savingFocus = ref(false) // 保存中状态
 
 // Focus 选择状态的 localStorage key
 const FOCUS_SELECTED_CARDS_KEY = 'vitalFocus_selectedCardIds'
@@ -964,35 +971,119 @@ const allCards = computed(() => {
 
 /**
  * Toggle card selection (切换卡片选中状态)
+ * 现在只更新临时选择，不立即保存
  */
 const toggleCardSelection = (cardId: string) => {
-  const index = selectedCardIds.value.indexOf(cardId)
+  const index = tempSelectedCardIds.value.indexOf(cardId)
   if (index > -1) {
-    selectedCardIds.value.splice(index, 1)
+    tempSelectedCardIds.value.splice(index, 1)
   } else {
-    selectedCardIds.value.push(cardId)
+    tempSelectedCardIds.value.push(cardId)
   }
-  // 保存到 localStorage
-  saveSelectedCardIds()
 }
 
 /**
  * Select all cards (全选所有卡片)
+ * 立即保存到 localStorage 并提交到 server
  */
 const selectAllCards = () => {
-  selectedCardIds.value = allCards.value.map(card => card.card_id)
-  // 保存到 localStorage
-  saveSelectedCardIds()
+  tempSelectedCardIds.value = allCards.value.map(card => card.card_id)
+  // 立即保存（本地生效 + 提交 server）
+  saveFocusSelectionImmediately()
 }
 
 /**
  * Invert card selection (反选所有卡片)
+ * 立即保存到 localStorage 并提交到 server
  */
 const invertCardSelection = () => {
   const allCardIds = allCards.value.map(card => card.card_id)
-  selectedCardIds.value = allCardIds.filter(id => !selectedCardIds.value.includes(id))
-  // 保存到 localStorage
+  tempSelectedCardIds.value = allCardIds.filter(id => !tempSelectedCardIds.value.includes(id))
+  // 立即保存（本地生效 + 提交 server）
+  saveFocusSelectionImmediately()
+}
+
+/**
+ * 立即保存 Focus 选择（不显示 loading，静默保存）
+ * 用于 all 和 Invert 操作
+ */
+const saveFocusSelectionImmediately = () => {
+  // 1. 立即保存到 localStorage 并更新 selectedCardIds（本地立即生效）
+  selectedCardIds.value = [...tempSelectedCardIds.value]
   saveSelectedCardIds()
+  
+  // 2. 异步提交到 server（不阻塞 UI，不显示 loading）
+  saveVitalFocusSelectionApi({
+    selected_card_ids: tempSelectedCardIds.value,
+  })
+    .then(() => {
+      // 静默成功，不显示消息（避免频繁操作时消息过多）
+      console.log('Focus selection saved to server')
+    })
+    .catch((error: any) => {
+      console.error('Failed to save focus selection to server:', error)
+      // 静默失败，不显示警告（避免频繁操作时消息过多）
+    })
+}
+
+/**
+ * Focus Modal 打开时的处理
+ * 将已保存的选择复制到临时选择
+ * 如果没有保存的选择，默认全选所有卡片
+ */
+const onFocusModalOpen = () => {
+  // 打开 Modal 时，将已保存的选择复制到临时选择
+  if (selectedCardIds.value.length > 0) {
+    tempSelectedCardIds.value = [...selectedCardIds.value]
+  } else {
+    // 如果没有保存的选择，默认全选所有卡片
+    tempSelectedCardIds.value = allCards.value.map(card => card.card_id)
+  }
+}
+
+/**
+ * Focus Modal 取消时的处理
+ * 恢复临时选择（不保存）
+ */
+const onFocusModalCancel = () => {
+  // 取消时，恢复临时选择为已保存的选择
+  tempSelectedCardIds.value = [...selectedCardIds.value]
+}
+
+/**
+ * Save focus selection (保存 Focus 选择)
+ * 保存到 localStorage 并提交到 server
+ */
+const saveFocusSelection = async () => {
+  savingFocus.value = true
+  try {
+    // 1. 立即保存到 localStorage 并更新 selectedCardIds（本地立即生效）
+    selectedCardIds.value = [...tempSelectedCardIds.value]
+    saveSelectedCardIds()
+    
+    // 注意：selectedCardIds 更新后，filteredCards 会自动更新（因为是 computed）
+    // 所以页面会立即显示更新后的卡片列表
+    
+    // 2. 异步提交到 server（不阻塞 UI）
+    saveVitalFocusSelectionApi({
+      selected_card_ids: tempSelectedCardIds.value,
+    })
+      .then(() => {
+        message.success('Focus selection saved successfully')
+      })
+      .catch((error: any) => {
+        console.error('Failed to save focus selection to server:', error)
+        // 即使 server 保存失败，本地已经生效，只显示警告
+        message.warning('Saved locally, but failed to sync to server. Please try again later.')
+      })
+    
+    // 注意：不关闭 Modal，用户可以继续操作
+  } catch (error: any) {
+    console.error('Failed to save focus selection:', error)
+    message.error(error?.message || 'Failed to save focus selection')
+  } finally {
+    savingFocus.value = false
+  }
 }
 
 /**

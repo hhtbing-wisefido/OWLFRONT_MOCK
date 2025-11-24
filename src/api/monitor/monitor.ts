@@ -14,6 +14,7 @@ enum Api {
   GetVitalFocusCards = '/data/api/v1/data/vital-focus/cards',
   GetVitalFocusCardByResident = '/data/api/v1/data/vital-focus/card/:residentId',
   GetVitalFocusCardDetail = '/data/api/v1/data/vital-focus/card/:cardId',
+  SaveVitalFocusSelection = '/data/api/v1/data/vital-focus/selection',
 }
 
 // Mock mode: In development, use mock data instead of real API calls
@@ -108,6 +109,45 @@ export function getVitalFocusCardDetailApi(
   return defHttp.get<VitalFocusCardInfo>(
     {
       url: Api.GetVitalFocusCardDetail.replace(':cardId', cardId),
+    },
+    {
+      errorMessageMode: mode,
+    },
+  )
+}
+
+/**
+ * Save Vital Focus Card Selection
+ * Saves user's selected card IDs to server
+ */
+export interface SaveVitalFocusSelectionParams {
+  selected_card_ids: string[]
+}
+
+export interface SaveVitalFocusSelectionResult {
+  success: boolean
+  message?: string
+}
+
+export function saveVitalFocusSelectionApi(
+  params: SaveVitalFocusSelectionParams,
+  mode: ErrorMessageMode = 'modal',
+) {
+  // In development with mock enabled, return mock data directly
+  if (useMock) {
+    return import('@test/index').then(({ vitalFocus }) => {
+      console.log('%c[Mock] Save Vital Focus Selection API Request', 'color: #1890ff; font-weight: bold', {
+        params,
+      })
+      return vitalFocus.mockSaveVitalFocusSelection(params)
+    })
+  }
+
+  // Production: Call real API
+  return defHttp.post<SaveVitalFocusSelectionResult>(
+    {
+      url: Api.SaveVitalFocusSelection,
+      data: params,
     },
     {
       errorMessageMode: mode,

@@ -22,22 +22,22 @@
             </thead>
             <tbody>
               <tr>
-                <td>{{ login.testAccounts.staff.singleInstitution }}</td>
-                <td>{{ login.testPasswords.correct }}</td>
+                <td>{{ login?.testAccounts?.staff?.singleInstitution || '-' }}</td>
+                <td>{{ login?.testPasswords?.correct || '-' }}</td>
                 <td>Single institution, login success</td>
               </tr>
               <tr>
-                <td>{{ login.testAccounts.staff.multipleInstitutions }}</td>
-                <td>{{ login.testPasswords.correct }}</td>
+                <td>{{ login?.testAccounts?.staff?.multipleInstitutions || '-' }}</td>
+                <td>{{ login?.testPasswords?.correct || '-' }}</td>
                 <td>Multiple institutions, selection required</td>
               </tr>
               <tr>
-                <td>{{ login.testAccounts.staff.notFound }}</td>
+                <td>{{ login?.testAccounts?.staff?.notFound || '-' }}</td>
                 <td>Any</td>
                 <td>Account not found</td>
               </tr>
               <tr>
-                <td>{{ login.testAccounts.staff.disabled }}</td>
+                <td>{{ login?.testAccounts?.staff?.disabled || '-' }}</td>
                 <td>Any</td>
                 <td>Account disabled</td>
               </tr>
@@ -57,17 +57,17 @@
             </thead>
             <tbody>
               <tr>
-                <td>{{ login.testAccounts.resident.singleInstitution }}</td>
-                <td>{{ login.testPasswords.correct }}</td>
+                <td>{{ login?.testAccounts?.resident?.singleInstitution || '-' }}</td>
+                <td>{{ login?.testPasswords?.correct || '-' }}</td>
                 <td>Single institution, login success</td>
               </tr>
               <tr>
-                <td>{{ login.testAccounts.resident.multipleInstitutions }}</td>
-                <td>{{ login.testPasswords.correct }}</td>
+                <td>{{ login?.testAccounts?.resident?.multipleInstitutions || '-' }}</td>
+                <td>{{ login?.testPasswords?.correct || '-' }}</td>
                 <td>Multiple institutions, selection required</td>
               </tr>
               <tr>
-                <td>{{ login.testAccounts.resident.notFound }}</td>
+                <td>{{ login?.testAccounts?.resident?.notFound || '-' }}</td>
                 <td>Any</td>
                 <td>Account not found</td>
               </tr>
@@ -82,19 +82,19 @@
       <div class="data-examples">
         <div class="example-item">
           <h3>Single Institution (Staff)</h3>
-          <pre>{{ JSON.stringify(login.singleInstitutionStaff, null, 2) }}</pre>
+          <pre>{{ login ? JSON.stringify(login.singleInstitutionStaff, null, 2) : 'Loading...' }}</pre>
         </div>
         <div class="example-item">
           <h3>Multiple Institutions (Staff)</h3>
-          <pre>{{ JSON.stringify(login.multipleInstitutionsStaff, null, 2) }}</pre>
+          <pre>{{ login ? JSON.stringify(login.multipleInstitutionsStaff, null, 2) : 'Loading...' }}</pre>
         </div>
         <div class="example-item">
           <h3>Login Success (Staff)</h3>
-          <pre>{{ JSON.stringify(login.loginSuccessStaff, null, 2) }}</pre>
+          <pre>{{ login ? JSON.stringify(login.loginSuccessStaff, null, 2) : 'Loading...' }}</pre>
         </div>
         <div class="example-item">
           <h3>Login Success (Resident)</h3>
-          <pre>{{ JSON.stringify(login.loginSuccessResident, null, 2) }}</pre>
+          <pre>{{ login ? JSON.stringify(login.loginSuccessResident, null, 2) : 'Loading...' }}</pre>
         </div>
       </div>
     </div>
@@ -104,11 +104,11 @@
       <div class="api-format">
         <div class="format-item">
           <h3>Success Response</h3>
-          <pre>{{ JSON.stringify(login.loginResponses.success(login.loginSuccessStaff), null, 2) }}</pre>
+          <pre>{{ login ? JSON.stringify(login.loginResponses.success(login.loginSuccessStaff), null, 2) : 'Loading...' }}</pre>
         </div>
         <div class="format-item">
           <h3>Error Response (Wrong Password)</h3>
-          <pre>{{ JSON.stringify(login.loginResponses.wrongPassword(), null, 2) }}</pre>
+          <pre>{{ login ? JSON.stringify(login.loginResponses.wrongPassword(), null, 2) : 'Loading...' }}</pre>
         </div>
       </div>
     </div>
@@ -116,10 +116,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { login } from '@/test/index'
+import { ref, onMounted } from 'vue'
 
 const mockEnabled = ref(import.meta.env.DEV && import.meta.env.VITE_USE_MOCK !== 'false')
+const login = ref<any>(null)
+
+onMounted(async () => {
+  // 使用动态导入，避免路径解析问题
+  const loginModule = await import('@test/index')
+  login.value = loginModule.login
+})
 </script>
 
 <style scoped>

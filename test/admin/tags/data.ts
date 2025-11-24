@@ -1,0 +1,130 @@
+/**
+ * Tags 测试数据
+ * 对应 src/api/admin/tags/tags.ts 和 owlRD/db/20_tags_catalog.sql
+ */
+
+import type { TagCatalogItem } from '@/api/admin/tags/model/tagsModel'
+
+/**
+ * 模拟 Tags 数据
+ */
+export const mockTagsData: TagCatalogItem[] = [
+  {
+    tag_id: '1',
+    tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+    tag_type: 'user_tag',
+    tag_name: 'Management',
+    tag_objects: {
+      user: {
+        'user-001': 'Admin User',
+        'user-002': 'Director User',
+      },
+    },
+    is_system_tag_type: false, // user_tag 是用户自定义类型
+  },
+  {
+    tag_id: '2',
+    tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+    tag_type: 'user_tag',
+    tag_name: 'System',
+    tag_objects: {
+      user: {
+        'user-003': 'IT User',
+      },
+    },
+    is_system_tag_type: false,
+  },
+  {
+    tag_id: '3',
+    tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+    tag_type: 'user_tag',
+    tag_name: 'Technical',
+    tag_objects: {
+      user: {
+        'user-004': 'Tech User 1',
+        'user-005': 'Tech User 2',
+      },
+      location: {
+        'loc-001': 'Tech Lab',
+      },
+    },
+    is_system_tag_type: false,
+  },
+  {
+    tag_id: '4',
+    tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+    tag_type: 'alarm_tag',
+    tag_name: 'DeviceManagement',
+    tag_objects: {
+      location: {
+        'loc-002': 'Device Room',
+        'loc-003': 'Storage Room',
+      },
+      card: {
+        'card-001': 'Device Card 1',
+      },
+    },
+    is_system_tag_type: true, // alarm_tag 是系统预定义类型
+  },
+  {
+    tag_id: '5',
+    tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+    tag_type: 'user_tag',
+    tag_name: 'NightShift',
+    tag_objects: {
+      user: {
+        'user-006': 'Night Nurse 1',
+        'user-007': 'Night Nurse 2',
+        'user-008': 'Night Caregiver',
+      },
+    },
+    is_system_tag_type: false,
+  },
+  {
+    tag_id: '6',
+    tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+    tag_type: 'family_tag',
+    tag_name: 'Group.A',
+    tag_objects: {
+      resident: {
+        'res-001': 'Resident A1',
+        'res-002': 'Resident A2',
+      },
+    },
+    is_system_tag_type: true, // family_tag 是系统预定义类型
+  },
+  {
+    tag_id: '7',
+    tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+    tag_type: 'location_tag',
+    tag_name: 'Group.B',
+    tag_objects: {
+      location: {
+        'loc-004': 'Building B',
+        'loc-005': 'Building B Floor 1',
+      },
+    },
+    is_system_tag_type: true, // location_tag 是系统预定义类型
+  },
+  {
+    tag_id: '8',
+    tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+    tag_type: 'nursestation_tag',
+    tag_name: 'Station-A',
+    tag_objects: {
+      location: {
+        'loc-006': 'Nurse Station A',
+      },
+    },
+    is_system_tag_type: true, // nursestation_tag 是系统预定义类型
+  },
+  {
+    tag_id: '9',
+    tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+    tag_type: null, // 无类型标签（用户自定义）
+    tag_name: 'Custom-Tag-1',
+    tag_objects: {},
+    is_system_tag_type: false,
+  },
+]
+

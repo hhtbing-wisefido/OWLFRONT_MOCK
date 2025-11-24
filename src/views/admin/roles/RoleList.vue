@@ -18,10 +18,12 @@
           <a-form-item>
             <a-button type="primary" @click="onSearch">Search</a-button>
           </a-form-item>
+
+          <!-- Create Role Button -->
+          <a-form-item>
+            <a-button type="primary" @click="addRole">Create Role</a-button>
+          </a-form-item>
         </a-form>
-      </div>
-      <div class="form-right">
-        <a-button type="primary" @click="addRole">Create Role</a-button>
       </div>
     </div>
 
@@ -377,7 +379,7 @@ onMounted(() => {
 <style scoped>
 .form-container {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   padding: 10px;
   background-color: #fafafa;

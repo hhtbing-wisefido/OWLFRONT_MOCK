@@ -5,6 +5,7 @@
 
 import { delay } from '../utils/generator'
 import type { GetVitalFocusCardsModel, VitalFocusCardInfo } from '@/api/monitor/model/monitorModel'
+import type { SaveVitalFocusSelectionParams, SaveVitalFocusSelectionResult } from '@/api/monitor/monitor'
 import {
   allTestCards,
   getCardsByTenant,
@@ -100,6 +101,26 @@ export async function mockGetVitalFocusCardDetail(
     primary_resident_id: card.primary_resident_id,
     residents: card.residents,
     devices: card.devices,
+  }
+}
+
+/**
+ * Mock: 保存 Vital Focus 卡片选择
+ */
+export async function mockSaveVitalFocusSelection(
+  params: SaveVitalFocusSelectionParams,
+): Promise<SaveVitalFocusSelectionResult> {
+  await delay(400) // 模拟网络延迟
+
+  console.log('%c[Mock] Save Vital Focus Selection', 'color: #52c41a; font-weight: bold', {
+    selected_card_ids: params.selected_card_ids,
+    count: params.selected_card_ids.length,
+  })
+
+  // 模拟保存成功
+  return {
+    success: true,
+    message: 'Focus selection saved successfully',
   }
 }
 

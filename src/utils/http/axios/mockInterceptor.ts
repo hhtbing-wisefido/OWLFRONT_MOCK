@@ -4,7 +4,6 @@
  */
 
 import type { AxiosRequestConfig, AxiosResponse } from 'axios'
-import { login } from '@/test/index'
 import type { LoginParams, LoginResult, Institution } from '@/api/auth/model/authModel'
 
 /**
@@ -52,6 +51,7 @@ export async function mockResponseInterceptor(
     const account = (response.config.params?.account as string) || ''
     const userType = (response.config.params?.userType as 'staff' | 'resident') || 'staff'
 
+    const { login } = await import('@test/index')
     const institutions = await login.mockSearchInstitutions(account, userType)
     
     console.log('%c[Mock] Institution Search API', 'color: #1890ff; font-weight: bold', {
@@ -76,6 +76,7 @@ export async function mockResponseInterceptor(
     const params = response.config.data as LoginParams
     
     try {
+      const { login } = await import('@test/index')
       const loginResult = await login.mockLogin(params)
       
       console.log('%c[Mock] Login API - Success', 'color: #52c41a; font-weight: bold', {
@@ -133,6 +134,7 @@ export async function interceptMockRequest(config: AxiosRequestConfig): Promise<
     const account = (config.params?.account as string) || ''
     const userType = (config.params?.userType as 'staff' | 'resident') || 'staff'
 
+    const { login } = await import('@test/index')
     const institutions = await login.mockSearchInstitutions(account, userType)
     
     console.log('%c[Mock] Institution Search API', 'color: #1890ff; font-weight: bold', {
@@ -161,6 +163,7 @@ export async function interceptMockRequest(config: AxiosRequestConfig): Promise<
     const params = config.data as LoginParams
     
     try {
+      const { login } = await import('@test/index')
       const loginResult = await login.mockLogin(params)
       
       console.log('%c[Mock] Login API - Success', 'color: #52c41a; font-weight: bold', {

@@ -54,6 +54,7 @@
 - **路由守卫**：`src/router/index.ts` 的 `beforeEach` 守卫
 - **权限检查**：`src/store/modules/user.ts` 的 `hasPagePermission()` getter
 - **权限配置**：`src/store/modules/user.ts` 的 `initPagePermissions()` action
+- **首页路径获取**：`src/store/modules/user.ts` 的 `getUserHomePath()` getter（用于无权限时重定向）
 
 ### 权限控制规则
 
@@ -67,7 +68,8 @@
    - 其他 staff 用户（如 Nurse、Caregiver）也无法访问这两个页面
 
 3. **无权限处理**：
-   - 如果用户无权限访问，重定向到 `/monitoring/vital-focus`（所有用户的默认首页）
+   - 如果用户无权限访问，重定向到用户的 `homePath`（通过 `getUserHomePath()` getter 获取）
+   - 如果用户没有 `homePath`，则重定向到 `/monitoring/vital-focus`（所有用户的默认首页）
 
 ### 工作流程
 
@@ -75,7 +77,7 @@
 2. Store 保存：保存用户类型和角色信息
 3. 初始化权限：调用 `initPagePermissions()` 设置页面权限配置
 4. 路由守卫：每次路由跳转时检查用户类型和角色权限
-5. 无权限处理：重定向到 `/monitoring/vital-focus`（所有用户的默认首页）
+5. 无权限处理：重定向到用户的 `homePath`（通过 `getUserHomePath()` getter 获取），如果没有 `homePath` 则使用默认首页 `/monitoring/vital-focus`
 
 ---
 
@@ -88,13 +90,14 @@
 ### 跳转规则
 
 1. 如果 URL 中有 `redirect` 参数，优先跳转到目标页面
-2. 如果没有 `redirect` 参数，默认跳转到 `/monitoring/vital-focus`
-3. 所有用户（staff 和 residents）都使用相同的默认首页
+2. 如果没有 `redirect` 参数，优先使用后端返回的 `homePath`（通过 `getUserHomePath()` getter 获取）
+3. 如果用户没有 `homePath`，默认跳转到 `/monitoring/vital-focus`（所有用户的默认首页）
 
 ### 实现位置
 
 - `src/views/login/LoginForm.vue` 的 `handleLogin` 函数
-- `src/store/modules/user.ts` 的 `afterLoginAction()` 方法
+- `src/store/modules/user.ts` 的 `afterLoginAction()` 方法（使用 `getUserHomePath()` getter）
+- `src/store/modules/user.ts` 的 `getUserHomePath()` getter（获取用户首页路径）
 
 ---
 

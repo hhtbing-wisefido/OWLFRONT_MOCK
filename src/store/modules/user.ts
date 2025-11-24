@@ -89,7 +89,20 @@ export const useUserStore = defineStore('user', {
     },
     
     getUserInfo(): UserInfo | null {
-      return this.userInfo || getAuthCache<UserInfo>(USER_INFO_KEY)
+      const userInfo = this.userInfo || getAuthCache<UserInfo>(USER_INFO_KEY)
+      
+      // 开发环境：支持测试角色覆盖
+      if (import.meta.env.DEV && userInfo) {
+        const testRole = localStorage.getItem('dev_test_role')
+        if (testRole) {
+          return {
+            ...userInfo,
+            role: testRole,
+          }
+        }
+      }
+      
+      return userInfo
     },
     
     getInstitutionInfo(): InstitutionInfo | null {
@@ -116,6 +129,17 @@ export const useUserStore = defineStore('user', {
     
     getLastUpdateTime(): number {
       return this.lastUpdateTime
+    },
+    
+    // 获取用户首页路径
+    getUserHomePath(): string {
+      const userInfo = this.getUserInfo
+      // 优先使用后端返回的 homePath
+      if (userInfo?.homePath) {
+        return userInfo.homePath
+      }
+      // 默认首页：所有用户都使用 /monitoring/vital-focus
+      return '/monitoring/vital-focus'
     },
   },
 
@@ -216,9 +240,14 @@ export const useUserStore = defineStore('user', {
       // 默认页面权限配置
       // 注意：Admin 模块仅允许 staff 用户访问（在 hasPagePermission 中检查 userType）
       const defaultPermissions: Record<string, string[]> = {
+        // Admin 模块页面权限配置
         '/admin/roles': ['Admin', 'Director', 'CO', 'IT'],
         '/admin/role-permissions': ['Admin', 'Director', 'CO', 'IT'],
+        '/admin/users': ['Admin', 'Director', 'IT'],
+        '/admin/tags': ['Admin', 'Director', 'IT', 'NurseManager'],
         // 可以根据需要添加更多 admin 页面的权限配置
+        // 例如：
+        // '/admin/settings': ['Admin', 'Director'],
       }
       this.setPagePermissions(defaultPermissions)
     },
@@ -310,10 +339,10 @@ export const useUserStore = defineStore('user', {
       // }
       
       // 跳转到首页（如果需要）
-      // 默认跳转到 monitoring/vital-focus（v1.0 中 staff/resident 的默认主页）
+      // 使用 getUserHomePath getter 获取首页路径（优先使用后端返回的 homePath）
       if (goHome) {
         const router = (await import('@/router')).default
-        router.push(userInfo?.homePath || '/monitoring/vital-focus')
+        router.push(this.getUserHomePath)
       }
       
       return userInfo

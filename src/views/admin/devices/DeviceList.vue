@@ -302,15 +302,15 @@ const fetchDevices = async () => {
       params.search_keyword = searchKeyword.value.trim()
     }
 
-    // 添加排序参数
-    if (sortField.value && sortDirection.value) {
-      params.sort = sortField.value
-      params.direction = sortDirection.value
-    }
-
+    // 注意：排序由前端处理，不传递排序参数给 server
     const result = await getDevicesApi(params)
     dataSource.value = result.items
     pagination.value.total = result.total
+    
+    // 如果有排序条件，对数据进行排序
+    if (sortField.value && sortDirection.value) {
+      applySort()
+    }
   } catch (error: any) {
     console.error('Failed to fetch devices:', error)
     message.error(error?.message || 'Failed to fetch devices')
@@ -319,15 +319,44 @@ const fetchDevices = async () => {
   }
 }
 
+// 应用排序（前端排序）
+const applySort = () => {
+  if (!sortField.value || !sortDirection.value) return
+  
+  dataSource.value.sort((a, b) => {
+    const aValue = (a as any)[sortField.value!]
+    const bValue = (b as any)[sortField.value!]
+    
+    // 处理 null/undefined 值
+    if (aValue == null && bValue == null) return 0
+    if (aValue == null) return 1
+    if (bValue == null) return -1
+    
+    // 字符串比较
+    if (typeof aValue === 'string' && typeof bValue === 'string') {
+      const comparison = aValue.localeCompare(bValue)
+      return sortDirection.value === 'asc' ? comparison : -comparison
+    }
+    
+    // 数字比较
+    if (aValue < bValue) return sortDirection.value === 'asc' ? -1 : 1
+    if (aValue > bValue) return sortDirection.value === 'asc' ? 1 : -1
+    return 0
+  })
+}
+
 // 处理表格变化（排序、分页等）
 const handleTableChange: TableProps['onChange'] = (pag, filters, sorter) => {
   // 更新分页
   if (pag) {
     pagination.value.current = pag.current || 1
     pagination.value.pageSize = pag.pageSize || 10
+    // 分页变化需要重新获取数据
+    fetchDevices()
+    return
   }
 
-  // 处理排序
+  // 处理排序（前端排序，不需要重新请求数据）
   if (sorter) {
     if (Array.isArray(sorter)) {
       // 多列排序（暂不支持，取第一个）
@@ -352,10 +381,15 @@ const handleTableChange: TableProps['onChange'] = (pag, filters, sorter) => {
         sortDirection.value = undefined
       }
     }
+    
+    // 前端排序：直接对当前数据进行排序
+    if (sortField.value && sortDirection.value) {
+      applySort()
+    } else {
+      // 取消排序，重新获取数据恢复原始顺序
+      fetchDevices()
+    }
   }
-
-  // 重新获取数据
-  fetchDevices()
 }
 
 // 处理 Status 筛选器变化
