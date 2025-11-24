@@ -53,6 +53,42 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/admin/users',
+    name: 'UserList',
+    component: () => import('@/views/admin/users/UserList.vue'),
+    meta: {
+      title: '用户管理',
+      requiresAuth: true,
+    },
+  },
+  {
+    path: '/admin/users/:id',
+    name: 'UserDetail',
+    component: () => import('@/views/admin/users/UserDetail.vue'),
+    meta: {
+      title: '用户详情',
+      requiresAuth: true,
+    },
+  },
+  {
+    path: '/admin/tags',
+    name: 'TagList',
+    component: () => import('@/views/admin/tags/TagList.vue'),
+    meta: {
+      title: '标签管理',
+      requiresAuth: true,
+    },
+  },
+  {
+    path: '/admin/deviceList',
+    name: 'DeviceList',
+    component: () => import('@/views/admin/devices/DeviceList.vue'),
+    meta: {
+      title: '设备管理',
+      requiresAuth: true,
+    },
+  },
+  {
     path: '/monitoring/vital-focus',
     name: 'VitalFocus',
     component: () => import('@/views/monitoring/vital-focus/VitalFocus.vue'),
@@ -87,9 +123,10 @@ router.beforeEach((to, from, next) => {
     // 确保 to.path 是字符串类型
     const routePath = to.path || ''
     if (!userStore.hasPagePermission(routePath)) {
-      // 无权限访问，重定向到默认首页
+      // 无权限访问，重定向到用户首页（homePath）或默认首页
+      const homePath = userStore.getUserHomePath()
       next({
-        path: '/monitoring/vital-focus',
+        path: homePath,
       })
       return
     }

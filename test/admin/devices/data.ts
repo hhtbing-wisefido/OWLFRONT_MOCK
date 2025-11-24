@@ -1,0 +1,103 @@
+/**
+ * Devices 测试数据
+ * 对应 src/api/device/device.ts 和 owlRD/db/11_devices.sql
+ */
+
+import type { Device } from '@/api/device/model/deviceModel'
+
+/**
+ * 模拟 Devices 数据
+ */
+export const mockDevicesData: Device[] = [
+  {
+    device_id: 'device-001',
+    tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+    device_name: 'Radar Device 1',
+    device_model: 'WF-RADAR-60G-V2',
+    device_type: 'Radar',
+    serial_number: 'SN001',
+    uid: 'UID001',
+    imei: undefined,
+    comm_mode: 'WiFi',
+    firmware_version: 'v1.0.0',
+    mcu_model: 'STM32F4',
+    status: 'online',
+    business_access: 'approved',
+  },
+  {
+    device_id: 'device-002',
+    tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+    device_name: 'Radar Device 2',
+    device_model: 'WF-RADAR-60G-V2',
+    device_type: 'Radar',
+    serial_number: 'SN002',
+    uid: 'UID002',
+    imei: undefined,
+    comm_mode: 'WiFi',
+    firmware_version: 'v1.0.1',
+    mcu_model: 'STM32F4',
+    status: 'offline',
+    business_access: 'pending',
+  },
+  {
+    device_id: 'device-003',
+    tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+    device_name: 'SleepPad Device 1',
+    device_model: 'SP-2024',
+    device_type: 'SleepPad',
+    serial_number: 'SN003',
+    uid: 'UID003',
+    imei: undefined,
+    comm_mode: 'Zigbee',
+    firmware_version: 'v2.0.0',
+    mcu_model: 'ESP32',
+    status: 'online',
+    business_access: 'approved',
+  },
+  {
+    device_id: 'device-004',
+    tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+    device_name: 'Vibration Sensor 1',
+    device_model: 'VS-100',
+    device_type: 'VibrationSensor',
+    serial_number: 'SN004',
+    uid: 'UID004',
+    imei: 'IMEI004',
+    comm_mode: 'LTE',
+    firmware_version: 'v1.5.0',
+    mcu_model: 'ESP32',
+    status: 'error',
+    business_access: 'rejected',
+  },
+  {
+    device_id: 'device-005',
+    tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+    device_name: 'Gateway Device 1',
+    device_model: 'GW-500',
+    device_type: 'Gateway',
+    serial_number: 'SN005',
+    uid: 'UID005',
+    imei: undefined,
+    comm_mode: 'WiFi',
+    firmware_version: 'v3.0.0',
+    mcu_model: 'Raspberry Pi',
+    status: 'online',
+    business_access: 'approved',
+  },
+  {
+    device_id: 'device-006',
+    tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+    device_name: 'Radar Device 3',
+    device_model: 'WF-RADAR-60G-V2',
+    device_type: 'Radar',
+    serial_number: 'SN006',
+    uid: 'UID006',
+    imei: undefined,
+    comm_mode: 'WiFi',
+    firmware_version: 'v1.0.0',
+    mcu_model: 'STM32F4',
+    status: 'disabled',
+    business_access: 'approved',
+  },
+]
+

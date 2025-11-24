@@ -16,6 +16,9 @@ export * as resident from './resident'
 export * as staff from './staff'
 export * as roles from './admin/roles'
 export * as rolePermissions from './admin/role-permissions'
+export * as users from './admin/users'
+export * as tags from './admin/tags'
+export * as devices from './admin/devices'
 
 // 工具函数
 export * from './utils/generator'
