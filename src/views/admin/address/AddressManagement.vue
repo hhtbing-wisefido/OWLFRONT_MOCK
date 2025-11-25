@@ -5,6 +5,8 @@
       <div class="create-building-form">
         <span class="create-label">tag:</span>
         <a-input
+          id="create-building-tag-name"
+          name="create-building-tag-name"
           v-model:value="createBuildingForm.tag_name"
           placeholder="tag_name"
           style="width: 120px"
@@ -13,6 +15,8 @@
         <span class="separator">:</span>
         <span class="create-label">Building:</span>
         <a-input
+          id="create-building-name"
+          name="create-building-name"
           v-model:value="createBuildingForm.building_name"
           placeholder="Build name"
           style="width: 100px"
@@ -21,6 +25,8 @@
         <span class="separator">:</span>
         <span class="create-label">Floors:</span>
         <a-input-number
+          id="create-building-floors"
+          name="create-building-floors"
           v-model:value="createBuildingForm.floors"
           :min="1"
           :max="99"
@@ -57,6 +63,8 @@
                 @click.stop
               >
                 <a-input
+                  :id="`edit-building-tag-${building.building_id}`"
+                  :name="`edit-building-tag-${building.building_id}`"
                   v-model:value="editingBuildingForm.tag_name"
                   placeholder="TAG"
                   size="small"
@@ -66,6 +74,8 @@
                 />
                 <span class="separator">:</span>
                 <a-input
+                  :id="`edit-building-name-tag-${building.building_id}`"
+                  :name="`edit-building-name-tag-${building.building_id}`"
                   v-model:value="editingBuildingForm.building_name"
                   placeholder="Build"
                   size="small"
@@ -136,6 +146,8 @@
                 @click.stop
               >
                 <a-input
+                  :id="`edit-building-tag-card-${building.building_id}`"
+                  :name="`edit-building-tag-card-${building.building_id}`"
                   v-model:value="editingBuildingForm.tag_name"
                   placeholder="TAG"
                   size="small"
@@ -145,6 +157,8 @@
                 />
                 <span class="separator">:</span>
                 <a-input
+                  :id="`edit-building-name-card-${building.building_id}`"
+                  :name="`edit-building-name-card-${building.building_id}`"
                   v-model:value="editingBuildingForm.building_name"
                   placeholder="Build"
                   size="small"
@@ -186,6 +200,12 @@
       <div class="location-grid-container">
         <div v-if="!selectedBuilding || !selectedFloor" class="empty-state">
           <p>Please select a floor</p>
+          <p style="font-size: 12px; color: #999;">
+            Selected Building: {{ selectedBuilding ? selectedBuilding.building_name : 'None' }}
+          </p>
+          <p style="font-size: 12px; color: #999;">
+            Selected Floor: {{ selectedFloor || 'None' }}
+          </p>
         </div>
         <div v-else class="location-grid-wrapper">
           <div class="location-grid">
@@ -197,7 +217,7 @@
               @click="handleCellClick(location, index)"
             >
               <div v-if="location" class="location-content">
-                {{ location.door_number }} Unit
+                {{ location.unit_number }} Unit
               </div>
               <div v-else class="empty-cell">
                 <PlusOutlined />
@@ -219,19 +239,29 @@
     >
       <a-form :model="createLocationForm" layout="vertical">
         <a-form-item
-          label="DoorNumber"
-          :rules="[{ required: true, message: 'Please input door number' }]"
+          label="Unit Number"
+          :rules="[{ required: true, message: 'Please input unit number' }]"
         >
-          <a-input v-model:value="createLocationForm.door_number" />
+          <a-input
+            id="create-location-unit-number"
+            name="create-location-unit-number"
+            v-model:value="createLocationForm.unit_number"
+          />
         </a-form-item>
         <a-form-item
-          label="Location Name"
-          :rules="[{ required: true, message: 'Please input location name' }]"
+          label="Unit Name"
+          :rules="[{ required: true, message: 'Please input unit name' }]"
         >
-          <a-input v-model:value="createLocationForm.location_name" />
+          <a-input
+            id="create-location-unit-name"
+            name="create-location-unit-name"
+            v-model:value="createLocationForm.unit_name"
+          />
         </a-form-item>
         <a-form-item label="Location Tag">
           <a-select
+            id="create-location-location-tag"
+            name="create-location-location-tag"
             v-model:value="createLocationForm.location_tag"
             placeholder="Select location tag"
             allow-clear
@@ -242,6 +272,8 @@
         </a-form-item>
         <a-form-item label="Area Tag">
           <a-select
+            id="create-location-area-tag"
+            name="create-location-area-tag"
             v-model:value="createLocationForm.area_tag"
             placeholder="Select area tag"
             allow-clear
@@ -251,21 +283,113 @@
           </a-select>
         </a-form-item>
         <a-form-item label="Building">
-          <a-input v-model:value="createLocationForm.building" />
+          <a-input
+            id="create-location-building"
+            name="create-location-building"
+            v-model:value="createLocationForm.building"
+          />
         </a-form-item>
         <a-form-item label="Floor">
-          <a-input v-model:value="createLocationForm.floor" />
+          <a-input
+            id="create-location-floor"
+            name="create-location-floor"
+            v-model:value="createLocationForm.floor"
+          />
         </a-form-item>
       </a-form>
+    </a-modal>
+
+    <!-- Edit Unit Modal (Room-Bed Management) -->
+    <a-modal
+      v-model:open="showEditUnitModal"
+      :title="editingLocation ? `Edit Unit: ${editingLocation.unit_number} Unit` : 'Edit Unit'"
+      @cancel="resetEditUnitForm"
+      @ok="resetEditUnitForm"
+      :width="600"
+      :footer="null"
+      :mask-closable="true"
+      :destroy-on-close="false"
+      :z-index="1000"
+      :get-container="false"
+    >
+      <div class="unit-edit-container" v-if="editingLocation">
+        <!-- Debug info -->
+        <div style="margin-bottom: 16px; padding: 8px; background: #f0f0f0; border-radius: 4px;">
+          <div>Modal is open: {{ showEditUnitModal }}</div>
+          <div>Editing Location: {{ editingLocation.location_id }}</div>
+          <div>Rooms count: {{ roomsWithBeds.length }}</div>
+        </div>
+        <!-- Room-Bed List -->
+        <div class="room-bed-list">
+          <div v-if="roomsWithBeds.length === 0" class="empty-room-bed">
+            <p>No rooms and beds yet. Click "New" to add.</p>
+          </div>
+          <div
+            v-for="roomWithBeds in roomsWithBeds"
+            :key="roomWithBeds.room_id"
+            class="room-bed-item"
+          >
+            <div
+              v-for="bed in roomWithBeds.beds"
+              :key="bed.bed_id"
+              class="room-bed-row"
+            >
+              <span class="room-name">[{{ roomWithBeds.room_name }}]</span>
+              <span class="separator">:</span>
+              <span class="bed-name">[{{ bed.bed_name }}]</span>
+              <DeleteOutlined
+                class="delete-icon"
+                @click="handleDeleteBed(bed.bed_id)"
+              />
+            </div>
+            <!-- Room without beds -->
+            <div v-if="roomWithBeds.beds.length === 0" class="room-bed-row">
+              <span class="room-name">[{{ roomWithBeds.room_name }}]</span>
+              <span class="separator">:</span>
+              <span class="bed-name">[]</span>
+              <DeleteOutlined
+                class="delete-icon"
+                @click="handleDeleteRoom(roomWithBeds.room_id)"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Add New Room-Bed -->
+        <div class="add-room-bed-form">
+          <a-button type="primary" @click="showAddForm = !showAddForm">
+            <PlusOutlined /> New
+          </a-button>
+          <div v-if="showAddForm" class="add-form-content">
+            <a-input
+              id="add-room-name"
+              name="add-room-name"
+              v-model:value="newRoomName"
+              placeholder="Room Name"
+              style="width: 200px; margin-right: 8px"
+            />
+            <span class="separator">:</span>
+            <a-input
+              id="add-bed-name"
+              name="add-bed-name"
+              v-model:value="newBedName"
+              placeholder="Bed Name"
+              style="width: 200px; margin-left: 8px; margin-right: 8px"
+            />
+            <a-button type="primary" @click="handleAddRoomBed">Add</a-button>
+            <a-button @click="resetAddForm" style="margin-left: 8px">Cancel</a-button>
+          </div>
+        </div>
+      </div>
     </a-modal>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, nextTick } from 'vue'
 import { message } from 'ant-design-vue'
 import { EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons-vue'
-import type { Building, Location } from '@/api/location/model/locationModel'
+import type { Building, Location, RoomWithBeds } from '@/api/location/model/locationModel'
 import {
   createBuildingApi,
   getBuildingsApi,
@@ -273,6 +397,11 @@ import {
   deleteBuildingApi,
   createLocationApi,
   getLocationsApi,
+  getRoomsApi,
+  createRoomApi,
+  deleteRoomApi,
+  createBedApi,
+  deleteBedApi,
 } from '@/api/location/location'
 import { useUserStore } from '@/store/modules/user'
 
@@ -309,8 +438,8 @@ const gridSize = ref(20) // 默认网格大小
 // Create Location Modal
 const showCreateLocationModal = ref(false)
 const createLocationForm = ref({
-  door_number: '',
-  location_name: '',
+  unit_number: '',
+  unit_name: '',
   location_tag: undefined as string | undefined,
   area_tag: undefined as string | undefined,
   building: '',
@@ -319,25 +448,46 @@ const createLocationForm = ref({
 // selectedCellIndex 暂时未使用，保留用于后续功能
 // const selectedCellIndex = ref<number | null>(null)
 
+// Edit Unit Modal (Room-Bed Management)
+const showEditUnitModal = ref(false)
+const editingLocation = ref<Location | null>(null)
+const roomsWithBeds = ref<RoomWithBeds[]>([])
+const showAddForm = ref(false)
+const newRoomName = ref('')
+const newBedName = ref('')
+
 // Location 网格计算
 const locationGrid = computed(() => {
   const grid: (Location | null)[] = new Array(gridSize.value).fill(null)
 
-  // 填充已有 Location
+  console.log('locationGrid computed:', {
+    selectedBuilding: selectedBuilding.value?.building_name,
+    selectedFloor: selectedFloor.value,
+    locationsCount: locations.value.length,
+    locations: locations.value,
+  })
+
+  // 填充已有 Location（只显示当前选中的 building 和 floor 的 locations）
   locations.value.forEach((location) => {
-    // 简单映射：根据 location_id 的哈希值决定位置
-    // 实际应该根据 door_number 排序
-    if (location.location_id) {
-      const idPart = location.location_id.split('-')[1]
-      if (idPart) {
-        const index = parseInt(idPart) % gridSize.value
-        if (!isNaN(index)) {
+    // 检查 location 是否匹配当前选中的 building 和 floor
+    if (
+      location.building === selectedBuilding.value?.building_name &&
+      location.floor === selectedFloor.value
+    ) {
+      // 根据 unit_number 排序并填充到网格
+      // 简单映射：使用 unit_number 的后两位数字来决定位置
+      if (location.unit_number) {
+        const unitNum = parseInt(location.unit_number)
+        if (!isNaN(unitNum)) {
+          // 使用 unit_number 的后两位数字作为索引（例如：101 -> 1, 201 -> 1）
+          const index = (unitNum % 100) % gridSize.value
           grid[index] = location
         }
       }
     }
   })
 
+  console.log('locationGrid result:', grid.filter((item) => item !== null).length, 'items')
   return grid
 })
 
@@ -422,25 +572,43 @@ const handleToggleBuildingCard = (building: Building) => {
 }
 
 
-// 选择楼层（只从左侧列选择楼层才会生效，headline 行的楼层按钮仅用于展开/收起）
-const handleSelectFloor = (building: Building, floor: string) => {
+// 选择楼层
+const handleSelectFloor = async (building: Building, floor: string) => {
   const buildingId = building.building_id || ''
+  console.log('Selecting floor:', building.building_name, floor, 'Building ID:', buildingId)
+  console.log('Current selectedBuilding:', selectedBuilding.value?.building_id)
   
-  // 只有左侧列选中的 Building 才能选择楼层
-  if (selectedBuilding.value?.building_id === buildingId) {
-    selectedFloor.value = floor
-    fetchLocations()
-  }
+  // 确保 selectedBuilding 被设置
+  selectedBuilding.value = building
+  selectedFloor.value = floor
+  
+  console.log('Set selectedBuilding to:', building.building_name)
+  console.log('Set selectedFloor to:', floor)
+  
+  // 等待 Vue 响应式更新
+  await nextTick()
+  
+  // 获取 locations
+  await fetchLocations()
+  console.log('Fetched locations count:', locations.value.length)
+  console.log('Locations:', locations.value)
+  console.log('After fetch, selectedBuilding:', selectedBuilding.value?.building_name)
+  console.log('After fetch, selectedFloor:', selectedFloor.value)
 }
 
 // 获取 Building 显示名称（tag_name-Building_name）- 使用 computed 缓存
+// UI层将 location_tag 映射为 tag_name 用于显示
 const buildingsWithDisplayName = computed(() => {
-  return buildings.value.map((building) => ({
-    ...building,
-    displayName: (building as any).tag_name
-      ? `${(building as any).tag_name}-${building.building_name}`
-      : building.building_name,
-  }))
+  return buildings.value.map((building) => {
+    const tagName = building.location_tag || '' // API返回的是 location_tag
+    return {
+      ...building,
+      tag_name: tagName, // UI显示用的 tag_name
+      displayName: tagName
+        ? `${tagName}-${building.building_name}`
+        : building.building_name,
+    }
+  })
 })
 
 // 创建 Building
@@ -475,10 +643,11 @@ const resetCreateBuildingForm = () => {
 }
 
 // 编辑 Building（进入编辑模式）
+// UI层将 location_tag 映射为 tag_name 用于编辑
 const handleEditBuilding = (building: Building) => {
   editingBuildingId.value = building.building_id || null
   editingBuildingForm.value = {
-    tag_name: (building as any).tag_name || '',
+    tag_name: building.location_tag || '', // API返回的是 location_tag，映射为 tag_name 用于UI
     building_name: building.building_name || '',
   }
 }
@@ -499,10 +668,11 @@ const handleSaveBuilding = async (building: Building) => {
     }
 
     // 提交更新
+    // UI层的 tag_name 映射为 API 的 location_tag
     await updateBuildingApi(building.building_id, {
       building_name: editingBuildingForm.value.building_name,
-      tag_name: editingBuildingForm.value.tag_name || undefined,
-    })
+      tag_name: editingBuildingForm.value.tag_name || undefined, // API层会转换为 location_tag
+    } as any)
 
     message.success('Building updated successfully')
     
@@ -608,30 +778,43 @@ const handleDeleteBuilding = async (building: Building) => {
 }
 
 // 点击网格单元格
-const handleCellClick = (location: Location | null, _index: number) => {
-  if (location) {
-    // Existing Location: Edit functionality to be implemented
-    message.info('Edit location feature coming soon')
-  } else {
-    // 空白单元格：创建 Location
-    // selectedCellIndex.value = index
-    // 自动填充 Building 和 Floor，但用户可以修改
-    createLocationForm.value = {
-      door_number: '',
-      location_name: '',
-      location_tag: undefined,
-      area_tag: undefined,
-      building: selectedBuilding.value?.building_name || '',
-      floor: selectedFloor.value || '',
+const handleCellClick = async (location: Location | null, _index: number) => {
+  try {
+    if (location) {
+      // Existing Location: 打开编辑 Unit 界面
+      console.log('Clicking location:', location)
+      editingLocation.value = location
+      await fetchRoomsWithBeds(location.location_id)
+      console.log('Setting showEditUnitModal to true')
+      showEditUnitModal.value = true
+      console.log('showEditUnitModal value:', showEditUnitModal.value)
+      // 使用 nextTick 确保 DOM 更新
+      await nextTick()
+      console.log('After nextTick, showEditUnitModal:', showEditUnitModal.value)
+    } else {
+      // 空白单元格：创建 Location
+      // selectedCellIndex.value = index
+      // 自动填充 Building 和 Floor，但用户可以修改
+      createLocationForm.value = {
+        unit_number: '',
+        unit_name: '',
+        location_tag: undefined,
+        area_tag: undefined,
+        building: selectedBuilding.value?.building_name || '',
+        floor: selectedFloor.value || '',
+      }
+      showCreateLocationModal.value = true
     }
-    showCreateLocationModal.value = true
+  } catch (error: any) {
+    console.error('Error in handleCellClick:', error)
+    message.error('Failed to handle cell click: ' + (error.message || 'Unknown error'))
   }
 }
 
 // 创建 Location
 const handleCreateLocation = async () => {
   try {
-    if (!createLocationForm.value.door_number || !createLocationForm.value.location_name) {
+    if (!createLocationForm.value.unit_number || !createLocationForm.value.unit_name) {
       message.error('Please fill in all required fields')
       return
     }
@@ -650,8 +833,8 @@ const handleCreateLocation = async () => {
     }
 
     await createLocationApi({
-      door_number: createLocationForm.value.door_number,
-      location_name: createLocationForm.value.location_name,
+      unit_number: createLocationForm.value.unit_number,
+      unit_name: createLocationForm.value.unit_name,
       building: createLocationForm.value.building || selectedBuilding.value.building_name,
       floor: createLocationForm.value.floor || selectedFloor.value,
       location_tag: createLocationForm.value.location_tag,
@@ -671,14 +854,124 @@ const handleCreateLocation = async () => {
 // 重置 Create Location 表单
 const resetCreateLocationForm = () => {
   createLocationForm.value = {
-    door_number: '',
-    location_name: '',
+    unit_number: '',
+    unit_name: '',
     location_tag: undefined,
     area_tag: undefined,
     building: '',
     floor: '',
   }
   // selectedCellIndex.value = null
+}
+
+// 获取 Room 和 Bed 列表
+const fetchRoomsWithBeds = async (locationId: string) => {
+  try {
+    console.log('Fetching rooms and beds for location:', locationId)
+    const result = await getRoomsApi({ location_id: locationId })
+    console.log('Fetched rooms and beds:', result)
+    roomsWithBeds.value = result
+  } catch (error: any) {
+    console.error('Error fetching rooms and beds:', error)
+    message.error('Failed to fetch rooms and beds: ' + (error.message || 'Unknown error'))
+    // 即使出错也显示空列表，让用户可以添加
+    roomsWithBeds.value = []
+  }
+}
+
+// 重置编辑 Unit 表单
+const resetEditUnitForm = () => {
+  editingLocation.value = null
+  roomsWithBeds.value = []
+  showAddForm.value = false
+  newRoomName.value = ''
+  newBedName.value = ''
+}
+
+// 添加 Room-Bed
+const handleAddRoomBed = async () => {
+  try {
+    if (!editingLocation.value) {
+      message.error('No location selected')
+      return
+    }
+
+    if (!newRoomName.value.trim()) {
+      message.error('Please input room name')
+      return
+    }
+
+    if (!newBedName.value.trim()) {
+      message.error('Please input bed name')
+      return
+    }
+
+    // 检查是否已存在同名 Room
+    let room = roomsWithBeds.value.find((r) => r.room_name === newRoomName.value.trim())
+    
+    if (!room) {
+      // 创建新 Room
+      const newRoom = await createRoomApi({
+        location_id: editingLocation.value.location_id,
+        room_name: newRoomName.value.trim(),
+        is_default: false,
+      })
+      // 将新 Room 添加到列表
+      const newRoomWithBeds: RoomWithBeds = {
+        ...newRoom,
+        beds: [],
+      }
+      roomsWithBeds.value.push(newRoomWithBeds)
+      room = newRoomWithBeds
+    }
+
+    // 创建 Bed
+    await createBedApi({
+      room_id: room.room_id,
+      bed_name: newBedName.value.trim(),
+    })
+
+    // 刷新列表
+    await fetchRoomsWithBeds(editingLocation.value.location_id)
+    
+    message.success('Room-Bed added successfully')
+    resetAddForm()
+  } catch (error: any) {
+    message.error('Failed to add room-bed: ' + (error.message || 'Unknown error'))
+  }
+}
+
+// 重置添加表单
+const resetAddForm = () => {
+  showAddForm.value = false
+  newRoomName.value = ''
+  newBedName.value = ''
+}
+
+// 删除 Room
+const handleDeleteRoom = async (roomId: string) => {
+  try {
+    await deleteRoomApi(roomId)
+    if (editingLocation.value) {
+      await fetchRoomsWithBeds(editingLocation.value.location_id)
+    }
+    message.success('Room deleted successfully')
+  } catch (error: any) {
+    message.error('Failed to delete room: ' + (error.message || 'Unknown error'))
+  }
+}
+
+// 删除 Bed
+const handleDeleteBed = async (bedId: string) => {
+  try {
+    await deleteBedApi(bedId)
+    if (editingLocation.value) {
+      await fetchRoomsWithBeds(editingLocation.value.location_id)
+    }
+    message.success('Bed deleted successfully')
+  } catch (error: any) {
+    message.error('Failed to delete bed: ' + (error.message || 'Unknown error'))
+  }
 }
 
 // 初始化
@@ -1059,6 +1352,75 @@ onMounted(() => {
 
 .empty-cell:hover {
   color: #1890ff;
+}
+
+/* Edit Unit Modal Styles */
+.unit-edit-container {
+  padding: 10px 0;
+}
+
+.room-bed-list {
+  margin-bottom: 20px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.room-bed-item {
+  margin-bottom: 10px;
+}
+
+.room-bed-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.room-name,
+.bed-name {
+  font-weight: 500;
+}
+
+.delete-icon {
+  color: #ff4d4f;
+  cursor: pointer;
+  font-size: 16px;
+  margin-left: auto;
+}
+
+.delete-icon:hover {
+  color: #ff7875;
+}
+
+.add-room-bed-form {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e8e8e8;
+}
+
+.add-form-content {
+  display: flex;
+  align-items: center;
+  margin-top: 12px;
+  gap: 8px;
+}
+
+.empty-room-bed {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+}
+
+.location-cell {
+  cursor: pointer;
+  user-select: none;
+}
+
+.location-cell:hover {
+  background-color: #f5f5f5;
 }
 </style>
 

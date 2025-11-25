@@ -5,8 +5,8 @@
 export interface Location {
   location_id: string
   tenant_id: string
-  door_number: string // 门牌号（数字化、准确）
-  location_name: string // 位置名称（口语化、易记）
+  unit_number: string // 单元号（数字化、准确）
+  unit_name: string // 单元名称（口语化、易记）
   building?: string // 建筑标签
   floor?: string // 楼层标签
   location_tag?: string // 位置标签
@@ -22,24 +22,24 @@ export interface Building {
   building_name: string
   floors: number // 楼层数量
   tenant_id?: string
-  tag_name?: string // 标签名称
+  location_tag?: string // API层使用 location_tag
 }
 
 export interface CreateBuildingParams {
   building_name: string
   floors: number
-  tag_name?: string // 标签名称
+  location_tag?: string // API层使用 location_tag
 }
 
 export interface UpdateBuildingParams {
   building_name?: string
   floors?: number
-  tag_name?: string // 标签名称
+  location_tag?: string // API层使用 location_tag
 }
 
 export interface CreateLocationParams {
-  door_number: string
-  location_name: string
+  unit_number: string
+  unit_name: string
   building?: string
   floor?: string
   location_tag?: string
@@ -53,8 +53,8 @@ export interface GetLocationsParams {
   floor?: string
   location_tag?: string
   area_tag?: string
-  door_number?: string
-  location_name?: string
+  unit_number?: string
+  unit_name?: string
   is_active?: boolean
   page?: number
   size?: number
@@ -66,10 +66,50 @@ export interface GetLocationsResult {
 }
 
 export interface UpdateLocationParams {
-  location_name?: string
+  unit_name?: string
   building?: string
   floor?: string
   location_tag?: string
   area_tag?: string
+}
+
+export interface Room {
+  room_id: string
+  location_id: string
+  room_name: string
+  is_default: boolean
+  created_at?: string
+  updated_at?: string
+}
+
+export interface Bed {
+  bed_id: string
+  room_id: string
+  bed_name: string
+  created_at?: string
+  updated_at?: string
+}
+
+export interface RoomWithBeds extends Room {
+  beds: Bed[]
+}
+
+export interface CreateRoomParams {
+  location_id: string
+  room_name: string
+  is_default?: boolean
+}
+
+export interface CreateBedParams {
+  room_id: string
+  bed_name: string
+}
+
+export interface GetRoomsParams {
+  location_id: string
+}
+
+export interface GetBedsParams {
+  room_id: string
 }
 

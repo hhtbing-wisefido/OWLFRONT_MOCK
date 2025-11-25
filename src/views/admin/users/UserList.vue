@@ -47,8 +47,13 @@
           </span>
         </template>
         <template v-else-if="column.dataIndex === 'alarm_levels'">
-          <a-tag v-for="level in record.alarm_levels" :key="level" style="margin: 2px">
-            {{ level }}
+          <a-tag
+            v-for="level in record.alarm_levels"
+            :key="level"
+            :color="getAlarmLevelColor(level)"
+            style="margin: 2px"
+          >
+            {{ getAlarmLevelText(level) }}
           </a-tag>
           <span v-if="!record.alarm_levels || record.alarm_levels.length === 0">-</span>
         </template>
@@ -185,9 +190,11 @@
             placeholder="Please select alarm levels"
             :disabled="!hasManagePermission"
           >
-            <a-select-option value="EMERGENCY">EMERGENCY</a-select-option>
-            <a-select-option value="WARNING">WARNING</a-select-option>
-            <a-select-option value="ERROR">ERROR</a-select-option>
+            <a-select-option value="0">0 (EMERG)</a-select-option>
+            <a-select-option value="1">1 (ALERT)</a-select-option>
+            <a-select-option value="2">2 (CRIT)</a-select-option>
+            <a-select-option value="3">3 (ERR)</a-select-option>
+            <a-select-option value="4">4 (WARNING)</a-select-option>
           </a-select>
         </a-form-item>
         <a-form-item label="Alarm Channels" name="alarm_channels">
@@ -515,6 +522,32 @@ const getStatusText = (status: string) => {
     default:
       return status
   }
+}
+
+// 将 alarm level 数字转换为文本显示
+const getAlarmLevelText = (level: string | number): string => {
+  const levelStr = String(level)
+  const levelMap: Record<string, string> = {
+    '0': 'EMERG',
+    '1': 'ALERT',
+    '2': 'CRIT',
+    '3': 'ERR',
+    '4': 'WARNING',
+  }
+  return levelMap[levelStr] || levelStr
+}
+
+// 获取 alarm level 对应的颜色
+const getAlarmLevelColor = (level: string | number): string => {
+  const levelStr = String(level)
+  const colorMap: Record<string, string> = {
+    '0': '#d32f2f', // EMERG - 红色
+    '1': '#d32f2f', // ALERT - 红色
+    '2': '#f3783f', // CRIT - 橙色
+    '3': '#f3783f', // ERR - 橙色
+    '4': '#f3783f', // WARNING - 橙色
+  }
+  return colorMap[levelStr] || '#999'
 }
 
 const onSearch = () => {

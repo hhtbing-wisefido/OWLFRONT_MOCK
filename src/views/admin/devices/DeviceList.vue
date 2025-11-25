@@ -46,8 +46,8 @@
                 <a-menu class="status-filter-menu">
                   <a-menu-item v-for="statusOption in statusOptions" :key="statusOption.value">
                     <a-checkbox
-                      :checked="statusFilter.includes(statusOption.value)"
-                      @change="handleStatusFilterChange(statusOption.value, $event)"
+                      :checked="statusFilter.includes(statusOption.value as 'online' | 'offline' | 'error' | 'disabled')"
+                      @change="handleStatusFilterChange(statusOption.value as 'online' | 'offline' | 'error' | 'disabled', $event)"
                     >
                       {{ statusOption.label }}
                     </a-checkbox>
@@ -346,7 +346,7 @@ const applySort = () => {
 }
 
 // 处理表格变化（排序、分页等）
-const handleTableChange: TableProps['onChange'] = (pag, filters, sorter) => {
+const handleTableChange: TableProps['onChange'] = (pag, _filters, sorter) => {
   // 更新分页
   if (pag) {
     pagination.value.current = pag.current || 1
@@ -362,7 +362,7 @@ const handleTableChange: TableProps['onChange'] = (pag, filters, sorter) => {
       // 多列排序（暂不支持，取第一个）
       if (sorter.length > 0) {
         const firstSorter = sorter[0]
-        if (firstSorter.order) {
+        if (firstSorter && firstSorter.order) {
           sortField.value = firstSorter.field as string
           sortDirection.value = firstSorter.order === 'ascend' ? 'asc' : 'desc'
         } else {

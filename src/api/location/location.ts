@@ -13,6 +13,13 @@ import type {
   GetLocationsParams,
   GetLocationsResult,
   UpdateLocationParams,
+  Room,
+  Bed,
+  RoomWithBeds,
+  CreateRoomParams,
+  CreateBedParams,
+  GetRoomsParams,
+  GetBedsParams,
 } from './model/locationModel'
 
 export enum Api {
@@ -25,6 +32,12 @@ export enum Api {
   GetLocationDetail = '/admin/api/v1/locations/:id',
   UpdateLocation = '/admin/api/v1/locations/:id',
   DeleteLocation = '/admin/api/v1/locations/:id',
+  GetRooms = '/admin/api/v1/rooms',
+  CreateRoom = '/admin/api/v1/rooms',
+  DeleteRoom = '/admin/api/v1/rooms/:id',
+  GetBeds = '/admin/api/v1/beds',
+  CreateBed = '/admin/api/v1/beds',
+  DeleteBed = '/admin/api/v1/beds/:id',
 }
 
 // Mock mode: In development, use mock data instead of real API calls
@@ -36,20 +49,34 @@ if (useMock) {
 
 /**
  * 创建 Building
+ * 前端传入的 params 中可能包含 tag_name（UI显示用），需要转换为 location_tag
  */
 export async function createBuildingApi(
-  params: CreateBuildingParams,
+  params: CreateBuildingParams & { tag_name?: string },
   mode: ErrorMessageMode = 'modal'
 ): Promise<Building> {
   if (useMock) {
     const { location } = await import('@test/index')
-    return location.mock.mockCreateBuilding(params)
+    // Mock 层也需要处理 tag_name -> location_tag 的转换
+    const mockParams: CreateBuildingParams = {
+      building_name: params.building_name,
+      floors: params.floors,
+      location_tag: (params as any).tag_name || params.location_tag,
+    }
+    return location.mock.mockCreateBuilding(mockParams)
+  }
+
+  // 将前端的 tag_name 转换为 API 的 location_tag
+  const apiParams: CreateBuildingParams = {
+    building_name: params.building_name,
+    floors: params.floors,
+    location_tag: (params as any).tag_name || params.location_tag,
   }
 
   return defHttp.post<Building>(
     {
       url: Api.CreateBuilding,
-      data: params,
+      data: apiParams,
     },
     { errorMessageMode: mode }
   )
@@ -57,6 +84,7 @@ export async function createBuildingApi(
 
 /**
  * 获取 Building 列表
+ * API 返回的 location_tag，前端UI显示时会映射为 tag_name
  */
 export async function getBuildingsApi(
   mode: ErrorMessageMode = 'none'
@@ -76,21 +104,35 @@ export async function getBuildingsApi(
 
 /**
  * 更新 Building
+ * 前端传入的 params 中可能包含 tag_name（UI显示用），需要转换为 location_tag
  */
 export async function updateBuildingApi(
   id: string,
-  params: UpdateBuildingParams,
+  params: UpdateBuildingParams & { tag_name?: string },
   mode: ErrorMessageMode = 'modal'
 ): Promise<Building> {
   if (useMock) {
     const { location } = await import('@test/index')
-    return location.mock.mockUpdateBuilding(id, params)
+    // Mock 层也需要处理 tag_name -> location_tag 的转换
+    const mockParams: UpdateBuildingParams = {
+      building_name: params.building_name,
+      floors: params.floors,
+      location_tag: (params as any).tag_name || params.location_tag,
+    }
+    return location.mock.mockUpdateBuilding(id, mockParams)
+  }
+
+  // 将前端的 tag_name 转换为 API 的 location_tag
+  const apiParams: UpdateBuildingParams = {
+    building_name: params.building_name,
+    floors: params.floors,
+    location_tag: (params as any).tag_name || params.location_tag,
   }
 
   return defHttp.put<Building>(
     {
       url: Api.UpdateBuilding.replace(':id', id),
-      data: params,
+      data: apiParams,
     },
     { errorMessageMode: mode }
   )
@@ -215,6 +257,109 @@ export async function deleteLocationApi(
   return defHttp.delete<void>(
     {
       url: Api.DeleteLocation.replace(':id', id),
+    },
+    { errorMessageMode: mode }
+  )
+}
+
+/**
+ * 获取 Location 下的 Room 列表（包含 Bed）
+ */
+export async function getRoomsApi(
+  params: GetRoomsParams,
+  mode: ErrorMessageMode = 'none'
+): Promise<RoomWithBeds[]> {
+  if (useMock) {
+    const { location } = await import('@test/index')
+    return location.mock.mockGetRooms(params.location_id)
+  }
+
+  return defHttp.get<RoomWithBeds[]>(
+    {
+      url: Api.GetRooms,
+      params: { location_id: params.location_id },
+    },
+    { errorMessageMode: mode }
+  )
+}
+
+/**
+ * 创建 Room
+ */
+export async function createRoomApi(
+  params: CreateRoomParams,
+  mode: ErrorMessageMode = 'modal'
+): Promise<Room> {
+  if (useMock) {
+    const { location } = await import('@test/index')
+    return location.mock.mockCreateRoom(params)
+  }
+
+  return defHttp.post<Room>(
+    {
+      url: Api.CreateRoom,
+      data: params,
+    },
+    { errorMessageMode: mode }
+  )
+}
+
+/**
+ * 删除 Room
+ */
+export async function deleteRoomApi(
+  id: string,
+  mode: ErrorMessageMode = 'modal'
+): Promise<void> {
+  if (useMock) {
+    const { location } = await import('@test/index')
+    return location.mock.mockDeleteRoom(id)
+  }
+
+  return defHttp.delete<void>(
+    {
+      url: Api.DeleteRoom.replace(':id', id),
+    },
+    { errorMessageMode: mode }
+  )
+}
+
+/**
+ * 创建 Bed
+ */
+export async function createBedApi(
+  params: CreateBedParams,
+  mode: ErrorMessageMode = 'modal'
+): Promise<Bed> {
+  if (useMock) {
+    const { location } = await import('@test/index')
+    return location.mock.mockCreateBed(params)
+  }
+
+  return defHttp.post<Bed>(
+    {
+      url: Api.CreateBed,
+      data: params,
+    },
+    { errorMessageMode: mode }
+  )
+}
+
+/**
+ * 删除 Bed
+ */
+export async function deleteBedApi(
+  id: string,
+  mode: ErrorMessageMode = 'modal'
+): Promise<void> {
+  if (useMock) {
+    const { location } = await import('@test/index')
+    return location.mock.mockDeleteBed(id)
+  }
+
+  return defHttp.delete<void>(
+    {
+      url: Api.DeleteBed.replace(':id', id),
     },
     { errorMessageMode: mode }
   )
