@@ -1,8 +1,8 @@
 /**
- * Location Mock 数据
+ * Unit Mock 数据
  */
 
-import type { Building, Location } from '@/api/location/model/locationModel'
+import type { Building, Unit } from '@/api/units/model/unitModel'
 
 export const mockBuildingsData: Building[] = [
   {
@@ -19,31 +19,31 @@ export const mockBuildingsData: Building[] = [
   },
 ]
 
-export const mockLocationsData: Location[] = [
+export const mockUnitsData: Unit[] = [
   // Building A - 1F
   {
-    location_id: 'location-1',
+    unit_id: 'unit-1',
     tenant_id: 'tenant-1',
     unit_number: '101',
-    unit_name: '101房间',
+    unit_name: 'Room 101',
     building: 'A',
     floor: '1F',
     location_tag: 'VIP',
-    area_tag: '东区',
+    area_tag: 'East',
     location_type: 'institution',
     is_active: true,
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
   },
   {
-    location_id: 'location-2',
+    unit_id: 'unit-2',
     tenant_id: 'tenant-1',
     unit_number: '102',
-    unit_name: '102房间',
+    unit_name: 'Room 102',
     building: 'A',
     floor: '1F',
     location_tag: 'VIP',
-    area_tag: '东区',
+    area_tag: 'East',
     location_type: 'institution',
     is_active: true,
     created_at: '2024-01-01T00:00:00Z',
@@ -51,28 +51,28 @@ export const mockLocationsData: Location[] = [
   },
   // Building A - 2F
   {
-    location_id: 'location-3',
+    unit_id: 'unit-3',
     tenant_id: 'tenant-1',
     unit_number: '201',
-    unit_name: '201房间',
+    unit_name: 'Room 201',
     building: 'A',
     floor: '2F',
-    location_tag: '普通',
-    area_tag: '西区',
+    location_tag: 'Standard',
+    area_tag: 'West',
     location_type: 'institution',
     is_active: true,
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
   },
   {
-    location_id: 'location-4',
+    unit_id: 'unit-4',
     tenant_id: 'tenant-1',
     unit_number: '202',
-    unit_name: '202房间',
+    unit_name: 'Room 202',
     building: 'A',
     floor: '2F',
-    location_tag: '普通',
-    area_tag: '西区',
+    location_tag: 'Standard',
+    area_tag: 'West',
     location_type: 'institution',
     is_active: true,
     created_at: '2024-01-01T00:00:00Z',
@@ -80,14 +80,14 @@ export const mockLocationsData: Location[] = [
   },
   // Building B - 1F
   {
-    location_id: 'location-5',
+    unit_id: 'unit-5',
     tenant_id: 'tenant-1',
     unit_number: '101',
-    unit_name: '101房间',
+    unit_name: 'Room 101',
     building: 'B',
     floor: '1F',
     location_tag: 'VIP',
-    area_tag: '东区',
+    area_tag: 'East',
     location_type: 'institution',
     is_active: true,
     created_at: '2024-01-01T00:00:00Z',
@@ -95,14 +95,14 @@ export const mockLocationsData: Location[] = [
   },
   // Building B - 2F
   {
-    location_id: 'location-6',
+    unit_id: 'unit-6',
     tenant_id: 'tenant-1',
     unit_number: '201',
-    unit_name: '201房间',
+    unit_name: 'Room 201',
     building: 'B',
     floor: '2F',
-    location_tag: '普通',
-    area_tag: '西区',
+    location_tag: 'Standard',
+    area_tag: 'West',
     location_type: 'institution',
     is_active: true,
     created_at: '2024-01-01T00:00:00Z',

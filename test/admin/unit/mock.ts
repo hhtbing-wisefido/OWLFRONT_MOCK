@@ -1,28 +1,30 @@
 /**
- * Location API Mock 实现
+ * Unit API Mock 实现
  */
 
 import type {
   Building,
-  Location,
+  Unit,
   CreateBuildingParams,
   UpdateBuildingParams,
-  CreateLocationParams,
-  GetLocationsParams,
-  GetLocationsResult,
-  UpdateLocationParams,
+  CreateUnitParams,
+  GetUnitsParams,
+  GetUnitsResult,
+  UpdateUnitParams,
   Room,
   Bed,
   RoomWithBeds,
   CreateRoomParams,
   CreateBedParams,
-} from '@/api/location/model/locationModel'
-import { mockBuildingsData, mockLocationsData } from './data'
+  UpdateRoomParams,
+  UpdateBedParams,
+} from '@/api/units/model/unitModel'
+import { mockBuildingsData, mockUnitsData } from './data'
 
 let buildings: Building[] = [...mockBuildingsData]
-let locations: Location[] = [...mockLocationsData]
+let units: Unit[] = [...mockUnitsData]
 let buildingIdCounter = buildings.length + 1
-let locationIdCounter = locations.length + 1
+let unitIdCounter = units.length + 1
 
 // Mock Room 和 Bed 数据
 let rooms: Room[] = []
@@ -32,11 +34,11 @@ let bedIdCounter = 1
 
 // 初始化一些 mock Room 和 Bed 数据
 function initMockRoomsAndBeds() {
-  // 为 location-1 创建 Room 和 Bed
+  // 为 unit-1 创建 Room 和 Bed
   const room1: Room = {
     room_id: `room-${roomIdCounter++}`,
-    location_id: 'location-1',
-    room_name: 'Room1',
+    unit_id: 'unit-1',
+    room_name: 'BedRoom',
     is_default: true,
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
@@ -46,7 +48,7 @@ function initMockRoomsAndBeds() {
   const bed1: Bed = {
     bed_id: `bed-${bedIdCounter++}`,
     room_id: room1.room_id,
-    bed_name: 'Bed1',
+    bed_name: 'BedA',
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
   }
@@ -55,17 +57,17 @@ function initMockRoomsAndBeds() {
   const bed2: Bed = {
     bed_id: `bed-${bedIdCounter++}`,
     room_id: room1.room_id,
-    bed_name: 'Bed2',
+    bed_name: 'BedB',
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
   }
   beds.push(bed2)
 
-  // 为 location-1 创建第二个 Room
+  // 为 unit-1 创建第二个 Room
   const room2: Room = {
     room_id: `room-${roomIdCounter++}`,
-    location_id: 'location-1',
-    room_name: 'Room2',
+    unit_id: 'unit-1',
+    room_name: 'BathRoom',
     is_default: false,
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
@@ -75,7 +77,7 @@ function initMockRoomsAndBeds() {
   const bed3: Bed = {
     bed_id: `bed-${bedIdCounter++}`,
     room_id: room2.room_id,
-    bed_name: 'Bed1',
+    bed_name: 'BedA',
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
   }
@@ -128,9 +130,9 @@ export function mockDeleteBuilding(id: string): void {
   buildings.splice(index, 1)
 }
 
-export function mockCreateLocation(params: CreateLocationParams): Location {
-  const newLocation: Location = {
-    location_id: `location-${locationIdCounter++}`,
+export function mockCreateUnit(params: CreateUnitParams): Unit {
+  const newUnit: Unit = {
+    unit_id: `unit-${unitIdCounter++}`,
     tenant_id: 'tenant-1',
     unit_number: params.unit_number,
     unit_name: params.unit_name,
@@ -143,41 +145,41 @@ export function mockCreateLocation(params: CreateLocationParams): Location {
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   }
-  locations.push(newLocation)
-  return newLocation
+  units.push(newUnit)
+  return newUnit
 }
 
-export function mockGetLocations(params: GetLocationsParams): GetLocationsResult {
-  let filtered = [...locations]
+export function mockGetUnits(params: GetUnitsParams): GetUnitsResult {
+  let filtered = [...units]
 
   // 过滤
   if (params.building) {
-    filtered = filtered.filter((loc) => loc.building === params.building)
+    filtered = filtered.filter((unit) => unit.building === params.building)
   }
   if (params.floor) {
-    filtered = filtered.filter((loc) => loc.floor === params.floor)
+    filtered = filtered.filter((unit) => unit.floor === params.floor)
   }
   if (params.location_tag) {
-    filtered = filtered.filter((loc) => loc.location_tag === params.location_tag)
+    filtered = filtered.filter((unit) => unit.location_tag === params.location_tag)
   }
   if (params.area_tag) {
-    filtered = filtered.filter((loc) => loc.area_tag === params.area_tag)
+    filtered = filtered.filter((unit) => unit.area_tag === params.area_tag)
   }
   if (params.unit_number) {
-    filtered = filtered.filter((loc) =>
-      loc.unit_number.toLowerCase().includes(params.unit_number!.toLowerCase())
+    filtered = filtered.filter((unit) =>
+      unit.unit_number.toLowerCase().includes(params.unit_number!.toLowerCase())
     )
   }
   if (params.unit_name) {
-    filtered = filtered.filter((loc) =>
-      loc.unit_name.toLowerCase().includes(params.unit_name!.toLowerCase())
+    filtered = filtered.filter((unit) =>
+      unit.unit_name.toLowerCase().includes(params.unit_name!.toLowerCase())
     )
   }
   if (params.is_active !== undefined) {
-    filtered = filtered.filter((loc) => loc.is_active === params.is_active)
+    filtered = filtered.filter((unit) => unit.is_active === params.is_active)
   } else {
     // 默认只返回 active 的
-    filtered = filtered.filter((loc) => loc.is_active)
+    filtered = filtered.filter((unit) => unit.is_active)
   }
 
   // 分页
@@ -193,40 +195,40 @@ export function mockGetLocations(params: GetLocationsParams): GetLocationsResult
   }
 }
 
-export function mockGetLocationDetail(id: string): Location {
-  const location = locations.find((loc) => loc.location_id === id)
-  if (!location) {
-    throw new Error(`Location with id ${id} not found`)
+export function mockGetUnitDetail(id: string): Unit {
+  const unit = units.find((u) => u.unit_id === id)
+  if (!unit) {
+    throw new Error(`Unit with id ${id} not found`)
   }
-  return { ...location }
+  return { ...unit }
 }
 
-export function mockUpdateLocation(id: string, params: UpdateLocationParams): Location {
-  const index = locations.findIndex((loc) => loc.location_id === id)
+export function mockUpdateUnit(id: string, params: UpdateUnitParams): Unit {
+  const index = units.findIndex((u) => u.unit_id === id)
   if (index === -1) {
-    throw new Error(`Location with id ${id} not found`)
+    throw new Error(`Unit with id ${id} not found`)
   }
   const updated = {
-    ...locations[index],
+    ...units[index],
     ...params,
     updated_at: new Date().toISOString(),
   }
-  locations[index] = updated
+  units[index] = updated
   return { ...updated }
 }
 
-export function mockDeleteLocation(id: string): void {
-  const index = locations.findIndex((loc) => loc.location_id === id)
+export function mockDeleteUnit(id: string): void {
+  const index = units.findIndex((u) => u.unit_id === id)
   if (index === -1) {
-    throw new Error(`Location with id ${id} not found`)
+    throw new Error(`Unit with id ${id} not found`)
   }
   // 软删除
-  locations[index].is_active = false
+  units[index].is_active = false
 }
 
-export function mockGetRooms(locationId: string): RoomWithBeds[] {
-  const locationRooms = rooms.filter((r) => r.location_id === locationId)
-  return locationRooms.map((room) => ({
+export function mockGetRooms(unitId: string): RoomWithBeds[] {
+  const unitRooms = rooms.filter((r) => r.unit_id === unitId)
+  return unitRooms.map((room) => ({
     ...room,
     beds: beds.filter((b) => b.room_id === room.room_id),
   }))
@@ -235,7 +237,7 @@ export function mockGetRooms(locationId: string): RoomWithBeds[] {
 export function mockCreateRoom(params: CreateRoomParams): Room {
   const newRoom: Room = {
     room_id: `room-${roomIdCounter++}`,
-    location_id: params.location_id,
+    unit_id: params.unit_id,
     room_name: params.room_name,
     is_default: params.is_default || false,
     created_at: new Date().toISOString(),
@@ -243,6 +245,20 @@ export function mockCreateRoom(params: CreateRoomParams): Room {
   }
   rooms.push(newRoom)
   return newRoom
+}
+
+export function mockUpdateRoom(id: string, params: UpdateRoomParams): Room {
+  const index = rooms.findIndex((r) => r.room_id === id)
+  if (index === -1) {
+    throw new Error(`Room with id ${id} not found`)
+  }
+  const updated = {
+    ...rooms[index],
+    ...params,
+    updated_at: new Date().toISOString(),
+  }
+  rooms[index] = updated
+  return { ...updated }
 }
 
 export function mockDeleteRoom(id: string): void {
@@ -265,6 +281,20 @@ export function mockCreateBed(params: CreateBedParams): Bed {
   }
   beds.push(newBed)
   return newBed
+}
+
+export function mockUpdateBed(id: string, params: UpdateBedParams): Bed {
+  const index = beds.findIndex((b) => b.bed_id === id)
+  if (index === -1) {
+    throw new Error(`Bed with id ${id} not found`)
+  }
+  const updated = {
+    ...beds[index],
+    ...params,
+    updated_at: new Date().toISOString(),
+  }
+  beds[index] = updated
+  return { ...updated }
 }
 
 export function mockDeleteBed(id: string): void {

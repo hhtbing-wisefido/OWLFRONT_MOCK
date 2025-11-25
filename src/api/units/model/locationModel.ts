@@ -1,10 +1,11 @@
 /**
- * Location API 数据模型
+ * Unit API 数据模型
  */
 
-export interface Location {
-  location_id: string
+export interface Unit {
+  unit_id: string
   tenant_id: string
+  address_id?: string // 关联的 Address ID（新增）
   unit_number: string // 单元号（数字化、准确）
   unit_name: string // 单元名称（口语化、易记）
   building?: string // 建筑标签
@@ -37,7 +38,8 @@ export interface UpdateBuildingParams {
   location_tag?: string // API层使用 location_tag
 }
 
-export interface CreateLocationParams {
+export interface CreateUnitParams {
+  address_id?: string // 关联的 Address ID（新增）
   unit_number: string
   unit_name: string
   building?: string
@@ -47,8 +49,9 @@ export interface CreateLocationParams {
   location_type: 'home' | 'institution'
 }
 
-export interface GetLocationsParams {
+export interface GetUnitsParams {
   tenant_id?: string
+  address_id?: string // 按 Address ID 筛选（新增）
   building?: string
   floor?: string
   location_tag?: string
@@ -60,12 +63,12 @@ export interface GetLocationsParams {
   size?: number
 }
 
-export interface GetLocationsResult {
-  items: Location[]
+export interface GetUnitsResult {
+  items: Unit[]
   total: number
 }
 
-export interface UpdateLocationParams {
+export interface UpdateUnitParams {
   unit_name?: string
   building?: string
   floor?: string
@@ -75,7 +78,7 @@ export interface UpdateLocationParams {
 
 export interface Room {
   room_id: string
-  location_id: string
+  unit_id: string
   room_name: string
   is_default: boolean
   created_at?: string
@@ -95,7 +98,7 @@ export interface RoomWithBeds extends Room {
 }
 
 export interface CreateRoomParams {
-  location_id: string
+  unit_id: string
   room_name: string
   is_default?: boolean
 }
@@ -105,8 +108,17 @@ export interface CreateBedParams {
   bed_name: string
 }
 
+export interface UpdateRoomParams {
+  room_name?: string
+  is_default?: boolean
+}
+
+export interface UpdateBedParams {
+  bed_name?: string
+}
+
 export interface GetRoomsParams {
-  location_id: string
+  unit_id: string
 }
 
 export interface GetBedsParams {

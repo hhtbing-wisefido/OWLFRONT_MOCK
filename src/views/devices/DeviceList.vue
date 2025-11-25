@@ -113,7 +113,7 @@
 
         <!-- Delete 列：删除按钮 -->
         <template v-else-if="column.dataIndex === 'delete'">
-          <a-tooltip title="仅当设备未接入使用才能删除，否则，仅是禁用" :mouseEnterDelay="0.1">
+          <a-tooltip title="Device can only be deleted when not in use, otherwise it will be disabled" :mouseEnterDelay="0.1">
             <a-button
               type="primary"
               @click="handleDelete(record)"
@@ -138,8 +138,8 @@
 import { ref, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import { FilterOutlined } from '@ant-design/icons-vue'
-import { getDevicesApi, updateDeviceApi, deleteDeviceApi } from '@/api/device/device'
-import type { Device, GetDevicesParams } from '@/api/device/model/deviceModel'
+import { getDevicesApi, updateDeviceApi, deleteDeviceApi } from '@/api/devices/device'
+import type { Device, GetDevicesParams } from '@/api/devices/model/deviceModel'
 import { useUserStore } from '@/store/modules/user'
 import type { TableProps } from 'ant-design-vue'
 

@@ -14,10 +14,10 @@ import type {
 
 // 定义 API 路径枚举
 export enum Api {
-  GetList = '/device/api/v1/device/items',
-  GetDetail = '/device/api/v1/device/:id',
-  Update = '/device/api/v1/device/:id',
-  Delete = '/device/api/v1/device/:id',
+  GetList = '/admin/api/v1/devices',
+  GetDetail = '/admin/api/v1/devices/:id',
+  Update = '/admin/api/v1/devices/:id',
+  Delete = '/admin/api/v1/devices/:id',
 }
 
 // Mock mode: In development, use mock data instead of real API calls

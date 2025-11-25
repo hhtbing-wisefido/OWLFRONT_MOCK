@@ -431,8 +431,8 @@ import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { AlertFilled } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
-import type { GetVitalFocusCardsModel, VitalFocusCard } from '@/api/monitor/model/monitorModel'
-import { getVitalFocusCardsApi, saveVitalFocusSelectionApi } from '@/api/monitor/monitor'
+import type { GetVitalFocusCardsModel, VitalFocusCard } from '@/api/monitors/model/monitorModel'
+import { getVitalFocusCardsApi, saveVitalFocusSelectionApi } from '@/api/monitors/monitor'
 import {
   parseAlarmLevel,
   getAlarmColor,

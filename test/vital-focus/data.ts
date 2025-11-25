@@ -129,7 +129,7 @@ export const serviceLevels: Record<string, ServiceLevelInfo> = {
   L1: {
     level_code: 'L1',
     display_name: 'Independent',
-    display_name_cn: '无需协助',
+    display_name_cn: 'No Assistance Required',
     color_tag: 'green',
     color_hex: '#28a745',
     priority: 1,
@@ -137,7 +137,7 @@ export const serviceLevels: Record<string, ServiceLevelInfo> = {
   L2: {
     level_code: 'L2',
     display_name: 'Assisted',
-    display_name_cn: '需部分协助',
+    display_name_cn: 'Partial Assistance Required',
     color_tag: 'blue',
     color_hex: '#007bff',
     priority: 2,
@@ -145,7 +145,7 @@ export const serviceLevels: Record<string, ServiceLevelInfo> = {
   L3: {
     level_code: 'L3',
     display_name: 'Memory care',
-    display_name_cn: '记忆护理',
+    display_name_cn: 'Memory Care',
     color_tag: 'yellow',
     color_hex: '#ffc107',
     priority: 3,
@@ -153,7 +153,7 @@ export const serviceLevels: Record<string, ServiceLevelInfo> = {
   L4: {
     level_code: 'L4',
     display_name: 'Fall-risk',
-    display_name_cn: '跌倒风险',
+    display_name_cn: 'Fall Risk',
     color_tag: 'orange',
     color_hex: '#fd7e14',
     priority: 4,
@@ -161,7 +161,7 @@ export const serviceLevels: Record<string, ServiceLevelInfo> = {
   L5: {
     level_code: 'L5',
     display_name: 'Vital Risk',
-    display_name_cn: '生命体征风险',
+    display_name_cn: 'Vital Signs Risk',
     color_tag: 'red',
     color_hex: '#dc3545',
     priority: 5,
@@ -169,7 +169,7 @@ export const serviceLevels: Record<string, ServiceLevelInfo> = {
   L6: {
     level_code: 'L6',
     display_name: 'Critical',
-    display_name_cn: '危重症',
+    display_name_cn: 'Critical Care',
     color_tag: 'red',
     color_hex: '#c82333',
     priority: 6,

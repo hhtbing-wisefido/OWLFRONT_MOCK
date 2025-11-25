@@ -19,7 +19,7 @@ export * as rolePermissions from './admin/role-permissions'
 export * as users from './admin/users'
 export * as tags from './admin/tags'
 export * as devices from './admin/devices'
-export * as location from './admin/location'
+export * as unit from './admin/unit'
 
 // 工具函数
 export * from './utils/generator'

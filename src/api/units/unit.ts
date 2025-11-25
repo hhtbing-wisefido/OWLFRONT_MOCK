@@ -1,42 +1,46 @@
 /**
- * Location API 函数
+ * Unit API 函数
  */
 
 import { defHttp } from '@/utils/http/axios'
 import type { ErrorMessageMode } from '/#/axios'
 import type {
-  Location,
+  Unit,
   Building,
   CreateBuildingParams,
   UpdateBuildingParams,
-  CreateLocationParams,
-  GetLocationsParams,
-  GetLocationsResult,
-  UpdateLocationParams,
+  CreateUnitParams,
+  GetUnitsParams,
+  GetUnitsResult,
+  UpdateUnitParams,
   Room,
   Bed,
   RoomWithBeds,
   CreateRoomParams,
   CreateBedParams,
+  UpdateRoomParams,
+  UpdateBedParams,
   GetRoomsParams,
   GetBedsParams,
-} from './model/locationModel'
+} from './model/unitModel'
 
 export enum Api {
   CreateBuilding = '/admin/api/v1/buildings',
   GetBuildings = '/admin/api/v1/buildings',
   UpdateBuilding = '/admin/api/v1/buildings/:id',
   DeleteBuilding = '/admin/api/v1/buildings/:id',
-  CreateLocation = '/admin/api/v1/locations',
-  GetLocations = '/admin/api/v1/locations',
-  GetLocationDetail = '/admin/api/v1/locations/:id',
-  UpdateLocation = '/admin/api/v1/locations/:id',
-  DeleteLocation = '/admin/api/v1/locations/:id',
+  CreateUnit = '/admin/api/v1/units',
+  GetUnits = '/admin/api/v1/units',
+  GetUnitDetail = '/admin/api/v1/units/:id',
+  UpdateUnit = '/admin/api/v1/units/:id',
+  DeleteUnit = '/admin/api/v1/units/:id',
   GetRooms = '/admin/api/v1/rooms',
   CreateRoom = '/admin/api/v1/rooms',
+  UpdateRoom = '/admin/api/v1/rooms/:id',
   DeleteRoom = '/admin/api/v1/rooms/:id',
   GetBeds = '/admin/api/v1/beds',
   CreateBed = '/admin/api/v1/beds',
+  UpdateBed = '/admin/api/v1/beds/:id',
   DeleteBed = '/admin/api/v1/beds/:id',
 }
 
@@ -44,7 +48,7 @@ export enum Api {
 const useMock = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK !== 'false'
 
 if (useMock) {
-  console.log('%c[Mock] Location API Mock enabled', 'color: #52c41a; font-weight: bold')
+  console.log('%c[Mock] Unit API Mock enabled', 'color: #52c41a; font-weight: bold')
 }
 
 /**
@@ -56,14 +60,14 @@ export async function createBuildingApi(
   mode: ErrorMessageMode = 'modal'
 ): Promise<Building> {
   if (useMock) {
-    const { location } = await import('@test/index')
+    const { unit } = await import('@test/index')
     // Mock 层也需要处理 tag_name -> location_tag 的转换
     const mockParams: CreateBuildingParams = {
       building_name: params.building_name,
       floors: params.floors,
       location_tag: (params as any).tag_name || params.location_tag,
     }
-    return location.mock.mockCreateBuilding(mockParams)
+    return unit.mock.mockCreateBuilding(mockParams)
   }
 
   // 将前端的 tag_name 转换为 API 的 location_tag
@@ -90,8 +94,8 @@ export async function getBuildingsApi(
   mode: ErrorMessageMode = 'none'
 ): Promise<Building[]> {
   if (useMock) {
-    const { location } = await import('@test/index')
-    return location.mock.mockGetBuildings()
+    const { unit } = await import('@test/index')
+    return unit.mock.mockGetBuildings()
   }
 
   return defHttp.get<Building[]>(
@@ -112,14 +116,14 @@ export async function updateBuildingApi(
   mode: ErrorMessageMode = 'modal'
 ): Promise<Building> {
   if (useMock) {
-    const { location } = await import('@test/index')
+    const { unit } = await import('@test/index')
     // Mock 层也需要处理 tag_name -> location_tag 的转换
     const mockParams: UpdateBuildingParams = {
       building_name: params.building_name,
       floors: params.floors,
       location_tag: (params as any).tag_name || params.location_tag,
     }
-    return location.mock.mockUpdateBuilding(id, mockParams)
+    return unit.mock.mockUpdateBuilding(id, mockParams)
   }
 
   // 将前端的 tag_name 转换为 API 的 location_tag
@@ -146,8 +150,8 @@ export async function deleteBuildingApi(
   mode: ErrorMessageMode = 'modal'
 ): Promise<void> {
   if (useMock) {
-    const { location } = await import('@test/index')
-    return location.mock.mockDeleteBuilding(id)
+    const { unit } = await import('@test/index')
+    return unit.mock.mockDeleteBuilding(id)
   }
 
   return defHttp.delete<void>(
@@ -159,20 +163,20 @@ export async function deleteBuildingApi(
 }
 
 /**
- * 创建 Location
+ * 创建 Unit
  */
-export async function createLocationApi(
-  params: CreateLocationParams,
+export async function createUnitApi(
+  params: CreateUnitParams,
   mode: ErrorMessageMode = 'modal'
-): Promise<Location> {
+): Promise<Unit> {
   if (useMock) {
-    const { location } = await import('@test/index')
-    return location.mock.mockCreateLocation(params)
+    const { unit } = await import('@test/index')
+    return unit.mock.mockCreateUnit(params)
   }
 
-  return defHttp.post<Location>(
+  return defHttp.post<Unit>(
     {
-      url: Api.CreateLocation,
+      url: Api.CreateUnit,
       data: params,
     },
     { errorMessageMode: mode }
@@ -180,20 +184,20 @@ export async function createLocationApi(
 }
 
 /**
- * 获取 Location 列表
+ * 获取 Unit 列表
  */
-export async function getLocationsApi(
-  params: GetLocationsParams,
+export async function getUnitsApi(
+  params: GetUnitsParams,
   mode: ErrorMessageMode = 'none'
-): Promise<GetLocationsResult> {
+): Promise<GetUnitsResult> {
   if (useMock) {
-    const { location } = await import('@test/index')
-    return location.mock.mockGetLocations(params)
+    const { unit } = await import('@test/index')
+    return unit.mock.mockGetUnits(params)
   }
 
-  return defHttp.get<GetLocationsResult>(
+  return defHttp.get<GetUnitsResult>(
     {
-      url: Api.GetLocations,
+      url: Api.GetUnits,
       params,
     },
     { errorMessageMode: mode }
@@ -201,41 +205,41 @@ export async function getLocationsApi(
 }
 
 /**
- * 获取 Location 详情
+ * 获取 Unit 详情
  */
-export async function getLocationDetailApi(
+export async function getUnitDetailApi(
   id: string,
   mode: ErrorMessageMode = 'modal'
-): Promise<Location> {
+): Promise<Unit> {
   if (useMock) {
-    const { location } = await import('@test/index')
-    return location.mock.mockGetLocationDetail(id)
+    const { unit } = await import('@test/index')
+    return unit.mock.mockGetUnitDetail(id)
   }
 
-  return defHttp.get<Location>(
+  return defHttp.get<Unit>(
     {
-      url: Api.GetLocationDetail.replace(':id', id),
+      url: Api.GetUnitDetail.replace(':id', id),
     },
     { errorMessageMode: mode }
   )
 }
 
 /**
- * 更新 Location
+ * 更新 Unit
  */
-export async function updateLocationApi(
+export async function updateUnitApi(
   id: string,
-  params: UpdateLocationParams,
+  params: UpdateUnitParams,
   mode: ErrorMessageMode = 'modal'
-): Promise<Location> {
+): Promise<Unit> {
   if (useMock) {
-    const { location } = await import('@test/index')
-    return location.mock.mockUpdateLocation(id, params)
+    const { unit } = await import('@test/index')
+    return unit.mock.mockUpdateUnit(id, params)
   }
 
-  return defHttp.put<Location>(
+  return defHttp.put<Unit>(
     {
-      url: Api.UpdateLocation.replace(':id', id),
+      url: Api.UpdateUnit.replace(':id', id),
       data: params,
     },
     { errorMessageMode: mode }
@@ -243,41 +247,41 @@ export async function updateLocationApi(
 }
 
 /**
- * 删除 Location
+ * 删除 Unit
  */
-export async function deleteLocationApi(
+export async function deleteUnitApi(
   id: string,
   mode: ErrorMessageMode = 'modal'
 ): Promise<void> {
   if (useMock) {
-    const { location } = await import('@test/index')
-    return location.mock.mockDeleteLocation(id)
+    const { unit } = await import('@test/index')
+    return unit.mock.mockDeleteUnit(id)
   }
 
   return defHttp.delete<void>(
     {
-      url: Api.DeleteLocation.replace(':id', id),
+      url: Api.DeleteUnit.replace(':id', id),
     },
     { errorMessageMode: mode }
   )
 }
 
 /**
- * 获取 Location 下的 Room 列表（包含 Bed）
+ * 获取 Unit 下的 Room 列表（包含 Bed）
  */
 export async function getRoomsApi(
   params: GetRoomsParams,
   mode: ErrorMessageMode = 'none'
 ): Promise<RoomWithBeds[]> {
   if (useMock) {
-    const { location } = await import('@test/index')
-    return location.mock.mockGetRooms(params.location_id)
+    const { unit } = await import('@test/index')
+    return unit.mock.mockGetRooms(params.unit_id)
   }
 
   return defHttp.get<RoomWithBeds[]>(
     {
       url: Api.GetRooms,
-      params: { location_id: params.location_id },
+      params: { unit_id: params.unit_id },
     },
     { errorMessageMode: mode }
   )
@@ -291,13 +295,35 @@ export async function createRoomApi(
   mode: ErrorMessageMode = 'modal'
 ): Promise<Room> {
   if (useMock) {
-    const { location } = await import('@test/index')
-    return location.mock.mockCreateRoom(params)
+    const { unit } = await import('@test/index')
+    return unit.mock.mockCreateRoom(params)
   }
 
   return defHttp.post<Room>(
     {
       url: Api.CreateRoom,
+      data: params,
+    },
+    { errorMessageMode: mode }
+  )
+}
+
+/**
+ * 更新 Room
+ */
+export async function updateRoomApi(
+  id: string,
+  params: UpdateRoomParams,
+  mode: ErrorMessageMode = 'modal'
+): Promise<Room> {
+  if (useMock) {
+    const { unit } = await import('@test/index')
+    return unit.mock.mockUpdateRoom(id, params)
+  }
+
+  return defHttp.put<Room>(
+    {
+      url: Api.UpdateRoom.replace(':id', id),
       data: params,
     },
     { errorMessageMode: mode }
@@ -312,8 +338,8 @@ export async function deleteRoomApi(
   mode: ErrorMessageMode = 'modal'
 ): Promise<void> {
   if (useMock) {
-    const { location } = await import('@test/index')
-    return location.mock.mockDeleteRoom(id)
+    const { unit } = await import('@test/index')
+    return unit.mock.mockDeleteRoom(id)
   }
 
   return defHttp.delete<void>(
@@ -332,13 +358,35 @@ export async function createBedApi(
   mode: ErrorMessageMode = 'modal'
 ): Promise<Bed> {
   if (useMock) {
-    const { location } = await import('@test/index')
-    return location.mock.mockCreateBed(params)
+    const { unit } = await import('@test/index')
+    return unit.mock.mockCreateBed(params)
   }
 
   return defHttp.post<Bed>(
     {
       url: Api.CreateBed,
+      data: params,
+    },
+    { errorMessageMode: mode }
+  )
+}
+
+/**
+ * 更新 Bed
+ */
+export async function updateBedApi(
+  id: string,
+  params: UpdateBedParams,
+  mode: ErrorMessageMode = 'modal'
+): Promise<Bed> {
+  if (useMock) {
+    const { unit } = await import('@test/index')
+    return unit.mock.mockUpdateBed(id, params)
+  }
+
+  return defHttp.put<Bed>(
+    {
+      url: Api.UpdateBed.replace(':id', id),
       data: params,
     },
     { errorMessageMode: mode }
@@ -353,8 +401,8 @@ export async function deleteBedApi(
   mode: ErrorMessageMode = 'modal'
 ): Promise<void> {
   if (useMock) {
-    const { location } = await import('@test/index')
-    return location.mock.mockDeleteBed(id)
+    const { unit } = await import('@test/index')
+    return unit.mock.mockDeleteBed(id)
   }
 
   return defHttp.delete<void>(

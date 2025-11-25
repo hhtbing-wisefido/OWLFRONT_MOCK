@@ -80,20 +80,20 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
-    path: '/admin/deviceList',
+    path: '/devices',
     name: 'DeviceList',
-    component: () => import('@/views/admin/devices/DeviceList.vue'),
+    component: () => import('@/views/devices/DeviceList.vue'),
     meta: {
       title: '设备管理',
       requiresAuth: true,
     },
   },
   {
-    path: '/admin/address',
-    name: 'AddressManagement',
-    component: () => import('@/views/admin/address/AddressManagement.vue'),
+    path: '/units',
+    name: 'UnitList',
+    component: () => import('@/views/units/UnitList.vue'),
     meta: {
-      title: '地址管理',
+      title: '单元管理',
       requiresAuth: true,
     },
   },

@@ -8,13 +8,13 @@ import { nextTick } from 'vue'
 import Antd from 'ant-design-vue'
 import VitalFocus from '../VitalFocus.vue'
 import { vitalFocus } from '../../../../../test/index'
-import * as monitorApi from '@/api/monitor/monitor'
+import * as monitorApi from '@/api/monitors/monitor'
 
 // 注册 Ant Design Vue 组件
 config.global.plugins = [Antd]
 
 // Mock API
-vi.mock('@/api/monitor/monitor', () => ({
+vi.mock('@/api/monitors/monitor', () => ({
   getVitalFocusCardsApi: vi.fn(),
 }))
 
