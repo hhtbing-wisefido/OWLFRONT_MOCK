@@ -89,6 +89,15 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/admin/address',
+    name: 'AddressManagement',
+    component: () => import('@/views/admin/address/AddressManagement.vue'),
+    meta: {
+      title: '地址管理',
+      requiresAuth: true,
+    },
+  },
+  {
     path: '/monitoring/vital-focus',
     name: 'VitalFocus',
     component: () => import('@/views/monitoring/vital-focus/VitalFocus.vue'),
