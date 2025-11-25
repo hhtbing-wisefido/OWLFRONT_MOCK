@@ -61,7 +61,7 @@ export async function createBuildingApi(
 ): Promise<Building> {
   if (useMock) {
     const { unit } = await import('@test/index')
-    // Mock 层也需要处理 tag_name -> location_tag 的转换
+    // Mock 层：兼容 tag_name 和 location_tag
     const mockParams: CreateBuildingParams = {
       building_name: params.building_name,
       floors: params.floors,
@@ -70,7 +70,7 @@ export async function createBuildingApi(
     return unit.mock.mockCreateBuilding(mockParams)
   }
 
-  // 将前端的 tag_name 转换为 API 的 location_tag
+  // 兼容 tag_name 和 location_tag
   const apiParams: CreateBuildingParams = {
     building_name: params.building_name,
     floors: params.floors,
@@ -117,7 +117,7 @@ export async function updateBuildingApi(
 ): Promise<Building> {
   if (useMock) {
     const { unit } = await import('@test/index')
-    // Mock 层也需要处理 tag_name -> location_tag 的转换
+    // Mock 层：兼容 tag_name 和 location_tag
     const mockParams: UpdateBuildingParams = {
       building_name: params.building_name,
       floors: params.floors,
@@ -126,7 +126,7 @@ export async function updateBuildingApi(
     return unit.mock.mockUpdateBuilding(id, mockParams)
   }
 
-  // 将前端的 tag_name 转换为 API 的 location_tag
+  // 兼容 tag_name 和 location_tag
   const apiParams: UpdateBuildingParams = {
     building_name: params.building_name,
     floors: params.floors,

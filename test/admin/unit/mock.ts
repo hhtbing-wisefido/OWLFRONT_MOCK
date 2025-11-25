@@ -88,15 +88,15 @@ function initMockRoomsAndBeds() {
 initMockRoomsAndBeds()
 
 export function mockCreateBuilding(params: CreateBuildingParams & { tag_name?: string }): Building {
-  const newBuilding: Building & { tag_name?: string } = {
+  const newBuilding: Building = {
     building_id: `building-${buildingIdCounter++}`,
     building_name: params.building_name,
     floors: params.floors,
     tenant_id: 'tenant-1',
-    tag_name: params.tag_name,
+    location_tag: (params as any).tag_name || params.location_tag,
   }
-  buildings.push(newBuilding as Building)
-  return newBuilding as Building
+  buildings.push(newBuilding)
+  return newBuilding
 }
 
 export function mockGetBuildings(): Building[] {
@@ -108,11 +108,11 @@ export function mockUpdateBuilding(id: string, params: UpdateBuildingParams & { 
   if (index === -1) {
     throw new Error(`Building with id ${id} not found`)
   }
-  // Mock层：将前端的 tag_name 转换为 location_tag
+  // Mock层：兼容 tag_name 和 location_tag
   const updateData: UpdateBuildingParams = {
     building_name: params.building_name,
     floors: params.floors,
-    location_tag: (params as any).tag_name || params.location_tag, // 前端传入 tag_name，转换为 location_tag
+    location_tag: (params as any).tag_name || params.location_tag,
   }
   const updated = {
     ...buildings[index],

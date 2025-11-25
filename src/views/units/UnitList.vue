@@ -3,15 +3,27 @@
     <!-- 页首：创建表单 -->
     <div class="page-header">
       <div class="create-building-form">
-        <span class="create-label">tag:</span>
-        <a-input
-          id="create-building-tag-name"
-          name="create-building-tag-name"
-          v-model:value="createBuildingForm.tag_name"
-          placeholder="tag_name"
-          style="width: 120px"
-          @pressEnter="handleCreateBuilding"
-        />
+        <span class="create-label">location_tag:</span>
+        <a-select
+          id="create-building-location-tag"
+          name="create-building-location-tag"
+          v-model:value="createBuildingForm.location_tag"
+          placeholder="Select or input location_tag"
+          allow-clear
+          show-search
+          :filter-option="false"
+          @search="handleLocationTagSearch"
+          @blur="handleLocationTagBlur"
+          style="width: 150px"
+        >
+          <a-select-option
+            v-for="tag in locationTagOptions"
+            :key="tag.tag_name"
+            :value="tag.tag_name"
+          >
+            {{ tag.tag_name }}
+          </a-select-option>
+        </a-select>
         <span class="separator">:</span>
         <span class="create-label">Building:</span>
         <a-input
@@ -62,16 +74,28 @@
                 class="building-tag-edit"
                 @click.stop
               >
-                <a-input
-                  :id="`edit-building-tag-${building.building_id}`"
-                  :name="`edit-building-tag-${building.building_id}`"
-                  v-model:value="editingBuildingForm.tag_name"
-                  placeholder="TAG"
+                <a-select
+                  :id="`edit-building-location-tag-${building.building_id}`"
+                  :name="`edit-building-location-tag-${building.building_id}`"
+                  v-model:value="editingBuildingForm.location_tag"
+                  placeholder="location_tag"
                   size="small"
-                  style="width: 60px"
+                  allow-clear
+                  show-search
+                  :filter-option="false"
+                  @search="handleLocationTagSearch"
+                  @blur="handleLocationTagBlur"
+                  style="width: 120px"
                   @pressEnter="handleSaveBuilding(building)"
-                  @blur="handleSaveBuilding(building)"
-                />
+                >
+                  <a-select-option
+                    v-for="tag in locationTagOptions"
+                    :key="tag.tag_name"
+                    :value="tag.tag_name"
+                  >
+                    {{ tag.tag_name }}
+                  </a-select-option>
+                </a-select>
                 <span class="separator">:</span>
                 <a-input
                   :id="`edit-building-name-tag-${building.building_id}`"
@@ -145,16 +169,28 @@
                 class="building-edit"
                 @click.stop
               >
-                <a-input
-                  :id="`edit-building-tag-card-${building.building_id}`"
-                  :name="`edit-building-tag-card-${building.building_id}`"
-                  v-model:value="editingBuildingForm.tag_name"
-                  placeholder="TAG"
+                <a-select
+                  :id="`edit-building-location-tag-card-${building.building_id}`"
+                  :name="`edit-building-location-tag-card-${building.building_id}`"
+                  v-model:value="editingBuildingForm.location_tag"
+                  placeholder="location_tag"
                   size="small"
-                  style="width: 60px"
+                  allow-clear
+                  show-search
+                  :filter-option="false"
+                  @search="handleLocationTagSearch"
+                  @blur="handleLocationTagBlur"
+                  style="width: 120px"
                   @pressEnter="handleSaveBuilding(building)"
-                  @blur="handleSaveBuilding(building)"
-                />
+                >
+                  <a-select-option
+                    v-for="tag in locationTagOptions"
+                    :key="tag.tag_name"
+                    :value="tag.tag_name"
+                  >
+                    {{ tag.tag_name }}
+                  </a-select-option>
+                </a-select>
                 <span class="separator">:</span>
                 <a-input
                   :id="`edit-building-name-card-${building.building_id}`"
@@ -359,7 +395,7 @@
                 Add Room
               </a-button>
               <a-button
-                type="default"
+                type="primary"
                 size="small"
                 @click="handleAddBedWithUnitName"
                 :disabled="!editingUnit"
@@ -591,6 +627,10 @@ const editUnitForm = ref({
   unit_number: '',
 })
 
+// Location Tag Options (for Building)
+const locationTagOptions = ref<TagCatalogItem[]>([])
+const locationTagSearchValue = ref('')
+
 // Area Tag Options
 const areaTagOptions = ref<TagCatalogItem[]>([])
 const areaTagSearchValue = ref('')
@@ -771,7 +811,7 @@ const handleCreateBuilding = async () => {
     await createBuildingApi({
       building_name: createBuildingForm.value.building_name,
       floors: createBuildingForm.value.floors,
-      tag_name: createBuildingForm.value.tag_name || undefined,
+      location_tag: createBuildingForm.value.location_tag || undefined,
     } as any)
 
     message.success('Building created successfully')
@@ -785,18 +825,18 @@ const handleCreateBuilding = async () => {
 // 重置 Create Building 表单
 const resetCreateBuildingForm = () => {
   createBuildingForm.value = {
-    tag_name: '',
+    location_tag: undefined,
     building_name: '',
     floors: 1,
   }
 }
 
 // 编辑 Building（进入编辑模式）
-// UI层将 location_tag 映射为 tag_name 用于编辑
+// 编辑 Building
 const handleEditBuilding = (building: Building) => {
   editingBuildingId.value = building.building_id || null
   editingBuildingForm.value = {
-    tag_name: building.location_tag || '', // API返回的是 location_tag，映射为 tag_name 用于UI
+    location_tag: building.location_tag || undefined,
     building_name: building.building_name || '',
   }
 }
@@ -817,10 +857,9 @@ const handleSaveBuilding = async (building: Building) => {
     }
 
     // 提交更新
-    // UI层的 tag_name 映射为 API 的 location_tag
     await updateBuildingApi(building.building_id, {
       building_name: editingBuildingForm.value.building_name,
-      tag_name: editingBuildingForm.value.tag_name || undefined, // API层会转换为 location_tag
+      location_tag: editingBuildingForm.value.location_tag || undefined,
     } as any)
 
     message.success('Building updated successfully')
@@ -1027,7 +1066,67 @@ const fetchRoomsWithBeds = async (unitId: string) => {
   }
 }
 
-// 获取 Area Tag 选项
+// 获取 Location Tag 选项（tag_type 必须是 'location_tag'）
+const fetchLocationTags = async () => {
+  try {
+    const userInfo = userStore.getUserInfo
+    const tenantId = userInfo?.tenant_id
+
+    if (!tenantId) {
+      return
+    }
+
+    const result = await getTagsApi({
+      tenant_id: tenantId,
+      tag_type: 'location_tag',
+    })
+
+    locationTagOptions.value = result.items
+  } catch (error: any) {
+    console.error('Failed to fetch location tags:', error)
+    locationTagOptions.value = []
+  }
+}
+
+// 处理 Location Tag 搜索
+const handleLocationTagSearch = (value: string) => {
+  locationTagSearchValue.value = value
+}
+
+// 处理 Location Tag 失焦（当用户输入新值并离开输入框时）
+const handleLocationTagBlur = async () => {
+  const value = locationTagSearchValue.value.trim()
+  if (value) {
+    // 检查是否是新建的 tag（不在选项中）
+    const exists = locationTagOptions.value.some((tag) => tag.tag_name === value)
+    if (!exists) {
+      // 创建新的 location_tag
+      try {
+        const userInfo = userStore.getUserInfo
+        const tenantId = userInfo?.tenant_id
+
+        if (!tenantId) {
+          message.error('No tenant ID available')
+          return
+        }
+
+        await createTagApi({
+          tenant_id: tenantId,
+          tag_type: 'location_tag',
+          tag_name: value,
+        })
+
+        message.success('Location tag created successfully')
+        // 刷新 location tag 选项
+        await fetchLocationTags()
+      } catch (error: any) {
+        message.error('Failed to create location tag: ' + (error.message || 'Unknown error'))
+      }
+    }
+  }
+}
+
+// 获取 Area Tag 选项（tag_type 必须是 'area_tag'）
 const fetchAreaTags = async () => {
   try {
     const userInfo = userStore.getUserInfo
@@ -1037,16 +1136,11 @@ const fetchAreaTags = async () => {
       return
     }
 
-    // 获取所有 tags，然后过滤出可能的 area_tag
-    // 根据实际业务，area_tag 可能是 tag_name（如 'East', 'West'）
-    // 或者有特定的 tag_type
     const result = await getTagsApi({
       tenant_id: tenantId,
+      tag_type: 'area_tag',
     })
 
-    // 过滤出可能的 area_tag
-    // 这里先获取所有 tags，用户可以选择或输入新的
-    // 如果业务中有特定的 tag_type 用于 area_tag，可以在这里过滤
     areaTagOptions.value = result.items
   } catch (error: any) {
     console.error('Failed to fetch area tags:', error)
@@ -1078,7 +1172,7 @@ const handleAreaTagBlur = async () => {
 
         await createTagApi({
           tenant_id: tenantId,
-          tag_type: null, // area_tag 可能不是 tag_type，而是 tag_name
+          tag_type: 'area_tag',
           tag_name: value,
         })
 
@@ -1477,6 +1571,7 @@ const handleDeleteBed = async (bedId: string) => {
 // 初始化
 onMounted(() => {
   fetchBuildings()
+  fetchLocationTags()
 })
 </script>
 
