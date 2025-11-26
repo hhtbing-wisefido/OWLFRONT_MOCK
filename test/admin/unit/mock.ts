@@ -34,54 +34,254 @@ let bedIdCounter = 1
 
 // 初始化一些 mock Room 和 Bed 数据
 function initMockRoomsAndBeds() {
-  // 为 unit-1 创建 Room 和 Bed
+  // Unit E101 (unit-1): bedroom (BedA, BedB), bathroom (no beds)
   const room1: Room = {
     room_id: `room-${roomIdCounter++}`,
     unit_id: 'unit-1',
-    room_name: 'BedRoom',
+    room_name: 'bedroom',
     is_default: true,
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
   }
   rooms.push(room1)
-
-  const bed1: Bed = {
+  beds.push({
     bed_id: `bed-${bedIdCounter++}`,
     room_id: room1.room_id,
     bed_name: 'BedA',
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
-  }
-  beds.push(bed1)
-
-  const bed2: Bed = {
+  })
+  beds.push({
     bed_id: `bed-${bedIdCounter++}`,
     room_id: room1.room_id,
     bed_name: 'BedB',
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
-  }
-  beds.push(bed2)
-
-  // 为 unit-1 创建第二个 Room
+  })
   const room2: Room = {
     room_id: `room-${roomIdCounter++}`,
     unit_id: 'unit-1',
-    room_name: 'BathRoom',
+    room_name: 'bathroom',
     is_default: false,
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
   }
   rooms.push(room2)
 
-  const bed3: Bed = {
-    bed_id: `bed-${bedIdCounter++}`,
-    room_id: room2.room_id,
-    bed_name: 'BedA',
+  // Unit E102 (unit-2): E102 room (BedA, BedB) - room_name = unit_name
+  const room3: Room = {
+    room_id: `room-${roomIdCounter++}`,
+    unit_id: 'unit-2',
+    room_name: 'E102',
+    is_default: true,
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
   }
-  beds.push(bed3)
+  rooms.push(room3)
+  beds.push({
+    bed_id: `bed-${bedIdCounter++}`,
+    room_id: room3.room_id,
+    bed_name: 'BedA',
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+  })
+  beds.push({
+    bed_id: `bed-${bedIdCounter++}`,
+    room_id: room3.room_id,
+    bed_name: 'BedB',
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+  })
+
+  // Unit W201 (unit-3): bedroom (BedA), bathroom (no beds), W201 room (BedB) - room_name = unit_name
+  const room4: Room = {
+    room_id: `room-${roomIdCounter++}`,
+    unit_id: 'unit-3',
+    room_name: 'bedroom',
+    is_default: true,
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+  }
+  rooms.push(room4)
+  beds.push({
+    bed_id: `bed-${bedIdCounter++}`,
+    room_id: room4.room_id,
+    bed_name: 'BedA',
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+  })
+  const room5: Room = {
+    room_id: `room-${roomIdCounter++}`,
+    unit_id: 'unit-3',
+    room_name: 'bathroom',
+    is_default: false,
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+  }
+  rooms.push(room5)
+  const room6: Room = {
+    room_id: `room-${roomIdCounter++}`,
+    unit_id: 'unit-3',
+    room_name: 'W201',
+    is_default: false,
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+  }
+  rooms.push(room6)
+  beds.push({
+    bed_id: `bed-${bedIdCounter++}`,
+    room_id: room6.room_id,
+    bed_name: 'BedB',
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+  })
+
+  // Unit W202 (unit-4): W202 room (BedA, BedB) - room_name = unit_name
+  const room7: Room = {
+    room_id: `room-${roomIdCounter++}`,
+    unit_id: 'unit-4',
+    room_name: 'W202',
+    is_default: true,
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+  }
+  rooms.push(room7)
+  beds.push({
+    bed_id: `bed-${bedIdCounter++}`,
+    room_id: room7.room_id,
+    bed_name: 'BedA',
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+  })
+  beds.push({
+    bed_id: `bed-${bedIdCounter++}`,
+    room_id: room7.room_id,
+    bed_name: 'BedB',
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+  })
+
+  // Unit M110 (unit-5): LivingRoom (no beds), bedroom (BedA, BedB), bathroom (no beds)
+  const room8: Room = {
+    room_id: `room-${roomIdCounter++}`,
+    unit_id: 'unit-5',
+    room_name: 'LivingRoom',
+    is_default: false,
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+  }
+  rooms.push(room8)
+  const room9: Room = {
+    room_id: `room-${roomIdCounter++}`,
+    unit_id: 'unit-5',
+    room_name: 'bedroom',
+    is_default: true,
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+  }
+  rooms.push(room9)
+  beds.push({
+    bed_id: `bed-${bedIdCounter++}`,
+    room_id: room9.room_id,
+    bed_name: 'BedA',
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+  })
+  beds.push({
+    bed_id: `bed-${bedIdCounter++}`,
+    room_id: room9.room_id,
+    bed_name: 'BedB',
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+  })
+  const room10: Room = {
+    room_id: `room-${roomIdCounter++}`,
+    unit_id: 'unit-5',
+    room_name: 'bathroom',
+    is_default: false,
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+  }
+  rooms.push(room10)
+
+  // Unit M120 (unit-6): M102 room (BedA, BedB) - Note: room_name is M102, unit_name is M120
+  const room11: Room = {
+    room_id: `room-${roomIdCounter++}`,
+    unit_id: 'unit-6',
+    room_name: 'M102',
+    is_default: true,
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+  }
+  rooms.push(room11)
+  beds.push({
+    bed_id: `bed-${bedIdCounter++}`,
+    room_id: room11.room_id,
+    bed_name: 'BedA',
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+  })
+  beds.push({
+    bed_id: `bed-${bedIdCounter++}`,
+    room_id: room11.room_id,
+    bed_name: 'BedB',
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+  })
+
+  // Unit BD02 (unit-7): bedroom (BedA), bathroom (no beds)
+  const room12: Room = {
+    room_id: `room-${roomIdCounter++}`,
+    unit_id: 'unit-7',
+    room_name: 'BedRoom',
+    is_default: true,
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+  }
+  rooms.push(room12)
+  beds.push({
+    bed_id: `bed-${bedIdCounter++}`,
+    room_id: room12.room_id,
+    bed_name: 'BedA',
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+  })
+  const room13: Room = {
+    room_id: `room-${roomIdCounter++}`,
+    unit_id: 'unit-7',
+    room_name: 'BathRoom',
+    is_default: false,
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+  }
+  rooms.push(room13)
+
+  // Unit BD_king (unit-8): bedroom (BedA), bathroom (no beds)
+  const room14: Room = {
+    room_id: `room-${roomIdCounter++}`,
+    unit_id: 'unit-8',
+    room_name: 'BedRoom',
+    is_default: true,
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+  }
+  rooms.push(room14)
+  beds.push({
+    bed_id: `bed-${bedIdCounter++}`,
+    room_id: room14.room_id,
+    bed_name: 'BedA',
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+  })
+  const room15: Room = {
+    room_id: `room-${roomIdCounter++}`,
+    unit_id: 'unit-8',
+    room_name: 'BathRoom',
+    is_default: false,
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+  }
+  rooms.push(room15)
 }
 
 // 初始化 mock 数据
@@ -90,10 +290,10 @@ initMockRoomsAndBeds()
 export function mockCreateBuilding(params: CreateBuildingParams & { tag_name?: string }): Building {
   const newBuilding: Building = {
     building_id: `building-${buildingIdCounter++}`,
-    building_name: params.building_name,
+    building_name: params.building_name || '',
     floors: params.floors,
     tenant_id: 'tenant-1',
-    location_tag: (params as any).tag_name || params.location_tag,
+    location_tag: params.location_tag || params.tag_name || undefined,
   }
   buildings.push(newBuilding)
   return newBuilding
@@ -108,11 +308,11 @@ export function mockUpdateBuilding(id: string, params: UpdateBuildingParams & { 
   if (index === -1) {
     throw new Error(`Building with id ${id} not found`)
   }
-  // Mock层：兼容 tag_name 和 location_tag
+  // Mock层：将前端的 tag_name 转换为 location_tag
   const updateData: UpdateBuildingParams = {
     building_name: params.building_name,
     floors: params.floors,
-    location_tag: (params as any).tag_name || params.location_tag,
+    location_tag: (params as any).tag_name || params.location_tag, // 前端传入 tag_name，转换为 location_tag
   }
   const updated = {
     ...buildings[index],
@@ -136,11 +336,11 @@ export function mockCreateUnit(params: CreateUnitParams): Unit {
     tenant_id: 'tenant-1',
     unit_number: params.unit_number,
     unit_name: params.unit_name,
+    unit_type: params.unit_type,
     building: params.building,
     floor: params.floor,
     location_tag: params.location_tag,
     area_tag: params.area_tag,
-    location_type: params.location_type,
     is_active: true,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),

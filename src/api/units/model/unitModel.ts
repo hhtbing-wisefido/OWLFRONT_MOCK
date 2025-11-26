@@ -8,11 +8,11 @@ export interface Unit {
   address_id?: string // 关联的 Address ID（新增）
   unit_number: string // 单元号（数字化、准确）
   unit_name: string // 单元名称（口语化、易记）
-  building?: string // 建筑标签
-  floor?: string // 楼层标签
+  unit_type: 'Facility' | 'Home' // Facility / Home 等场景类型（替代了 location_type）
+  building?: string // 建筑标签（可选，Home 类型可能没有）
+  floor?: string // 楼层标签（可选，Home 类型可能没有）
   location_tag?: string // 位置标签
   area_tag?: string // 区域标签
-  location_type: 'home' | 'institution' // 位置类型
   is_active: boolean // 状态（active/disabled）
   created_at?: string
   updated_at?: string
@@ -42,11 +42,11 @@ export interface CreateUnitParams {
   address_id?: string // 关联的 Address ID（新增）
   unit_number: string
   unit_name: string
-  building?: string
-  floor?: string
+  unit_type: 'Facility' | 'Home' // Facility / Home 等场景类型（替代了 location_type）
+  building?: string // 建筑标签（可选，Home 类型可能没有）
+  floor?: string // 楼层标签（可选，Home 类型可能没有）
   location_tag?: string
   area_tag?: string
-  location_type: 'home' | 'institution'
 }
 
 export interface GetUnitsParams {
@@ -70,6 +70,7 @@ export interface GetUnitsResult {
 
 export interface UpdateUnitParams {
   unit_name?: string
+  unit_type?: 'Facility' | 'Home'
   building?: string
   floor?: string
   location_tag?: string

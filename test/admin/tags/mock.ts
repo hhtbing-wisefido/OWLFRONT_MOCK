@@ -65,10 +65,10 @@ export async function mockCreateTag(params: CreateTagParams): Promise<CreateTagR
   }
   
   // 根据 tag_type 自动设置 is_system_tag_type
-  // 系统预定义类型：alarm_tag, location_tag, family_tag, nursestation_tag
+  // 系统预定义类型：alarm_tag, location_tag, area_tag, family_tag, nursestation_tag
   // 如果 tag_type 为 NULL，则 is_system_tag_type = FALSE
   const isSystemTagType = params.tag_type
-    ? ['alarm_tag', 'location_tag', 'family_tag', 'nursestation_tag'].includes(params.tag_type)
+    ? ['alarm_tag', 'location_tag', 'area_tag', 'family_tag', 'nursestation_tag'].includes(params.tag_type)
     : false
   
   const newTag: TagCatalogItem = {
@@ -122,6 +122,9 @@ export async function mockDeleteTag(params: DeleteTagParams): Promise<{ success:
   }
   
   const tag = mockTagsData[tagIndex]
+  if (!tag) {
+    throw new Error(`Tag "${params.tag_name}" not found`)
+  }
   
   // 系统预定义 tag_type 不能删除
   if (tag.is_system_tag_type) {
@@ -189,7 +192,11 @@ export async function mockDeleteTagType(params: DeleteTagTypeParams): Promise<{ 
   }
   
   // 检查是否为系统预定义 tag_type
-  const isSystemTagType = tagsOfType[0].is_system_tag_type
+  const firstTag = tagsOfType[0]
+  if (!firstTag) {
+    throw new Error(`Tag type not found: ${params.tag_type}`)
+  }
+  const isSystemTagType = firstTag.is_system_tag_type
   if (isSystemTagType) {
     throw new Error(`Cannot delete system tag_type: ${params.tag_type}. System tag_types cannot be deleted because they are used by other tables.`)
   }
@@ -221,11 +228,15 @@ export async function mockGetTagsForObject(params: GetTagsForObjectParams): Prom
       continue
     }
     
-    const objectName = tag.tag_objects[params.object_type][params.object_id]
-    if (objectName) {
+    const typeObjects = tag.tag_objects[params.object_type]
+    if (!typeObjects) {
+      continue
+    }
+    const objectName = typeObjects[params.object_id]
+    if (objectName && tag.tag_type !== null) {
       result.push({
         tag_id: tag.tag_id,
-        tag_type: tag.tag_type,
+        tag_type: tag.tag_type, // tag_type 不能为 null，因为 TagForObject 要求 string
         tag_name: tag.tag_name,
         object_name_in_tag: objectName,
         is_system_tag_type: tag.is_system_tag_type,

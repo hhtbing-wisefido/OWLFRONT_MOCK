@@ -97,11 +97,35 @@ export const mockTagsData: TagCatalogItem[] = [
     tag_id: '7',
     tenant_id: '550e8400-e29b-41d4-a716-446655440000',
     tag_type: 'location_tag',
-    tag_name: 'Group.B',
+    tag_name: 'DV1',
     tag_objects: {
       location: {
-        'loc-004': 'Building B',
-        'loc-005': 'Building B Floor 1',
+        'building-1': 'Building A',
+      },
+    },
+    is_system_tag_type: true, // location_tag 是系统预定义类型
+  },
+  {
+    tag_id: '10',
+    tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+    tag_type: 'location_tag',
+    tag_name: 'SPR',
+    tag_objects: {
+      location: {
+        'building-2': 'Building B',
+      },
+    },
+    is_system_tag_type: true, // location_tag 是系统预定义类型
+  },
+  {
+    tag_id: '14',
+    tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+    tag_type: 'location_tag',
+    tag_name: 'BD1',
+    tag_objects: {
+      location: {
+        'unit-7': 'BD02',
+        'unit-8': 'BD_king',
       },
     },
     is_system_tag_type: true, // location_tag 是系统预定义类型
@@ -125,6 +149,30 @@ export const mockTagsData: TagCatalogItem[] = [
     tag_name: 'Custom-Tag-1',
     tag_objects: {},
     is_system_tag_type: false,
+  },
+  {
+    tag_id: '11',
+    tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+    tag_type: 'area_tag',
+    tag_name: 'East',
+    tag_objects: {},
+    is_system_tag_type: true, // area_tag 是系统预定义类型
+  },
+  {
+    tag_id: '12',
+    tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+    tag_type: 'area_tag',
+    tag_name: 'West',
+    tag_objects: {},
+    is_system_tag_type: true, // area_tag 是系统预定义类型
+  },
+  {
+    tag_id: '13',
+    tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+    tag_type: 'area_tag',
+    tag_name: 'MemaryCare',
+    tag_objects: {},
+    is_system_tag_type: true, // area_tag 是系统预定义类型
   },
 ]
 

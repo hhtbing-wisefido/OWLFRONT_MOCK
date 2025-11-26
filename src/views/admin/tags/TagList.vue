@@ -37,8 +37,8 @@
         <a-form-item style="flex: 1; min-width: 200px;">
           <div class="tag-type-list-container">
             <div
-              v-for="tagType in selectedTagTypeList"
-              :key="tagType"
+              v-for="(tagType, index) in selectedTagTypeList"
+              :key="tagType ?? `null-${index}`"
               class="tag-type-item"
             >
               <div class="tag-type-box-item">
@@ -64,7 +64,7 @@
 
     <!-- 表格 -->
     <a-table
-      :dataSource="dataSource"
+      :dataSource="sortedDataSource"
       :columns="columns"
       :loading="loading"
       :pagination="false"
@@ -72,6 +72,44 @@
       :bordered="true"
       class="tag-table"
     >
+      <template #headerCell="{ column }">
+        <template v-if="column.key === 'tag_type'">
+          <div 
+            style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;" 
+            @click="toggleTagTypeSort"
+            :style="{ color: tagTypeSortOrder ? '#1890ff' : 'inherit' }"
+          >
+            <span>Tag_type</span>
+            <SortAscendingOutlined 
+              v-if="tagTypeSortOrder === 'asc'" 
+              style="font-size: 14px; color: #1890ff;"
+            />
+            <SortDescendingOutlined 
+              v-else-if="tagTypeSortOrder === 'desc'" 
+              style="font-size: 14px; color: #1890ff;"
+            />
+            <span v-else style="color: #d9d9d9; font-size: 12px;">⇅</span>
+          </div>
+        </template>
+        <template v-else-if="column.key === 'tag_name'">
+          <div 
+            style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;" 
+            @click="toggleTagNameSort"
+            :style="{ color: tagNameSortOrder ? '#1890ff' : 'inherit' }"
+          >
+            <span>Tag_name</span>
+            <SortAscendingOutlined 
+              v-if="tagNameSortOrder === 'asc'" 
+              style="font-size: 14px; color: #1890ff;"
+            />
+            <SortDescendingOutlined 
+              v-else-if="tagNameSortOrder === 'desc'" 
+              style="font-size: 14px; color: #1890ff;"
+            />
+            <span v-else style="color: #d9d9d9; font-size: 12px;">⇅</span>
+          </div>
+        </template>
+      </template>
       <template #bodyCell="{ column, record }">
         <!-- Tag_name 列：只显示 tag_name 自身（方块状，右上角打叉） -->
         <template v-if="column.dataIndex === 'tag_name'">
@@ -97,11 +135,11 @@
         <!-- Tag_type 列：下拉框选择 tag_type（本行 tag_name 的类型） -->
         <template v-else-if="column.dataIndex === 'tag_type'">
           <div class="tag-type-cell">
-            <a-select
-              v-model:value="record.tag_type"
-              style="width: 100%"
-              @change="(value) => handleTagTypeChange(record, value)"
-            >
+              <a-select
+                v-model:value="record.tag_type"
+                style="width: 100%"
+                @change="(value: string | null) => handleTagTypeChange(record, value)"
+              >
               <a-select-option
                 v-for="tagType in availableTagTypes"
                 :key="tagType.value"
@@ -119,7 +157,7 @@
             <div v-if="record.tag_objects" class="objects-checkbox-list">
               <a-checkbox-group
                 v-model:value="selectedObjects[record.tag_id]"
-                @change="(checkedValues) => handleObjectCheckChange(record, checkedValues)"
+                @change="(checkedValues: string[]) => handleObjectCheckChange(record, checkedValues)"
               >
                 <template
                   v-for="(objects, objectType) in record.tag_objects"
@@ -148,6 +186,7 @@
 <script lang="ts" setup>
 import { ref, computed, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
+import { SortAscendingOutlined, SortDescendingOutlined } from '@ant-design/icons-vue'
 import type { Rule } from 'ant-design-vue/lib/form'
 import {
   getTagsApi,
@@ -222,18 +261,22 @@ const availableTagTypes = computed(() => {
   return options
 })
 
-// 表格列定义：3列布局
+// 排序状态
+const tagTypeSortOrder = ref<'asc' | 'desc' | null>(null)
+const tagNameSortOrder = ref<'asc' | 'desc' | null>(null)
+
+// 表格列定义：3列布局（Tag_type 第一列，Tag_name 第二列）
 const columns = [
-  {
-    title: 'Tag_name',
-    dataIndex: 'tag_name',
-    key: 'tag_name',
-    width: 250,
-  },
   {
     title: 'Tag_type',
     dataIndex: 'tag_type',
     key: 'tag_type',
+    width: 250,
+  },
+  {
+    title: 'Tag_name',
+    dataIndex: 'tag_name',
+    key: 'tag_name',
     width: 250,
   },
   {
@@ -243,6 +286,67 @@ const columns = [
     width: 'auto',
   },
 ]
+
+// 排序后的数据源（默认按 tag_type 和 tag_name 排序）
+const sortedDataSource = computed(() => {
+  let sorted = [...dataSource.value]
+  
+  // 默认排序：先按 tag_type，再按 tag_name（升序）
+  sorted.sort((a, b) => {
+    // 先比较 tag_type
+    const typeA = (a.tag_type ?? '') as string
+    const typeB = (b.tag_type ?? '') as string
+    const typeCompare = typeA.localeCompare(typeB)
+    
+    if (typeCompare !== 0 && tagTypeSortOrder.value !== null) {
+      // 如果 tag_type 不同且指定了排序，按 tag_type 排序
+      return tagTypeSortOrder.value === 'desc' ? -typeCompare : typeCompare
+    }
+    
+    // 如果 tag_type 相同或未指定 tag_type 排序，按 tag_name 排序
+    const nameA = a.tag_name || ''
+    const nameB = b.tag_name || ''
+    const nameCompare = nameA.localeCompare(nameB)
+    
+    if (tagNameSortOrder.value !== null) {
+      return tagNameSortOrder.value === 'desc' ? -nameCompare : nameCompare
+    }
+    
+    // 默认排序：先按 tag_type，再按 tag_name（都是升序）
+    if (typeCompare !== 0) {
+      return typeCompare
+    }
+    return nameCompare
+  })
+  
+  return sorted
+})
+
+// 切换 Tag_type 排序
+const toggleTagTypeSort = () => {
+  if (tagTypeSortOrder.value === null) {
+    tagTypeSortOrder.value = 'asc'
+  } else if (tagTypeSortOrder.value === 'asc') {
+    tagTypeSortOrder.value = 'desc'
+  } else {
+    tagTypeSortOrder.value = null
+  }
+  // 重置 tag_name 排序
+  tagNameSortOrder.value = null
+}
+
+// 切换 Tag_name 排序
+const toggleTagNameSort = () => {
+  if (tagNameSortOrder.value === null) {
+    tagNameSortOrder.value = 'asc'
+  } else if (tagNameSortOrder.value === 'asc') {
+    tagNameSortOrder.value = 'desc'
+  } else {
+    tagNameSortOrder.value = null
+  }
+  // 重置 tag_type 排序
+  tagTypeSortOrder.value = null
+}
 
 
 // 获取 Tags 列表
@@ -565,6 +669,10 @@ const handleObjectCheckChange = (record: TagCatalogItem, checkedValues: string[]
   // 添加新取消选中的对象到待删除列表
   unselected.forEach((key) => {
     const [objectType, objectId] = key.split(':')
+    if (!objectType || !objectId) return
+    if (!objectsToRemove.value[tagId]) {
+      objectsToRemove.value[tagId] = []
+    }
     const exists = objectsToRemove.value[tagId].some(
       (obj) => obj.objectType === objectType && obj.objectId === objectId
     )
@@ -598,10 +706,13 @@ const handleSaveAll = async () => {
         // 按 objectType 分组
         const groupedByType: Record<string, string[]> = {}
         objects.forEach((obj) => {
-          if (!groupedByType[obj.objectType]) {
-            groupedByType[obj.objectType] = []
+          if (!obj.objectType || !obj.objectId) return
+          const objectType = obj.objectType
+          const objectId = obj.objectId
+          if (!groupedByType[objectType]) {
+            groupedByType[objectType] = []
           }
-          groupedByType[obj.objectType].push(obj.objectId)
+          groupedByType[objectType].push(objectId)
         })
         
         // 删除每个类型的对象

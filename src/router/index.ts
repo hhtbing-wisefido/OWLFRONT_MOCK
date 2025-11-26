@@ -98,6 +98,15 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/unitview',
+    name: 'UnitView',
+    component: () => import('@/views/units/UnitView.vue'),
+    meta: {
+      title: '单元查看',
+      requiresAuth: true,
+    },
+  },
+  {
     path: '/monitoring/vital-focus',
     name: 'VitalFocus',
     component: () => import('@/views/monitoring/vital-focus/VitalFocus.vue'),
