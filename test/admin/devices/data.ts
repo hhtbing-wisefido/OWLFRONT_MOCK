@@ -3,7 +3,7 @@
  * 对应 src/api/device/device.ts 和 owlRD/db/11_devices.sql
  */
 
-import type { Device } from '@/api/device/model/deviceModel'
+import type { Device } from '@/api/devices/model/deviceModel'
 
 /**
  * 模拟 Devices 数据
@@ -98,6 +98,74 @@ export const mockDevicesData: Device[] = [
     mcu_model: 'STM32F4',
     status: 'disabled',
     business_access: 'approved',
+  },
+  {
+    device_id: 'device-007',
+    tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+    device_name: 'DevelopSleep',
+    device_model: 'BM8701-2',
+    device_type: 'Sleepad',
+    device_code: 'tpbp407pka9fb',
+    serial_number: 'SN007',
+    uid: 'UID007',
+    imei: undefined,
+    comm_mode: 'WiFi',
+    firmware_version: 'v1.0.0',
+    mcu_model: 'STM32F4',
+    status: 'online',
+    business_access: 'approved',
+    monitoring_enabled: true,
+  },
+  {
+    device_id: 'device-008',
+    tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+    device_name: '101Radar',
+    device_model: 'HC2',
+    device_type: 'Radar',
+    device_code: '9D8A326309E7',
+    serial_number: 'SN008',
+    uid: 'UID008',
+    imei: undefined,
+    comm_mode: 'WiFi',
+    firmware_version: 'v1.0.0',
+    mcu_model: 'STM32F4',
+    status: 'online',
+    business_access: 'approved',
+    monitoring_enabled: true,
+  },
+  {
+    device_id: 'device-009',
+    tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+    device_name: '201Radar',
+    device_model: 'HC2',
+    device_type: 'Radar',
+    device_code: '9D8A32A1CD2B',
+    serial_number: 'SN009',
+    uid: 'UID009',
+    imei: undefined,
+    comm_mode: 'WiFi',
+    firmware_version: 'v1.0.0',
+    mcu_model: 'STM32F4',
+    status: 'online',
+    business_access: 'approved',
+    monitoring_enabled: true,
+  },
+  {
+    device_id: 'device-010',
+    tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+    device_name: 'LivingRoomRadar',
+    device_model: 'HC2',
+    device_type: 'Radar',
+    device_code: '25A859B8333B',
+    serial_number: 'SN010',
+    uid: 'UID010',
+    imei: undefined,
+    comm_mode: 'WiFi',
+    firmware_version: 'v1.0.0',
+    mcu_model: 'STM32F4',
+    status: 'online',
+    business_access: 'approved',
+    monitoring_enabled: true,
   },
 ]
 

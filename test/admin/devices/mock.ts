@@ -10,7 +10,7 @@ import type {
   GetDevicesResult,
   UpdateDeviceParams,
   DeleteDeviceParams,
-} from '@/api/device/model/deviceModel'
+} from '@/api/devices/model/deviceModel'
 import { mockDevicesData } from './data'
 
 /**
@@ -39,9 +39,24 @@ export async function mockGetDevices(params?: GetDevicesParams): Promise<GetDevi
     filteredDevices = filteredDevices.filter(device => device.status !== 'disabled')
   }
   
-  // 按 business_access 过滤
-  if (params?.business_access) {
+  // 默认只返回 approved 且未绑定的设备（用于设备绑定场景）
+  // 如果明确指定了 business_access 参数，则按参数过滤
+  if (params?.business_access !== undefined) {
     filteredDevices = filteredDevices.filter(device => device.business_access === params.business_access)
+  } else {
+    // 默认只返回 approved 的设备
+    filteredDevices = filteredDevices.filter(device => device.business_access === 'approved')
+  }
+  
+  // 过滤掉已绑定的设备（如果有 bound_room_id 或 bound_bed_id 或 location_id，则认为已绑定）
+  // 注意：这里假设设备模型中有这些字段，如果没有则跳过此过滤
+  // 如果 params 中有 include_bound: true，则不过滤已绑定的设备
+  const includeBound = (params as any)?.include_bound === true
+  if (!includeBound) {
+    filteredDevices = filteredDevices.filter(device => {
+      const deviceAny = device as any
+      return !deviceAny.bound_room_id && !deviceAny.bound_bed_id && !deviceAny.location_id
+    })
   }
   
   // 按搜索关键词过滤
@@ -110,6 +125,18 @@ export async function mockUpdateDevice(deviceId: string, params: UpdateDevicePar
   }
   if (params.business_access !== undefined) {
     device.business_access = params.business_access
+  }
+  
+  // 更新绑定字段
+  const deviceAny = device as any
+  if (params.location_id !== undefined) {
+    deviceAny.location_id = params.location_id
+  }
+  if (params.bound_room_id !== undefined) {
+    deviceAny.bound_room_id = params.bound_room_id
+  }
+  if (params.bound_bed_id !== undefined) {
+    deviceAny.bound_bed_id = params.bound_bed_id
   }
   
   return { success: true }

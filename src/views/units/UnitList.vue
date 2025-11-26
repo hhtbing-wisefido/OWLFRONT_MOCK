@@ -334,11 +334,20 @@
       v-model:visible="showEditUnitModal"
       :title="getEditUnitTitle()"
       @cancel="resetEditUnitForm"
-      :width="420"
+      :width="isDeviceMode ? 1300 : 420"
       :footer="null"
+      :wrap-class-name="isDeviceMode ? 'edit-unit-modal-device-mode' : 'edit-unit-modal-normal'"
     >
-      <div class="unit-edit-container">
-        <!-- Unit 基本信息 -->
+      <div class="modal-content-wrapper" :class="{ 'device-mode': isDeviceMode }">
+        <!-- EditUnit 容器 -->
+        <div 
+          class="unit-edit-container"
+          :class="{ 'drag-over': dragOverTarget?.type === 'unit' && dragOverTarget?.id === editingUnit?.unit_id }"
+          @dragover.prevent="editingUnit && handleDragOver($event, 'unit', editingUnit.unit_id)"
+          @dragleave="handleDragLeave"
+          @drop="editingUnit && handleDeviceDrop($event, 'unit', editingUnit.unit_id)"
+        >
+          <!-- Unit 基本信息 -->
         <div class="unit-fields">
           <div class="unit-field full-row">
             <label>UnitName<span class="required-star">*</span>:</label>
@@ -412,6 +421,16 @@
               >
                 Add Bed
               </a-button>
+              <a-button
+                type="primary"
+                size="small"
+                @click="handleAddDev"
+                :disabled="!editingUnit"
+                :class="{ 'device-mode-active': isDeviceMode }"
+                :title="isDeviceMode ? '退出设备模式' : '添加设备'"
+              >
+                Dev <AppstoreAddOutlined />
+              </a-button>
             </div>
           </div>
           <div class="tree-container">
@@ -445,6 +464,10 @@
                 v-for="room in roomsWithBeds"
                 :key="room.room_id"
                 class="tree-node room-node"
+                :class="{ 'drag-over': dragOverTarget?.type === 'room' && dragOverTarget?.id === room.room_id }"
+                @dragover.prevent="handleDragOver($event, 'room', room.room_id)"
+                @dragleave="handleDragLeave"
+                @drop="handleDeviceDrop($event, 'room', room.room_id)"
               >
                 <div class="node-content">
                   <span
@@ -477,6 +500,12 @@
                     class="action-icon delete-icon inline-action"
                     @click="handleDeleteRoom(room.room_id)"
                   />
+                  <AppstoreAddOutlined
+                    v-if="editingRoomId !== room.room_id && isDeviceMode"
+                    class="action-icon inline-action add-device-icon"
+                    @click="handleAddDeviceToRoom(room.room_id)"
+                    title="添加设备"
+                  />
                   <div class="node-actions">
                     <a-button
                       type="primary"
@@ -486,6 +515,94 @@
                     >
                       <PlusOutlined />
                       Bed
+                    </a-button>
+                  </div>
+                </div>
+
+                <!-- Room 绑定的设备显示 -->
+                <div v-if="getRoomDevices(room.room_id).length > 0" class="bound-devices-section">
+                  <!-- 紧凑模式：只显示图标 -->
+                  <div 
+                    v-if="!expandedDevices.has(`room-${room.room_id}`)" 
+                    class="devices-compact"
+                  >
+                    <div
+                      v-for="device in getRoomDevices(room.room_id).slice(0, 3)"
+                      :key="device.device_id"
+                      class="device-icon-wrapper"
+                      :class="{
+                        'monitoring-enabled': device.monitoring_enabled,
+                        'monitoring-disabled': !device.monitoring_enabled
+                      }"
+                    >
+                      <div class="device-icon-circle">
+                        {{ getDeviceTypeIcon(device.device_type) }}
+                      </div>
+                      <div class="device-status-indicator" :class="`status-${device.status}`">
+                        <CheckCircleOutlined v-if="device.status === 'online'" />
+                        <span v-else-if="device.status === 'error'" class="error-dot"></span>
+                        <CloseCircleOutlined v-else-if="device.status === 'offline'" />
+                      </div>
+                    </div>
+                    <span 
+                      v-if="getRoomDevices(room.room_id).length > 3" 
+                      class="more-devices"
+                      @click="toggleDevicesExpand(`room-${room.room_id}`)"
+                    >
+                      +{{ getRoomDevices(room.room_id).length - 3 }}
+                    </span>
+                    <a-button 
+                      v-if="getRoomDevices(room.room_id).length > 3"
+                      size="small" 
+                      type="link"
+                      @click="toggleDevicesExpand(`room-${room.room_id}`)"
+                    >
+                      展开
+                    </a-button>
+                  </div>
+                  
+                  <!-- 展开模式：显示详细信息 -->
+                  <div 
+                    v-else 
+                    class="devices-expanded"
+                  >
+                    <div 
+                      v-for="device in getRoomDevices(room.room_id)" 
+                      :key="device.device_id"
+                      class="device-item"
+                    >
+                      <div
+                        class="device-icon-wrapper"
+                        :class="{
+                          'monitoring-enabled': device.monitoring_enabled,
+                          'monitoring-disabled': !device.monitoring_enabled
+                        }"
+                      >
+                        <div class="device-icon-circle">
+                          {{ getDeviceTypeIcon(device.device_type) }}
+                        </div>
+                        <div class="device-status-indicator" :class="`status-${device.status}`">
+                          <CheckCircleOutlined v-if="device.status === 'online'" />
+                          <span v-else-if="device.status === 'error'" class="error-dot"></span>
+                          <CloseCircleOutlined v-else-if="device.status === 'offline'" />
+                        </div>
+                      </div>
+                      <span>{{ device.device_name }}</span>
+                      <EditOutlined 
+                        class="action-icon inline-action"
+                        @click="handleEditDevice(device)"
+                      />
+                      <DeleteOutlined 
+                        class="action-icon delete-icon inline-action"
+                        @click="handleDeleteDevice(device)"
+                      />
+                    </div>
+                    <a-button 
+                      size="small" 
+                      type="link"
+                      @click="toggleDevicesExpand(`room-${room.room_id}`)"
+                    >
+                      收起
                     </a-button>
                   </div>
                 </div>
@@ -500,6 +617,10 @@
                     v-for="bed in room.beds"
                     :key="bed.bed_id"
                     class="tree-node bed-node"
+                    :class="{ 'drag-over': dragOverTarget?.type === 'bed' && dragOverTarget?.id === bed.bed_id }"
+                    @dragover.prevent="handleDragOver($event, 'bed', bed.bed_id)"
+                    @dragleave="handleDragLeave"
+                    @drop="handleDeviceDrop($event, 'bed', bed.bed_id)"
                   >
                     <div class="node-content">
                       <span class="expand-placeholder"></span>
@@ -526,6 +647,100 @@
                         class="action-icon delete-icon inline-action"
                         @click="handleDeleteBed(bed.bed_id)"
                       />
+                      <AppstoreAddOutlined
+                        v-if="editingBedId !== bed.bed_id && isDeviceMode"
+                        class="action-icon inline-action add-device-icon"
+                        @click="handleAddDeviceToBed(bed.bed_id)"
+                        title="添加设备"
+                      />
+                    </div>
+                    
+                    <!-- Bed 绑定的设备显示 -->
+                    <div v-if="getBedDevices(bed.bed_id).length > 0" class="bound-devices-section">
+                      <!-- 紧凑模式：只显示图标 -->
+                      <div 
+                        v-if="!expandedDevices.has(`bed-${bed.bed_id}`)" 
+                        class="devices-compact"
+                      >
+                        <div
+                          v-for="device in getBedDevices(bed.bed_id).slice(0, 3)"
+                          :key="device.device_id"
+                          class="device-icon-wrapper"
+                          :class="{
+                            'monitoring-enabled': device.monitoring_enabled,
+                            'monitoring-disabled': !device.monitoring_enabled
+                          }"
+                        >
+                          <div class="device-icon-circle">
+                            {{ getDeviceTypeIcon(device.device_type) }}
+                          </div>
+                          <div class="device-status-indicator" :class="`status-${device.status}`">
+                            <CheckCircleOutlined v-if="device.status === 'online'" />
+                            <span v-else-if="device.status === 'error'" class="error-dot"></span>
+                            <CloseCircleOutlined v-else-if="device.status === 'offline'" />
+                          </div>
+                        </div>
+                        <span 
+                          v-if="getBedDevices(bed.bed_id).length > 3" 
+                          class="more-devices"
+                          @click="toggleDevicesExpand(`bed-${bed.bed_id}`)"
+                        >
+                          +{{ getBedDevices(bed.bed_id).length - 3 }}
+                        </span>
+                        <a-button 
+                          v-if="getBedDevices(bed.bed_id).length > 3"
+                          size="small" 
+                          type="link"
+                          @click="toggleDevicesExpand(`bed-${bed.bed_id}`)"
+                        >
+                          展开
+                        </a-button>
+                      </div>
+                      
+                      <!-- 展开模式：显示详细信息 -->
+                      <div 
+                        v-else 
+                        class="devices-expanded"
+                      >
+                        <div 
+                          v-for="device in getBedDevices(bed.bed_id)" 
+                          :key="device.device_id"
+                          class="device-item"
+                        >
+                          <div
+                        class="device-icon-wrapper"
+                        :class="{
+                          'monitoring-enabled': device.monitoring_enabled,
+                          'monitoring-disabled': !device.monitoring_enabled
+                        }"
+                      >
+                        <div class="device-icon-circle">
+                          {{ getDeviceTypeIcon(device.device_type) }}
+                        </div>
+                        <div class="device-status-indicator" :class="`status-${device.status}`">
+                          <CheckCircleOutlined v-if="device.status === 'online'" />
+                          <span v-else-if="device.status === 'error'" class="error-dot"></span>
+                          <CloseCircleOutlined v-else-if="device.status === 'offline'" />
+                        </div>
+                      </div>
+                          <span>{{ device.device_name }}</span>
+                          <EditOutlined 
+                            class="action-icon inline-action"
+                            @click="handleEditDevice(device)"
+                          />
+                          <DeleteOutlined 
+                            class="action-icon delete-icon inline-action"
+                            @click="handleDeleteDevice(device)"
+                          />
+                        </div>
+                        <a-button 
+                          size="small" 
+                          type="link"
+                          @click="toggleDevicesExpand(`bed-${bed.bed_id}`)"
+                        >
+                          收起
+                        </a-button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -539,16 +754,54 @@
             <a-button type="primary" @click="handleSaveUnit">OK</a-button>
           </div>
         </div>
+        </div>
+        
+        <!-- Dev 容器（设备列表） -->
+        <div v-if="isDeviceMode" class="device-container">
+          <div class="device-list-wrapper">
+            <a-table
+              :columns="deviceColumns"
+              :data-source="availableDevices"
+              :pagination="false"
+              :scroll="{ x: 'max-content', y: 400 }"
+              size="small"
+              :row-key="(record: Device) => record.device_id"
+            >
+              <template #bodyCell="{ column, record }">
+                <template v-if="column.key === 'checkbox'">
+                  <a-checkbox
+                    :checked="isDeviceBound(record)"
+                    :disabled="false"
+                    @change="handleDeviceCheckboxChange($event, record)"
+                  />
+                </template>
+                <template v-else-if="column.key === 'monitoring_enabled'">
+                  {{ record.monitoring_enabled ? 'T' : 'F' }}
+                </template>
+                <template v-else-if="column.key === 'device_name'">
+                  <span
+                    class="device-name-draggable"
+                    draggable="true"
+                    @dragstart="handleDeviceDragStart($event, record)"
+                  >
+                    {{ record.device_name }}
+                  </span>
+                </template>
+              </template>
+            </a-table>
+          </div>
+        </div>
       </div>
     </a-modal>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, nextTick } from 'vue'
+import { ref, onMounted, computed, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
-import { EditOutlined, DeleteOutlined, PlusOutlined, EyeOutlined } from '@ant-design/icons-vue'
+import { EditOutlined, DeleteOutlined, PlusOutlined, EyeOutlined, CheckCircleOutlined, CloseCircleOutlined, AppstoreAddOutlined } from '@ant-design/icons-vue'
+import type { ColumnsType } from 'ant-design-vue/es/table'
 import type { Building, Unit, RoomWithBeds, Bed } from '@/api/units/model/unitModel'
 import {
   createBuildingApi,
@@ -569,6 +822,8 @@ import {
 import { getTagsApi, createTagApi } from '@/api/admin/tags/tags'
 import type { TagCatalogItem } from '@/api/admin/tags/model/tagsModel'
 import { useUserStore } from '@/store/modules/user'
+import { getDevicesApi, updateDeviceApi } from '@/api/devices/device'
+import type { Device } from '@/api/devices/model/deviceModel'
 
 const userStore = useUserStore()
 const router = useRouter()
@@ -633,6 +888,7 @@ const roomsWithBeds = ref<RoomWithBeds[]>([])
 const showAddRoomForm = ref(false)
 const newRoomName = ref('')
 const expandedRooms = ref<Set<string>>(new Set())
+const expandedDevices = ref<Set<string>>(new Set()) // 设备展开状态（Room/Bed ID）
 const editingRoomId = ref<string | null>(null)
 const editingRoomName = ref('')
 const editingBedId = ref<string | null>(null)
@@ -640,6 +896,68 @@ const editingBedName = ref('')
 const roomNameInputRef = ref<any>()
 const roomInputRef = ref<any>()
 const bedInputRef = ref<any>()
+const isDeviceMode = ref(false)
+
+// Device 相关状态
+const availableDevices = ref<Device[]>([]) // 可用设备（未绑定）
+const allDevices = ref<Device[]>([]) // 所有设备（包括已绑定的）
+const deviceColumns: ColumnsType<Device> = [
+  {
+    title: '',
+    key: 'checkbox',
+    width: 50,
+    align: 'center',
+    fixed: 'left',
+  },
+  {
+    title: 'Device_Name',
+    dataIndex: 'device_name',
+    key: 'device_name',
+    width: 150,
+    sorter: (a, b) => (a.device_name || '').localeCompare(b.device_name || ''),
+  },
+  {
+    title: 'Device_type',
+    dataIndex: 'device_type',
+    key: 'device_type',
+    width: 100,
+    sorter: (a, b) => (a.device_type || '').localeCompare(b.device_type || ''),
+  },
+  {
+    title: 'Device_mode',
+    dataIndex: 'device_model',
+    key: 'device_model',
+    width: 100,
+    sorter: (a, b) => (a.device_model || '').localeCompare(b.device_model || ''),
+  },
+  {
+    title: 'Device_code',
+    dataIndex: 'device_code',
+    key: 'device_code',
+    width: 140,
+    sorter: (a, b) => (a.device_code || '').localeCompare(b.device_code || ''),
+    ellipsis: true,
+  },
+  {
+    title: 'status',
+    dataIndex: 'status',
+    key: 'status',
+    width: 80,
+    sorter: (a, b) => (a.status || '').localeCompare(b.status || ''),
+  },
+  {
+    title: 'Monitor',
+    dataIndex: 'monitoring_enabled',
+    key: 'monitoring_enabled',
+    width: 70,
+    align: 'center',
+    sorter: (a, b) => {
+      const aVal = a.monitoring_enabled ? 1 : 0
+      const bVal = b.monitoring_enabled ? 1 : 0
+      return aVal - bVal
+    },
+  },
+]
 
 // Edit Unit Form
 const editUnitForm = ref({
@@ -760,7 +1078,7 @@ const fetchUnits = async () => {
     const tenantId = userInfo?.tenant_id
 
     if (!tenantId) {
-      message.error('No tenant ID available')
+      message.error('无法获取租户ID')
       return
     }
 
@@ -1092,7 +1410,7 @@ const handleDeleteBuilding = async (building: Building) => {
     const tenantId = userInfo?.tenant_id
 
     if (!tenantId) {
-      message.error('No tenant ID available')
+      message.error('无法获取租户ID')
       return
     }
 
@@ -1187,7 +1505,7 @@ const handleCreateUnit = async () => {
     const tenantId = userInfo?.tenant_id
 
     if (!tenantId) {
-      message.error('No tenant ID available')
+      message.error('无法获取租户ID')
       return
     }
 
@@ -1399,6 +1717,286 @@ const resetEditUnitForm = () => {
     unit_type: 'Facility',
   }
   areaTagSearchValue.value = ''
+  isDeviceMode.value = false
+}
+
+// 判断设备是否已绑定
+const isDeviceBound = (device: Device): boolean => {
+  const deviceAny = device as any
+  return !!(deviceAny.bound_room_id || deviceAny.bound_bed_id || deviceAny.location_id)
+}
+
+// 切换设备展开/收起
+const toggleDevicesExpand = (id: string) => {
+  if (expandedDevices.value.has(id)) {
+    expandedDevices.value.delete(id)
+  } else {
+    expandedDevices.value.add(id)
+  }
+}
+
+// 获取设备类型图标文本
+const getDeviceTypeIcon = (deviceType: string): string => {
+  const iconMap: Record<string, string> = {
+    'Radar': '📡', // 雷达图标（可以用 SVG 或图标组件替换）
+    'Sleepad': '🛏️', // 板图标
+    'SleepPad': '🛏️',
+  }
+  return iconMap[deviceType] || '📱'
+}
+
+// 获取已绑定到 Room 的设备
+const getRoomDevices = (roomId: string): Device[] => {
+  // 从所有设备中过滤出绑定到该 Room 的设备
+  const boundDevices = allDevices.value.filter((device: any) => {
+    return device.bound_room_id === roomId
+  })
+  return boundDevices
+}
+
+// 获取已绑定到 Bed 的设备
+const getBedDevices = (bedId: string): Device[] => {
+  // 从所有设备中过滤出绑定到该 Bed 的设备
+  const boundDevices = allDevices.value.filter((device: any) => {
+    return device.bound_bed_id === bedId
+  })
+  return boundDevices
+}
+
+// 处理添加设备到 Room
+const handleAddDeviceToRoom = (_roomId: string) => {
+  // 打开设备模式并展开设备容器
+  if (!isDeviceMode.value) {
+    isDeviceMode.value = true
+    // 展开所有 Room
+    roomsWithBeds.value.forEach((room) => {
+      if (room.room_id) {
+        expandedRooms.value.add(room.room_id)
+      }
+    })
+    fetchAllDevices()
+  }
+  // 显示提示
+  message.info('Please drag a device from the right device list to this room')
+}
+
+// 处理添加设备到 Bed
+const handleAddDeviceToBed = (_bedId: string) => {
+  // 打开设备模式并展开设备容器
+  if (!isDeviceMode.value) {
+    isDeviceMode.value = true
+    // 展开所有 Room（以便看到 Bed）
+    roomsWithBeds.value.forEach((room) => {
+      if (room.room_id) {
+        expandedRooms.value.add(room.room_id)
+      }
+    })
+    fetchAllDevices()
+  }
+  // 显示提示
+  message.info('Please drag a device from the right device list to this bed')
+}
+
+// 处理设备编辑
+const handleEditDevice = (device: Device) => {
+  // TODO: 实现设备编辑功能
+  console.log('Edit device:', device)
+  message.info('Device edit feature coming soon')
+}
+
+// 处理设备 checkbox 点击（绑定/解绑）
+const handleDeviceCheckboxChange = async (event: any, device: Device) => {
+  const checked = event.target.checked
+  
+  try {
+    if (!device.device_id) {
+      message.error('Device ID is required for binding')
+      return
+    }
+    
+    if (checked) {
+      // 绑定设备到当前 Unit
+      if (!editingUnit.value?.unit_id) {
+        message.error('Please select a unit first')
+        return
+      }
+      
+      await updateDeviceApi(device.device_id, {
+        location_id: editingUnit.value.unit_id,
+        bound_room_id: null,
+        bound_bed_id: null,
+      })
+      message.success(`Device "${device.device_name}" bound to unit successfully`)
+    } else {
+      // 解绑设备
+      await updateDeviceApi(device.device_id, {
+        location_id: null,
+        bound_room_id: null,
+        bound_bed_id: null,
+      })
+      message.success(`Device "${device.device_name}" unbound successfully`)
+    }
+    
+    // 刷新所有设备列表（包括已绑定的）
+    await fetchAllDevices()
+  } catch (error: any) {
+    message.error((checked ? 'Failed to bind device: ' : 'Failed to unbind device: ') + (error.message || 'Unknown error'))
+    // 恢复 checkbox 状态
+    event.target.checked = !checked
+  }
+}
+
+// 处理设备删除（解绑）
+const handleDeleteDevice = async (device: Device) => {
+  try {
+    if (!device.device_id) {
+      message.error('Device ID is required for unbinding')
+      return
+    }
+    
+    // 调用 API 解绑设备（使用 device_id）
+    await updateDeviceApi(device.device_id, {
+      location_id: null,
+      bound_room_id: null,
+      bound_bed_id: null,
+    })
+    message.success(`Device "${device.device_name}" unbound successfully`)
+    // 刷新所有设备列表（包括已绑定的）
+    await fetchAllDevices()
+  } catch (error: any) {
+    message.error('Failed to unbind device: ' + (error.message || 'Unknown error'))
+  }
+}
+
+// 获取所有设备列表（approved，包括已绑定的）
+const fetchAllDevices = async () => {
+  try {
+    const userInfo = userStore.getUserInfo
+    const tenantId = userInfo?.tenant_id
+
+    if (!tenantId) {
+      message.error('No tenant ID available')
+      return
+    }
+
+    // 获取所有 approved 设备（包括已绑定的）
+    // 通过 include_bound: true 参数来获取所有设备（包括已绑定的）
+    const result = await getDevicesApi({
+      tenant_id: tenantId,
+      business_access: 'approved',
+      include_bound: true, // 自定义参数，用于获取所有设备（包括已绑定的）
+    } as any)
+
+    allDevices.value = result.items
+    
+    // 过滤出未绑定的设备作为可用设备
+    availableDevices.value = result.items.filter((device: any) => {
+      return !device.bound_room_id && !device.bound_bed_id && !device.location_id
+    })
+  } catch (error: any) {
+    message.error('获取设备列表失败: ' + (error.message || '未知错误'))
+    allDevices.value = []
+    availableDevices.value = []
+  }
+}
+
+// 拖拽相关状态
+const draggedDeviceId = ref<string | null>(null)
+const dragOverTarget = ref<{ type: 'unit' | 'room' | 'bed'; id: string } | null>(null)
+
+// 处理设备拖拽开始
+const handleDeviceDragStart = (event: DragEvent, device: Device) => {
+  if (!event.dataTransfer) return
+  
+  draggedDeviceId.value = device.device_id
+  
+  // 创建自定义拖拽预览（只显示 DeviceName）
+  const dragImage = document.createElement('div')
+  dragImage.textContent = device.device_name
+  dragImage.style.cssText = 'position: absolute; top: -1000px; padding: 8px 12px; background: #1890ff; color: white; border-radius: 4px; font-size: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);'
+  document.body.appendChild(dragImage)
+  event.dataTransfer.setDragImage(dragImage, 0, 0)
+  
+  // 传递设备数据
+  event.dataTransfer.setData('application/json', JSON.stringify({
+    device_id: device.device_id,
+    device_name: device.device_name,
+  }))
+  
+  // 设置拖拽效果
+  event.dataTransfer.effectAllowed = 'move'
+  
+  // 清理
+  setTimeout(() => {
+    if (document.body.contains(dragImage)) {
+      document.body.removeChild(dragImage)
+    }
+  }, 0)
+}
+
+// 处理拖拽悬停
+const handleDragOver = (event: DragEvent, type: 'unit' | 'room' | 'bed', id: string) => {
+  event.preventDefault()
+  event.dataTransfer!.dropEffect = 'move'
+  dragOverTarget.value = { type, id }
+}
+
+// 处理拖拽离开
+const handleDragLeave = () => {
+  dragOverTarget.value = null
+}
+
+// 处理设备放置
+const handleDeviceDrop = async (event: DragEvent, type: 'unit' | 'room' | 'bed', id: string) => {
+  event.preventDefault()
+  dragOverTarget.value = null
+  
+  if (!event.dataTransfer) return
+  
+  try {
+    const data = JSON.parse(event.dataTransfer.getData('application/json'))
+    const deviceId = data.device_id
+    
+    if (!deviceId) {
+      message.error('Device ID is required for binding')
+      return
+    }
+    
+    // 调用 API 绑定设备（使用 device_id）
+    await updateDeviceApi(deviceId, {
+      location_id: type === 'unit' ? id : (editingUnit.value?.unit_id || null),
+      bound_room_id: type === 'room' ? id : null,
+      bound_bed_id: type === 'bed' ? id : null,
+    })
+    
+    console.log('Device binding:', { deviceId, type, id, deviceName: data.device_name })
+    const typeName = type === 'unit' ? 'unit' : type === 'room' ? 'room' : 'bed'
+    message.success(`Device "${data.device_name}" bound to ${typeName} successfully`)
+    
+    // 刷新所有设备列表（包括已绑定的）
+    await fetchAllDevices()
+  } catch (error: any) {
+    message.error('Failed to bind device: ' + (error.message || 'Unknown error'))
+  }
+}
+
+// 处理 Add Dev 按钮点击（切换展开/收回 Room）
+const handleAddDev = async () => {
+  if (isDeviceMode.value) {
+    // 退出 Device 模式：收回所有 Room
+    isDeviceMode.value = false
+    expandedRooms.value.clear()
+  } else {
+    // 进入 Device 模式：展开所有 Room 并获取所有设备（包括已绑定的）
+    isDeviceMode.value = true
+    roomsWithBeds.value.forEach((room) => {
+      if (room.room_id) {
+        expandedRooms.value.add(room.room_id)
+      }
+    })
+    // 获取所有设备列表（包括已绑定的）
+    await fetchAllDevices()
+  }
 }
 
 // 保存 Unit 信息
@@ -1752,6 +2350,47 @@ const handleDeleteBed = async (bedId: string) => {
     message.error('Failed to delete bed: ' + (error.message || 'Unknown error'))
   }
 }
+
+// 监听 showEditUnitModal 的变化，在打开 Modal 时立即设置位置为 10%
+watch(showEditUnitModal, async (newShowModal) => {
+  if (!newShowModal) return
+  
+  // 立即设置位置，不等待动画
+  await nextTick()
+  // 使用 MutationObserver 监听 DOM 变化，确保在 Modal 元素出现时立即设置位置
+  const observer = new MutationObserver((_mutations, obs) => {
+    const modalElement = document.querySelector('.edit-unit-modal-device-mode .ant-modal, .edit-unit-modal-normal .ant-modal') as HTMLElement
+    if (modalElement) {
+      // 立即设置位置，禁用过渡
+      modalElement.style.left = '10%'
+      modalElement.style.top = '50%'
+      modalElement.style.transform = 'translateY(-50%)'
+      modalElement.style.margin = '0'
+      modalElement.style.transition = 'none'
+      // 找到后停止观察
+      obs.disconnect()
+    }
+  })
+  
+  // 开始观察 body 的变化
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  })
+  
+  // 也立即尝试设置（如果元素已经存在）
+  setTimeout(() => {
+    const modalElement = document.querySelector('.edit-unit-modal-device-mode .ant-modal, .edit-unit-modal-normal .ant-modal') as HTMLElement
+    if (modalElement) {
+      modalElement.style.left = '10%'
+      modalElement.style.top = '50%'
+      modalElement.style.transform = 'translateY(-50%)'
+      modalElement.style.margin = '0'
+      modalElement.style.transition = 'none'
+      observer.disconnect()
+    }
+  }, 0)
+}, { immediate: true })
 
 // 初始化
 onMounted(() => {
@@ -2145,8 +2784,205 @@ onMounted(() => {
   padding-bottom: 16px;
 }
 
+/* Modal 内容包装器 - 水平布局 */
+.modal-content-wrapper {
+  display: flex;
+  gap: 0;
+}
+
+.modal-content-wrapper.device-mode {
+  gap: 24px;
+}
+
 .unit-edit-container {
   padding: 0;
+  min-width: 0;
+  overflow-x: hidden;
+  transition: all 0.3s;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Device 模式下，固定宽度为 420px，并距离 Modal 左边界 10px */
+.modal-content-wrapper.device-mode .unit-edit-container {
+  flex: 0 0 420px;
+  max-width: 420px;
+  width: 420px;
+}
+
+:deep(.edit-unit-modal-device-mode .ant-modal-body .unit-edit-container) {
+  margin-left: 10px;
+}
+
+/* 拖拽视觉反馈 */
+.unit-edit-container.drag-over,
+.tree-node.room-node.drag-over,
+.tree-node.bed-node.drag-over {
+  background: #e6f7ff !important;
+  border: 2px dashed #1890ff !important;
+  border-radius: 4px;
+}
+
+/* Dev 容器 */
+.device-container {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid #e8e8e8;
+  padding-left: 24px;
+}
+
+
+.device-list-wrapper {
+  flex: 1;
+  overflow: hidden;
+}
+
+/* 可拖拽的设备名称 */
+.device-name-draggable {
+  cursor: grab;
+  user-select: none;
+  padding: 2px 4px;
+  border-radius: 2px;
+  transition: background-color 0.2s;
+}
+
+.device-name-draggable:hover {
+  background: #f0f0f0;
+}
+
+.device-name-draggable:active {
+  cursor: grabbing;
+}
+
+/* 设备图标样式 */
+.device-icon-wrapper {
+  position: relative;
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+  margin-right: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* 圆形图标 */
+.device-icon-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  transition: all 0.2s;
+  border: 2px solid transparent;
+}
+
+/* monitoring_enabled: 蓝色底 */
+.device-icon-wrapper.monitoring-enabled .device-icon-circle {
+  background: #1890ff;
+  color: white;
+}
+
+/* monitoring_disabled: 灰色底 */
+.device-icon-wrapper.monitoring-disabled .device-icon-circle {
+  background: #d9d9d9;
+  color: #666;
+}
+
+/* Status 指示器（左上角） */
+.device-status-indicator {
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid white;
+  font-size: 8px;
+  z-index: 1;
+}
+
+/* online: 绿色对号 */
+.device-status-indicator.status-online {
+  background: #52c41a;
+  color: white;
+}
+
+.device-status-indicator.status-online :deep(.anticon) {
+  font-size: 8px;
+}
+
+/* error: 红色点 */
+.device-status-indicator.status-error {
+  background: #ff4d4f;
+  width: 10px;
+  height: 10px;
+  border: 2px solid white;
+}
+
+.device-status-indicator.status-error .error-dot {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: #ff4d4f;
+}
+
+/* offline: 红色叉 */
+.device-status-indicator.status-offline {
+  background: #ff4d4f;
+  color: white;
+  font-size: 10px;
+}
+
+.device-status-indicator.status-offline :deep(.anticon) {
+  font-size: 8px;
+}
+
+/* 设备列表紧凑模式 */
+.bound-devices-section {
+  margin-left: 24px;
+  margin-top: 4px;
+}
+
+.devices-compact {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.more-devices {
+  color: #1890ff;
+  font-size: 12px;
+  cursor: pointer;
+  margin: 0 4px;
+  user-select: none;
+}
+
+.more-devices:hover {
+  color: #40a9ff;
+  text-decoration: underline;
+}
+
+/* 设备列表展开模式 */
+.devices-expanded {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.device-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
 }
 
 .unit-fields {
@@ -2155,6 +2991,9 @@ onMounted(() => {
   gap: 8px;
   margin-top: 0;
   margin-bottom: 8px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .unit-field {
@@ -2180,6 +3019,9 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .inline-field {
@@ -2203,6 +3045,9 @@ onMounted(() => {
   margin-top: 16px;
   border-top: 1px solid #e8e8e8;
   padding-top: 16px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .tree-header {
@@ -2216,6 +3061,8 @@ onMounted(() => {
   display: flex;
   gap: 8px;
   align-items: center;
+  flex-wrap: wrap;
+  max-width: 100%;
 }
 
 .tree-title {
@@ -2227,10 +3074,14 @@ onMounted(() => {
 .tree-container {
   max-height: 400px;
   overflow-y: auto;
+  overflow-x: hidden;
   border: 1px solid #e8e8e8;
   border-radius: 4px;
   padding: 8px;
   background: #fafafa;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .tree-empty {
@@ -2278,6 +3129,9 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   min-height: 28px;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .expand-icon {
@@ -2325,6 +3179,7 @@ onMounted(() => {
   align-items: center;
   gap: 4px;
   margin-left: auto;
+  flex-shrink: 0;
 }
 
 .action-icon {
@@ -2355,6 +3210,27 @@ onMounted(() => {
   margin-left: 2px;
 }
 
+.action-icon.add-device-icon {
+  color: #52c41a;
+  font-size: 16px;
+}
+
+.action-icon.add-device-icon:hover {
+  background: #f6ffed;
+  color: #73d13d;
+}
+
+/* Add Dev 按钮在设备模式下的样式 */
+.device-mode-active {
+  background: #52c41a !important;
+  border-color: #52c41a !important;
+}
+
+.device-mode-active:hover {
+  background: #73d13d !important;
+  border-color: #73d13d !important;
+}
+
 .tree-children {
   margin-top: 4px;
   display: flex;
@@ -2370,6 +3246,9 @@ onMounted(() => {
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px solid #e8e8e8;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .modal-actions-right {
@@ -2466,6 +3345,21 @@ onMounted(() => {
 
 .location-tag-header.active .unit-count {
   color: #1890ff;
+}
+
+/* Edit Unit Modal 位置控制 - 默认位置为 10% */
+/* 使用更高优先级的选择器，确保在 Modal 渲染时就应用位置 */
+:deep(.edit-unit-modal-normal .ant-modal),
+:deep(.edit-unit-modal-device-mode .ant-modal),
+:deep(.ant-modal-wrap.edit-unit-modal-normal .ant-modal),
+:deep(.ant-modal-wrap.edit-unit-modal-device-mode .ant-modal) {
+  left: 10% !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  margin: 0 !important;
+  /* 禁用所有过渡动画，确保直接显示在目标位置 */
+  transition: none !important;
+  animation: none !important;
 }
 </style>
 

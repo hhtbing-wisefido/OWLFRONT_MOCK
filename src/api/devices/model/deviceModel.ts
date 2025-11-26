@@ -20,11 +20,12 @@ export interface Device {
   mcu_model?: string // 只读，从设备读取
   status: 'online' | 'offline' | 'error' | 'disabled' // 只读，从设备读取
   business_access: 'pending' | 'approved' | 'rejected' // 可编辑，租户业务接入权限
+  monitoring_enabled?: boolean // 监控启用状态
+  device_code?: string // 设备代码
   // 以下字段不在租户设备管理界面处理：
   // location_id?: string // 在 Location 模块处理
   // bound_room_id?: string // 在 Location 模块处理
   // bound_bed_id?: string // 在 Location 模块处理
-  // monitoring_enabled?: boolean // 在 Location 模块的 location-device 绑定界面中管理
   // metadata?: Record<string, any> // 在 alarm/IoT alarm monitor 模块处理
 }
 
@@ -58,6 +59,10 @@ export interface GetDevicesResult {
 export interface UpdateDeviceParams {
   device_name?: string
   business_access?: 'pending' | 'approved' | 'rejected'
+  // 设备绑定字段
+  location_id?: string | null // 绑定到 Unit（location）
+  bound_room_id?: string | null // 绑定到 Room
+  bound_bed_id?: string | null // 绑定到 Bed
 }
 
 /**
