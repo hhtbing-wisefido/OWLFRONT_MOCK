@@ -11,6 +11,7 @@ export { store }
 
 // 导出所有 store，方便在 setup 外使用
 export * from './modules/user'
+export * from './modules/tags'
 // export * from './modules/app'
 // export * from './modules/permission'
 

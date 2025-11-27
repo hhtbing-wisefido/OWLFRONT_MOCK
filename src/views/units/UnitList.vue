@@ -8,18 +8,24 @@
           View
         </a-button>
         <span class="create-label">location_tag:</span>
-        <a-auto-complete
+        <a-select
           id="create-building-location-tag"
           name="create-building-location-tag"
           v-model:value="createBuildingForm.location_tag"
-          :options="locationTagOptions.map(tag => ({ value: tag.tag_name }))"
-          placeholder="Select or input location_tag"
+          placeholder="Select tag"
           allow-clear
+          show-search
           :filter-option="false"
-          @search="handleLocationTagSearch"
-          @blur="handleLocationTagBlur"
           style="width: 150px"
-        />
+        >
+          <a-select-option
+            v-for="tag in locationTagOptions"
+            :key="tag.tag_name"
+            :value="tag.tag_name"
+          >
+            {{ tag.tag_name }}
+          </a-select-option>
+        </a-select>
         <span class="separator">:</span>
         <span class="create-label">Building:</span>
         <a-input
@@ -70,20 +76,26 @@
                 class="building-tag-edit"
                 @click.stop
               >
-                <a-auto-complete
+                <a-select
                   :id="`edit-building-location-tag-${building.building_id}`"
                   :name="`edit-building-location-tag-${building.building_id}`"
                   v-model:value="editingBuildingForm.location_tag"
-                  :options="locationTagOptions.map(tag => ({ value: tag.tag_name }))"
-                  placeholder="location_tag"
+                  placeholder="Select tag"
                   size="small"
                   allow-clear
+                  show-search
                   :filter-option="false"
-                  @search="handleLocationTagSearch"
-                  @blur="handleLocationTagBlur"
-                  style="width: 120px"
+                  style="width: 72px"
                   @pressEnter="handleSaveBuilding(building)"
-                />
+                >
+                  <a-select-option
+                    v-for="tag in locationTagOptions"
+                    :key="tag.tag_name"
+                    :value="tag.tag_name"
+                  >
+                    {{ tag.tag_name }}
+                  </a-select-option>
+                </a-select>
                 <span class="separator">:</span>
                 <a-input
                   :id="`edit-building-name-tag-${building.building_id}`"
@@ -157,20 +169,26 @@
                 class="building-edit"
                 @click.stop
               >
-                <a-auto-complete
+                <a-select
                   :id="`edit-building-location-tag-card-${building.building_id}`"
                   :name="`edit-building-location-tag-card-${building.building_id}`"
                   v-model:value="editingBuildingForm.location_tag"
-                  :options="locationTagOptions.map(tag => ({ value: tag.tag_name }))"
-                  placeholder="location_tag"
+                  placeholder="Select tag"
                   size="small"
                   allow-clear
+                  show-search
                   :filter-option="false"
-                  @search="handleLocationTagSearch"
-                  @blur="handleLocationTagBlur"
-                  style="width: 120px"
+                  style="width: 72px"
                   @pressEnter="handleSaveBuilding(building)"
-                />
+                >
+                  <a-select-option
+                    v-for="tag in locationTagOptions"
+                    :key="tag.tag_name"
+                    :value="tag.tag_name"
+                  >
+                    {{ tag.tag_name }}
+                  </a-select-option>
+                </a-select>
                 <span class="separator">:</span>
                 <a-input
                   :id="`edit-building-name-card-${building.building_id}`"
@@ -291,11 +309,18 @@
             id="create-location-location-tag"
             name="create-location-location-tag"
             v-model:value="createUnitForm.location_tag"
-            placeholder="Select location tag"
+            placeholder="Select tag"
             allow-clear
+            show-search
+            :filter-option="false"
           >
-            <a-select-option value="VIP">VIP</a-select-option>
-            <a-select-option value="Standard">Standard</a-select-option>
+            <a-select-option
+              v-for="tag in locationTagOptions"
+              :key="tag.tag_name"
+              :value="tag.tag_name"
+            >
+              {{ tag.tag_name }}
+            </a-select-option>
           </a-select>
         </a-form-item>
         <a-form-item label="Area Tag">
@@ -853,7 +878,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, nextTick, watch } from 'vue'
+import { ref, onMounted, onUnmounted, computed, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
 import { EditOutlined, DeleteOutlined, PlusOutlined, EyeOutlined, CheckCircleOutlined, CloseCircleOutlined, AppstoreAddOutlined } from '@ant-design/icons-vue'
@@ -878,13 +903,14 @@ import {
   updateBedApi,
   deleteBedApi,
 } from '@/api/units/unit'
-import { getTagsApi, createTagApi } from '@/api/admin/tags/tags'
-import type { TagCatalogItem } from '@/api/admin/tags/model/tagsModel'
+import { createTagApi } from '@/api/admin/tags/tags'
 import { useUserStore } from '@/store/modules/user'
+import { useTagsStore } from '@/store/modules/tags'
 import { getDevicesApi, updateDeviceApi } from '@/api/devices/device'
 import type { Device } from '@/api/devices/model/deviceModel'
 
 const userStore = useUserStore()
+const tagsStore = useTagsStore()
 const router = useRouter()
 
 // Navigate to view mode
@@ -1094,12 +1120,11 @@ const editUnitForm = ref({
   unit_type: 'Facility' as 'Facility' | 'Home', // Default value is Facility
 })
 
-// Location Tag Options (for Building)
-const locationTagOptions = ref<TagCatalogItem[]>([])
-const locationTagSearchValue = ref('')
+// Location Tag Options (从 store 获取)
+const locationTagOptions = computed(() => tagsStore.locationTags)
 
-// Area Tag Options
-const areaTagOptions = ref<TagCatalogItem[]>([])
+// Area Tag Options (从 store 获取)
+const areaTagOptions = computed(() => tagsStore.areaTags)
 const areaTagSearchValue = ref('')
 
 // 获取显示用的 building 和 floor（DB 保证不为空，默认值：building="-", floor="1F"）
@@ -1583,8 +1608,9 @@ const handleDeleteBuilding = async (building: Building) => {
 // 点击网格单元格
 const handleCellClick = async (unit: Unit | null, _index: number) => {
   try {
-    // 加载 area tag 选项
+    // 加载 area tag 和 location tag 选项
     await fetchAreaTags()
+    await fetchLocationTags()
 
     if (unit) {
       // Existing Unit: 打开编辑 Unit 界面
@@ -1696,61 +1722,15 @@ const fetchRoomsWithBeds = async (unitId: string) => {
   }
 }
 
-// 获取 Location Tag 选项（tag_type 必须是 'location_tag'）
+// 获取 Location Tag 选项（从 store 获取，如果未加载则先加载）
 const fetchLocationTags = async () => {
-  try {
-    const userInfo = userStore.getUserInfo
-    const tenantId = userInfo?.tenant_id
-
-    if (!tenantId) {
-      return
-    }
-
-    const result = await getTagsApi({
-      tenant_id: tenantId,
-      tag_type: 'location_tag',
-    })
-
-    locationTagOptions.value = result.items
-  } catch (error: any) {
-    console.error('Failed to fetch location tags:', error)
-    locationTagOptions.value = []
-  }
+  await tagsStore.fetchAllTags()
 }
 
-// 处理 Location Tag 搜索
-const handleLocationTagSearch = (value: string) => {
-  locationTagSearchValue.value = value
-}
 
-// 处理 Location Tag 失焦（当用户输入新值并离开输入框时）
-// 注意：不再立即创建 tag，而是等到点击 OK 时与 Unit 一起创建
-const handleLocationTagBlur = async () => {
-  // 从搜索值或当前表单值获取输入的值
-  // 如果 tag 不存在，先设置为表单值，等点击 OK 时再创建
-  // 这里不再立即创建 tag
-}
-
-// 获取 Area Tag 选项（tag_type 必须是 'area_tag'）
+// 获取 Area Tag 选项（从 store 获取，如果未加载则先加载）
 const fetchAreaTags = async () => {
-  try {
-    const userInfo = userStore.getUserInfo
-    const tenantId = userInfo?.tenant_id
-
-    if (!tenantId) {
-      return
-    }
-
-    const result = await getTagsApi({
-      tenant_id: tenantId,
-      tag_type: 'area_tag',
-    })
-
-    areaTagOptions.value = result.items
-  } catch (error: any) {
-    console.error('Failed to fetch area tags:', error)
-    areaTagOptions.value = []
-  }
+  await tagsStore.fetchAllTags()
 }
 
 // 处理 Area Tag 搜索
@@ -2172,8 +2152,8 @@ const handleSaveUnit = async () => {
             tag_type: 'area_tag',
             tag_name: editUnitForm.value.area_tag,
           })
-          // 刷新 area tag 选项
-          await fetchAreaTags()
+          // 刷新 area tag 选项（刷新 store 缓存）
+          await tagsStore.refreshTags()
         } catch (error: any) {
           message.error('Failed to create area tag: ' + (error.message || 'Unknown error'))
           return
@@ -2181,26 +2161,8 @@ const handleSaveUnit = async () => {
       }
     }
 
-    // 2. 检查并创建 location_tag（如果不存在）
-    // 从 currentBuildingForGrid 获取 location_tag，如果没有则从 selectedLocationTag 获取
+    // 2. 获取 location_tag（从 currentBuildingForGrid 或 selectedLocationTag 获取）
     const locationTagValue = currentBuildingForGrid.value?.location_tag || selectedLocationTag.value || undefined
-    if (locationTagValue) {
-      const locationTagExists = locationTagOptions.value.some((tag) => tag.tag_name === locationTagValue)
-      if (!locationTagExists) {
-        try {
-          await createTagApi({
-            tenant_id: tenantId,
-            tag_type: 'location_tag',
-            tag_name: locationTagValue,
-          })
-          // 刷新 location tag 选项
-          await fetchLocationTags()
-        } catch (error: any) {
-          message.error('Failed to create location tag: ' + (error.message || 'Unknown error'))
-          return
-        }
-      }
-    }
 
     if (!editingUnit.value) {
       // 创建新的 Unit
@@ -2811,11 +2773,40 @@ watch(showEditUnitModal, async (newShowModal) => {
   }, 0)
 }, { immediate: true })
 
+// 处理点击空白处退出 Building 编辑模式
+const handleClickOutside = (event: MouseEvent) => {
+  if (editingBuildingId.value) {
+    // 检查点击的目标是否在编辑区域内
+    const target = event.target as HTMLElement
+    const editElements = document.querySelectorAll('.building-tag-edit, .building-edit')
+    let isInsideEdit = false
+    
+    editElements.forEach((el) => {
+      if (el.contains(target)) {
+        isInsideEdit = true
+      }
+    })
+    
+    // 如果点击在编辑区域外，退出编辑模式
+    if (!isInsideEdit) {
+      editingBuildingId.value = null
+    }
+  }
+}
+
 // 初始化
 onMounted(() => {
   fetchBuildings()
-  fetchLocationTags()
+  tagsStore.fetchAllTags() // 一次性加载所有 tags 到 store
   fetchAllUnits()
+  // 添加全局点击监听器
+  document.addEventListener('click', handleClickOutside)
+})
+
+// 清理
+onUnmounted(() => {
+  // 移除全局点击监听器
+  document.removeEventListener('click', handleClickOutside)
 })
 </script>
 
