@@ -403,34 +403,36 @@
             </div>
           </div>
           <!-- DB fields (editable) -->
-          <div class="unit-field full-row">
-            <label>Primary Resident ID:</label>
-            <a-input
-              v-model:value="editUnitForm.primary_resident_id"
-              placeholder="Enter primary resident ID (optional)"
-              style="width: 200px"
-              allow-clear
-            />
-          </div>
-          <div class="unit-field full-row">
-            <label></label>
-            <div style="display: flex; gap: 24px; align-items: flex-start;">
-              <a-checkbox v-model:checked="editUnitForm.is_public_space" style="min-width: 80px;">
-                Public
-              </a-checkbox>
+          <div class="unit-field inline-row">
+            <div class="inline-field">
               <a-checkbox v-model:checked="editUnitForm.is_multi_person_room">
                 Multi-Person Room
+              </a-checkbox>
+            </div>
+            <div class="inline-field">
+              <a-checkbox v-model:checked="editUnitForm.is_public_space">
+                Public
               </a-checkbox>
             </div>
           </div>
           <div class="unit-field full-row">
             <label>Time Zone:</label>
-            <a-input
+            <a-select
               v-model:value="editUnitForm.time_zone"
-              placeholder="Enter time zone (optional)"
-              style="width: 200px"
+              placeholder="Select time zone"
               allow-clear
-            />
+              show-search
+              :filter-option="filterTimeZoneOption"
+              style="width: 200px"
+            >
+              <a-select-option
+                v-for="tz in usTimeZones"
+                :key="tz.value"
+                :value="tz.value"
+              >
+                {{ tz.label }}
+              </a-select-option>
+            </a-select>
           </div>
           </div>
 
@@ -966,9 +968,8 @@ const createUnitForm = ref({
   area_tag: undefined as string | undefined,
   building: '',
   floor: '',
-  primary_resident_id: undefined as string | undefined,
+  is_multi_person_room: true, // 默认选中
   is_public_space: false,
-  is_multi_person_room: false,
   time_zone: undefined as string | undefined,
 })
 // selectedCellIndex 暂时未使用，保留用于后续功能
@@ -1126,9 +1127,8 @@ const editUnitForm = ref({
   unit_name: '',
   unit_number: '',
   unit_type: 'Facility' as 'Facility' | 'Home', // Default value is Facility
-  primary_resident_id: undefined as string | undefined,
+  is_multi_person_room: true, // 默认选中
   is_public_space: false,
-  is_multi_person_room: false,
   time_zone: undefined as string | undefined,
 })
 
@@ -1138,6 +1138,46 @@ const locationTagOptions = ref<TagCatalogItem[]>([])
 // Area Tag Options
 const areaTagOptions = ref<TagCatalogItem[]>([])
 const areaTagSearchValue = ref('')
+
+// 美国时区列表（IANA 格式）
+const usTimeZones = [
+  { value: 'America/New_York', label: 'Eastern Time (America/New_York)' },
+  { value: 'America/Chicago', label: 'Central Time (America/Chicago)' },
+  { value: 'America/Denver', label: 'Mountain Time (America/Denver)' },
+  { value: 'America/Phoenix', label: 'Mountain Time - Arizona (America/Phoenix)' },
+  { value: 'America/Los_Angeles', label: 'Pacific Time (America/Los_Angeles)' },
+  { value: 'America/Anchorage', label: 'Alaska Time (America/Anchorage)' },
+  { value: 'Pacific/Honolulu', label: 'Hawaii Time (Pacific/Honolulu)' },
+  { value: 'America/Detroit', label: 'Eastern Time - Michigan (America/Detroit)' },
+  { value: 'America/Indiana/Indianapolis', label: 'Eastern Time - Indiana (America/Indiana/Indianapolis)' },
+  { value: 'America/Indiana/Vincennes', label: 'Eastern Time - Indiana (America/Indiana/Vincennes)' },
+  { value: 'America/Indiana/Winamac', label: 'Eastern Time - Indiana (America/Indiana/Winamac)' },
+  { value: 'America/Indiana/Marengo', label: 'Eastern Time - Indiana (America/Indiana/Marengo)' },
+  { value: 'America/Indiana/Petersburg', label: 'Eastern Time - Indiana (America/Indiana/Petersburg)' },
+  { value: 'America/Indiana/Vevay', label: 'Eastern Time - Indiana (America/Indiana/Vevay)' },
+  { value: 'America/Kentucky/Louisville', label: 'Eastern Time - Kentucky (America/Kentucky/Louisville)' },
+  { value: 'America/Kentucky/Monticello', label: 'Eastern Time - Kentucky (America/Kentucky/Monticello)' },
+  { value: 'America/Indiana/Tell_City', label: 'Central Time - Indiana (America/Indiana/Tell_City)' },
+  { value: 'America/Indiana/Knox', label: 'Central Time - Indiana (America/Indiana/Knox)' },
+  { value: 'America/Menominee', label: 'Central Time - Michigan (America/Menominee)' },
+  { value: 'America/North_Dakota/Center', label: 'Central Time - North Dakota (America/North_Dakota/Center)' },
+  { value: 'America/North_Dakota/New_Salem', label: 'Central Time - North Dakota (America/North_Dakota/New_Salem)' },
+  { value: 'America/North_Dakota/Beulah', label: 'Central Time - North Dakota (America/North_Dakota/Beulah)' },
+  { value: 'America/Boise', label: 'Mountain Time - Idaho (America/Boise)' },
+  { value: 'America/Nome', label: 'Alaska Time - Nome (America/Nome)' },
+  { value: 'America/Sitka', label: 'Alaska Time - Sitka (America/Sitka)' },
+  { value: 'America/Juneau', label: 'Alaska Time - Juneau (America/Juneau)' },
+  { value: 'America/Metlakatla', label: 'Alaska Time - Metlakatla (America/Metlakatla)' },
+  { value: 'America/Yakutat', label: 'Alaska Time - Yakutat (America/Yakutat)' },
+]
+
+// 时区选择框的过滤函数
+const filterTimeZoneOption = (input: string, option: any) => {
+  const searchText = input.toLowerCase()
+  const value = option.value?.toLowerCase() || ''
+  const label = option.children?.toLowerCase() || ''
+  return value.includes(searchText) || label.includes(searchText)
+}
 
 // 获取显示用的 building 和 floor（DB 保证不为空，默认值：building="-", floor="1F"）
 const getDisplayBuilding = (unit: Unit): string => {
@@ -1632,9 +1672,8 @@ const handleCellClick = async (unit: Unit | null, _index: number) => {
         unit_name: unit.unit_name,
         unit_number: unit.unit_number,
         unit_type: (unit as any).unit_type || 'Facility',
-        primary_resident_id: unit.primary_resident_id,
+        is_multi_person_room: unit.is_multi_person_room ?? true, // 默认选中
         is_public_space: unit.is_public_space ?? false,
-        is_multi_person_room: unit.is_multi_person_room ?? false,
         time_zone: unit.time_zone,
       }
       await fetchRoomsWithBeds(unit.unit_id)
@@ -1650,7 +1689,6 @@ const handleCellClick = async (unit: Unit | null, _index: number) => {
         unit_name: '',
         unit_number: '',
         unit_type: 'Facility',
-        primary_resident_id: undefined,
         is_public_space: false,
         is_multi_person_room: false,
         time_zone: undefined,
@@ -1694,7 +1732,6 @@ const handleCreateUnit = async () => {
       floor: floorValue,
       location_tag: createUnitForm.value.location_tag,
       area_tag: createUnitForm.value.area_tag,
-      primary_resident_id: createUnitForm.value.primary_resident_id,
       is_public_space: createUnitForm.value.is_public_space,
       is_multi_person_room: createUnitForm.value.is_multi_person_room,
       time_zone: createUnitForm.value.time_zone,
@@ -1719,7 +1756,6 @@ const resetCreateUnitForm = () => {
     area_tag: undefined,
     building: '',
     floor: '',
-    primary_resident_id: undefined,
     is_public_space: false,
     is_multi_person_room: false,
     time_zone: undefined,
@@ -1849,7 +1885,6 @@ const resetEditUnitForm = () => {
     unit_name: '',
     unit_number: '',
     unit_type: 'Facility',
-    primary_resident_id: undefined,
     is_public_space: false,
     is_multi_person_room: false,
     time_zone: undefined,
@@ -2222,7 +2257,6 @@ const handleSaveUnit = async () => {
         floor: floorValue,
         location_tag: locationTagValue,
         area_tag: editUnitForm.value.area_tag,
-        primary_resident_id: editUnitForm.value.primary_resident_id,
         is_public_space: editUnitForm.value.is_public_space,
         is_multi_person_room: editUnitForm.value.is_multi_person_room,
         time_zone: editUnitForm.value.time_zone,
@@ -2245,7 +2279,6 @@ const handleSaveUnit = async () => {
         unit_name: editUnitForm.value.unit_name,
         unit_type: editUnitForm.value.unit_type,
         area_tag: editUnitForm.value.area_tag,
-        primary_resident_id: editUnitForm.value.primary_resident_id,
         is_public_space: editUnitForm.value.is_public_space,
         is_multi_person_room: editUnitForm.value.is_multi_person_room,
         time_zone: editUnitForm.value.time_zone,
