@@ -1,6 +1,6 @@
 <template>
   <div class="unit-list">
-    <!-- 页首：创建表单 -->
+    <!-- Page Header: Create Form -->
     <div class="page-header">
       <div class="create-building-form">
         <a-button type="default" @click="goToUnitView" class="view-button">
@@ -26,7 +26,7 @@
           id="create-building-name"
           name="create-building-name"
           v-model:value="createBuildingForm.building_name"
-          placeholder="Build name"
+          placeholder="Building name"
           style="width: 100px"
           @pressEnter="handleCreateBuilding"
         />
@@ -38,7 +38,7 @@
           v-model:value="createBuildingForm.floors"
           :min="1"
           :max="99"
-          placeholder="number"
+          placeholder="Number of floors"
           style="width: 80px"
           @pressEnter="handleCreateBuilding"
         />
@@ -89,7 +89,7 @@
                   :id="`edit-building-name-tag-${building.building_id}`"
                   :name="`edit-building-name-tag-${building.building_id}`"
                   v-model:value="editingBuildingForm.building_name"
-                  placeholder="Build"
+                  placeholder="Building"
                   size="small"
                   style="width: 55px"
                   @pressEnter="handleSaveBuilding(building)"
@@ -129,7 +129,7 @@
     <div class="divider"></div>
 
     <div class="main-container">
-      <!-- 左侧：Building 列表（完整的 Building 卡片和楼层按钮） -->
+      <!-- Left: Building List (Complete Building Cards and Floor Buttons) -->
       <div class="building-list">
         <div class="buildings">
           <div
@@ -176,7 +176,7 @@
                   :id="`edit-building-name-card-${building.building_id}`"
                   :name="`edit-building-name-card-${building.building_id}`"
                   v-model:value="editingBuildingForm.building_name"
-                  placeholder="Build"
+                  placeholder="Building"
                   size="small"
                   style="width: 55px"
                   @pressEnter="handleSaveBuilding(building)"
@@ -212,14 +212,14 @@
         </div>
       </div>
 
-      <!-- 右侧：Unit 网格 -->
+      <!-- Right: Unit Grid -->
       <div class="unit-grid-container">
         <div v-if="!selectedBuilding || !selectedFloor" class="empty-state">
-          <p>Please select a floor</p>
+              <p>Please select a floor</p>
         </div>
         <div v-else class="unit-grid-wrapper">
           <div class="unit-grid">
-            <!-- 显示所有排序后的 units -->
+            <!-- Display all sorted units -->
             <div
               v-for="unit in unitGrid"
               :key="unit.unit_id"
@@ -231,7 +231,7 @@
               </div>
             </div>
             
-            <!-- 添加一个空单元格用于创建新 Unit -->
+            <!-- Add an empty cell for creating a new Unit -->
             <div
               class="unit-cell"
               @click="handleCellClick(null, -1)"
@@ -339,18 +339,19 @@
       :wrap-class-name="isDeviceMode ? 'edit-unit-modal-device-mode' : 'edit-unit-modal-normal'"
     >
       <div class="modal-content-wrapper" :class="{ 'device-mode': isDeviceMode }">
-        <!-- EditUnit 容器 -->
+        <!-- EditUnit Container -->
         <div 
           class="unit-edit-container"
           :class="{ 
             'drag-over': dragOverTarget?.type === 'unit' && dragOverTarget?.id === editingUnit?.unit_id,
             'dev-container-active': devContainerTarget?.type === 'unit' && devContainerTarget?.id === editingUnit?.unit_id
           }"
+          
           @dragover.prevent="editingUnit && handleDragOver($event, 'unit', editingUnit.unit_id)"
           @dragleave="handleDragLeave"
           @drop="editingUnit && handleDeviceDrop($event, 'unit', editingUnit.unit_id)"
         >
-          <!-- Unit 基本信息 -->
+          <!-- Unit Basic Information -->
         <div class="unit-fields">
           <div class="unit-field full-row">
             <label>UnitName<span class="required-star">*</span>:</label>
@@ -416,16 +417,6 @@
               >
                 Add Room
               </a-button>
-              <a-button
-                type="primary"
-                size="small"
-                @click="handleAddDev"
-                :disabled="!editingUnit"
-                :class="{ 'device-mode-active': isDeviceMode }"
-                :title="isDeviceMode ? 'Exit device mode' : 'Add device'"
-              >
-                Dev <AppstoreAddOutlined />
-              </a-button>
             </div>
           </div>
           <div class="tree-container">
@@ -436,22 +427,35 @@
               <p>No rooms yet. You can add beds directly to the unit, or create a room first.</p>
             </div>
             <div v-else>
-              <!-- Tree top actions: Add Bed and Add Dev to Unit -->
+              <!-- Tree top actions: Add Bed and Dev -->
               <div class="tree-top-actions">
-                <div 
-                  class="add-bed-wrapper" 
-                  title="Add bed to unit"
+                <span class="action-label">Add Bed/Dev to Unit</span>
+                <a-button
+                  type="primary"
+                  size="small"
                   @click="handleAddBedToFirstRoom"
+                  :disabled="!editingUnit"
+                  title="Add bed to unit"
+                  @mouseenter="bedIconHovered = true"
+                  @mouseleave="bedIconHovered = false"
                 >
-                  <PlusOutlined class="add-bed-plus-icon" />
-                  <HomeOutlined class="add-bed-icon" />
-                </div>
-                <AppstoreAddOutlined
-                  class="action-icon inline-action add-device-icon"
-                  @click="handleAddDeviceToUnit"
-                  :class="{ 'disabled': !editingUnit }"
-                  title="Add Device to Unit"
-                />
+                  Bed
+                  <img 
+                    :src="bedIconSrc"
+                    class="bed-icon-in-button"
+                    alt="Bed"
+                  />
+                </a-button>
+                <a-button
+                  type="primary"
+                  size="small"
+                  @click="handleAddDev"
+                  :disabled="!editingUnit"
+                  :class="{ 'device-mode-active': isDeviceMode }"
+                  :title="isDeviceMode ? 'Exit device mode' : 'Add device'"
+                >
+                  Dev <AppstoreAddOutlined />
+                </a-button>
               </div>
               <div class="tree-list">
               <!-- Add Room Form -->
@@ -523,15 +527,13 @@
                     title="Add device"
                   />
                   <div class="node-actions">
-                    <a-button
-                      type="primary"
-                      size="small"
+                    <img 
+                      :src="bedIconGreen"
+                      class="action-icon inline-action add-bed-icon-room"
                       @click="handleAddBedDirectly(room)"
-                      :disabled="getAvailableBedLetters(room).length === 0"
-                    >
-                      <PlusOutlined />
-                      Bed
-                    </a-button>
+                      :class="{ 'disabled': getAvailableBedLetters(room).length === 0 }"
+                      title="Add bed"
+                    />
                   </div>
                 </div>
 
@@ -586,7 +588,7 @@
                       />
                     </div>
                     
-                    <!-- Bed 绑定的设备节点（作为 Bed 的子节点） -->
+                    <!-- Bed Bound Device Nodes (as Children of Bed) -->
                     <div
                       v-if="getBedDevices(bed.bed_id).length > 0"
                       class="tree-children"
@@ -598,7 +600,7 @@
                       >
                         <div class="node-content">
                           <span class="expand-placeholder"></span>
-                          <!-- 展开模式：显示详细信息 -->
+                          <!-- Expanded Mode: Show Detailed Information -->
                           <div 
                             v-if="expandedDevices.has(`device-${device.device_id}`)" 
                             class="device-expanded-content"
@@ -636,7 +638,7 @@
                               −
                             </span>
                           </div>
-                          <!-- 收起模式：只显示图标 -->
+                          <!-- Collapsed Mode: Show Icon Only -->
                           <div 
                             v-else 
                             class="device-collapsed-content"
@@ -671,7 +673,7 @@
                   </div>
                 </div>
                 
-                <!-- Room 绑定的设备节点（作为 Room 的子节点，在 Bed 之后） -->
+                <!-- Room Bound Device Nodes (as Children of Room, After Bed) -->
                 <div
                   v-if="getRoomDevices(room.room_id).length > 0"
                   class="tree-children"
@@ -683,7 +685,7 @@
                   >
                     <div class="node-content">
                       <span class="expand-placeholder"></span>
-                      <!-- 展开模式：显示详细信息 -->
+                      <!-- Expanded Mode: Show Detailed Information -->
                       <div 
                         v-if="expandedDevices.has(`device-${device.device_id}`)" 
                         class="device-expanded-content"
@@ -721,7 +723,7 @@
                           −
                         </span>
                       </div>
-                      <!-- 收起模式：只显示图标 -->
+                      <!-- Collapsed Mode: Show Icon Only -->
                       <div 
                         v-else 
                         class="device-collapsed-content"
@@ -756,11 +758,11 @@
               </div>
             </div>
           </div>
+          </div>
         </div>
         </div>
         
-        <!-- Dev 容器（设备列表） -->
-        <div v-if="isDeviceMode" class="device-container">
+        <!-- Dev Container (Device List) -->
         <div v-if="isDeviceMode" class="device-container">
           <div class="device-list-wrapper">
             <a-table
@@ -840,7 +842,9 @@
 import { ref, onMounted, computed, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
-import { EditOutlined, DeleteOutlined, PlusOutlined, EyeOutlined, CheckCircleOutlined, CloseCircleOutlined, AppstoreAddOutlined, HomeOutlined } from '@ant-design/icons-vue'
+import { EditOutlined, DeleteOutlined, PlusOutlined, EyeOutlined, CheckCircleOutlined, CloseCircleOutlined, AppstoreAddOutlined } from '@ant-design/icons-vue'
+import bedIconBlue from '@/assets/svg/Bed-blue.svg'
+import bedIconGreen from '@/assets/svg/Bed-green.svg'
 import type { ColumnsType } from 'ant-design-vue/es/table'
 import type { Building, Unit, RoomWithBeds, Bed } from '@/api/units/model/unitModel'
 import {
@@ -873,17 +877,17 @@ const goToUnitView = () => {
   router.push('/unitview')
 }
 
-// Building 列表
+// Building list
 const buildings = ref<Building[]>([])
 const selectedFloor = ref<string>('')
 
-// 选中的 location_tag（用于显示没有 building/floor 的 units）
+// Selected location_tag (for displaying units without building/floor)
 const selectedLocationTag = ref<string>('')
 
-// Headline 行：独立管理自己的展开状态（独立的组件实例）
+// Headline row: independently manages its own expanded state (independent component instance)
 const expandedBuildings = ref<Set<string>>(new Set())
 
-// 左侧列：独立管理自己的展开状态（独立的组件实例）
+// Left column: independently manages its own expanded state (independent component instance)
 const selectedBuilding = ref<Building | null>(null)
 
 // 当前用于 unitGrid 的 building（可能是从 headline 或左侧列选择的）
@@ -912,7 +916,7 @@ const showCreateUnitModal = ref(false)
 const createUnitForm = ref({
   unit_number: '',
   unit_name: '',
-  unit_type: 'Facility' as 'Facility' | 'Home', // 默认值为 Facility
+  unit_type: 'Facility' as 'Facility' | 'Home', // Default value is Facility
   location_tag: undefined as string | undefined,
   area_tag: undefined as string | undefined,
   building: '',
@@ -929,6 +933,8 @@ const showAddRoomForm = ref(false)
 const newRoomName = ref('')
 const expandedRooms = ref<Set<string>>(new Set())
 const expandedDevices = ref<Set<string>>(new Set()) // 设备展开状态（Room/Bed ID）
+const bedIconHovered = ref(false)
+const bedIconSrc = computed(() => bedIconHovered.value ? bedIconGreen : bedIconBlue)
 const editingRoomId = ref<string | null>(null)
 // 设备选择弹窗
 const showDeviceSelectModal = ref(false)
@@ -1070,7 +1076,7 @@ const editUnitForm = ref({
   area_tag: undefined as string | undefined,
   unit_name: '',
   unit_number: '',
-  unit_type: 'Facility' as 'Facility' | 'Home', // 默认值为 Facility
+  unit_type: 'Facility' as 'Facility' | 'Home', // Default value is Facility
 })
 
 // Location Tag Options (for Building)
@@ -1184,7 +1190,7 @@ const fetchUnits = async () => {
     const tenantId = userInfo?.tenant_id
 
     if (!tenantId) {
-      message.error('无法获取租户ID')
+      message.error('Unable to get tenant ID')
       return
     }
 
@@ -1516,7 +1522,7 @@ const handleDeleteBuilding = async (building: Building) => {
     const tenantId = userInfo?.tenant_id
 
     if (!tenantId) {
-      message.error('无法获取租户ID')
+      message.error('Unable to get tenant ID')
       return
     }
 
@@ -1611,7 +1617,7 @@ const handleCreateUnit = async () => {
     const tenantId = userInfo?.tenant_id
 
     if (!tenantId) {
-      message.error('无法获取租户ID')
+      message.error('Unable to get tenant ID')
       return
     }
 
@@ -3291,40 +3297,42 @@ onMounted(() => {
 /* Tree top actions */
 .tree-top-actions {
   display: flex;
+  align-items: center;
   gap: 8px;
   padding: 8px 0;
   margin-bottom: 8px;
 }
 
-.add-bed-wrapper {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
+.action-label {
+  font-size: 12px;
+  color: #666;
+  margin-right: 4px;
+}
+
+.bed-icon-in-button {
+  width: 16px;
+  height: 16px;
+  margin-left: 4px;
+  vertical-align: middle;
+  transition: all 0.3s;
+  filter: brightness(0) invert(1); /* 转换为白色 */
+}
+
+.add-bed-icon-room {
   width: 24px;
   height: 24px;
+  cursor: pointer;
+  transition: all 0.3s;
 }
 
-.add-bed-icon {
-  font-size: 20px;
-  color: #1890ff;
+.add-bed-icon-room:hover:not(.disabled) {
+  transform: scale(1.1);
 }
 
-.add-bed-plus-icon {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  font-size: 12px;
-  color: #1890ff;
-  background: white;
-  border-radius: 50%;
-  z-index: 1;
-}
-
-.add-bed-wrapper:hover .add-bed-icon,
-.add-bed-wrapper:hover .add-bed-plus-icon {
-  color: #40a9ff;
+.add-bed-icon-room.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 /* Tree bottom actions */
