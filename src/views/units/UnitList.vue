@@ -423,11 +423,8 @@
             <div v-if="!editingUnit" class="tree-empty">
               <p>Please create or select a unit first</p>
             </div>
-            <div v-else-if="roomsWithBeds.length === 0 && !showAddRoomForm" class="tree-empty">
-              <p>No rooms yet. You can add beds directly to the unit, or create a room first.</p>
-            </div>
-            <div v-else>
-              <!-- Tree top actions: Add Bed and Dev -->
+            <template v-else>
+              <!-- Tree top actions: Add Bed and Dev - Always show when editingUnit exists -->
               <div class="tree-top-actions">
                 <span class="action-label">Add Bed/Dev to Unit</span>
                 <a-button
@@ -457,6 +454,11 @@
                   Dev <AppstoreAddOutlined />
                 </a-button>
               </div>
+              
+              <div v-if="roomsWithBeds.length === 0 && !showAddRoomForm" class="tree-empty">
+                <p>No rooms yet. You can add beds directly to the unit, or create a room first.</p>
+              </div>
+              <div v-else>
               <div class="tree-list">
               <!-- Add Room Form -->
               <div v-if="showAddRoomForm" class="tree-node add-form">
@@ -757,12 +759,13 @@
                 </div>
               </div>
             </div>
-          </div>
-          </div>
+              </div>
+            </template>
         </div>
+          </div>
         </div>
         
-        <!-- Dev Container (Device List) -->
+        <!-- Dev Container (Device List) - 与 unit-edit-container 并列 -->
         <div v-if="isDeviceMode" class="device-container">
           <div class="device-list-wrapper">
             <a-table
@@ -799,6 +802,17 @@
         </div>
       </div>
       <div class="modal-actions">
+        <div class="modal-actions-left">
+          <a-button 
+            v-if="editingUnit"
+            type="primary" 
+            danger 
+            @click="handleDeleteUnit"
+            :disabled="!editingUnit"
+          >
+            <DeleteOutlined /> Delete
+          </a-button>
+        </div>
         <div class="modal-actions-right">
           <a-button @click="resetEditUnitForm">Cancel</a-button>
           <a-button type="primary" @click="handleSaveUnit">OK</a-button>
@@ -841,7 +855,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { message } from 'ant-design-vue'
+import { message, Modal } from 'ant-design-vue'
 import { EditOutlined, DeleteOutlined, PlusOutlined, EyeOutlined, CheckCircleOutlined, CloseCircleOutlined, AppstoreAddOutlined } from '@ant-design/icons-vue'
 import bedIconBlue from '@/assets/svg/Bed-blue.svg'
 import bedIconGreen from '@/assets/svg/Bed-green.svg'
@@ -855,6 +869,7 @@ import {
   createUnitApi,
   getUnitsApi,
   updateUnitApi,
+  deleteUnitApi,
   getRoomsApi,
   createRoomApi,
   updateRoomApi,
@@ -1709,42 +1724,11 @@ const handleLocationTagSearch = (value: string) => {
 }
 
 // 处理 Location Tag 失焦（当用户输入新值并离开输入框时）
+// 注意：不再立即创建 tag，而是等到点击 OK 时与 Unit 一起创建
 const handleLocationTagBlur = async () => {
   // 从搜索值或当前表单值获取输入的值
-  const searchValue = locationTagSearchValue.value.trim()
-  const formValue = createBuildingForm.value.location_tag || editingBuildingForm.value.location_tag
-  
-  // 优先使用搜索值，如果没有则使用表单值
-  const value = searchValue || (typeof formValue === 'string' ? formValue.trim() : '')
-  
-  if (value) {
-    // 检查是否是新建的 tag（不在选项中）
-    const exists = locationTagOptions.value.some((tag) => tag.tag_name === value)
-    if (!exists) {
-      // 创建新的 location_tag
-      try {
-        const userInfo = userStore.getUserInfo
-        const tenantId = userInfo?.tenant_id
-
-        if (!tenantId) {
-          message.error('No tenant ID available')
-          return
-        }
-
-        await createTagApi({
-          tenant_id: tenantId,
-          tag_type: 'location_tag',
-          tag_name: value,
-        })
-
-        message.success('Location tag created successfully')
-        // 刷新 location tag 选项
-        await fetchLocationTags()
-      } catch (error: any) {
-        message.error('Failed to create location tag: ' + (error.message || 'Unknown error'))
-      }
-    }
-  }
+  // 如果 tag 不存在，先设置为表单值，等点击 OK 时再创建
+  // 这里不再立即创建 tag
 }
 
 // 获取 Area Tag 选项（tag_type 必须是 'area_tag'）
@@ -1775,37 +1759,21 @@ const handleAreaTagSearch = (value: string) => {
 }
 
 // 处理 Area Tag 失焦（当用户输入新值并离开输入框时）
+// 注意：不再立即创建 tag，而是等到点击 OK 时与 Unit 一起创建
 const handleAreaTagBlur = async () => {
   const value = areaTagSearchValue.value.trim()
   if (value && value !== editUnitForm.value.area_tag) {
     // 检查是否是新建的 tag（不在选项中）
     const exists = areaTagOptions.value.some((tag) => tag.tag_name === value)
-    if (!exists) {
-      // 创建新的 area_tag
-      try {
-        const userInfo = userStore.getUserInfo
-        const tenantId = userInfo?.tenant_id
-
-        if (!tenantId) {
-          message.error('No tenant ID available')
-          return
-        }
-
-        await createTagApi({
-          tenant_id: tenantId,
-          tag_type: 'area_tag',
-          tag_name: value,
-        })
-
-        message.success('Area tag created successfully')
-        // 刷新 area tag 选项
-        await fetchAreaTags()
-        // 设置新创建的 tag 为选中值
-        editUnitForm.value.area_tag = value
-      } catch (error: any) {
-        message.error('Failed to create area tag: ' + (error.message || 'Unknown error'))
-      }
+    if (exists) {
+      // 如果 tag 已存在，直接设置为选中值
+      editUnitForm.value.area_tag = value
+    } else {
+      // 如果 tag 不存在，先设置为表单值，等点击 OK 时再创建
+      editUnitForm.value.area_tag = value
     }
+    // 清空搜索值
+    areaTagSearchValue.value = ''
   }
 }
 
@@ -1892,6 +1860,26 @@ const getUnitDevices = (unitId: string): Device[] => {
     return device.location_id === unitId
   })
   return boundDevices
+}
+
+// 获取已绑定到 Unit 的 Caregiver（占位符函数，待 API 实现）
+const getUnitCaregivers = async (_unitId: string): Promise<any[]> => {
+  // TODO: 实现获取绑定到 Unit 的 Caregiver 的 API 调用
+  // 示例：
+  // return await getUnitCaregiversApi(unitId)
+  
+  // 当前返回空数组，表示没有绑定的 Caregiver
+  return []
+}
+
+// 获取已绑定到 Unit 的 Residents（占位符函数，待 API 实现）
+const getUnitResidents = async (_unitId: string): Promise<any[]> => {
+  // TODO: 实现获取绑定到 Unit 的 Residents 的 API 调用
+  // 示例：
+  // return await getUnitResidentsApi(unitId)
+  
+  // 当前返回空数组，表示没有绑定的 Residents
+  return []
 }
 
 // Dev 容器显示的设备列表（显示所有可用设备，包括未绑定的）
@@ -2165,24 +2153,63 @@ const handleSaveUnit = async () => {
       return
     }
 
+    const userInfo = userStore.getUserInfo
+    const tenantId = userInfo?.tenant_id
+
+    if (!tenantId) {
+      message.error('No tenant ID available')
+      return
+    }
+
+    // 在创建/更新 Unit 之前，先检查并创建需要的 tag
+    // 1. 检查并创建 area_tag（如果不存在）
+    if (editUnitForm.value.area_tag) {
+      const areaTagExists = areaTagOptions.value.some((tag) => tag.tag_name === editUnitForm.value.area_tag)
+      if (!areaTagExists) {
+        try {
+          await createTagApi({
+            tenant_id: tenantId,
+            tag_type: 'area_tag',
+            tag_name: editUnitForm.value.area_tag,
+          })
+          // 刷新 area tag 选项
+          await fetchAreaTags()
+        } catch (error: any) {
+          message.error('Failed to create area tag: ' + (error.message || 'Unknown error'))
+          return
+        }
+      }
+    }
+
+    // 2. 检查并创建 location_tag（如果不存在）
+    // 从 currentBuildingForGrid 获取 location_tag，如果没有则从 selectedLocationTag 获取
+    const locationTagValue = currentBuildingForGrid.value?.location_tag || selectedLocationTag.value || undefined
+    if (locationTagValue) {
+      const locationTagExists = locationTagOptions.value.some((tag) => tag.tag_name === locationTagValue)
+      if (!locationTagExists) {
+        try {
+          await createTagApi({
+            tenant_id: tenantId,
+            tag_type: 'location_tag',
+            tag_name: locationTagValue,
+          })
+          // 刷新 location tag 选项
+          await fetchLocationTags()
+        } catch (error: any) {
+          message.error('Failed to create location tag: ' + (error.message || 'Unknown error'))
+          return
+        }
+      }
+    }
+
     if (!editingUnit.value) {
       // 创建新的 Unit
-      const userInfo = userStore.getUserInfo
-      const tenantId = userInfo?.tenant_id
-
-      if (!tenantId) {
-        message.error('No tenant ID available')
-        return
-      }
-
       // Building 和 Floor 是可选的，如果为空会使用默认值
       // 如果为空，使用默认值：building 为 '-'，floor 为 '1F'（与 DB 默认值一致）
       const buildingValue: string = currentBuildingForGrid.value?.building_name || '-'
       const floorValue: string = selectedFloor.value || '1F'
-      // 从 currentBuildingForGrid 获取 location_tag，如果没有则从 selectedLocationTag 获取
-      const locationTagValue = currentBuildingForGrid.value?.location_tag || selectedLocationTag.value || undefined
 
-      await createUnitApi({
+      const newUnit = await createUnitApi({
         unit_number: editUnitForm.value.unit_number,
         unit_name: editUnitForm.value.unit_name,
         unit_type: editUnitForm.value.unit_type || 'Facility',
@@ -2193,9 +2220,16 @@ const handleSaveUnit = async () => {
       })
 
       message.success('Unit created successfully')
+      
+      // 关闭模态框并重置表单
       resetEditUnitForm()
       showEditUnitModal.value = false
+      
+      // 刷新 Unit 列表
       await fetchUnits()
+      
+      // 自动打开新创建的 Unit（复用 handleCellClick 逻辑）
+      await handleCellClick(newUnit, -1)
     } else {
       // 更新现有 Unit（unit_number 不能更新）
       await updateUnitApi(editingUnit.value.unit_id, {
@@ -2211,6 +2245,96 @@ const handleSaveUnit = async () => {
     }
   } catch (error: any) {
     message.error('Failed to save unit: ' + (error.message || 'Unknown error'))
+  }
+}
+
+// 删除 Unit
+const handleDeleteUnit = async () => {
+  if (!editingUnit.value) {
+    message.error('No unit selected')
+    return
+  }
+
+  try {
+    // 检查 Unit 下是否有任何绑定关系
+    // 1. 检查 Room 和 Bed
+    const hasRooms = roomsWithBeds.value.length > 0
+    const bedCount = roomsWithBeds.value.reduce((total, room) => total + (room.beds?.length || 0), 0)
+    const hasBeds = bedCount > 0
+    
+    // 2. 检查 Device
+    const unitDevices = getUnitDevices(editingUnit.value.unit_id)
+    const hasDevices = unitDevices.length > 0
+    
+    // 3. 检查 Caregiver
+    const unitCaregivers = await getUnitCaregivers(editingUnit.value.unit_id)
+    const hasCaregivers = unitCaregivers.length > 0
+    
+    // 4. 检查 Residents
+    const unitResidents = await getUnitResidents(editingUnit.value.unit_id)
+    const hasResidents = unitResidents.length > 0
+    
+    // 如果 Unit 下有任何绑定关系，拒绝删除
+    if (hasRooms || hasBeds || hasDevices || hasCaregivers || hasResidents) {
+      // 收集所有错误信息
+      const errors: string[] = []
+      
+      if (hasRooms) {
+        const roomCount = roomsWithBeds.value.length
+        errors.push(`${roomCount} room${roomCount > 1 ? 's' : ''}`)
+      }
+      
+      if (hasBeds) {
+        errors.push(`${bedCount} bed${bedCount > 1 ? 's' : ''}`)
+      }
+      
+      if (hasDevices) {
+        errors.push(`${unitDevices.length} device${unitDevices.length > 1 ? 's' : ''}`)
+      }
+      
+      if (hasCaregivers) {
+        errors.push(`${unitCaregivers.length} caregiver${unitCaregivers.length > 1 ? 's' : ''}`)
+      }
+      
+      if (hasResidents) {
+        errors.push(`${unitResidents.length} resident${unitResidents.length > 1 ? 's' : ''}`)
+      }
+      
+      let errorMsg = 'Cannot delete unit. The unit still contains: '
+      errorMsg += errors.join(', ')
+      errorMsg += '. Please delete all associated items first.'
+      
+      message.error(errorMsg)
+      return
+    }
+
+    // 确认删除
+    await new Promise<void>((resolve, reject) => {
+      Modal.confirm({
+        title: 'Confirm Delete',
+        content: `Are you sure you want to delete unit "${editingUnit.value?.unit_name}" (${editingUnit.value?.unit_number})? This action cannot be undone.`,
+        okText: 'Delete',
+        okType: 'danger',
+        cancelText: 'Cancel',
+        onOk: () => {
+          resolve()
+        },
+        onCancel: () => {
+          reject(new Error('User cancelled'))
+        },
+      })
+    })
+
+    await deleteUnitApi(editingUnit.value.unit_id)
+    
+    message.success('Unit deleted successfully')
+    resetEditUnitForm()
+    showEditUnitModal.value = false
+    await fetchUnits()
+  } catch (error: any) {
+    if (error.message !== 'User cancelled') {
+      message.error('Failed to delete unit: ' + (error.message || 'Unknown error'))
+    }
   }
 }
 
@@ -3666,6 +3790,11 @@ onMounted(() => {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+}
+
+.modal-actions-left {
+  display: flex;
+  align-items: center;
 }
 
 .modal-actions-right {
