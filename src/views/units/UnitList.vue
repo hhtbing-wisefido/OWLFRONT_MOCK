@@ -402,6 +402,36 @@
               />
             </div>
           </div>
+          <!-- DB fields (editable) -->
+          <div class="unit-field full-row">
+            <label>Primary Resident ID:</label>
+            <a-input
+              v-model:value="editUnitForm.primary_resident_id"
+              placeholder="Enter primary resident ID (optional)"
+              style="width: 200px"
+              allow-clear
+            />
+          </div>
+          <div class="unit-field full-row">
+            <label></label>
+            <div style="display: flex; gap: 24px; align-items: flex-start;">
+              <a-checkbox v-model:checked="editUnitForm.is_public_space" style="min-width: 80px;">
+                Public
+              </a-checkbox>
+              <a-checkbox v-model:checked="editUnitForm.is_multi_person_room">
+                Multi-Person Room
+              </a-checkbox>
+            </div>
+          </div>
+          <div class="unit-field full-row">
+            <label>Time Zone:</label>
+            <a-input
+              v-model:value="editUnitForm.time_zone"
+              placeholder="Enter time zone (optional)"
+              style="width: 200px"
+              allow-clear
+            />
+          </div>
           </div>
 
           <!-- Room-Bed Tree Structure -->
@@ -936,6 +966,10 @@ const createUnitForm = ref({
   area_tag: undefined as string | undefined,
   building: '',
   floor: '',
+  primary_resident_id: undefined as string | undefined,
+  is_public_space: false,
+  is_multi_person_room: false,
+  time_zone: undefined as string | undefined,
 })
 // selectedCellIndex 暂时未使用，保留用于后续功能
 // const selectedCellIndex = ref<number | null>(null)
@@ -1092,11 +1126,14 @@ const editUnitForm = ref({
   unit_name: '',
   unit_number: '',
   unit_type: 'Facility' as 'Facility' | 'Home', // Default value is Facility
+  primary_resident_id: undefined as string | undefined,
+  is_public_space: false,
+  is_multi_person_room: false,
+  time_zone: undefined as string | undefined,
 })
 
 // Location Tag Options (for Building)
 const locationTagOptions = ref<TagCatalogItem[]>([])
-const locationTagSearchValue = ref('')
 
 // Area Tag Options
 const areaTagOptions = ref<TagCatalogItem[]>([])
@@ -1595,6 +1632,10 @@ const handleCellClick = async (unit: Unit | null, _index: number) => {
         unit_name: unit.unit_name,
         unit_number: unit.unit_number,
         unit_type: (unit as any).unit_type || 'Facility',
+        primary_resident_id: unit.primary_resident_id,
+        is_public_space: unit.is_public_space ?? false,
+        is_multi_person_room: unit.is_multi_person_room ?? false,
+        time_zone: unit.time_zone,
       }
       await fetchRoomsWithBeds(unit.unit_id)
       showEditUnitModal.value = true
@@ -1609,6 +1650,10 @@ const handleCellClick = async (unit: Unit | null, _index: number) => {
         unit_name: '',
         unit_number: '',
         unit_type: 'Facility',
+        primary_resident_id: undefined,
+        is_public_space: false,
+        is_multi_person_room: false,
+        time_zone: undefined,
       }
       showEditUnitModal.value = true
       await nextTick()
@@ -1649,6 +1694,10 @@ const handleCreateUnit = async () => {
       floor: floorValue,
       location_tag: createUnitForm.value.location_tag,
       area_tag: createUnitForm.value.area_tag,
+      primary_resident_id: createUnitForm.value.primary_resident_id,
+      is_public_space: createUnitForm.value.is_public_space,
+      is_multi_person_room: createUnitForm.value.is_multi_person_room,
+      time_zone: createUnitForm.value.time_zone,
     })
 
     message.success('Unit created successfully')
@@ -1670,6 +1719,10 @@ const resetCreateUnitForm = () => {
     area_tag: undefined,
     building: '',
     floor: '',
+    primary_resident_id: undefined,
+    is_public_space: false,
+    is_multi_person_room: false,
+    time_zone: undefined,
   }
   // selectedCellIndex.value = null
 }
@@ -1718,18 +1771,9 @@ const fetchLocationTags = async () => {
   }
 }
 
-// 处理 Location Tag 搜索
-const handleLocationTagSearch = (value: string) => {
-  locationTagSearchValue.value = value
-}
-
-// 处理 Location Tag 失焦（当用户输入新值并离开输入框时）
-// 注意：不再立即创建 tag，而是等到点击 OK 时与 Unit 一起创建
-const handleLocationTagBlur = async () => {
-  // 从搜索值或当前表单值获取输入的值
-  // 如果 tag 不存在，先设置为表单值，等点击 OK 时再创建
-  // 这里不再立即创建 tag
-}
+// 处理 Location Tag 搜索和失焦（location_tag 只能从已有选项中选择，不需要特殊处理）
+const handleLocationTagSearch = () => {}
+const handleLocationTagBlur = () => {}
 
 // 获取 Area Tag 选项（tag_type 必须是 'area_tag'）
 const fetchAreaTags = async () => {
@@ -1805,6 +1849,10 @@ const resetEditUnitForm = () => {
     unit_name: '',
     unit_number: '',
     unit_type: 'Facility',
+    primary_resident_id: undefined,
+    is_public_space: false,
+    is_multi_person_room: false,
+    time_zone: undefined,
   }
   areaTagSearchValue.value = ''
   isDeviceMode.value = false
@@ -1888,40 +1936,26 @@ const devContainerDevices = computed(() => {
   return allDevices.value
 })
 
-// 处理添加设备到 Room
-const handleAddDeviceToRoom = async (roomId: string) => {
-  // 确保设备列表是最新的
+// 公共函数：打开设备选择弹窗
+const openDeviceSelection = async (targetType: 'unit' | 'room' | 'bed', targetId: string) => {
   await fetchAllDevices()
-  // 设置设备选择弹窗的目标
-  selectedTarget.value = { type: 'room', id: roomId }
-  // 显示所有设备（已绑定的会显示为已勾选）
+  selectedTarget.value = { type: targetType, id: targetId }
   devicesForSelection.value = [...allDevices.value]
   showDeviceSelectModal.value = true
-  
-  // 更新 Dev 容器显示该 Room 的设备
-  devContainerTarget.value = { type: 'room', id: roomId }
-  // 确保设备模式已打开
+  devContainerTarget.value = { type: targetType, id: targetId }
   if (!isDeviceMode.value) {
     isDeviceMode.value = true
   }
 }
 
+// 处理添加设备到 Room
+const handleAddDeviceToRoom = async (roomId: string) => {
+  await openDeviceSelection('room', roomId)
+}
+
 // 处理添加设备到 Bed
 const handleAddDeviceToBed = async (bedId: string) => {
-  // 确保设备列表是最新的
-  await fetchAllDevices()
-  // 设置设备选择弹窗的目标
-  selectedTarget.value = { type: 'bed', id: bedId }
-  // 显示所有设备（已绑定的会显示为已勾选）
-  devicesForSelection.value = [...allDevices.value]
-  showDeviceSelectModal.value = true
-  
-  // 更新 Dev 容器显示该 Bed 的设备
-  devContainerTarget.value = { type: 'bed', id: bedId }
-  // 确保设备模式已打开
-  if (!isDeviceMode.value) {
-    isDeviceMode.value = true
-  }
+  await openDeviceSelection('bed', bedId)
 }
 
 // 处理设备编辑
@@ -1929,6 +1963,15 @@ const handleEditDevice = (device: Device) => {
   // TODO: 实现设备编辑功能
   console.log('Edit device:', device)
   message.info('Device edit feature coming soon')
+}
+
+// 公共函数：解绑设备
+const unbindDevice = async (deviceId: string) => {
+  await updateDeviceApi(deviceId, {
+    location_id: null,
+    bound_room_id: null,
+    bound_bed_id: null,
+  })
 }
 
 // 处理设备 checkbox 点击（绑定/解绑）
@@ -1942,35 +1985,25 @@ const handleDeviceCheckboxChange = async (event: any, device: Device) => {
     }
     
     if (checked) {
-      // 绑定设备到当前 Unit
       if (!editingUnit.value?.unit_id) {
         message.error('Please select a unit first')
         return
       }
-      
       await updateDeviceApi(device.device_id, {
         location_id: editingUnit.value.unit_id,
         bound_room_id: null,
         bound_bed_id: null,
       })
       message.success(`Device "${device.device_name}" bound to unit successfully`)
-      // 默认展开新绑定的设备
       expandedDevices.value.add(`device-${device.device_id}`)
     } else {
-      // 解绑设备
-      await updateDeviceApi(device.device_id, {
-        location_id: null,
-        bound_room_id: null,
-        bound_bed_id: null,
-      })
+      await unbindDevice(device.device_id)
       message.success(`Device "${device.device_name}" unbound successfully`)
     }
     
-    // 刷新所有设备列表（包括已绑定的）
     await fetchAllDevices()
   } catch (error: any) {
     message.error((checked ? 'Failed to bind device: ' : 'Failed to unbind device: ') + (error.message || 'Unknown error'))
-    // 恢复 checkbox 状态
     event.target.checked = !checked
   }
 }
@@ -1982,15 +2015,8 @@ const handleDeleteDevice = async (device: Device) => {
       message.error('Device ID is required for unbinding')
       return
     }
-    
-    // 调用 API 解绑设备（使用 device_id）
-    await updateDeviceApi(device.device_id, {
-      location_id: null,
-      bound_room_id: null,
-      bound_bed_id: null,
-    })
+    await unbindDevice(device.device_id)
     message.success(`Device "${device.device_name}" unbound successfully`)
-    // 刷新所有设备列表（包括已绑定的）
     await fetchAllDevices()
   } catch (error: any) {
     message.error('Failed to unbind device: ' + (error.message || 'Unknown error'))
@@ -2161,46 +2187,25 @@ const handleSaveUnit = async () => {
       return
     }
 
-    // 在创建/更新 Unit 之前，先检查并创建需要的 tag
-    // 1. 检查并创建 area_tag（如果不存在）
-    if (editUnitForm.value.area_tag) {
-      const areaTagExists = areaTagOptions.value.some((tag) => tag.tag_name === editUnitForm.value.area_tag)
-      if (!areaTagExists) {
+    // 公共函数：确保 tag 存在，不存在则创建
+    const ensureTagExists = async (tagName: string | undefined, tagType: 'area_tag' | 'location_tag', options: TagCatalogItem[], fetchFn: () => Promise<void>) => {
+      if (!tagName) return
+      const exists = options.some((tag) => tag.tag_name === tagName)
+      if (!exists) {
         try {
-          await createTagApi({
-            tenant_id: tenantId,
-            tag_type: 'area_tag',
-            tag_name: editUnitForm.value.area_tag,
-          })
-          // 刷新 area tag 选项
-          await fetchAreaTags()
+          await createTagApi({ tenant_id: tenantId, tag_type: tagType, tag_name: tagName })
+          await fetchFn()
         } catch (error: any) {
-          message.error('Failed to create area tag: ' + (error.message || 'Unknown error'))
-          return
+          message.error(`Failed to create ${tagType}: ${error.message || 'Unknown error'}`)
+          throw error
         }
       }
     }
 
-    // 2. 检查并创建 location_tag（如果不存在）
-    // 从 currentBuildingForGrid 获取 location_tag，如果没有则从 selectedLocationTag 获取
+    // 检查并创建需要的 tag
     const locationTagValue = currentBuildingForGrid.value?.location_tag || selectedLocationTag.value || undefined
-    if (locationTagValue) {
-      const locationTagExists = locationTagOptions.value.some((tag) => tag.tag_name === locationTagValue)
-      if (!locationTagExists) {
-        try {
-          await createTagApi({
-            tenant_id: tenantId,
-            tag_type: 'location_tag',
-            tag_name: locationTagValue,
-          })
-          // 刷新 location tag 选项
-          await fetchLocationTags()
-        } catch (error: any) {
-          message.error('Failed to create location tag: ' + (error.message || 'Unknown error'))
-          return
-        }
-      }
-    }
+    await ensureTagExists(editUnitForm.value.area_tag, 'area_tag', areaTagOptions.value, fetchAreaTags)
+    await ensureTagExists(locationTagValue, 'location_tag', locationTagOptions.value, fetchLocationTags)
 
     if (!editingUnit.value) {
       // 创建新的 Unit
@@ -2217,6 +2222,10 @@ const handleSaveUnit = async () => {
         floor: floorValue,
         location_tag: locationTagValue,
         area_tag: editUnitForm.value.area_tag,
+        primary_resident_id: editUnitForm.value.primary_resident_id,
+        is_public_space: editUnitForm.value.is_public_space,
+        is_multi_person_room: editUnitForm.value.is_multi_person_room,
+        time_zone: editUnitForm.value.time_zone,
       })
 
       message.success('Unit created successfully')
@@ -2236,6 +2245,10 @@ const handleSaveUnit = async () => {
         unit_name: editUnitForm.value.unit_name,
         unit_type: editUnitForm.value.unit_type,
         area_tag: editUnitForm.value.area_tag,
+        primary_resident_id: editUnitForm.value.primary_resident_id,
+        is_public_space: editUnitForm.value.is_public_space,
+        is_multi_person_room: editUnitForm.value.is_multi_person_room,
+        time_zone: editUnitForm.value.time_zone,
       })
 
       message.success('Unit updated successfully')
@@ -2276,35 +2289,14 @@ const handleDeleteUnit = async () => {
     
     // 如果 Unit 下有任何绑定关系，拒绝删除
     if (hasRooms || hasBeds || hasDevices || hasCaregivers || hasResidents) {
-      // 收集所有错误信息
       const errors: string[] = []
+      if (hasRooms) errors.push(`${roomsWithBeds.value.length} room${roomsWithBeds.value.length > 1 ? 's' : ''}`)
+      if (hasBeds) errors.push(`${bedCount} bed${bedCount > 1 ? 's' : ''}`)
+      if (hasDevices) errors.push(`${unitDevices.length} device${unitDevices.length > 1 ? 's' : ''}`)
+      if (hasCaregivers) errors.push(`${unitCaregivers.length} caregiver${unitCaregivers.length > 1 ? 's' : ''}`)
+      if (hasResidents) errors.push(`${unitResidents.length} resident${unitResidents.length > 1 ? 's' : ''}`)
       
-      if (hasRooms) {
-        const roomCount = roomsWithBeds.value.length
-        errors.push(`${roomCount} room${roomCount > 1 ? 's' : ''}`)
-      }
-      
-      if (hasBeds) {
-        errors.push(`${bedCount} bed${bedCount > 1 ? 's' : ''}`)
-      }
-      
-      if (hasDevices) {
-        errors.push(`${unitDevices.length} device${unitDevices.length > 1 ? 's' : ''}`)
-      }
-      
-      if (hasCaregivers) {
-        errors.push(`${unitCaregivers.length} caregiver${unitCaregivers.length > 1 ? 's' : ''}`)
-      }
-      
-      if (hasResidents) {
-        errors.push(`${unitResidents.length} resident${unitResidents.length > 1 ? 's' : ''}`)
-      }
-      
-      let errorMsg = 'Cannot delete unit. The unit still contains: '
-      errorMsg += errors.join(', ')
-      errorMsg += '. Please delete all associated items first.'
-      
-      message.error(errorMsg)
+      message.error(`Cannot delete unit. The unit still contains: ${errors.join(', ')}. Please delete all associated items first.`)
       return
     }
 
@@ -2382,7 +2374,6 @@ const handleAddRoom = async () => {
     await createRoomApi({
       unit_id: editingUnit.value.unit_id,
       room_name: newRoomName.value.trim(),
-      is_default: false,
     })
 
     // 刷新列表
@@ -2428,17 +2419,17 @@ const validateAndFormatBedName = (bedName: string): string | null => {
   return null
 }
 
-// 直接添加 Bed（自动选择下一个可用字母）
-const handleAddBedDirectly = async (room: RoomWithBeds) => {
+// Common function to create a bed for a room
+const createBedForRoom = async (room: RoomWithBeds, unitId: string, warningMessage?: string): Promise<boolean> => {
   try {
     const availableLetters = getAvailableBedLetters(room)
     
     if (availableLetters.length === 0) {
-      message.warning('All beds (A-Z) have been added')
-      return
+      message.warning(warningMessage || 'All beds (A-Z) have been added')
+      return false
     }
 
-    // 使用第一个可用的字母
+    // Use the first available letter
     const bedLetter = availableLetters[0]
     const bedName = `Bed${bedLetter}`
 
@@ -2447,78 +2438,58 @@ const handleAddBedDirectly = async (room: RoomWithBeds) => {
       bed_name: bedName,
     })
 
-    // 确保 Room 已展开以显示新添加的床
+    // Ensure Room is expanded to show the newly added bed
     expandedRooms.value.add(room.room_id)
 
-    // 刷新列表
-    if (editingUnit.value) {
-      await fetchRoomsWithBeds(editingUnit.value.unit_id)
-    }
+    // Refresh the list
+    await fetchRoomsWithBeds(unitId)
 
     message.success(`Bed ${bedLetter} added successfully`)
+    return true
   } catch (error: any) {
     message.error('Failed to add bed: ' + (error.message || 'Unknown error'))
+    return false
   }
 }
 
-// 添加 Bed 到第一个 Room
+// Directly add Bed (automatically select next available letter)
+const handleAddBedDirectly = async (room: RoomWithBeds) => {
+  if (!editingUnit.value) {
+    message.error('No unit selected')
+    return
+  }
+  
+  await createBedForRoom(room, editingUnit.value.unit_id, 'All beds (A-Z) have been added')
+}
+
+// 公共函数：确保 Unit 有默认 Room（room_name === unit_name），不存在则创建
+const ensureDefaultRoom = async (unit: Unit): Promise<RoomWithBeds | null> => {
+  let room = roomsWithBeds.value.find((r) => r.room_name === unit.unit_name)
+  if (!room) {
+    if (roomsWithBeds.value.length === 0) {
+      await createRoomApi({ unit_id: unit.unit_id, room_name: unit.unit_name })
+      await fetchRoomsWithBeds(unit.unit_id)
+      room = roomsWithBeds.value.find((r) => r.room_name === unit.unit_name)
+    } else {
+      room = roomsWithBeds.value[0]
+    }
+  }
+  return room || null
+}
+
+// Add Bed to the first Room
 const handleAddBedToFirstRoom = async () => {
   try {
     if (!editingUnit.value) {
       message.error('No unit selected')
       return
     }
-
-    let room = null
-    if (roomsWithBeds.value.length === 0) {
-      // 如果没有房间，自动创建一个以 Unit 名称命名的房间
-      const unitName = editingUnit.value.unit_name
-      const unitId = editingUnit.value.unit_id
-      
-      const newRoom = await createRoomApi({
-        unit_id: unitId,
-        room_name: unitName,
-      })
-      
-      // 刷新房间列表
-      await fetchRoomsWithBeds(unitId)
-      
-      // 找到新创建的房间
-      room = roomsWithBeds.value.find((r) => r.room_id === newRoom.room_id)
-    } else {
-      // 使用第一个 Room
-      room = roomsWithBeds.value[0]
-    }
-    
+    const room = await ensureDefaultRoom(editingUnit.value)
     if (!room) {
       message.error('No room available')
       return
     }
-    
-    const availableLetters = getAvailableBedLetters(room)
-    
-    if (availableLetters.length === 0) {
-      message.warning('All beds (A-Z) have been added for this room')
-      return
-    }
-
-    // 使用第一个可用的字母
-    const bedLetter = availableLetters[0]
-    const bedName = `Bed${bedLetter}`
-
-    // 创建 Bed
-    await createBedApi({
-      room_id: room.room_id,
-      bed_name: bedName,
-    })
-
-    // 确保 Room 已展开以显示新添加的床
-    expandedRooms.value.add(room.room_id)
-
-    // 刷新列表
-    await fetchRoomsWithBeds(editingUnit.value.unit_id)
-
-    message.success(`Bed ${bedLetter} added successfully`)
+    await createBedForRoom(room, editingUnit.value.unit_id, 'All beds (A-Z) have been added for this room')
   } catch (error: any) {
     message.error('Failed to add bed: ' + (error.message || 'Unknown error'))
   }
@@ -2531,47 +2502,12 @@ const handleAddDeviceToUnit = async () => {
       message.error('No unit selected')
       return
     }
-
-    const unitName = editingUnit.value.unit_name
-    const unitId = editingUnit.value.unit_id
-
-    // 检查是否存在 RoomName = UnitName 的 Room
-    let room = roomsWithBeds.value.find((r) => r.room_name === unitName)
-
+    const room = await ensureDefaultRoom(editingUnit.value)
     if (!room) {
-      // 创建新 Room，使用 UnitName 作为 room_name
-      const newRoom = await createRoomApi({
-        unit_id: unitId,
-        room_name: unitName,
-        is_default: false,
-      })
-      // 将新 Room 添加到列表
-      const newRoomWithBeds: RoomWithBeds = {
-        ...newRoom,
-        beds: [],
-      }
-      roomsWithBeds.value.push(newRoomWithBeds)
-      
-      // 刷新列表并排序
-      await fetchRoomsWithBeds(unitId)
-      
-      // 重新查找 room（因为排序后位置可能改变）
-      room = roomsWithBeds.value.find((r) => r.room_name === unitName)
-      if (!room) {
-        message.error('Failed to create room for unit')
-        return
-      }
+      message.error('Failed to create room for unit')
+      return
     }
-
-    // 确保设备列表是最新的
-    await fetchAllDevices()
-    
-    // 设置目标为 Unit
-    selectedTarget.value = { type: 'unit', id: unitId }
-    
-    // 显示所有设备（已绑定到该 Unit 的会显示为已勾选）
-    devicesForSelection.value = [...allDevices.value]
-    showDeviceSelectModal.value = true
+    await openDeviceSelection('unit', editingUnit.value.unit_id)
   } catch (error: any) {
     message.error('Failed to prepare device selection: ' + (error.message || 'Unknown error'))
   }
