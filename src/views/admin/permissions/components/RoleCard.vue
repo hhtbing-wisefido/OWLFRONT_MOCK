@@ -76,63 +76,64 @@ const mainPermissions = computed(() => {
   const descriptions: string[] = []
 
   // Generate main permission descriptions based on permission matrix
-  if (props.role.code === 'Director' || props.role.code === 'DON') {
+  // Updated to match new simplified role system: SystemAdmin, Admin, Manager, IT, Nurse, Caregiver, Resident, Family
+  if (props.role.code === 'SystemAdmin') {
+    if (perms.some((p) => p.resource_type === 'roles' && p.permission_type === 'manage')) {
+      descriptions.push('Role Management')
+    }
+    if (perms.some((p) => p.resource_type === 'role_permissions' && p.permission_type === 'manage')) {
+      descriptions.push('Permission Management')
+    }
+    if (perms.some((p) => p.resource_type === 'tenants' && p.permission_type === 'manage')) {
+      descriptions.push('Tenant Management')
+    }
+    if (perms.some((p) => p.resource_type === 'tags_catalog' && p.permission_type === 'manage')) {
+      descriptions.push('Tags Catalog Management')
+    }
+  } else if (props.role.code === 'Admin') {
     if (perms.some((p) => p.resource_type === 'users' && p.permission_type === 'manage')) {
       descriptions.push('User Management')
     }
     if (perms.some((p) => p.resource_type === 'residents' && p.permission_type === 'manage')) {
       descriptions.push('Resident Management')
     }
-    if (perms.some((p) => p.resource_type === 'devices' && (p.permission_type === 'manage' || p.permission_type === 'read'))) {
+    if (perms.some((p) => p.resource_type === 'devices' && p.permission_type === 'manage')) {
       descriptions.push('Device Management')
     }
-    if (perms.some((p) => p.resource_type === 'alarm_events' && (p.permission_type === 'manage' || p.permission_type === 'read'))) {
+    if (perms.some((p) => p.resource_type === 'alarm_events' && p.permission_type === 'manage')) {
       descriptions.push('Alarm Management')
     }
-    if (perms.some((p) => p.resource_type === 'rounds' && (p.permission_type === 'manage' || p.permission_type === 'read'))) {
-      descriptions.push('Rounds Management')
-    }
-    if (perms.some((p) => p.resource_type === 'locations' && (p.permission_type === 'manage' || p.permission_type === 'read'))) {
+    if (perms.some((p) => p.resource_type === 'locations' && p.permission_type === 'manage')) {
       descriptions.push('Location Management')
     }
-  } else if (props.role.code === 'CM') {
+  } else if (props.role.code === 'Manager') {
     if (perms.some((p) => p.resource_type === 'users' && p.permission_type === 'manage')) {
       descriptions.push('User Management')
     }
     if (perms.some((p) => p.resource_type === 'residents' && p.permission_type === 'manage')) {
       descriptions.push('Resident Management')
     }
-    if (perms.some((p) => p.resource_type === 'alarm_events' && p.permission_type === 'manage')) {
-      descriptions.push('Alarm Management')
-    }
-    if (perms.some((p) => p.resource_type === 'rounds' && p.permission_type === 'manage')) {
-      descriptions.push('Rounds Management')
-    }
-  } else if (props.role.code === 'CS') {
-    if (perms.some((p) => p.resource_type === 'residents' && p.permission_type === 'manage')) {
-      descriptions.push('Resident Management')
+    if (perms.some((p) => p.resource_type === 'devices' && p.permission_type === 'manage')) {
+      descriptions.push('Device Management')
     }
     if (perms.some((p) => p.resource_type === 'alarm_events' && p.permission_type === 'manage')) {
       descriptions.push('Alarm Management')
     }
-    if (perms.some((p) => p.resource_type === 'rounds' && p.permission_type === 'manage')) {
-      descriptions.push('Rounds Management')
+    if (perms.some((p) => p.resource_type === 'locations' && p.permission_type === 'manage')) {
+      descriptions.push('Location Management')
     }
-  } else if (props.role.code === 'CO') {
-    if (perms.some((p) => p.resource_type === 'roles' && p.permission_type === 'manage')) {
-      descriptions.push('Role Permission Management')
+  } else if (props.role.code === 'IT') {
+    if (perms.some((p) => p.resource_type === 'users' && p.permission_type === 'manage')) {
+      descriptions.push('User Management')
     }
-    if (perms.some((p) => p.resource_type === 'users' && p.permission_type === 'read')) {
-      descriptions.push('User View')
+    if (perms.some((p) => p.resource_type === 'devices' && p.permission_type === 'manage')) {
+      descriptions.push('Device Management')
     }
-    if (perms.some((p) => p.resource_type === 'residents' && p.permission_type === 'read')) {
-      descriptions.push('Resident View')
+    if (perms.some((p) => p.resource_type === 'locations' && p.permission_type === 'manage')) {
+      descriptions.push('Location Management')
     }
-    if (perms.some((p) => p.resource_type === 'alarm_events' && p.permission_type === 'read')) {
-      descriptions.push('Alarm View')
-    }
-    if (perms.some((p) => p.resource_type === 'service_levels' && p.permission_type === 'read')) {
-      descriptions.push('Service Level View')
+    if (perms.some((p) => p.resource_type === 'iot_monitor_alarms' && p.permission_type === 'manage')) {
+      descriptions.push('Device Configuration')
     }
   } else if (props.role.code === 'Nurse') {
     if (perms.some((p) => p.resource_type === 'residents' && p.permission_type === 'manage' && p.scope === 'assigned_only')) {
@@ -160,21 +161,19 @@ const mainPermissions = computed(() => {
     if (perms.some((p) => p.resource_type === 'locations' && p.permission_type === 'read' && p.scope === 'assigned_only')) {
       descriptions.push('Location View (Assigned)')
     }
-  } else if (props.role.code === 'IT') {
-    if (perms.some((p) => p.resource_type === 'users' && p.permission_type === 'manage')) {
-      descriptions.push('User Management')
+  } else if (props.role.code === 'Resident') {
+    if (perms.some((p) => p.resource_type === 'vital_monitor' && p.permission_type === 'read' && p.scope === 'assigned_only')) {
+      descriptions.push('Wellness & Safety Monitor')
     }
-    if (perms.some((p) => p.resource_type === 'devices' && p.permission_type === 'manage')) {
-      descriptions.push('Device Management')
+    if (perms.some((p) => p.resource_type === 'resident_contacts' && p.permission_type === 'manage' && p.scope === 'assigned_only')) {
+      descriptions.push('Emergency Contact Management')
     }
-    if (perms.some((p) => p.resource_type === 'locations' && p.permission_type === 'manage')) {
-      descriptions.push('Location Management')
+  } else if (props.role.code === 'Family') {
+    if (perms.some((p) => p.resource_type === 'vital_monitor' && p.permission_type === 'read' && p.scope === 'assigned_only')) {
+      descriptions.push('Family Member Monitor')
     }
-    if (perms.some((p) => p.resource_type === 'residents' && p.permission_type === 'read')) {
-      descriptions.push('Resident View')
-    }
-    if (perms.some((p) => p.resource_type === 'iot_monitor_alarms' && p.permission_type === 'manage')) {
-      descriptions.push('Device Configuration')
+    if (perms.some((p) => p.resource_type === 'resident_contacts' && p.permission_type === 'manage' && p.scope === 'assigned_only')) {
+      descriptions.push('Emergency Contact Management')
     }
   }
 

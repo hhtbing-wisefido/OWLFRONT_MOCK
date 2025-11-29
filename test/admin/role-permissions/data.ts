@@ -7,61 +7,56 @@ import type { RolePermission } from '@/api/admin/role-permission/model/rolePermi
 
 /**
  * 角色定义（每个角色单独列出）
+ * 与 owlRD/db/02_roles.sql 保持一致，使用新的简化角色系统
  */
 export const ROLES = [
   {
-    code: 'Director',
-    name: 'Director',
+    code: 'SystemAdmin',
+    name: 'System Administrator',
+    description: 'System Administrator (Cross-Tenant)',
+    mainFunction: 'Manage system-level resources, business data read-only',
+  },
+  {
+    code: 'Admin',
+    name: 'Administrator',
+    description: 'Administrator',
+    mainFunction: 'Full resource management permissions within tenant',
+  },
+  {
+    code: 'Manager',
+    name: 'Manager',
     description: 'Executive Director / Facility Director',
-    mainFunction: 'Overall facility operations management',
+    mainFunction: 'Business management: Staff, Unit, Resident manager, Device, Alarm setting',
   },
   {
-    code: 'DON',
-    name: 'DON',
-    description: 'Director of Nursing (DON)',
-    mainFunction: 'Nursing management and supervision',
-  },
-  {
-    code: 'CM',
-    name: 'CM',
-    description: 'Care Manager / Case Manager',
-    mainFunction: 'Care and case management, can manage location and devices',
-  },
-  {
-    code: 'CS',
-    name: 'CS',
-    description: 'Clinical Supervisor',
-    mainFunction: 'Clinical supervision and oversight',
-  },
-  {
-    code: 'CO',
-    name: 'CO',
-    description: 'Compliance Officer',
-    mainFunction: 'Compliance and regulatory oversight',
+    code: 'IT',
+    name: 'IT Support',
+    description: 'IT Support',
+    mainFunction: 'Device management, Layout management, user account management, device configuration',
   },
   {
     code: 'Nurse',
     name: 'Nurse',
     description: 'Nurse',
-    mainFunction: 'Clinical care intervention，Alarm Processing',
+    mainFunction: 'View assigned residents monitor, handle alarm event, set special alarm',
   },
   {
     code: 'Caregiver',
     name: 'Caregiver',
     description: 'Caregiver',
-    mainFunction: 'Basic care and assistance，Alarm Processing',
+    mainFunction: 'View assigned residents monitor, handle alarm event, set special alarm',
   },
   {
-    code: 'IT',
-    name: 'IT',
-    description: 'IT Support',
-    mainFunction: 'IT infrastructure and device management',
+    code: 'Resident',
+    name: 'Resident',
+    description: 'Resident',
+    mainFunction: 'View self wellness & safety, authorize emergency contact, special environment: handle self alarm event',
   },
   {
-    code: 'ResidentsFamily',
-    name: 'Residents & Family',
-    description: 'Residents & Family',
-    mainFunction: 'Designate emergency contact to view (or handle) the alarm',
+    code: 'Family',
+    name: 'Family',
+    description: 'Family',
+    mainFunction: 'View family member\'s wellness & safety info, alarm info, special environment: handle alarm event',
   },
 ] as const
 
