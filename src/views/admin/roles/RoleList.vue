@@ -36,7 +36,10 @@
       class="role-table"
     >
       <template #bodyCell="{ column, record }">
-        <template v-if="column.dataIndex === 'is_active'">
+        <template v-if="column.dataIndex === 'description'">
+          <div class="description-content">{{ record.description }}</div>
+        </template>
+        <template v-else-if="column.dataIndex === 'is_active'">
           <span :class="record.is_active ? 'status-active' : 'status-inactive'">
             {{ record.is_active ? 'Active' : 'Inactive' }}
           </span>
@@ -500,6 +503,13 @@ onMounted(() => {
 :deep(.ant-table-thead > tr > th.description-column > *) {
   white-space: normal !important;
   word-break: break-word !important;
+}
+
+/* Description content: Preserve line breaks */
+.description-content {
+  white-space: pre-line;
+  word-break: break-word;
+  line-height: 1.6;
 }
 </style>
 
