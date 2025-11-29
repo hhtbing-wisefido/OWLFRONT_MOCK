@@ -1686,7 +1686,6 @@ const handleDeleteBuilding = async (building: Building) => {
 // Click grid cell
 const handleCellClick = async (unit: Unit | null, _index: number) => {
   try {
-<<<<<<< HEAD
     // 加载 area tag 和 location tag 选项
     await fetchAreaTags()
     await fetchLocationTags()
@@ -1813,7 +1812,6 @@ const fetchRoomsWithBeds = async (unitId: string) => {
   }
 }
 
-<<<<<<< HEAD
 // 获取 Location Tag 选项（从 store 获取，如果未加载则先加载）
 const fetchLocationTags = async () => {
   await tagsStore.fetchAllTags()
