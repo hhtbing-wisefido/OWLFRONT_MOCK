@@ -1,30 +1,30 @@
 /**
- * Mock 拦截器
- * 在开发环境中拦截 API 请求，返回测试数据
+ * Mock interceptor
+ * Intercept API requests in development environment and return test data
  */
 
 import type { AxiosRequestConfig, AxiosResponse } from 'axios'
 import type { LoginParams, LoginResult, Institution } from '@/api/auth/model/authModel'
 
 /**
- * 是否启用 Mock（开发环境自动启用）
+ * Whether to enable Mock (automatically enabled in development environment)
  */
 export const isMockEnabled = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK !== 'false'
 
 /**
- * Mock 请求拦截器
+ * Mock request interceptor
  */
 export function mockRequestInterceptor(config: AxiosRequestConfig): AxiosRequestConfig | Promise<AxiosRequestConfig> {
   if (!isMockEnabled) {
     return config
   }
 
-  // 检查是否是 Mock 的 API
+  // Check if it's a Mock API
   const url = config.url || ''
   
-  // 登录相关 API
+  // Login-related APIs
   if (url.includes('/auth/api/v1/')) {
-    // 标记为 Mock 请求
+    // Mark as Mock request
     ;(config as any).__isMock = true
   }
 
@@ -32,13 +32,13 @@ export function mockRequestInterceptor(config: AxiosRequestConfig): AxiosRequest
 }
 
 /**
- * Mock 响应拦截器
- * 注意：这个函数在响应拦截器中调用，但实际上我们需要在请求拦截器中拦截
+ * Mock response interceptor
+ * Note: This function is called in the response interceptor, but actually we need to intercept in the request interceptor
  */
 export async function mockResponseInterceptor(
   response: AxiosResponse,
 ): Promise<AxiosResponse> {
-  // 如果不是 Mock 请求，直接返回
+  // If not a Mock request, return directly
   if (!(response.config as any).__isMock) {
     return response
   }
@@ -46,7 +46,7 @@ export async function mockResponseInterceptor(
   const url = response.config.url || ''
   const method = response.config.method?.toLowerCase()
 
-  // 机构搜索 API
+  // Institution search API
   if (url.includes('/institutions/search') && method === 'get') {
     const account = (response.config.params?.account as string) || ''
     const userType = (response.config.params?.userType as 'staff' | 'resident') || 'staff'
@@ -71,7 +71,7 @@ export async function mockResponseInterceptor(
     }
   }
 
-  // 登录 API
+  // Login API
   if (url.includes('/login') && method === 'post') {
     const params = response.config.data as LoginParams
     
@@ -99,7 +99,7 @@ export async function mockResponseInterceptor(
         error: error.message,
       })
       
-      // 返回错误响应
+      // Return error response
       return {
         ...response,
         data: {
@@ -118,18 +118,18 @@ export async function mockResponseInterceptor(
 }
 
 /**
- * 在请求拦截器中直接拦截并返回 Mock 数据
- * 这样可以避免实际发送 HTTP 请求
+ * Directly intercept and return Mock data in request interceptor
+ * This avoids actually sending HTTP requests
  */
 export async function interceptMockRequest(config: AxiosRequestConfig): Promise<any> {
   if (!isMockEnabled || !(config as any).__isMock) {
-    return null // 不拦截，继续正常请求
+    return null // Don't intercept, continue normal request
   }
 
   const url = config.url || ''
   const method = config.method?.toLowerCase()
 
-  // 机构搜索 API
+  // Institution search API
   if (url.includes('/institutions/search') && method === 'get') {
     const account = (config.params?.account as string) || ''
     const userType = (config.params?.userType as 'staff' | 'resident') || 'staff'
@@ -143,7 +143,7 @@ export async function interceptMockRequest(config: AxiosRequestConfig): Promise<
       result: institutions,
     })
     
-    // 返回一个 Promise，模拟 Axios 响应
+    // Return a Promise, simulate Axios response
     return Promise.resolve({
       data: {
         code: 200,
@@ -158,7 +158,7 @@ export async function interceptMockRequest(config: AxiosRequestConfig): Promise<
     })
   }
 
-  // 登录 API
+  // Login API
   if (url.includes('/login') && method === 'post') {
     const params = config.data as LoginParams
     

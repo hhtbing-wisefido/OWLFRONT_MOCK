@@ -1,6 +1,6 @@
 /**
- * Role API 接口定义
- * 角色管理相关的后端API调用
+ * Role API interface definition
+ * Backend API calls related to role management
  */
 
 import { defHttp } from '@/utils/http/axios'
@@ -15,7 +15,7 @@ import type {
   UpdateRoleStatusParams,
 } from './model/roleModel'
 
-// 定义 API 路径枚举
+// Define API path enum
 export enum Api {
   GetList = '/admin/api/v1/roles',
   Create = '/admin/api/v1/roles',
@@ -33,9 +33,9 @@ if (useMock) {
 }
 
 /**
- * @description: 获取角色列表
- * @param params - 查询参数（可选搜索关键词）
- * @param mode - 错误消息模式
+ * @description: Get role list
+ * @param params - Query parameters (optional search keyword)
+ * @param mode - Error message mode
  */
 export function getRolesApi(params?: GetRolesParams, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
@@ -65,9 +65,9 @@ export function getRolesApi(params?: GetRolesParams, mode: ErrorMessageMode = 'm
 }
 
 /**
- * @description: 创建角色
- * @param params - 创建角色参数
- * @param mode - 错误消息模式
+ * @description: Create role
+ * @param params - Create role parameters
+ * @param mode - Error message mode
  */
 export function createRoleApi(params: CreateRoleParams, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
@@ -97,10 +97,10 @@ export function createRoleApi(params: CreateRoleParams, mode: ErrorMessageMode =
 }
 
 /**
- * @description: 更新角色
- * @param roleId - 角色ID
- * @param params - 更新角色参数
- * @param mode - 错误消息模式
+ * @description: Update role
+ * @param roleId - Role ID
+ * @param params - Update role parameters
+ * @param mode - Error message mode
  */
 export function updateRoleApi(roleId: string, params: UpdateRoleParams, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
@@ -130,9 +130,9 @@ export function updateRoleApi(roleId: string, params: UpdateRoleParams, mode: Er
 }
 
 /**
- * @description: 删除角色
- * @param roleId - 角色ID
- * @param mode - 错误消息模式
+ * @description: Delete role
+ * @param roleId - Role ID
+ * @param mode - Error message mode
  */
 export function deleteRoleApi(roleId: string, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
@@ -161,10 +161,10 @@ export function deleteRoleApi(roleId: string, mode: ErrorMessageMode = 'modal') 
 }
 
 /**
- * @description: 更新角色状态（启用/禁用）
- * @param roleId - 角色ID
- * @param params - 更新状态参数
- * @param mode - 错误消息模式
+ * @description: Update role status (enable/disable)
+ * @param roleId - Role ID
+ * @param params - Update status parameters
+ * @param mode - Error message mode
  */
 export function changeRoleStatusApi(roleId: string, params: UpdateRoleStatusParams, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly

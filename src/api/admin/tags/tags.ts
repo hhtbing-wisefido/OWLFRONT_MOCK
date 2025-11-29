@@ -1,6 +1,6 @@
 /**
- * Tags API 接口定义
- * 用于管理 tags_catalog 表中的 tags
+ * Tags API interface definition
+ * For managing tags in the tags_catalog table
  */
 
 import { defHttp } from '@/utils/http/axios'
@@ -19,7 +19,7 @@ import type {
   TagForObject,
 } from './model/tagsModel'
 
-// 定义 API 路径枚举
+// Define API path enum
 export enum Api {
   GetList = '/admin/api/v1/tags',
   Create = '/admin/api/v1/tags',
@@ -39,9 +39,9 @@ if (useMock) {
 }
 
 /**
- * @description: 获取 Tags 列表
- * @param params - 查询参数
- * @param mode - 错误消息模式
+ * @description: Get Tags list
+ * @param params - Query parameters
+ * @param mode - Error message mode
  */
 export function getTagsApi(params?: GetTagsParams, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
@@ -69,9 +69,9 @@ export function getTagsApi(params?: GetTagsParams, mode: ErrorMessageMode = 'mod
 }
 
 /**
- * @description: 创建 Tag
- * @param params - 创建 Tag 参数
- * @param mode - 错误消息模式
+ * @description: Create Tag
+ * @param params - Create Tag parameters
+ * @param mode - Error message mode
  */
 export function createTagApi(params: CreateTagParams, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
@@ -99,10 +99,10 @@ export function createTagApi(params: CreateTagParams, mode: ErrorMessageMode = '
 }
 
 /**
- * @description: 更新 Tag
+ * @description: Update Tag
  * @param tagId - Tag ID
- * @param params - 更新 Tag 参数
- * @param mode - 错误消息模式
+ * @param params - Update Tag parameters
+ * @param mode - Error message mode
  */
 export function updateTagApi(tagId: string, params: UpdateTagParams, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
@@ -130,9 +130,9 @@ export function updateTagApi(tagId: string, params: UpdateTagParams, mode: Error
 }
 
 /**
- * @description: 删除 Tag
- * @param params - 删除 Tag 参数（需要 tenant_id 和 tag_name）
- * @param mode - 错误消息模式
+ * @description: Delete Tag
+ * @param params - Delete Tag parameters (requires tenant_id and tag_name)
+ * @param mode - Error message mode
  */
 export function deleteTagApi(params: DeleteTagParams, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
@@ -150,7 +150,7 @@ export function deleteTagApi(params: DeleteTagParams, mode: ErrorMessageMode = '
   }
 
   // Production: Call real backend API
-  // 注意：tag_name 全局唯一，不需要 tag_type
+  // Note: tag_name is globally unique, tag_type not needed
   return defHttp.delete<{ success: boolean }>(
     {
       url: Api.Delete,
@@ -164,9 +164,9 @@ export function deleteTagApi(params: DeleteTagParams, mode: ErrorMessageMode = '
 }
 
 /**
- * @description: 删除 Tag 中的对象
- * @param params - 删除对象参数
- * @param mode - 错误消息模式
+ * @description: Remove objects from Tag
+ * @param params - Remove objects parameters
+ * @param mode - Error message mode
  */
 export function removeTagObjectsApi(params: RemoveTagObjectsParams, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
@@ -197,9 +197,9 @@ export function removeTagObjectsApi(params: RemoveTagObjectsParams, mode: ErrorM
 }
 
 /**
- * @description: 删除 Tag Type
- * @param params - 删除 Tag Type 参数
- * @param mode - 错误消息模式
+ * @description: Delete Tag Type
+ * @param params - Delete Tag Type parameters
+ * @param mode - Error message mode
  */
 export function deleteTagTypeApi(params: DeleteTagTypeParams, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
@@ -227,9 +227,9 @@ export function deleteTagTypeApi(params: DeleteTagTypeParams, mode: ErrorMessage
 }
 
 /**
- * @description: 查询对象在哪些 tag 中被使用
- * @param params - 查询参数
- * @param mode - 错误消息模式
+ * @description: Query which tags an object is used in
+ * @param params - Query parameters
+ * @param mode - Error message mode
  */
 export function getTagsForObjectApi(params: GetTagsForObjectParams, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly

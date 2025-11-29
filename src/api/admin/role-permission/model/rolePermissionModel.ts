@@ -1,20 +1,20 @@
 /**
- * Role Permission API 数据模型定义
- * 对应 owlRD/db/21_role_permissions.sql 中的 role_permissions 表结构
+ * Role Permission API data model definition
+ * Corresponds to role_permissions table structure in owlRD/db/21_role_permissions.sql
  */
 
 /**
- * 权限类型
+ * Permission type
  */
 export type PermissionType = 'read' | 'create' | 'update' | 'delete' | 'manage'
 
 /**
- * 权限范围
+ * Permission scope
  */
 export type PermissionScope = 'all' | 'assigned_only' | 'location_tag'
 
 /**
- * 角色权限数据模型
+ * Role permission data model
  */
 export interface RolePermission {
   permission_id: string
@@ -28,17 +28,17 @@ export interface RolePermission {
 }
 
 /**
- * 获取角色权限列表请求参数
+ * Get role permission list request parameters
  */
 export interface GetRolePermissionsParams {
-  role_code?: string // 角色编码（可选，用于过滤特定角色的权限）
-  resource_type?: string // 资源类型（可选，用于过滤特定资源的权限）
-  permission_type?: PermissionType // 权限类型（可选，用于过滤特定权限类型）
-  is_active?: boolean // 是否启用（可选，用于过滤启用/禁用的权限）
+  role_code?: string // Role code (optional, for filtering permissions of specific role)
+  resource_type?: string // Resource type (optional, for filtering permissions of specific resource)
+  permission_type?: PermissionType // Permission type (optional, for filtering specific permission type)
+  is_active?: boolean // Whether enabled (optional, for filtering enabled/disabled permissions)
 }
 
 /**
- * 获取角色权限列表响应
+ * Get role permission list response
  */
 export interface GetRolePermissionsResult {
   items: RolePermission[]
@@ -46,7 +46,7 @@ export interface GetRolePermissionsResult {
 }
 
 /**
- * 创建角色权限请求参数
+ * Create role permission request parameters
  */
 export interface CreateRolePermissionParams {
   role_code: string
@@ -57,14 +57,14 @@ export interface CreateRolePermissionParams {
 }
 
 /**
- * 创建角色权限响应
+ * Create role permission response
  */
 export interface CreateRolePermissionResult {
   permission_id: string
 }
 
 /**
- * 批量创建角色权限请求参数
+ * Batch create role permissions request parameters
  */
 export interface BatchCreateRolePermissionsParams {
   role_code: string
@@ -77,7 +77,7 @@ export interface BatchCreateRolePermissionsParams {
 }
 
 /**
- * 更新角色权限请求参数
+ * Update role permission request parameters
  */
 export interface UpdateRolePermissionParams {
   scope?: PermissionScope
@@ -85,14 +85,14 @@ export interface UpdateRolePermissionParams {
 }
 
 /**
- * 更新角色权限状态请求参数
+ * Update role permission status request parameters
  */
 export interface UpdateRolePermissionStatusParams {
   is_active: boolean
 }
 
 /**
- * 资源类型选项（用于下拉选择）
+ * Resource type options (for dropdown selection)
  */
 export const RESOURCE_TYPES = [
   'vital_monitor',
@@ -124,12 +124,12 @@ export const RESOURCE_TYPES = [
 ] as const
 
 /**
- * 权限类型选项（用于下拉选择）
+ * Permission type options (for dropdown selection)
  */
 export const PERMISSION_TYPES: PermissionType[] = ['read', 'create', 'update', 'delete', 'manage']
 
 /**
- * 权限范围选项（用于下拉选择）
+ * Permission scope options (for dropdown selection)
  */
 export const PERMISSION_SCOPES: PermissionScope[] = ['all', 'assigned_only', 'location_tag']
 

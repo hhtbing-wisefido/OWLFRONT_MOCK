@@ -1,5 +1,4 @@
-// axios配置  可自行根据项目进行更改，只需更改该文件即可，其他文件可以不动
-// The axios configuration can be configured according to the project, just change the file, other files can be left unchanged
+// Axios configuration can be configured according to the project, just change this file, other files can be left unchanged
 
 import type { AxiosResponse } from 'axios'
 import { clone } from 'lodash-es'
@@ -13,22 +12,22 @@ import { setObjToUrlParams, deepMerge } from '@/utils'
 import { joinTimestamp, formatRequestDate } from './helper'
 import { AxiosRetry } from './axiosRetry'
 
-// 临时配置，后续需要从环境变量或配置中读取
+// Temporary configuration, should be read from environment variables or config later
 const apiUrl = import.meta.env.VITE_API_URL || ''
 const urlPrefix = import.meta.env.VITE_URL_PREFIX || ''
 
-// 从 store 获取 token（同步函数，因为 store getter 是同步的）
+// Get token from store (synchronous function, because store getter is synchronous)
 function getToken(): string | null {
   try {
-    // 尝试从 localStorage 直接获取（避免循环依赖）
-    // Store 会在设置 token 时同步更新 localStorage
+    // Try to get from localStorage directly (avoid circular dependency)
+    // Store will synchronously update localStorage when setting token
     return localStorage.getItem('ACCESS_TOKEN')
   } catch (error) {
     return null
   }
 }
 
-// TODO: 实现 Token 刷新逻辑时使用
+// TODO: Use when implementing token refresh logic
 // let isRefreshing = false // Flag to indicate if a refresh is in progress
 // let requestsToRetry: Array<(token: string) => void> = [] // Queue for failed requests waiting for refresh
 
@@ -42,11 +41,11 @@ class TokenExpiredError extends Error {
 }
 
 /**
- * @description: 数据处理，方便区分多种处理方式
+ * @description: Data processing, convenient for distinguishing multiple processing methods
  */
 const transform: AxiosTransform = {
   /**
-   * @description: 处理响应数据。如果数据不是预期格式，可直接抛出错误
+   * @description: Process response data. If data is not in expected format, can directly throw error
    */
   transformResponseHook: (res: AxiosResponse<Result>, options: RequestOptions) => {
     const { isTransformResponse, isReturnNativeResponse } = options
@@ -59,11 +58,11 @@ const transform: AxiosTransform = {
       return res
     }
 
-    // 是否返回原生响应头 比如：需要获取响应头时使用该属性
+    // Whether to return native response headers, e.g., use this property when need to get response headers
     if (isReturnNativeResponse) {
       return res
     }
-    // 不进行任何处理，直接返回
+    // Do not process, return directly
     if (!isTransformResponse) {
       return res.data
     }
@@ -72,16 +71,16 @@ const transform: AxiosTransform = {
     if (!data) {
       throw new Error('Request failed, no data returned')
     }
-    //  这里 code，result，message为 后台统一的字段
+    // Here code, result, message are unified backend fields
     const { code, result, message } = data
 
-    // 这里逻辑可以根据项目进行修改
+    // This logic can be modified according to the project
     const hasSuccess = data && Reflect.has(data, 'code') && code === ResultEnum.SUCCESS
     if (hasSuccess) {
       return result
     }
 
-    // 在此处根据自己项目的实际情况对不同的code执行不同的操作
+    // Execute different operations for different codes according to the actual situation of the project
     let timeoutMsg = ''
     switch (code) {
       case ResultEnum.TIMEOUT:
@@ -97,20 +96,20 @@ const transform: AxiosTransform = {
         }
     }
 
-    // errorMessageMode='modal'的时候会显示modal错误弹窗，而不是消息提示
-    // errorMessageMode='none' 一般是调用时明确表示不希望自动弹出错误提示
+    // When errorMessageMode='modal', will show modal error popup instead of message
+    // errorMessageMode='none' usually means explicitly don't want automatic error popup when calling
     if (options.errorMessageMode === 'modal') {
-      // TODO: 显示错误弹窗
+      // TODO: Show error modal
       console.error(`[Error Modal]: ${timeoutMsg}`)
     } else if (options.errorMessageMode === 'message') {
-      // TODO: 显示错误消息
+      // TODO: Show error message
       console.error(`[Error Message]: ${timeoutMsg}`)
     }
 
     throw new Error(timeoutMsg || 'Request failed')
   },
 
-  // 请求之前处理config
+  // Process config before request
   beforeRequestHook: (config, options) => {
     const { apiUrl: optApiUrl, joinPrefix, joinParamsToUrl, formatDate, joinTime = true, urlPrefix: optUrlPrefix } = options
     if (joinPrefix) {
@@ -125,10 +124,10 @@ const transform: AxiosTransform = {
     formatDate && data && !isString(data) && formatRequestDate(data)
     if (config.method?.toUpperCase() === RequestEnum.GET) {
       if (!isString(params)) {
-        // 给 get 请求加上时间戳参数，避免从缓存中拿数据。
+        // Add timestamp parameter to GET request to avoid getting data from cache
         config.params = Object.assign(params || {}, joinTimestamp(joinTime, false))
       } else {
-        // 兼容restful风格
+        // Compatible with RESTful style
         config.url = config.url + params + `${joinTimestamp(joinTime, true)}`
         config.params = undefined
       }
@@ -143,7 +142,7 @@ const transform: AxiosTransform = {
           config.data = data
           config.params = params
         } else {
-          // 非GET请求如果没有提供data，则将params视为data
+          // For non-GET requests, if data is not provided, treat params as data
           config.data = params
           config.params = undefined
         }
@@ -154,7 +153,7 @@ const transform: AxiosTransform = {
           )
         }
       } else {
-        // 兼容restful风格
+        // Compatible with RESTful style
         config.url = config.url + params
         config.params = undefined
       }
@@ -163,13 +162,13 @@ const transform: AxiosTransform = {
   },
 
   /**
-   * @description: 请求拦截器处理
+   * @description: Request interceptor processing
    */
   requestInterceptors: (config, options) => {
-    // 请求之前处理config
+    // Process config before request
     const token = getToken()
     if (token && (config as any)?.requestOptions?.withToken !== false) {
-      // jwt token
+      // JWT token
       ;(config as any).headers = (config as any).headers || {}
       ;(config as any).headers.Authorization = options.authenticationScheme
         ? `${options.authenticationScheme} ${token}`
@@ -179,14 +178,14 @@ const transform: AxiosTransform = {
   },
 
   /**
-   * @description: 响应拦截器处理
+   * @description: Response interceptor processing
    */
   responseInterceptors: (res: AxiosResponse<any>) => {
     return res
   },
 
   /**
-   * @description: 响应错误处理
+   * @description: Response error handling
    */
   responseInterceptorsCatch: (axiosInstance: AxiosResponse, error: any) => {
     console.info('responseInterceptorsCatch, error:', error)
@@ -199,8 +198,8 @@ const transform: AxiosTransform = {
 
     if (isTokenExpiredError && config) {
       console.log('Detected Token Expired Error (401 + 60401)')
-      // TODO: 实现 Token 刷新逻辑
-      // 这里先简单处理，直接返回错误
+      // TODO: Implement token refresh logic
+      // Simple handling here, directly return error
       return Promise.reject(error)
     } else {
       const { response: errResponse, code, message } = error || {}
@@ -210,7 +209,7 @@ const transform: AxiosTransform = {
       let errMessage = ''
       try {
         if (code === 'ECONNABORTED' && message?.indexOf('timeout') !== -1) {
-          // TODO: 跳转到超时页面
+          // TODO: Navigate to timeout page
           errMessage = 'Request timeout'
         }
         if (err?.includes('Network Error')) {
@@ -231,7 +230,7 @@ const transform: AxiosTransform = {
 
       checkStatus(error?.response?.status, msg, errorMessageMode)
 
-      // 添加自动重试机制 保险起见 只针对GET请求
+      // Add automatic retry mechanism, for safety only for GET requests
       const retryRequest = new AxiosRetry()
       const retryConfig = config?.requestOptions?.retryRequest
       if (retryConfig?.isOpenRetry && config?.method?.toUpperCase() === RequestEnum.GET) {
@@ -245,38 +244,38 @@ const transform: AxiosTransform = {
 
 function createAxios(opt?: Partial<CreateAxiosOptions>) {
   return new VAxios(
-    // 深度合并
+    // Deep merge
     deepMerge(
       {
-        // authentication schemes，e.g: Bearer
+        // Authentication schemes, e.g: Bearer
         authenticationScheme: '',
         timeout: 10 * 1000,
         headers: { 'Content-Type': ContentTypeEnum.JSON },
-        // 数据处理方式
+        // Data processing method
         transform: clone(transform),
-        // 配置项，下面的选项都可以在独立的接口请求中覆盖
+        // Configuration options, all options below can be overridden in individual API requests
         requestOptions: {
-          // 默认将prefix 添加到url
+          // Default add prefix to url
           joinPrefix: true,
-          // 是否返回原生响应头
+          // Whether to return native response headers
           isReturnNativeResponse: false,
-          // 需要对返回数据进行处理
+          // Need to process returned data
           isTransformResponse: true,
-          // post请求的时候添加参数到url
+          // Add parameters to url when POST request
           joinParamsToUrl: false,
-          // 格式化提交参数时间
+          // Format submitted parameter time
           formatDate: true,
-          // 消息提示类型
+          // Message prompt type
           errorMessageMode: 'message',
-          // 接口地址
+          // API address
           apiUrl: apiUrl,
-          // 接口拼接地址
+          // API concatenation address
           urlPrefix: urlPrefix,
-          //  是否加入时间戳
+          // Whether to add timestamp
           joinTime: true,
-          // 忽略重复请求
+          // Ignore duplicate requests
           ignoreCancelToken: true,
-          // 是否携带token
+          // Whether to carry token
           withToken: true,
           retryRequest: {
             isOpenRetry: true,

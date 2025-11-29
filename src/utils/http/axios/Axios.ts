@@ -10,7 +10,7 @@ import { ContentTypeEnum, RequestEnum } from '@/enums/httpEnum'
 
 export * from './axiosTransform'
 /**
- * @description:  axios module
+ * @description: Axios module
  */
 export class VAxios {
   private axiosInstance: AxiosInstance
@@ -59,7 +59,7 @@ export class VAxios {
   }
 
   /**
-   * @description: Interceptor configuration 拦截器配置
+   * @description: Interceptor configuration
    */
   private setupInterceptors() {
     const transform = this.getTransform()

@@ -1,31 +1,31 @@
 /**
- * Tags API 数据模型定义
- * 对应 owlRD/db/20_tags_catalog.sql 中的 tags_catalog 表结构
+ * Tags API data model definition
+ * Corresponds to tags_catalog table structure in owlRD/db/20_tags_catalog.sql
  */
 
 /**
- * Tag 目录项
+ * Tag catalog item
  */
 export interface TagCatalogItem {
   tag_id: string
   tenant_id: string
-  tag_type: string | null // Tag 类型：可选，'alarm_tag', 'location_tag', 'family_tag', 'nursestation_tag', 'user_tag', 'caregiver_tag' 或 NULL
-  tag_name: string // Tag 名称：必填，在同一 tenant_id 下全局唯一（跨所有 tag_type）
-  tag_objects?: Record<string, Record<string, string>> // JSONB 格式：{"resident": {"uuid1": "name1"}, "location": {"uuid2": "name2"}}
-  is_system_tag_type: boolean // 是否为系统预定义 tag_type（TRUE 表示系统预定义，不能删除）
+  tag_type: string | null // Tag type: optional, 'alarm_tag', 'location_tag', 'family_tag', 'nursestation_tag', 'user_tag', 'caregiver_tag' or NULL
+  tag_name: string // Tag name: required, globally unique within same tenant_id (across all tag_type)
+  tag_objects?: Record<string, Record<string, string>> // JSONB format: {"resident": {"uuid1": "name1"}, "location": {"uuid2": "name2"}}
+  is_system_tag_type: boolean // Whether it's a system predefined tag_type (TRUE means system predefined, cannot be deleted)
 }
 
 /**
- * 获取 Tags 列表请求参数
+ * Get Tags list request parameters
  */
 export interface GetTagsParams {
-  tenant_id?: string // 租户 ID（可选，如果不提供则使用当前用户的 tenant_id）
-  tag_type?: string // Tag 类型过滤（可选）
-  include_system_tag_types?: boolean // 是否包含系统预定义 tag_type（默认 true）
+  tenant_id?: string // Tenant ID (optional, if not provided, use current user's tenant_id)
+  tag_type?: string // Tag type filter (optional)
+  include_system_tag_types?: boolean // Whether to include system predefined tag_type (default true)
 }
 
 /**
- * 获取 Tags 列表响应
+ * Get Tags list response
  */
 export interface GetTagsResult {
   items: TagCatalogItem[]
@@ -33,50 +33,50 @@ export interface GetTagsResult {
 }
 
 /**
- * 创建 Tag 请求参数
+ * Create Tag request parameters
  */
 export interface CreateTagParams {
   tenant_id: string
-  tag_type: string | null // Tag 类型：可选，'alarm_tag', 'location_tag', 'family_tag', 'nursestation_tag', 'user_tag', 'caregiver_tag' 或 NULL
-  tag_name: string // Tag 名称：必填，在同一 tenant_id 下全局唯一（跨所有 tag_type）
-  // 注意：is_system_tag_type 由后端根据 tag_type 自动设置，不能手动指定
+  tag_type: string | null // Tag type: optional, 'alarm_tag', 'location_tag', 'family_tag', 'nursestation_tag', 'user_tag', 'caregiver_tag' or NULL
+  tag_name: string // Tag name: required, globally unique within same tenant_id (across all tag_type)
+  // Note: is_system_tag_type is automatically set by backend based on tag_type, cannot be manually specified
 }
 
 /**
- * 创建 Tag 响应
+ * Create Tag response
  */
 export interface CreateTagResult {
   tag_id: string
 }
 
 /**
- * 更新 Tag 请求参数
+ * Update Tag request parameters
  */
 export interface UpdateTagParams {
   tag_name?: string
-  tag_type?: string | null // 允许修改 tag_type
-  // 注意：is_system_tag_type 不能修改
+  tag_type?: string | null // Allow modifying tag_type
+  // Note: is_system_tag_type cannot be modified
 }
 
 /**
- * 删除 Tag 请求参数
+ * Delete Tag request parameters
  */
 export interface DeleteTagParams {
   tenant_id: string
-  tag_name: string // tag_name 全局唯一，不需要 tag_type
+  tag_name: string // tag_name is globally unique, tag_type not needed
 }
 
 /**
- * 删除 Tag 中的对象请求参数
+ * Remove objects from Tag request parameters
  */
 export interface RemoveTagObjectsParams {
   tag_id: string
-  object_type: string // 对象类型：'resident', 'location', 'user', 'card', 'caregiver_group'
-  object_ids: string[] // 要删除的对象 ID 列表
+  object_type: string // Object type: 'resident', 'location', 'user', 'card', 'caregiver_group'
+  object_ids: string[] // List of object IDs to remove
 }
 
 /**
- * 删除 Tag Type 请求参数
+ * Delete Tag Type request parameters
  */
 export interface DeleteTagTypeParams {
   tenant_id: string
@@ -84,22 +84,22 @@ export interface DeleteTagTypeParams {
 }
 
 /**
- * 查询对象在哪些 tag 中被使用
+ * Query which tags an object is used in
  */
 export interface GetTagsForObjectParams {
   tenant_id: string
-  object_type: string // 对象类型：'resident', 'location', 'user', 'card', 'caregiver_group'
-  object_id: string // 对象 ID
+  object_type: string // Object type: 'resident', 'location', 'user', 'card', 'caregiver_group'
+  object_id: string // Object ID
 }
 
 /**
- * 对象在 tag 中的使用信息
+ * Object usage information in tag
  */
 export interface TagForObject {
   tag_id: string
   tag_type: string
   tag_name: string
-  object_name_in_tag: string // tag_objects 中存储的对象名称（可能已过期）
+  object_name_in_tag: string // Object name stored in tag_objects (may be outdated)
   is_system_tag_type: boolean
 }
 

@@ -292,6 +292,23 @@ export const card1_ActiveBed_R1: VitalFocusCard = {
   sleep_stage: 1, // awake
   heart_source: 'r', // from Radar-002 (小写字母，与v1.0一致)
   breath_source: 's', // from Sleepace-001 (小写字母，与v1.0一致，优先使用sleepad)
+  // 时间序列数据：5个数据点，每个间隔2秒，总共10秒
+  statuses: {
+    // 当前值（最新值，用于显示）
+    heart: 72,
+    breath: 20,
+    sleep_stage: 1,
+    heart_source: 'r',
+    breath_source: 's',
+    // 时间序列数据（5个点，每个间隔2秒）
+    timeseries: [
+      { timestamp: Date.now() - 8000, heart: 70, breath: 18, sleep_stage: 1 }, // 8秒前
+      { timestamp: Date.now() - 6000, heart: 71, breath: 19, sleep_stage: 1 }, // 6秒前
+      { timestamp: Date.now() - 4000, heart: 72, breath: 20, sleep_stage: 1 }, // 4秒前
+      { timestamp: Date.now() - 2000, heart: 73, breath: 21, sleep_stage: 1 }, // 2秒前
+      { timestamp: Date.now(), heart: 72, breath: 20, sleep_stage: 1 }, // 当前
+    ],
+  },
   // person_count和postures：合并所有雷达设备的tracking_id（根据card_creation_rules场景A）
   // 规则：只显示有tracking_id的姿态，person_count是所有雷达tracking_id的总数（不去重）
   // 注意：各雷达是各雷达的，不是同一个人，不能去重
@@ -356,6 +373,21 @@ export const card2_ActiveBed_R2: VitalFocusCard = {
   sleep_stage: 4, // deep sleep
   heart_source: 'r', // radar
   breath_source: 'r', // radar
+  // 时间序列数据：5个数据点，每个间隔2秒，总共10秒
+  statuses: {
+    heart: 85,
+    breath: 20,
+    sleep_stage: 4,
+    heart_source: 'r',
+    breath_source: 'r',
+    timeseries: [
+      { timestamp: Date.now() - 8000, heart: 83, breath: 19, sleep_stage: 4 },
+      { timestamp: Date.now() - 6000, heart: 84, breath: 20, sleep_stage: 4 },
+      { timestamp: Date.now() - 4000, heart: 85, breath: 20, sleep_stage: 4 },
+      { timestamp: Date.now() - 2000, heart: 86, breath: 21, sleep_stage: 4 },
+      { timestamp: Date.now(), heart: 85, breath: 20, sleep_stage: 4 },
+    ],
+  },
   person_count: 1,
   postures: [],
   alarms: [
@@ -420,6 +452,21 @@ export const card3_ActiveBed_R3: VitalFocusCard = {
   sleep_stage: 0,
   heart_source: '-', // no data available
   breath_source: '-', // no data available
+  // 时间序列数据：5个数据点，每个间隔2秒，总共10秒（设备离线，所有值为0）
+  statuses: {
+    heart: 0,
+    breath: 0,
+    sleep_stage: 0,
+    heart_source: '-',
+    breath_source: '-',
+    timeseries: [
+      { timestamp: Date.now() - 8000, heart: 0, breath: 0, sleep_stage: 0 },
+      { timestamp: Date.now() - 6000, heart: 0, breath: 0, sleep_stage: 0 },
+      { timestamp: Date.now() - 4000, heart: 0, breath: 0, sleep_stage: 0 },
+      { timestamp: Date.now() - 2000, heart: 0, breath: 0, sleep_stage: 0 },
+      { timestamp: Date.now(), heart: 0, breath: 0, sleep_stage: 0 },
+    ],
+  },
   person_count: 0,
   postures: [],
   alarms: [],
@@ -564,6 +611,30 @@ export function generateCardsResponse(
   const end = start + pageSize
   const paginatedCards = cards.slice(start, end)
 
+  // 在 Mock 模式下，为了模拟实时心率/呼吸/睡眠变化，
+  // 如果卡片包含 statuses.timeseries，则根据当前时间选择其中一个点作为当前值。
+  const now = Date.now()
+  const updatedCards = paginatedCards.map((card) => {
+    // 浅拷贝，避免修改原始数据
+    const updated: VitalFocusCard = { ...card }
+    const statuses: any = (updated as any).statuses
+    const series: any[] | undefined = statuses?.timeseries
+
+    if (Array.isArray(series) && series.length > 0) {
+      // 每 2 秒切换一次，循环使用 5 个点：0,1,2,3,4
+      const index = Math.floor(now / 2000) % series.length
+      const point = series[index] || series[series.length - 1]
+
+      if (point) {
+        updated.heart = typeof point.heart === 'number' ? point.heart : updated.heart
+        updated.breath = typeof point.breath === 'number' ? point.breath : updated.breath
+        updated.sleep_stage = typeof point.sleep_stage === 'number' ? point.sleep_stage : updated.sleep_stage
+      }
+    }
+
+    return updated
+  })
+
   const pagination: BackendPagination = {
     size: pageSize,
     page: page,
@@ -573,7 +644,7 @@ export function generateCardsResponse(
   }
 
   return {
-    items: paginatedCards,
+    items: updatedCards,
     pagination,
   }
 }

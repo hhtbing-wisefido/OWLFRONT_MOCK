@@ -1,6 +1,6 @@
 /**
- * User API 接口定义
- * 用户管理相关的后端API调用
+ * User API interface definition
+ * Backend API calls related to user management
  */
 
 import { defHttp } from '@/utils/http/axios'
@@ -16,10 +16,10 @@ import type {
   ResetPasswordResult,
 } from './model/userModel'
 
-// 导出 User 类型供其他模块使用
+// Export User type for use by other modules
 export type { User } from './model/userModel'
 
-// 定义 API 路径枚举
+// Define API path enum
 export enum Api {
   GetList = '/admin/api/v1/users',
   Create = '/admin/api/v1/users',
@@ -37,9 +37,9 @@ if (useMock) {
 }
 
 /**
- * @description: 获取用户列表
- * @param params - 查询参数（可选搜索关键词）
- * @param mode - 错误消息模式
+ * @description: Get user list
+ * @param params - Query parameters (optional search keyword)
+ * @param mode - Error message mode
  */
 export function getUsersApi(params?: GetUsersParams, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
@@ -67,9 +67,9 @@ export function getUsersApi(params?: GetUsersParams, mode: ErrorMessageMode = 'm
 }
 
 /**
- * @description: 创建用户
- * @param params - 创建用户参数
- * @param mode - 错误消息模式
+ * @description: Create user
+ * @param params - Create user parameters
+ * @param mode - Error message mode
  */
 export function createUserApi(params: CreateUserParams, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
@@ -97,10 +97,10 @@ export function createUserApi(params: CreateUserParams, mode: ErrorMessageMode =
 }
 
 /**
- * @description: 更新用户
- * @param userId - 用户 ID
- * @param params - 更新用户参数
- * @param mode - 错误消息模式
+ * @description: Update user
+ * @param userId - User ID
+ * @param params - Update user parameters
+ * @param mode - Error message mode
  */
 export function updateUserApi(userId: string, params: UpdateUserParams, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
@@ -128,18 +128,18 @@ export function updateUserApi(userId: string, params: UpdateUserParams, mode: Er
 }
 
 /**
- * @description: 删除用户
- * @param userId - 用户 ID
- * @param mode - 错误消息模式
+ * @description: Delete user
+ * @param userId - User ID
+ * @param mode - Error message mode
  */
 export function deleteUserApi(userId: string, mode: ErrorMessageMode = 'modal') {
   return updateUserApi(userId, { _delete: true }, mode)
 }
 
 /**
- * @description: 获取用户详情
- * @param userId - 用户 ID
- * @param mode - 错误消息模式
+ * @description: Get user detail
+ * @param userId - User ID
+ * @param mode - Error message mode
  */
 export function getUserApi(userId: string, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
@@ -166,10 +166,10 @@ export function getUserApi(userId: string, mode: ErrorMessageMode = 'modal') {
 }
 
 /**
- * @description: 重置密码
- * @param userId - 用户 ID
- * @param params - 重置密码参数
- * @param mode - 错误消息模式
+ * @description: Reset password
+ * @param userId - User ID
+ * @param params - Reset password parameters
+ * @param mode - Error message mode
  */
 export function resetPasswordApi(userId: string, params: Omit<ResetPasswordParams, 'user_id'>, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly

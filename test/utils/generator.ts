@@ -42,7 +42,7 @@ export function generateLoginSuccess(
       ...baseResult,
       role: 'Nurse',
       nickName: 'Test User',
-      homePath: '/dashboard',
+      homePath: '/monitoring/overview',
     }
   }
 

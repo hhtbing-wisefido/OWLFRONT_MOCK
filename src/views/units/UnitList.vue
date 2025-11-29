@@ -797,7 +797,7 @@
           </div>
         </div>
         
-        <!-- Dev Container (Device List) - 与 unit-edit-container 并列 -->
+        <!-- Dev Container (Device List) - parallel to unit-edit-container -->
         <div v-if="isDeviceMode" class="device-container">
           <div class="device-list-wrapper">
             <a-table
@@ -937,26 +937,26 @@ const expandedBuildings = ref<Set<string>>(new Set())
 // Left column: independently manages its own expanded state (independent component instance)
 const selectedBuilding = ref<Building | null>(null)
 
-// 当前用于 unitGrid 的 building（可能是从 headline 或左侧列选择的）
+// Current building used for unitGrid (may be selected from headline or left column)
 const currentBuildingForGrid = ref<Building | null>(null)
 
-// Create Building Form (在页首)
+// Create Building Form (at page header)
 const createBuildingForm = ref({
   location_tag: undefined as string | undefined,
   building_name: '',
   floors: 1,
 })
 
-// Edit Building Form (内联编辑)
+// Edit Building Form (inline editing)
 const editingBuildingId = ref<string | null>(null)
 const editingBuildingForm = ref({
   location_tag: undefined as string | undefined,
   building_name: '',
 })
 
-// Unit 网格
+// Unit grid
 const units = ref<Unit[]>([])
-// Note: gridSize 已不再使用，CSS Grid 会自动处理布局
+// Note: gridSize is no longer used, CSS Grid will handle layout automatically
 
 // Create Unit Modal
 const showCreateUnitModal = ref(false)
@@ -968,11 +968,11 @@ const createUnitForm = ref({
   area_tag: undefined as string | undefined,
   building: '',
   floor: '',
-  is_multi_person_room: true, // 默认选中
+  is_multi_person_room: true, // Selected by default
   is_public_space: false,
   time_zone: undefined as string | undefined,
 })
-// selectedCellIndex 暂时未使用，保留用于后续功能
+// selectedCellIndex is temporarily unused, reserved for future functionality
 // const selectedCellIndex = ref<number | null>(null)
 
 // Edit Unit Modal (Room-Bed Management)
@@ -982,16 +982,16 @@ const roomsWithBeds = ref<RoomWithBeds[]>([])
 const showAddRoomForm = ref(false)
 const newRoomName = ref('')
 const expandedRooms = ref<Set<string>>(new Set())
-const expandedDevices = ref<Set<string>>(new Set()) // 设备展开状态（Room/Bed ID）
+const expandedDevices = ref<Set<string>>(new Set()) // Device expanded state (Room/Bed ID)
 const bedIconHovered = ref(false)
 const bedIconSrc = computed(() => bedIconHovered.value ? bedIconGreen : bedIconBlue)
 const editingRoomId = ref<string | null>(null)
-// 设备选择弹窗
+// Device selection modal
 const showDeviceSelectModal = ref(false)
 const selectedTarget = ref<{ type: 'unit' | 'room' | 'bed', id: string } | null>(null)
 const devicesForSelection = ref<Device[]>([])
 
-// Dev 容器当前显示的容器（用于过滤设备）
+// Dev container currently displayed container (for filtering devices)
 const devContainerTarget = ref<{ type: 'unit' | 'room' | 'bed', id: string } | null>(null)
 const editingRoomName = ref('')
 const editingBedId = ref<string | null>(null)
@@ -1001,9 +1001,9 @@ const roomInputRef = ref<any>()
 const bedInputRef = ref<any>()
 const isDeviceMode = ref(false)
 
-// Device 相关状态
-const availableDevices = ref<Device[]>([]) // 可用设备（未绑定）
-const allDevices = ref<Device[]>([]) // 所有设备（包括已绑定的）
+// Device related state
+const availableDevices = ref<Device[]>([]) // Available devices (unbound)
+const allDevices = ref<Device[]>([]) // All devices (including bound)
 const deviceColumns: ColumnsType<Device> = [
   {
     title: '',
@@ -1062,7 +1062,7 @@ const deviceColumns: ColumnsType<Device> = [
   },
 ]
 
-// 设备选择弹窗的列定义
+// Device selection modal column definitions
 const deviceSelectColumns: ColumnsType<Device> = [
   {
     title: '',
@@ -1127,7 +1127,7 @@ const editUnitForm = ref({
   unit_name: '',
   unit_number: '',
   unit_type: 'Facility' as 'Facility' | 'Home', // Default value is Facility
-  is_multi_person_room: true, // 默认选中
+  is_multi_person_room: true, // Selected by default
   is_public_space: false,
   time_zone: undefined as string | undefined,
 })
@@ -1139,7 +1139,7 @@ const locationTagOptions = ref<TagCatalogItem[]>([])
 const areaTagOptions = ref<TagCatalogItem[]>([])
 const areaTagSearchValue = ref('')
 
-// 美国时区列表（IANA 格式）
+// US timezone list (IANA format)
 const usTimeZones = [
   { value: 'America/New_York', label: 'Eastern Time (America/New_York)' },
   { value: 'America/Chicago', label: 'Central Time (America/Chicago)' },
@@ -1171,7 +1171,7 @@ const usTimeZones = [
   { value: 'America/Yakutat', label: 'Alaska Time - Yakutat (America/Yakutat)' },
 ]
 
-// 时区选择框的过滤函数
+// Timezone selector filter function
 const filterTimeZoneOption = (input: string, option: any) => {
   const searchText = input.toLowerCase()
   const value = option.value?.toLowerCase() || ''
@@ -1179,7 +1179,7 @@ const filterTimeZoneOption = (input: string, option: any) => {
   return value.includes(searchText) || label.includes(searchText)
 }
 
-// 获取显示用的 building 和 floor（DB 保证不为空，默认值：building="-", floor="1F"）
+// Get building and floor for display (DB guarantees non-null, default: building="-", floor="1F")
 const getDisplayBuilding = (unit: Unit): string => {
   return unit.building || '-' // Fallback for safety, but DB guarantees non-null
 }
@@ -1188,21 +1188,21 @@ const getDisplayFloor = (unit: Unit): string => {
   return unit.floor || '1F' // Fallback for safety, but DB guarantees non-null
 }
 
-// Unit 网格计算 - 按 UnitNumber 数字排序
+// Unit grid calculation - sort by UnitNumber numerically
 const unitGrid = computed(() => {
-  // 使用 currentBuildingForGrid 而不是 selectedBuilding
+  // Use currentBuildingForGrid instead of selectedBuilding
   const building = currentBuildingForGrid.value
 
-  // 筛选当前 building 和 floor 的 units
-  // Building 为空时显示 "-"，Floor 为空时显示 "1"
+  // Filter units for current building and floor
+  // Display "-" when building is empty, display "1" when floor is empty
   const filteredUnits = units.value.filter((unit) => {
     const displayBuilding = getDisplayBuilding(unit)
     const displayFloor = getDisplayFloor(unit)
     
-    // 如果是虚拟的 "-" building，使用 location_tag 匹配
+    // If it's a virtual "-" building, use location_tag to match
     if (building?.building_name === '-' && building.building_id?.startsWith('na-building-')) {
       const locationTag = building.location_tag || ''
-      // DB 保证 building 和 floor 不为空，直接比较
+      // DB guarantees building and floor are non-null, compare directly
       return (
         unit.building === '-' &&
         unit.floor === (selectedFloor.value || '1F') &&
@@ -1219,21 +1219,21 @@ const unitGrid = computed(() => {
     }
   })
 
-  // 按 unit_number 数字排序（从小到大）
+  // Sort by unit_number numerically (ascending)
   const sortedUnits = [...filteredUnits].sort((a, b) => {
     const numA = parseInt(a.unit_number) || 0
     const numB = parseInt(b.unit_number) || 0
     return numA - numB
   })
 
-  // 直接返回排序后的数组，CSS Grid 会自动从左到右、从上到下排列
+  // Return sorted array directly, CSS Grid will arrange from left to right, top to bottom automatically
   return sortedUnits
 })
 
-// 获取所有 units（用于显示没有 building 的 units）
+// Get all units (for displaying units without building)
 const allUnits = ref<Unit[]>([])
 
-// 获取 Building 列表
+// Get Building list
 const fetchBuildings = async () => {
   try {
     buildings.value = await getBuildingsApi()
@@ -1242,7 +1242,7 @@ const fetchBuildings = async () => {
   }
 }
 
-// 获取所有 units（用于显示没有 building 的 units）
+// Get all units (for displaying units without building)
 const fetchAllUnits = async () => {
   try {
     const userInfo = userStore.getUserInfo
@@ -1264,11 +1264,11 @@ const fetchAllUnits = async () => {
   }
 }
 
-// 获取 Unit 列表
+// Get Unit list
 const fetchUnits = async () => {
   const building = currentBuildingForGrid.value
   
-  // Building 为空时使用 "-"，Floor 为空时使用 "1F"（与 DB 默认值一致）
+  // Use "-" when building is empty, use "1F" when floor is empty (consistent with DB default)
   const displayBuilding = building?.building_name || (selectedLocationTag.value ? '-' : null)
   const displayFloor = selectedFloor.value || '1F'
   
@@ -1286,33 +1286,33 @@ const fetchUnits = async () => {
       return
     }
 
-    // 构建查询参数
+    // Build query parameters
     const queryParams: any = {
       tenant_id: tenantId,
       is_active: true,
     }
 
-    // 如果 building 是 "-"，查询 building = "-" 的 units（DB 保证不为空）
+    // If building is "-", query units with building = "-" (DB guarantees non-null)
     if (displayBuilding === '-' || !displayBuilding) {
-      // 查询 building = "-" 的 units，按 location_tag 查询
+      // Query units with building = "-", query by location_tag
       if (selectedLocationTag.value) {
         queryParams.location_tag = selectedLocationTag.value
         queryParams.building = '-'
       } else {
-        // 如果没有 location_tag，查询所有 units 然后过滤
+        // If no location_tag, query all units then filter
         const result = await getUnitsApi(queryParams)
         units.value = result.items.filter((unit) => unit.building === '-')
         return
       }
     } else {
-      // 真实 building：必须同时匹配 building_name 和 location_tag
+      // Real building: must match both building_name and location_tag
       queryParams.building = displayBuilding
       if (selectedLocationTag.value) {
         queryParams.location_tag = selectedLocationTag.value
       }
     }
 
-    // 如果 floor 是 "1F"，查询 floor = "1F" 的 units（DB 保证不为空）
+    // If floor is "1F", query units with floor = "1F" (DB guarantees non-null)
     if (displayFloor === '1F') {
       queryParams.floor = '1F'
       const result = await getUnitsApi(queryParams)
@@ -1327,20 +1327,20 @@ const fetchUnits = async () => {
   }
 }
 
-// 点击 headline 行的 Building 标签（独立的组件实例，但会同步关闭另一处）
+// Click Building tag in headline row (independent component instance, but will sync close the other location)
 const handleToggleBuildingTag = (building: Building) => {
   const buildingId = building.building_id || ''
 
-  // headline 行：如果点击的是已展开的 Building，收起它
+  // Headline row: if clicking an already expanded Building, collapse it
   if (expandedBuildings.value.has(buildingId)) {
     expandedBuildings.value = new Set()
     selectedFloor.value = ''
     units.value = []
     currentBuildingForGrid.value = null
   } else {
-    // headline 行：只展开当前点击的 Building，立即关闭其他所有 Building
+    // Headline row: only expand the clicked Building, immediately close all other Buildings
     expandedBuildings.value = new Set([buildingId])
-    // 同步：关闭左侧列的相同 Building（如果之前是展开的）
+    // Sync: close the same Building in left column (if previously expanded)
     if (selectedBuilding.value?.building_id === buildingId) {
       selectedBuilding.value = null
     }
@@ -1350,20 +1350,20 @@ const handleToggleBuildingTag = (building: Building) => {
   }
 }
 
-// 点击左侧列的 Building 卡片（独立的组件实例，但会同步关闭另一处）
+// Click Building card in left column (independent component instance, but will sync close the other location)
 const handleToggleBuildingCard = (building: Building) => {
   const buildingId = building.building_id || ''
 
-  // 左侧列：如果点击的是已选中的 Building，取消选中（收起楼层列表）
+  // Left column: if clicking an already selected Building, deselect it (collapse floor list)
   if (selectedBuilding.value?.building_id === buildingId) {
     selectedBuilding.value = null
     selectedFloor.value = ''
     units.value = []
     currentBuildingForGrid.value = null
   } else {
-    // 左侧列：只展开当前点击的 Building，立即关闭其他所有 Building
+    // Left column: only expand the clicked Building, immediately close all other Buildings
     selectedBuilding.value = building
-    // 同步：关闭 headline 行的相同 Building（如果之前是展开的）
+    // Sync: close the same Building in headline row (if previously expanded)
     if (expandedBuildings.value.has(buildingId)) {
       expandedBuildings.value = new Set()
     }
@@ -1375,67 +1375,67 @@ const handleToggleBuildingCard = (building: Building) => {
 
 
 
-// 选择楼层
+// Select floor
 const handleSelectFloor = async (building: Building, floor: string) => {
   const buildingId = building.building_id || ''
 
-  // 设置用于 unitGrid 的 building
-  // 如果是虚拟的 "-" building，需要特殊处理
+  // Set building for unitGrid
+  // If it's a virtual "-" building, need special handling
   if (building.building_name === '-' && building.building_id?.startsWith('na-building-')) {
-    // 虚拟 building：设置 location_tag 用于查询
+    // Virtual building: set location_tag for query
     selectedLocationTag.value = building.location_tag || ''
     currentBuildingForGrid.value = null
   } else {
-    // 真实 building：保存 building 和 location_tag（用于查询时过滤）
+    // Real building: save building and location_tag (for filtering when querying)
     currentBuildingForGrid.value = building
-    selectedLocationTag.value = building.location_tag || '' // 保存 location_tag 用于查询过滤
+    selectedLocationTag.value = building.location_tag || '' // Save location_tag for query filtering
   }
 
-  // 如果是从 headline 行调用的（expandedBuildings 中有这个 building），不设置 selectedBuilding
-  // 如果是从左侧列调用的，设置 selectedBuilding
+  // If called from headline row (expandedBuildings contains this building), don't set selectedBuilding
+  // If called from left column, set selectedBuilding
   if (!expandedBuildings.value.has(buildingId)) {
-    // 从左侧列调用：设置 selectedBuilding
+    // Called from left column: set selectedBuilding
     selectedBuilding.value = building
-    // 同步：关闭 headline 行的相同 Building（如果之前是展开的）
+    // Sync: close the same Building in headline row (if previously expanded)
     if (expandedBuildings.value.has(buildingId)) {
       expandedBuildings.value = new Set()
     }
   } else {
-    // 从 headline 行调用：不设置 selectedBuilding，避免左侧列展开
-    // 但需要关闭左侧列（如果之前是展开的）
+    // Called from headline row: don't set selectedBuilding, avoid left column expansion
+    // But need to close left column (if previously expanded)
     if (selectedBuilding.value?.building_id === buildingId) {
       selectedBuilding.value = null
     }
   }
 
-  // Floor 为空时默认使用 "1F"（与 DB 默认值一致）
+  // Default to "1F" when floor is empty (consistent with DB default)
   selectedFloor.value = floor || '1F'
 
-  // 等待 Vue 响应式更新
+  // Wait for Vue reactive update
   await nextTick()
 
-  // 获取 units
+  // Get units
   await fetchUnits()
 }
 
-// 获取 Building 显示名称（tag_name-Building_name）- 使用 computed 缓存
-// UI层将 location_tag 映射为 tag_name 用于显示
+// Get Building display name (tag_name-Building_name) - use computed for caching
+// UI layer maps location_tag to tag_name for display
 const buildingsWithDisplayName = computed(() => {
   const buildingList = buildings.value.map((building) => {
-    const tagName = building.location_tag || '' // API返回的是 location_tag
+    const tagName = building.location_tag || '' // API returns location_tag
     const buildingName = building.building_name || ''
     
-    // 显示名称格式：location_tag-Building_name
-    // 如果两者都有，显示 "tag-building"
-    // 如果 building_name 是 "-"，显示 "tag--"（表示没有 building_name）
-    // 如果只有 building_name，显示 "building"
+    // Display name format: location_tag-Building_name
+    // If both exist, display "tag-building"
+    // If building_name is "-", display "tag--" (indicating no building_name)
+    // If only building_name exists, display "building"
     let displayName = ''
     if (tagName && buildingName && buildingName !== '-') {
       displayName = `${tagName}-${buildingName}`
     } else if (tagName && buildingName === '-') {
-      displayName = `${tagName}--` // building_name 是 "-"，显示 "tag--"
+      displayName = `${tagName}--` // building_name is "-", display "tag--"
     } else if (tagName) {
-      displayName = tagName // 只有 location_tag，显示 "tag"（不应该出现，因为 DB 保证 building_name 不为空）
+      displayName = tagName // Only location_tag, display "tag" (shouldn't occur, as DB guarantees building_name is non-null)
     } else if (buildingName && buildingName !== '-') {
       displayName = buildingName
     } else {
@@ -1444,16 +1444,16 @@ const buildingsWithDisplayName = computed(() => {
     
     return {
       ...building,
-      tag_name: tagName, // UI显示用的 tag_name
+      tag_name: tagName, // tag_name for UI display
       displayName,
     }
   })
   
-  // 添加虚拟的 "-" building（用于显示 building = "-" 的 units）
-  // 检查是否有 building = "-" 的 units（DB 保证不为空）
+  // Add virtual "-" building (for displaying units with building = "-")
+  // Check if there are units with building = "-" (DB guarantees non-null)
   const hasUnitsWithoutBuilding = allUnits.value.some((unit) => unit.building === '-')
   if (hasUnitsWithoutBuilding) {
-    // 按 location_tag 分组，为每个 location_tag 创建一个虚拟 building
+    // Group by location_tag, create a virtual building for each location_tag
     const locationTags = new Set<string>()
     allUnits.value.forEach((unit) => {
       if (unit.building === '-' && unit.location_tag) {
@@ -1465,7 +1465,7 @@ const buildingsWithDisplayName = computed(() => {
       buildingList.push({
         building_id: `na-building-${locationTag}`,
         building_name: '-',
-        floors: 1, // 默认 1 层
+        floors: 1, // Default 1 floor
         tenant_id: 'tenant-1',
         location_tag: locationTag,
         displayName: `${locationTag}--`,
@@ -1477,10 +1477,10 @@ const buildingsWithDisplayName = computed(() => {
   return buildingList
 })
 
-// 创建 Building
+// Create Building
 const handleCreateBuilding = async () => {
   try {
-    // location_tag 和 building_name 至少需要一个
+    // At least one of location_tag and building_name is required
     if (!createBuildingForm.value.location_tag && !createBuildingForm.value.building_name) {
       message.error('Please provide either location_tag or Building name')
       return
@@ -1491,7 +1491,7 @@ const handleCreateBuilding = async () => {
       return
     }
 
-    // 如果 building_name 为空，自动设置为 '-'（保证不为空）
+    // If building_name is empty, automatically set to '-' (guarantee non-null)
     const buildingName = createBuildingForm.value.building_name?.trim() || '-'
 
     await createBuildingApi({
@@ -1508,7 +1508,7 @@ const handleCreateBuilding = async () => {
   }
 }
 
-// 重置 Create Building 表单
+// Reset Create Building form
 const resetCreateBuildingForm = () => {
   createBuildingForm.value = {
     location_tag: undefined,
@@ -1517,8 +1517,8 @@ const resetCreateBuildingForm = () => {
   }
 }
 
-// 编辑 Building（进入编辑模式）
-// 编辑 Building
+// Edit Building (enter edit mode)
+// Edit Building
 const handleEditBuilding = (building: Building) => {
   editingBuildingId.value = building.building_id || null
   editingBuildingForm.value = {
@@ -1527,7 +1527,7 @@ const handleEditBuilding = (building: Building) => {
   }
 }
 
-// 保存 Building（退出编辑模式并提交）
+// Save Building (exit edit mode and submit)
 const handleSaveBuilding = async (building: Building) => {
   try {
     if (!building.building_id) {
@@ -1536,10 +1536,10 @@ const handleSaveBuilding = async (building: Building) => {
       return
     }
 
-    // 如果 building_name 为空，自动设置为 '-'（保证不为空）
+    // If building_name is empty, automatically set to '-' (guarantee non-null)
     const buildingName = editingBuildingForm.value.building_name?.trim() || '-'
 
-    // 提交更新
+    // Submit update
     await updateBuildingApi(building.building_id, {
       building_name: buildingName,
       location_tag: editingBuildingForm.value.location_tag || undefined,
@@ -1547,23 +1547,23 @@ const handleSaveBuilding = async (building: Building) => {
 
     message.success('Building updated successfully')
 
-    // 退出编辑模式
+    // Exit edit mode
     editingBuildingId.value = null
 
-    // 刷新 Building 列表
+    // Refresh Building list
     await fetchBuildings()
 
-    // 如果修改的是当前选中的 Building，保持选中状态（selectedBuilding 不变）
-    // selectedBuilding 是 computed，会自动更新
+    // If the modified Building is currently selected, maintain selected state (selectedBuilding unchanged)
+    // selectedBuilding is computed, will update automatically
   } catch (error: any) {
     message.error('Failed to update building: ' + (error.message || 'Unknown error'))
   }
 }
 
-// 删除楼层
+// Delete floor
 const handleDeleteFloor = async (building: Building, floorNum: number) => {
   try {
-    // 检查该楼层是否有 Location
+    // Check if this floor has Location
     const floorStr = `${floorNum}F`
     const unitParams = {
       building: building.building_name,
@@ -1577,19 +1577,19 @@ const handleDeleteFloor = async (building: Building, floorNum: number) => {
       return
     }
 
-    // 确认删除楼层
+    // Confirm delete floor
     if (!building.building_id) {
       message.error('Building ID is missing')
       return
     }
 
-    // 如果删除的楼层是当前选中的楼层，清空选择
+    // If the deleted floor is the currently selected floor, clear selection
     if (selectedBuilding.value?.building_id === building.building_id && selectedFloor.value === floorStr) {
       selectedFloor.value = ''
       units.value = []
     }
 
-    // 更新 Building 的 floors 数量
+    // Update Building's floors count
     const newFloors = building.floors - 1
     if (newFloors < 1) {
       message.error('Building must have at least one floor')
@@ -1599,17 +1599,17 @@ const handleDeleteFloor = async (building: Building, floorNum: number) => {
     await updateBuildingApi(building.building_id, { floors: newFloors })
     message.success('Floor deleted successfully')
 
-    // 刷新 Building 列表
+    // Refresh Building list
     await fetchBuildings()
   } catch (error: any) {
     message.error('Failed to delete floor: ' + (error.message || 'Unknown error'))
   }
 }
 
-// 删除 Building
+// Delete Building
 const handleDeleteBuilding = async (building: Building) => {
   try {
-    // 检查是否有 Unit
+    // Check if there are Units
     const userInfo = userStore.getUserInfo
     const tenantId = userInfo?.tenant_id
 
@@ -1630,7 +1630,7 @@ const handleDeleteBuilding = async (building: Building) => {
       return
     }
 
-    // 确认删除
+    // Confirm delete
     if (!building.building_id) {
       message.error('Building ID is missing')
       return
@@ -1639,16 +1639,16 @@ const handleDeleteBuilding = async (building: Building) => {
     await deleteBuildingApi(building.building_id)
     message.success('Building deleted successfully')
 
-    // 刷新 Building 列表
+    // Refresh Building list
     await fetchBuildings()
 
-    // 如果删除的是左侧列选中的 Building，清空选择
+    // If the deleted Building is selected in left column, clear selection
     if (selectedBuilding.value?.building_id === building.building_id) {
       selectedBuilding.value = null
       selectedFloor.value = ''
       units.value = []
     }
-    // 如果删除的是 headline 行展开的 Building，清空展开状态
+    // If the deleted Building is expanded in headline row, clear expanded state
     if (expandedBuildings.value.has(building.building_id || '')) {
       expandedBuildings.value = new Set()
     }
@@ -1657,22 +1657,22 @@ const handleDeleteBuilding = async (building: Building) => {
   }
 }
 
-// 点击网格单元格
+// Click grid cell
 const handleCellClick = async (unit: Unit | null, _index: number) => {
   try {
-    // 加载 area tag 选项
+    // Load area tag options
     await fetchAreaTags()
 
     if (unit) {
-      // Existing Unit: 打开编辑 Unit 界面
+      // Existing Unit: open edit Unit interface
       editingUnit.value = unit
-      // 初始化表单数据
+      // Initialize form data
       editUnitForm.value = {
         area_tag: unit.area_tag,
         unit_name: unit.unit_name,
         unit_number: unit.unit_number,
         unit_type: (unit as any).unit_type || 'Facility',
-        is_multi_person_room: unit.is_multi_person_room ?? true, // 默认选中
+        is_multi_person_room: unit.is_multi_person_room ?? true, // Selected by default
         is_public_space: unit.is_public_space ?? false,
         time_zone: unit.time_zone,
       }
@@ -1680,10 +1680,10 @@ const handleCellClick = async (unit: Unit | null, _index: number) => {
       showEditUnitModal.value = true
       await nextTick()
     } else {
-      // 空白单元格：也打开编辑 Unit 界面，但 editingUnit 为 null
+      // Empty cell: also open edit Unit interface, but editingUnit is null
       editingUnit.value = null
       roomsWithBeds.value = []
-      // 初始化空表单
+      // Initialize empty form
       editUnitForm.value = {
         area_tag: undefined,
         unit_name: '',
@@ -1701,7 +1701,7 @@ const handleCellClick = async (unit: Unit | null, _index: number) => {
   }
 }
 
-// 创建 Unit
+// Create Unit
 const handleCreateUnit = async () => {
   try {
     if (!createUnitForm.value.unit_number || !createUnitForm.value.unit_name) {
@@ -1709,7 +1709,7 @@ const handleCreateUnit = async () => {
       return
     }
 
-    // Building 和 Floor 是可选的，如果为空会使用默认值
+    // Building and Floor are optional, will use default values if empty
 
     const userInfo = userStore.getUserInfo
     const tenantId = userInfo?.tenant_id
@@ -1719,8 +1719,8 @@ const handleCreateUnit = async () => {
       return
     }
 
-    // Building 和 Floor 的处理逻辑（所有类型都是可选的）
-    // 如果为空，使用默认值：building 为 '-'，floor 为 '1F'（与 DB 默认值一致）
+    // Building and Floor handling logic (all types are optional)
+    // If empty, use default values: building is '-', floor is '1F' (consistent with DB default)
     const buildingValue: string = createUnitForm.value.building || selectedBuilding.value?.building_name || '-'
     const floorValue: string = createUnitForm.value.floor || selectedFloor.value || '1F'
 
@@ -1746,7 +1746,7 @@ const handleCreateUnit = async () => {
   }
 }
 
-// 重置 Create Unit 表单
+// Reset Create Unit form
 const resetCreateUnitForm = () => {
   createUnitForm.value = {
     unit_number: '',
@@ -1763,13 +1763,13 @@ const resetCreateUnitForm = () => {
   // selectedCellIndex.value = null
 }
 
-// 获取 Room 和 Bed 列表
+// Get Room and Bed list
 const fetchRoomsWithBeds = async (unitId: string) => {
   try {
     const result = await getRoomsApi({ unit_id: unitId })
     roomsWithBeds.value = result
     
-    // 排序：RoomName = UnitName 的 Room 放在第一位
+    // Sort: Room with RoomName = UnitName placed first
     const unitName = editingUnit.value?.unit_name || ''
     if (unitName) {
       roomsWithBeds.value.sort((a, b) => {
@@ -1780,12 +1780,12 @@ const fetchRoomsWithBeds = async (unitId: string) => {
     }
   } catch (error: any) {
     message.error('Failed to fetch rooms and beds: ' + (error.message || 'Unknown error'))
-    // 即使出错也显示空列表，让用户可以添加
+    // Even if error occurs, show empty list so user can add
     roomsWithBeds.value = []
   }
 }
 
-// 获取 Location Tag 选项（tag_type 必须是 'location_tag'）
+// Get Location Tag options (tag_type must be 'location_tag')
 const fetchLocationTags = async () => {
   try {
     const userInfo = userStore.getUserInfo

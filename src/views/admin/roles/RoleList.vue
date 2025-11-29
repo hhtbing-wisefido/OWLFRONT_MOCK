@@ -43,9 +43,15 @@
         </template>
         <template v-else-if="column.key === 'operation'">
           <div class="operation-buttons">
-            <a-button size="small" @click="editRole(record)">
+            <!-- Edit button: System roles can only be edited by SystemAdmin -->
+            <a-button 
+              size="small" 
+              @click="editRole(record)"
+              :disabled="record.is_system && !isSystemAdmin"
+            >
               Edit
             </a-button>
+            <!-- Delete button: Only custom roles are shown -->
             <a-button
               v-if="!record.is_system"
               size="small"
@@ -54,10 +60,12 @@
             >
               Delete
             </a-button>
+            <!-- Disable button: System roles can only be disabled by SystemAdmin -->
             <a-button
               v-if="record.is_active"
               size="small"
               @click="disableRole(record)"
+              :disabled="record.is_system && !isSystemAdmin"
             >
               Disable
             </a-button>
@@ -95,7 +103,7 @@
           <a-input
             placeholder="Please enter role code (e.g., Admin, Director)"
             v-model:value="editData.role_code"
-            :disabled="editModel"
+            :disabled="editModel || editData.is_system"
           />
         </a-form-item>
         <a-form-item label="Display Name" name="display_name">
@@ -145,10 +153,11 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { ExclamationCircleOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import type { Rule } from 'ant-design-vue/lib/form'
+import { useUserStore } from '@/store/modules/user'
 
 import {
   getRolesApi,
@@ -160,6 +169,10 @@ import type {
   CreateRoleParams,
   UpdateRoleParams,
 } from '@/api/admin/role/model/roleModel'
+
+const userStore = useUserStore()
+const currentUserRole = computed(() => userStore.getUserInfo?.role || '')
+const isSystemAdmin = computed(() => currentUserRole.value === 'SystemAdmin')
 
 interface Role {
   role_id: string
@@ -235,12 +248,19 @@ const rules: Record<string, Rule[]> = {
 }
 
 const onSearch = () => {
+  let filtered = dataSource.value
+  
+  // If not SystemAdmin, filter out SystemAdmin role first
+  if (!isSystemAdmin.value) {
+    filtered = dataSource.value.filter((role) => role.role_code !== 'SystemAdmin')
+  }
+  
   if (!searchText.value || searchText.value.trim() === '') {
-    filteredDataSource.value = dataSource.value
+    filteredDataSource.value = filtered
     return
   }
   const searchLower = searchText.value.toLowerCase().trim()
-  filteredDataSource.value = dataSource.value.filter((role) => {
+  filteredDataSource.value = filtered.filter((role) => {
     return (
       role.role_code.toLowerCase().includes(searchLower) ||
       role.display_name.toLowerCase().includes(searchLower) ||
@@ -256,6 +276,11 @@ const addRole = () => {
 }
 
 const editRole = (record: Role) => {
+  // System roles can only be modified by SystemAdmin
+  if (record.is_system && !isSystemAdmin.value) {
+    message.warning('System roles can only be modified by SystemAdmin')
+    return
+  }
   editData.value = { ...record }
   isEditModalVisible.value = true
   editModel.value = true
@@ -274,6 +299,11 @@ const deleteRole = (record: Role) => {
 }
 
 const disableRole = (record: Role) => {
+  // System roles can only be disabled by SystemAdmin
+  if (record.is_system && !isSystemAdmin.value) {
+    message.warning('System roles can only be disabled by SystemAdmin')
+    return
+  }
   action.value = 'disable'
   affectedRoleId.value = record.role_id
   confirmTitle.value = 'Disable Role'
@@ -287,7 +317,7 @@ const handleSave = async () => {
     .then(async () => {
       try {
         if (!editModel.value) {
-          // 创建新角色
+          // Create new role (tenant custom role)
           const params: CreateRoleParams = {
             role_code: editData.value.role_code,
             display_name: editData.value.display_name,
@@ -296,7 +326,12 @@ const handleSave = async () => {
           await createRoleApi(params)
           message.success('Role created successfully')
         } else {
-          // 更新角色
+          // Update role
+          // System roles can only be modified by SystemAdmin
+          if (editData.value.is_system && !isSystemAdmin.value) {
+            message.error('System roles can only be modified by SystemAdmin')
+            return
+          }
           const params: UpdateRoleParams = {
             display_name: editData.value.display_name,
             description: editData.value.description,
@@ -358,7 +393,13 @@ const fetchData = async () => {
       : undefined
     const data = await getRolesApi(params)
     dataSource.value = data.items
-    filteredDataSource.value = data.items
+    
+    // Filter data: If not SystemAdmin, do not display SystemAdmin role
+    let filtered = data.items
+    if (!isSystemAdmin.value) {
+      filtered = data.items.filter((role) => role.role_code !== 'SystemAdmin')
+    }
+    filteredDataSource.value = filtered
   } catch (error: any) {
     console.error('Failed to fetch roles:', error)
     message.error(error?.message || 'Failed to fetch roles')
@@ -421,18 +462,18 @@ onMounted(() => {
   color: #ff4d4f;
 }
 
-/* 强制表格使用 auto 布局，允许列根据内容自动调整 */
+/* Force table to use auto layout, allow columns to adjust automatically based on content */
 .role-table :deep(.ant-table table) {
   table-layout: auto !important;
   width: 100% !important;
 }
 
-/* 确保表格容器允许换行 */
+/* Ensure table container allows wrapping */
 .role-table :deep(.ant-table-container) {
   overflow-x: auto;
 }
 
-/* Role Code 列：灵活宽度配置 */
+/* Role Code column: Flexible width configuration */
 :deep(.ant-table-thead > tr > th.role-code-column),
 :deep(.ant-table-tbody > tr > td.role-code-column) {
   min-width: 80px !important;
@@ -443,7 +484,7 @@ onMounted(() => {
   text-overflow: ellipsis;
 }
 
-/* Description 列：允许换行，占用剩余空间 */
+/* Description column: Allow wrapping, occupy remaining space */
 :deep(.ant-table-thead > tr > th.description-column),
 :deep(.ant-table-tbody > tr > td.description-column) {
   white-space: normal !important;
@@ -454,7 +495,7 @@ onMounted(() => {
   max-width: none !important;
 }
 
-/* 确保 Description 列的内容容器也能换行 */
+/* Ensure Description column content container can also wrap */
 :deep(.ant-table-tbody > tr > td.description-column > *),
 :deep(.ant-table-thead > tr > th.description-column > *) {
   white-space: normal !important;

@@ -1,5 +1,5 @@
 /**
- * Unit API 函数
+ * Unit API functions
  */
 
 import { defHttp } from '@/utils/http/axios'
@@ -52,8 +52,8 @@ if (useMock) {
 }
 
 /**
- * 创建 Building
- * 前端传入的 params 中可能包含 tag_name（UI显示用），需要转换为 location_tag
+ * Create Building
+ * Params from frontend may contain tag_name (for UI display), need to convert to location_tag
  */
 export async function createBuildingApi(
   params: CreateBuildingParams & { tag_name?: string },
@@ -61,7 +61,7 @@ export async function createBuildingApi(
 ): Promise<Building> {
   if (useMock) {
     const { unit } = await import('@test/index')
-    // Mock 层也需要处理 tag_name -> location_tag 的转换
+    // Mock layer also needs to handle tag_name -> location_tag conversion
     const mockParams: CreateBuildingParams = {
       building_name: params.building_name,
       floors: params.floors,
@@ -70,7 +70,7 @@ export async function createBuildingApi(
     return unit.mock.mockCreateBuilding(mockParams)
   }
 
-  // 将前端的 tag_name 转换为 API 的 location_tag
+  // Convert frontend tag_name to API location_tag
   const apiParams: CreateBuildingParams = {
     building_name: params.building_name,
     floors: params.floors,
@@ -87,8 +87,8 @@ export async function createBuildingApi(
 }
 
 /**
- * 获取 Building 列表
- * API 返回的 location_tag，前端UI显示时会映射为 tag_name
+ * Get Building list
+ * location_tag returned by API will be mapped to tag_name for frontend UI display
  */
 export async function getBuildingsApi(
   mode: ErrorMessageMode = 'none'
@@ -107,8 +107,8 @@ export async function getBuildingsApi(
 }
 
 /**
- * 更新 Building
- * 前端传入的 params 中可能包含 tag_name（UI显示用），需要转换为 location_tag
+ * Update Building
+ * Params from frontend may contain tag_name (for UI display), need to convert to location_tag
  */
 export async function updateBuildingApi(
   id: string,
@@ -117,7 +117,7 @@ export async function updateBuildingApi(
 ): Promise<Building> {
   if (useMock) {
     const { unit } = await import('@test/index')
-    // Mock 层也需要处理 tag_name -> location_tag 的转换
+    // Mock layer also needs to handle tag_name -> location_tag conversion
     const mockParams: UpdateBuildingParams = {
       building_name: params.building_name,
       floors: params.floors,
@@ -126,7 +126,7 @@ export async function updateBuildingApi(
     return unit.mock.mockUpdateBuilding(id, mockParams)
   }
 
-  // 将前端的 tag_name 转换为 API 的 location_tag
+  // Convert frontend tag_name to API location_tag
   const apiParams: UpdateBuildingParams = {
     building_name: params.building_name,
     floors: params.floors,
@@ -143,7 +143,7 @@ export async function updateBuildingApi(
 }
 
 /**
- * 删除 Building
+ * Delete Building
  */
 export async function deleteBuildingApi(
   id: string,
@@ -163,7 +163,7 @@ export async function deleteBuildingApi(
 }
 
 /**
- * 创建 Unit
+ * Create Unit
  */
 export async function createUnitApi(
   params: CreateUnitParams,
@@ -184,7 +184,7 @@ export async function createUnitApi(
 }
 
 /**
- * 获取 Unit 列表
+ * Get Unit list
  */
 export async function getUnitsApi(
   params: GetUnitsParams,
@@ -205,7 +205,7 @@ export async function getUnitsApi(
 }
 
 /**
- * 获取 Unit 详情
+ * Get Unit detail
  */
 export async function getUnitDetailApi(
   id: string,
@@ -225,7 +225,7 @@ export async function getUnitDetailApi(
 }
 
 /**
- * 更新 Unit
+ * Update Unit
  */
 export async function updateUnitApi(
   id: string,
@@ -247,7 +247,7 @@ export async function updateUnitApi(
 }
 
 /**
- * 删除 Unit
+ * Delete Unit
  */
 export async function deleteUnitApi(
   id: string,
@@ -267,7 +267,7 @@ export async function deleteUnitApi(
 }
 
 /**
- * 获取 Unit 下的 Room 列表（包含 Bed）
+ * Get Room list under Unit (includes Bed)
  */
 export async function getRoomsApi(
   params: GetRoomsParams,
@@ -288,7 +288,7 @@ export async function getRoomsApi(
 }
 
 /**
- * 创建 Room
+ * Create Room
  */
 export async function createRoomApi(
   params: CreateRoomParams,
@@ -309,7 +309,7 @@ export async function createRoomApi(
 }
 
 /**
- * 更新 Room
+ * Update Room
  */
 export async function updateRoomApi(
   id: string,
@@ -331,7 +331,7 @@ export async function updateRoomApi(
 }
 
 /**
- * 删除 Room
+ * Delete Room
  */
 export async function deleteRoomApi(
   id: string,
@@ -351,7 +351,7 @@ export async function deleteRoomApi(
 }
 
 /**
- * 创建 Bed
+ * Create Bed
  */
 export async function createBedApi(
   params: CreateBedParams,
@@ -372,7 +372,7 @@ export async function createBedApi(
 }
 
 /**
- * 更新 Bed
+ * Update Bed
  */
 export async function updateBedApi(
   id: string,
@@ -394,7 +394,7 @@ export async function updateBedApi(
 }
 
 /**
- * 删除 Bed
+ * Delete Bed
  */
 export async function deleteBedApi(
   id: string,

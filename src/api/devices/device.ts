@@ -1,6 +1,6 @@
 /**
- * Device API 接口定义
- * 用于管理 devices 表中的设备
+ * Device API interface definition
+ * For managing devices in the devices table
  */
 
 import { defHttp } from '@/utils/http/axios'
@@ -12,7 +12,7 @@ import type {
   UpdateDeviceParams,
 } from './model/deviceModel'
 
-// 定义 API 路径枚举
+// Define API path enum
 export enum Api {
   GetList = '/admin/api/v1/devices',
   GetDetail = '/admin/api/v1/devices/:id',
@@ -29,9 +29,9 @@ if (useMock) {
 }
 
 /**
- * @description: 获取设备列表
- * @param params - 查询参数
- * @param mode - 错误消息模式
+ * @description: Get device list
+ * @param params - Query parameters
+ * @param mode - Error message mode
  */
 export function getDevicesApi(params?: GetDevicesParams, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
@@ -59,9 +59,9 @@ export function getDevicesApi(params?: GetDevicesParams, mode: ErrorMessageMode 
 }
 
 /**
- * @description: 获取设备详情
- * @param deviceId - 设备 ID
- * @param mode - 错误消息模式
+ * @description: Get device detail
+ * @param deviceId - Device ID
+ * @param mode - Error message mode
  */
 export function getDeviceDetailApi(deviceId: string, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
@@ -88,10 +88,10 @@ export function getDeviceDetailApi(deviceId: string, mode: ErrorMessageMode = 'm
 }
 
 /**
- * @description: 更新设备信息
- * @param deviceId - 设备 ID
- * @param params - 更新设备参数
- * @param mode - 错误消息模式
+ * @description: Update device information
+ * @param deviceId - Device ID
+ * @param params - Update device parameters
+ * @param mode - Error message mode
  */
 export function updateDeviceApi(deviceId: string, params: UpdateDeviceParams, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
@@ -119,9 +119,9 @@ export function updateDeviceApi(deviceId: string, params: UpdateDeviceParams, mo
 }
 
 /**
- * @description: 删除设备
- * @param deviceId - 设备 ID
- * @param mode - 错误消息模式
+ * @description: Delete device
+ * @param deviceId - Device ID
+ * @param mode - Error message mode
  */
 export function deleteDeviceApi(deviceId: string, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
@@ -139,7 +139,7 @@ export function deleteDeviceApi(deviceId: string, mode: ErrorMessageMode = 'moda
   }
 
   // Production: Call real backend API
-  // 注意：由 server 判断是物理删除还是软删除（设置 status = 'disabled'）
+  // Note: Server determines whether it's physical delete or soft delete (set status = 'disabled')
   return defHttp.delete<{ success: boolean }>(
     {
       url: Api.Delete.replace(':id', deviceId),

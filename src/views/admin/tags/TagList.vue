@@ -1,6 +1,6 @@
 <template>
   <div style="padding: 15px">
-    <!-- 搜索区域 -->
+    <!-- Search area -->
     <div class="form-container">
       <a-form layout="inline" class="flex-form">
         <!-- Save Button -->
@@ -62,7 +62,7 @@
       </a-form>
     </div>
 
-    <!-- 表格 -->
+    <!-- Table -->
     <a-table
       :dataSource="sortedDataSource"
       :columns="columns"
@@ -111,7 +111,7 @@
         </template>
       </template>
       <template #bodyCell="{ column, record }">
-        <!-- Tag_name 列：只显示 tag_name 自身（方块状，右上角打叉） -->
+        <!-- Tag_name column: only display tag_name itself (square shape, cross in top-right corner) -->
         <template v-if="column.dataIndex === 'tag_name'">
           <div class="tag-name-cell">
             <div class="tag-name-box">
@@ -132,7 +132,7 @@
           </div>
         </template>
 
-        <!-- Tag_type 列：下拉框选择 tag_type（本行 tag_name 的类型） -->
+        <!-- Tag_type column: dropdown to select tag_type (type of this row's tag_name) -->
         <template v-else-if="column.dataIndex === 'tag_type'">
           <div class="tag-type-cell">
               <a-select
@@ -151,7 +151,7 @@
           </div>
         </template>
 
-        <!-- Objects 列：显示对象列表（带复选框） -->
+        <!-- Objects column: display object list (with checkboxes) -->
         <template v-else-if="column.dataIndex === 'objects'">
           <div class="objects-cell">
             <div v-if="record.tag_objects" class="objects-checkbox-list">
@@ -208,7 +208,7 @@ import { useUserStore } from '@/store/modules/user'
 
 const userStore = useUserStore()
 
-// 数据
+// Data
 const loading = ref(false)
 const dataSource = ref<TagCatalogItem[]>([])
 const createTagData = ref<{ tag_name: string; tag_type: string | null }>({
@@ -220,7 +220,7 @@ const selectedTagTypeList = ref<(string | null)[]>([])
 const selectedObjects = ref<Record<string, string[]>>({}) // tag_id -> selected object keys
 const objectsToRemove = ref<Record<string, Array<{ objectType: string; objectId: string }>>>({}) // tag_id -> objects to remove
 
-// 获取所有可用的 tag_type（从数据中提取）
+// Get all available tag_type (extracted from data)
 const availableTagTypes = computed(() => {
   const tagTypes = new Set<string | null>()
   dataSource.value.forEach((tag) => {
@@ -229,7 +229,7 @@ const availableTagTypes = computed(() => {
     }
   })
   
-  // 添加常见的系统 tag_type
+  // Add common system tag_type
   const systemTagTypes = [
     'alarm_tag',
     'location_tag',
@@ -242,7 +242,7 @@ const availableTagTypes = computed(() => {
     tagTypes.add(type)
   })
   
-  // 转换为选项数组
+  // Convert to options array
   const options: Array<{ value: string | null; label: string }> = [
     { value: null, label: '(None)' },
   ]
@@ -261,11 +261,11 @@ const availableTagTypes = computed(() => {
   return options
 })
 
-// 排序状态
+// Sort state
 const tagTypeSortOrder = ref<'asc' | 'desc' | null>(null)
 const tagNameSortOrder = ref<'asc' | 'desc' | null>(null)
 
-// 表格列定义：3列布局（Tag_type 第一列，Tag_name 第二列）
+// Table column definitions: 3-column layout (Tag_type first column, Tag_name second column)
 const columns = [
   {
     title: 'Tag_type',
@@ -287,23 +287,23 @@ const columns = [
   },
 ]
 
-// 排序后的数据源（默认按 tag_type 和 tag_name 排序）
+// Sorted data source (default sorted by tag_type and tag_name)
 const sortedDataSource = computed(() => {
   let sorted = [...dataSource.value]
   
-  // 默认排序：先按 tag_type，再按 tag_name（升序）
+  // Default sort: first by tag_type, then by tag_name (ascending)
   sorted.sort((a, b) => {
-    // 先比较 tag_type
+    // First compare tag_type
     const typeA = (a.tag_type ?? '') as string
     const typeB = (b.tag_type ?? '') as string
     const typeCompare = typeA.localeCompare(typeB)
     
     if (typeCompare !== 0 && tagTypeSortOrder.value !== null) {
-      // 如果 tag_type 不同且指定了排序，按 tag_type 排序
+      // If tag_type differs and sort is specified, sort by tag_type
       return tagTypeSortOrder.value === 'desc' ? -typeCompare : typeCompare
     }
     
-    // 如果 tag_type 相同或未指定 tag_type 排序，按 tag_name 排序
+    // If tag_type is same or tag_type sort not specified, sort by tag_name
     const nameA = a.tag_name || ''
     const nameB = b.tag_name || ''
     const nameCompare = nameA.localeCompare(nameB)
@@ -312,7 +312,7 @@ const sortedDataSource = computed(() => {
       return tagNameSortOrder.value === 'desc' ? -nameCompare : nameCompare
     }
     
-    // 默认排序：先按 tag_type，再按 tag_name（都是升序）
+    // Default sort: first by tag_type, then by tag_name (both ascending)
     if (typeCompare !== 0) {
       return typeCompare
     }
@@ -322,7 +322,7 @@ const sortedDataSource = computed(() => {
   return sorted
 })
 
-// 切换 Tag_type 排序
+// Toggle Tag_type sort
 const toggleTagTypeSort = () => {
   if (tagTypeSortOrder.value === null) {
     tagTypeSortOrder.value = 'asc'
@@ -331,11 +331,11 @@ const toggleTagTypeSort = () => {
   } else {
     tagTypeSortOrder.value = null
   }
-  // 重置 tag_name 排序
+  // Reset tag_name sort
   tagNameSortOrder.value = null
 }
 
-// 切换 Tag_name 排序
+// Toggle Tag_name sort
 const toggleTagNameSort = () => {
   if (tagNameSortOrder.value === null) {
     tagNameSortOrder.value = 'asc'
@@ -344,12 +344,12 @@ const toggleTagNameSort = () => {
   } else {
     tagNameSortOrder.value = null
   }
-  // 重置 tag_type 排序
+  // Reset tag_type sort
   tagTypeSortOrder.value = null
 }
 
 
-// 获取 Tags 列表
+// Get Tags list
 const fetchTags = async () => {
   loading.value = true
   try {
@@ -367,7 +367,7 @@ const fetchTags = async () => {
     })
 
     dataSource.value = result.items
-    // 初始化 selectedObjects：所有对象默认选中
+    // Initialize selectedObjects: all objects selected by default
     result.items.forEach((tag) => {
       const allKeys: string[] = []
       if (tag.tag_objects) {
@@ -381,10 +381,10 @@ const fetchTags = async () => {
       objectsToRemove.value[tag.tag_id] = []
     })
     
-    // 初始化 selectedTagTypeList：列出所有 tag_type（包括预置的系统tag和新建的）
+    // Initialize selectedTagTypeList: list all tag_type (including preset system tags and newly created)
     const tagTypes = new Set<string | null>()
     
-    // 添加预置的系统 tag_type
+    // Add preset system tag_type
     const systemTagTypes = [
       'alarm_tag',
       'location_tag',
@@ -397,7 +397,7 @@ const fetchTags = async () => {
       tagTypes.add(type)
     })
     
-    // 添加从数据中获取的 tag_type（包括新建的）
+    // Add tag_type from data (including newly created)
     result.items.forEach((tag) => {
       if (tag.tag_type !== null) {
         tagTypes.add(tag.tag_type)
@@ -413,21 +413,21 @@ const fetchTags = async () => {
   }
 }
 
-// 格式化 Tag Type 名称
+// Format Tag Type name
 const formatTagTypeName = (tagType: string | null): string => {
   if (!tagType) return '(None)'
   return tagType.replace(/_tag$/, '').replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
 }
 
-// 根据 Tag Type 获取所有相关的 tags
+// Get all related tags by Tag Type
 const getTagsByType = (tagType: string | null): TagCatalogItem[] => {
   return dataSource.value.filter((tag) => tag.tag_type === tagType)
 }
 
-// 判断是否为系统 Tag Type
+// Check if it's a system Tag Type
 const isSystemTagType = (tagType: string | null): boolean => {
   if (!tagType) return false
-  // 预置的系统 tag_type
+  // Preset system tag_type
   const systemTagTypes = [
     'alarm_tag',
     'location_tag',
@@ -439,7 +439,7 @@ const isSystemTagType = (tagType: string | null): boolean => {
   return systemTagTypes.includes(tagType)
 }
 
-// 根据 Tag Type 值删除 Tag Type
+// Delete Tag Type by value
 const deleteTagTypeByValue = async (tagType: string | null) => {
   try {
     if (!tagType) {
@@ -447,7 +447,7 @@ const deleteTagTypeByValue = async (tagType: string | null) => {
       return
     }
 
-    // 检查是否为 system tag_type
+    // Check if it's a system tag_type
     if (isSystemTagType(tagType)) {
       message.warning('Cannot delete system tag type')
       return
@@ -474,7 +474,7 @@ const deleteTagTypeByValue = async (tagType: string | null) => {
   }
 }
 
-// 创建 Tag
+// Create Tag
 const handleCreateTag = async () => {
   try {
     if (!createTagData.value.tag_name.trim()) {
@@ -499,7 +499,7 @@ const handleCreateTag = async () => {
     await createTagApi(params)
     message.success('Tag created successfully')
     
-    // 重置表单
+    // Reset form
     createTagData.value = {
       tag_name: '',
       tag_type: null,
@@ -511,7 +511,7 @@ const handleCreateTag = async () => {
   }
 }
 
-// 创建 TagType
+// Create TagType
 const handleCreateTagType = async () => {
   try {
     if (!newTagType.value.trim()) {
@@ -521,13 +521,13 @@ const handleCreateTagType = async () => {
 
     const tagTypeValue = newTagType.value.trim()
     
-    // 检查是否已存在
+    // Check if it already exists
     if (selectedTagTypeList.value.includes(tagTypeValue)) {
       message.warning('Tag type already exists')
       return
     }
 
-    // 检查是否为系统预置的 tag_type
+    // Check if it's a system preset tag_type
     const systemTagTypes = [
       'alarm_tag',
       'location_tag',
@@ -541,30 +541,30 @@ const handleCreateTagType = async () => {
       return
     }
 
-    // 添加到列表中（实际创建需要通过创建 tag 来实现，因为 tag_type 是通过创建 tag 时指定的）
-    // 这里先添加到列表，实际使用时需要创建一个 tag 来使用这个 tag_type
+    // Add to list (actual creation needs to be done by creating a tag, because tag_type is specified when creating a tag)
+    // Here we add to list first, actual use requires creating a tag to use this tag_type
     selectedTagTypeList.value.push(tagTypeValue)
     selectedTagTypeList.value.sort()
     
     message.success('Tag type added successfully')
     
-    // 重置输入框
+    // Reset input field
     newTagType.value = ''
   } catch (error: any) {
     message.error(error?.message || 'Failed to create tag type')
   }
 }
 
-// 检查 tag 是否有对象
+// Check if tag has objects
 const hasObjects = (record: TagCatalogItem): boolean => {
   if (!record.tag_objects) return false
   return Object.keys(record.tag_objects).length > 0
 }
 
-// 删除 Tag Name
+// Delete Tag Name
 const deleteTagName = async (record: TagCatalogItem) => {
   try {
-    // 检查是否有对象
+    // Check if it has objects
     if (hasObjects(record)) {
       message.warning('Cannot delete tag with objects. Please remove all objects first.')
       return
@@ -591,16 +591,16 @@ const deleteTagName = async (record: TagCatalogItem) => {
   }
 }
 
-// 处理 Tag Type 变更
+// Handle Tag Type change
 const handleTagTypeChange = async (record: TagCatalogItem, newTagType: string | null) => {
   try {
-    // 如果值没有变化，不执行更新
+    // If value hasn't changed, don't perform update
     if (record.tag_type === newTagType) {
       return
     }
 
     const oldTagType = record.tag_type
-    // 先更新本地显示
+    // Update local display first
     record.tag_type = newTagType
 
     const params: UpdateTagParams = {
@@ -612,16 +612,16 @@ const handleTagTypeChange = async (record: TagCatalogItem, newTagType: string | 
     message.success('Tag type updated successfully')
     await fetchTags()
   } catch (error: any) {
-    // 恢复原值
+    // Restore original value
     await fetchTags()
     message.error(error?.message || 'Failed to update tag type')
   }
 }
 
-// 删除 Tag Type
+// Delete Tag Type
 const deleteTagType = async (record: TagCatalogItem) => {
   try {
-    // 检查是否为 system tag_type
+    // Check if it's a system tag_type
     if (record.is_system_tag_type) {
       message.warning('Cannot delete system tag type')
       return
@@ -653,20 +653,20 @@ const deleteTagType = async (record: TagCatalogItem) => {
   }
 }
 
-// 处理对象复选框变化
+// Handle object checkbox changes
 const handleObjectCheckChange = (record: TagCatalogItem, checkedValues: string[]) => {
   const tagId = record.tag_id
   const previousSelected = selectedObjects.value[tagId] || []
   
-  // 找出被取消选中的对象
+  // Find unselected objects
   const unselected = previousSelected.filter((key) => !checkedValues.includes(key))
   
-  // 记录需要删除的对象
+  // Record objects to be removed
   if (!objectsToRemove.value[tagId]) {
     objectsToRemove.value[tagId] = []
   }
   
-  // 添加新取消选中的对象到待删除列表
+  // Add newly unselected objects to removal list
   unselected.forEach((key) => {
     const [objectType, objectId] = key.split(':')
     if (!objectType || !objectId) return
@@ -681,29 +681,29 @@ const handleObjectCheckChange = (record: TagCatalogItem, checkedValues: string[]
     }
   })
   
-  // 移除重新选中的对象（如果之前标记为删除）
+  // Remove re-selected objects (if previously marked for deletion)
   objectsToRemove.value[tagId] = objectsToRemove.value[tagId].filter((obj) => {
     const key = `${obj.objectType}:${obj.objectId}`
     return !checkedValues.includes(key)
   })
   
-  // 更新选中状态
+  // Update selected state
   selectedObjects.value[tagId] = checkedValues
 }
 
-// 保存所有更改（提交到服务器）
+// Save all changes (submit to server)
 const handleSaveAll = async () => {
   try {
     let hasChanges = false
     
-    // 处理所有需要删除的对象
+    // Handle all objects that need to be removed
     for (const [tagId, objects] of Object.entries(objectsToRemove.value)) {
       if (objects.length > 0) {
         hasChanges = true
         const record = dataSource.value.find((tag) => tag.tag_id === tagId)
         if (!record) continue
         
-        // 按 objectType 分组
+        // Group by objectType
         const groupedByType: Record<string, string[]> = {}
         objects.forEach((obj) => {
           if (!obj.objectType || !obj.objectId) return
@@ -715,7 +715,7 @@ const handleSaveAll = async () => {
           groupedByType[objectType].push(objectId)
         })
         
-        // 删除每个类型的对象
+        // Remove objects of each type
         for (const [objectType, objectIds] of Object.entries(groupedByType)) {
           const params: RemoveTagObjectsParams = {
             tag_id: tagId,
@@ -729,7 +729,7 @@ const handleSaveAll = async () => {
     
     if (hasChanges) {
       message.success('All changes saved successfully')
-      // 清空待删除列表
+      // Clear removal list
       objectsToRemove.value = {}
       await fetchTags()
     } else {
@@ -740,7 +740,7 @@ const handleSaveAll = async () => {
   }
 }
 
-// 从 Tag 中删除对象（保留此函数用于其他可能的用途）
+// Remove object from Tag (keep this function for other possible uses)
 const removeObjectFromTag = async (
   record: TagCatalogItem,
   objectType: string,
@@ -761,7 +761,7 @@ const removeObjectFromTag = async (
 }
 
 
-// 初始化
+// Initialize
 onMounted(() => {
   fetchTags()
 })

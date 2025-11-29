@@ -6,7 +6,7 @@ type Recordable<T = any> = Record<string, T>
 export const noop = () => {}
 
 /**
- * @description:  Set ui mount node
+ * @description: Set UI mount node
  */
 export function getPopupContainer(node?: HTMLElement): HTMLElement {
   return (node?.parentNode as HTMLElement) ?? document.body
@@ -31,7 +31,7 @@ export function setObjToUrlParams(baseUrl: string, obj: any): string {
   return /\?$/.test(baseUrl) ? baseUrl + parameters : baseUrl.replace(/\/?$/, '?') + parameters
 }
 
-// 深度合并
+// Deep merge
 export function deepMerge<T = any>(src: any = {}, target: any = {}): T {
   let key: string
   for (key in target) {
@@ -53,7 +53,7 @@ export function openWindow(
   window.open(url, target, feature.join(','))
 }
 
-// dynamic use hook props
+// Dynamic use hook props
 export function getDynamicProps<T, U>(props: T): Partial<U> {
   const ret: Recordable = {}
 

@@ -1,8 +1,8 @@
 import type { ErrorMessageMode } from '/#/axios'
 
-// TODO: 需要实现 useMessage 和 useI18n hooks
-// TODO: 需要实现 userStore
-// 这里先创建一个简化版本，后续可以根据实际需求完善
+// TODO: Need to implement useMessage and useI18n hooks
+// TODO: Need to implement userStore
+// Create a simplified version here first, can be improved according to actual needs later
 
 export function checkStatus(
   status: number,
@@ -55,7 +55,7 @@ export function checkStatus(
   }
 
   if (errMessage) {
-    // TODO: 根据 errorMessageMode 显示错误提示
+    // TODO: Show error message according to errorMessageMode
     console.error(`[HTTP Error ${status}]: ${errMessage}`)
   }
 }

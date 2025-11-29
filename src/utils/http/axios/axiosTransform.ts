@@ -18,17 +18,17 @@ export abstract class AxiosTransform {
   beforeRequestHook?: (config: AxiosRequestConfig, options: RequestOptions) => AxiosRequestConfig
 
   /**
-   * @description: 处理响应数据
+   * @description: Process response data
    */
   transformResponseHook?: (res: AxiosResponse<Result>, options: RequestOptions) => any
 
   /**
-   * @description: 请求失败处理
+   * @description: Request failure handling
    */
   requestCatchHook?: (e: Error, options: RequestOptions) => Promise<any>
 
   /**
-   * @description: 请求之前的拦截器
+   * @description: Interceptor before request
    */
   requestInterceptors?: (
     config: AxiosRequestConfig,
@@ -36,17 +36,17 @@ export abstract class AxiosTransform {
   ) => AxiosRequestConfig
 
   /**
-   * @description: 请求之后的拦截器
+   * @description: Interceptor after request
    */
   responseInterceptors?: (res: AxiosResponse<any>) => AxiosResponse<any>
 
   /**
-   * @description: 请求之前的拦截器错误处理
+   * @description: Error handling for interceptor before request
    */
   requestInterceptorsCatch?: (error: Error) => void
 
   /**
-   * @description: 请求之后的拦截器错误处理
+   * @description: Error handling for interceptor after request
    */
   responseInterceptorsCatch?: (axiosInstance: AxiosResponse, error: Error) => void
 }

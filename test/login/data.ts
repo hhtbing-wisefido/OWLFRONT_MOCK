@@ -111,7 +111,7 @@ export const loginSuccessStaff: LoginResult = {
   tenant_name: institutions.sunset.name,
   role: 'Nurse',
   nickName: 'John Doe',
-  homePath: '/dashboard',
+  homePath: '/monitoring/overview',
 }
 
 // 成功场景：Resident 登录
@@ -123,7 +123,7 @@ export const loginSuccessResident: LoginResult = {
   userType: 'resident',
   tenant_id: institutions.sunset.id, // UUID 格式
   tenant_name: institutions.sunset.name,
-  homePath: '/resident/dashboard',
+  homePath: '/monitoring/overview',
 }
 
 // 失败场景：密码错误

@@ -1,6 +1,6 @@
 <template>
   <div class="role-card" :class="{ expanded: expanded }">
-    <!-- 卡片头部 -->
+    <!-- Card header -->
     <div class="card-header" @click="toggleExpand">
       <div class="card-title">
         <h3>{{ role.name }}</h3>
@@ -18,7 +18,7 @@
             </div>
     </div>
 
-    <!-- 主要功能描述 -->
+    <!-- Main function description -->
     <div class="main-function">
       <div class="function-item">
         <span class="function-icon">•</span>
@@ -26,7 +26,7 @@
       </div>
     </div>
 
-    <!-- 主要权限列表 -->
+    <!-- Main permission list -->
     <div class="main-permissions">
       <div v-for="(permission, index) in mainPermissions" :key="index" class="permission-item">
         <span class="permission-icon">•</span>
@@ -34,9 +34,9 @@
       </div>
     </div>
 
-    <!-- 展开的详情区域 -->
+    <!-- Expanded details area -->
     <div v-if="expanded" class="card-details">
-      <!-- 权限矩阵表格 -->
+      <!-- Permission matrix table -->
       <PermissionMatrix
         :role="role"
         :permissions="permissions"
@@ -70,12 +70,12 @@ const emit = defineEmits<{
   save: [roleCode: string, permissions: RolePermission[]]
 }>()
 
-// 主要权限描述
+// Main permission descriptions
 const mainPermissions = computed(() => {
   const perms = props.permissions.filter((p) => p.is_active)
   const descriptions: string[] = []
 
-  // 根据权限矩阵生成主要权限描述
+  // Generate main permission descriptions based on permission matrix
   if (props.role.code === 'Director' || props.role.code === 'DON') {
     if (perms.some((p) => p.resource_type === 'users' && p.permission_type === 'manage')) {
       descriptions.push('User Management')
@@ -181,10 +181,10 @@ const mainPermissions = computed(() => {
   return descriptions
 })
 
-// 当前编辑的权限（用于保存）
+// Currently edited permissions (for saving)
 const editedPermissions = ref<RolePermission[]>([])
 
-// 初始化编辑权限数据
+// Initialize edited permission data
 watch(
   () => props.expanded,
   (newVal) => {
@@ -195,7 +195,7 @@ watch(
   { immediate: true },
 )
 
-// 切换展开/收起
+// Toggle expand/collapse
 const toggleExpand = () => {
   if (props.expanded) {
     emit('collapse', props.role.code)
@@ -204,12 +204,12 @@ const toggleExpand = () => {
   }
 }
 
-// 权限更新
+// Permission update
 const handlePermissionUpdate = (updatedPermissions: RolePermission[]) => {
   editedPermissions.value = updatedPermissions
 }
 
-// 保存权限
+// Save permissions
 const handleSave = () => {
   emit('save', props.role.code, editedPermissions.value)
 }

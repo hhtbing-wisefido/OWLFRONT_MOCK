@@ -8,13 +8,13 @@ import { store } from './store'
 
 const app = createApp(App)
 
-// 使用 Pinia Store
+// Use Pinia Store
 app.use(store)
 
-// 使用 Ant Design Vue
+// Use Ant Design Vue
 app.use(Antd)
 
-// 使用 Router
+// Use Router
 app.use(router)
 
 app.mount('#app')

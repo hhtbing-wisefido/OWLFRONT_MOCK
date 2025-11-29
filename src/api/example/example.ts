@@ -1,14 +1,14 @@
 /**
- * 示例 API 文件
- * 展示如何使用 defHttp 进行接口调用
- * 保持与原 wisefido-frontend 项目相同的接口模式
+ * Example API file
+ * Demonstrates how to use defHttp for API calls
+ * Maintains the same interface pattern as the original wisefido-frontend project
  */
 
 import { defHttp } from '@/utils/http/axios'
 import type { ErrorMessageMode } from '/#/axios'
 import type { BasicFetchResult } from '@/api/model/baseModel'
 
-// 定义 API 路径枚举
+// Define API path enum
 export enum Api {
   GetList = '/api/v1/example/items',
   GetDetail = '/api/v1/example/:id',
@@ -17,7 +17,7 @@ export enum Api {
   Delete = '/api/v1/example/:id',
 }
 
-// 定义数据模型
+// Define data model
 export interface ExampleItem {
   id: string
   name: string
@@ -41,7 +41,7 @@ export interface CreateExampleResult {
 }
 
 /**
- * @description: 获取列表
+ * @description: Get list
  */
 export function getExampleListApi(params?: any, mode: ErrorMessageMode = 'modal') {
   return defHttp.get<BasicFetchResult<ExampleItem>>(
@@ -56,7 +56,7 @@ export function getExampleListApi(params?: any, mode: ErrorMessageMode = 'modal'
 }
 
 /**
- * @description: 获取详情
+ * @description: Get detail
  */
 export function getExampleDetailApi(id: string, mode: ErrorMessageMode = 'modal') {
   return defHttp.get<ExampleDetail>(
@@ -70,7 +70,7 @@ export function getExampleDetailApi(id: string, mode: ErrorMessageMode = 'modal'
 }
 
 /**
- * @description: 创建
+ * @description: Create
  */
 export function createExampleApi(params: CreateExampleParams, mode: ErrorMessageMode = 'modal') {
   return defHttp.post<CreateExampleResult>(
@@ -85,7 +85,7 @@ export function createExampleApi(params: CreateExampleParams, mode: ErrorMessage
 }
 
 /**
- * @description: 更新
+ * @description: Update
  */
 export function updateExampleApi(id: string, params: Partial<CreateExampleParams>, mode: ErrorMessageMode = 'modal') {
   return defHttp.put(
@@ -100,7 +100,7 @@ export function updateExampleApi(id: string, params: Partial<CreateExampleParams
 }
 
 /**
- * @description: 删除
+ * @description: Delete
  */
 export function deleteExampleApi(id: string, mode: ErrorMessageMode = 'modal') {
   return defHttp.delete(

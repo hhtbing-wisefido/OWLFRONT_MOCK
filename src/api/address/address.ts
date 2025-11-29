@@ -1,5 +1,5 @@
 /**
- * Address API 函数
+ * Address API functions
  */
 
 import { defHttp } from '@/utils/http/axios'
@@ -21,7 +21,7 @@ export enum Api {
   GetAddressDetail = '/admin/api/v1/addresses/:id',
   UpdateAddress = '/admin/api/v1/addresses/:id',
   DeleteAddress = '/admin/api/v1/addresses/:id',
-  // Allocate 相关 API（预留，后续实现）
+  // Allocate related APIs (reserved, to be implemented later)
   AllocateCarrier = '/admin/api/v1/addresses/:id/allocate/carrier',
   AllocateResident = '/admin/api/v1/addresses/:id/allocate/resident',
   AllocateDevice = '/admin/api/v1/addresses/:id/allocate/device',
@@ -35,14 +35,14 @@ if (useMock) {
 }
 
 /**
- * 创建 Address
+ * Create Address
  */
 export async function createAddressApi(
   params: CreateAddressParams,
   mode: ErrorMessageMode = 'modal'
 ): Promise<Address> {
   if (useMock) {
-    // TODO: 实现 Mock 函数
+    // TODO: Implement Mock function
     const mockAddress: Address = {
       address_id: `addr-${Date.now()}`,
       tenant_id: 'default-tenant',
@@ -66,14 +66,14 @@ export async function createAddressApi(
 }
 
 /**
- * 获取 Address 列表
+ * Get Address list
  */
 export async function getAddressesApi(
   params?: GetAddressesParams,
   mode: ErrorMessageMode = 'none'
 ): Promise<GetAddressesResult> {
   if (useMock) {
-    // TODO: 实现 Mock 函数
+    // TODO: Implement Mock function
     const mockAddresses: Address[] = [
       {
         address_id: 'addr-1',
@@ -99,14 +99,14 @@ export async function getAddressesApi(
 }
 
 /**
- * 获取 Address 详情
+ * Get Address detail
  */
 export async function getAddressDetailApi(
   addressId: string,
   mode: ErrorMessageMode = 'none'
 ): Promise<Address> {
   if (useMock) {
-    // TODO: 实现 Mock 函数
+    // TODO: Implement Mock function
     const mockAddress: Address = {
       address_id: addressId,
       tenant_id: 'default-tenant',
@@ -126,7 +126,7 @@ export async function getAddressDetailApi(
 }
 
 /**
- * 更新 Address
+ * Update Address
  */
 export async function updateAddressApi(
   addressId: string,
@@ -134,7 +134,7 @@ export async function updateAddressApi(
   mode: ErrorMessageMode = 'modal'
 ): Promise<Address> {
   if (useMock) {
-    // TODO: 实现 Mock 函数
+    // TODO: Implement Mock function
     const mockAddress: Address = {
       address_id: addressId,
       tenant_id: 'default-tenant',
@@ -155,14 +155,14 @@ export async function updateAddressApi(
 }
 
 /**
- * 删除 Address
+ * Delete Address
  */
 export async function deleteAddressApi(
   addressId: string,
   mode: ErrorMessageMode = 'modal'
 ): Promise<void> {
   if (useMock) {
-    // TODO: 实现 Mock 函数
+    // TODO: Implement Mock function
     return Promise.resolve()
   }
 
@@ -175,7 +175,7 @@ export async function deleteAddressApi(
 }
 
 /**
- * Allocate Carrier（预留，后续实现）
+ * Allocate Carrier (reserved, to be implemented later)
  */
 export async function allocateCarrierApi(
   addressId: string,
@@ -183,7 +183,7 @@ export async function allocateCarrierApi(
   mode: ErrorMessageMode = 'modal'
 ): Promise<void> {
   if (useMock) {
-    // TODO: 实现 Mock 函数
+    // TODO: Implement Mock function
     return Promise.resolve()
   }
 
@@ -197,7 +197,7 @@ export async function allocateCarrierApi(
 }
 
 /**
- * Allocate Resident（预留，后续实现）
+ * Allocate Resident (reserved, to be implemented later)
  */
 export async function allocateResidentApi(
   addressId: string,
@@ -205,7 +205,7 @@ export async function allocateResidentApi(
   mode: ErrorMessageMode = 'modal'
 ): Promise<void> {
   if (useMock) {
-    // TODO: 实现 Mock 函数
+    // TODO: Implement Mock function
     return Promise.resolve()
   }
 
@@ -219,7 +219,7 @@ export async function allocateResidentApi(
 }
 
 /**
- * Allocate Device（预留，后续实现）
+ * Allocate Device (reserved, to be implemented later)
  */
 export async function allocateDeviceApi(
   addressId: string,
@@ -227,7 +227,7 @@ export async function allocateDeviceApi(
   mode: ErrorMessageMode = 'modal'
 ): Promise<void> {
   if (useMock) {
-    // TODO: 实现 Mock 函数
+    // TODO: Implement Mock function
     return Promise.resolve()
   }
 

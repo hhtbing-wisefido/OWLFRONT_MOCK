@@ -1,6 +1,6 @@
 /**
- * Role Permission API 接口定义
- * 角色权限管理相关的后端API调用
+ * Role Permission API interface definition
+ * Backend API calls related to role permission management
  */
 
 import { defHttp } from '@/utils/http/axios'
@@ -16,7 +16,7 @@ import type {
   UpdateRolePermissionStatusParams,
 } from './model/rolePermissionModel'
 
-// 定义 API 路径枚举
+// Define API path enum
 export enum Api {
   GetList = '/admin/api/v1/role-permissions',
   Create = '/admin/api/v1/role-permissions',
@@ -38,9 +38,9 @@ if (useMock) {
 }
 
 /**
- * @description: 获取角色权限列表
- * @param params - 查询参数（支持多种过滤条件）
- * @param mode - 错误消息模式
+ * @description: Get role permission list
+ * @param params - Query parameters (supports multiple filter conditions)
+ * @param mode - Error message mode
  */
 export function getRolePermissionsApi(
   params?: GetRolePermissionsParams,
@@ -85,9 +85,9 @@ export function getRolePermissionsApi(
 }
 
 /**
- * @description: 创建角色权限
- * @param params - 创建角色权限参数
- * @param mode - 错误消息模式
+ * @description: Create role permission
+ * @param params - Create role permission parameters
+ * @param mode - Error message mode
  */
 export function createRolePermissionApi(
   params: CreateRolePermissionParams,
@@ -132,9 +132,9 @@ export function createRolePermissionApi(
 }
 
 /**
- * @description: 批量创建角色权限
- * @param params - 批量创建角色权限参数
- * @param mode - 错误消息模式
+ * @description: Batch create role permissions
+ * @param params - Batch create role permissions parameters
+ * @param mode - Error message mode
  */
 export function batchCreateRolePermissionsApi(
   params: BatchCreateRolePermissionsParams,
@@ -179,10 +179,10 @@ export function batchCreateRolePermissionsApi(
 }
 
 /**
- * @description: 更新角色权限
- * @param permissionId - 权限ID
- * @param params - 更新角色权限参数
- * @param mode - 错误消息模式
+ * @description: Update role permission
+ * @param permissionId - Permission ID
+ * @param params - Update role permission parameters
+ * @param mode - Error message mode
  */
 export function updateRolePermissionApi(
   permissionId: string,
@@ -228,9 +228,9 @@ export function updateRolePermissionApi(
 }
 
 /**
- * @description: 删除角色权限
- * @param permissionId - 权限ID
- * @param mode - 错误消息模式
+ * @description: Delete role permission
+ * @param permissionId - Permission ID
+ * @param mode - Error message mode
  */
 export function deleteRolePermissionApi(permissionId: string, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
@@ -271,10 +271,10 @@ export function deleteRolePermissionApi(permissionId: string, mode: ErrorMessage
 }
 
 /**
- * @description: 更新角色权限状态（启用/禁用）
- * @param permissionId - 权限ID
- * @param params - 更新状态参数
- * @param mode - 错误消息模式
+ * @description: Update role permission status (enable/disable)
+ * @param permissionId - Permission ID
+ * @param params - Update status parameters
+ * @param mode - Error message mode
  */
 export function changeRolePermissionStatusApi(
   permissionId: string,

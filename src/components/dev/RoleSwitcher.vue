@@ -27,23 +27,23 @@ const isDev = import.meta.env.DEV
 
 const userStore = useUserStore()
 
-// 可测试的角色列表
+// Testable role list (using new role system)
 const roleOptions = [
+  { label: 'SystemAdmin', value: 'SystemAdmin' },
   { label: 'Admin', value: 'Admin' },
-  { label: 'Director', value: 'Director' },
+  { label: 'Manager', value: 'Manager' },
   { label: 'IT', value: 'IT' },
-  { label: 'NurseManager', value: 'NurseManager' },
   { label: 'Nurse', value: 'Nurse' },
   { label: 'Caregiver', value: 'Caregiver' },
-  { label: 'CO', value: 'CO' },
-  { label: 'Resident', value: 'resident' },
+  { label: 'Resident', value: 'Resident' },
+  { label: 'Family', value: 'Family' },
   { label: 'Reset (Original)', value: null },
 ]
 
 const selectedRole = ref<string | null>(null)
 const testRoleKey = 'dev_test_role' // localStorage key
 
-// 当前角色（测试角色或原始角色）
+// Current role (test role or original role)
 const currentRole = computed(() => {
   const testRole = localStorage.getItem(testRoleKey)
   if (testRole) {
@@ -53,7 +53,7 @@ const currentRole = computed(() => {
   return userInfo?.role || 'None'
 })
 
-// 从 localStorage 恢复之前的选择
+// Restore previous selection from localStorage
 onMounted(() => {
   const savedRole = localStorage.getItem(testRoleKey)
   if (savedRole) {
@@ -61,16 +61,16 @@ onMounted(() => {
   }
 })
 
-// 切换角色
+// Switch role
 const handleRoleChange = (role: string | null) => {
   if (role) {
     localStorage.setItem(testRoleKey, role)
   } else {
-    // 重置为原始角色
+    // Reset to original role
     localStorage.removeItem(testRoleKey)
   }
   
-  // 刷新页面以应用新的权限
+  // Refresh page to apply new permissions
   window.location.reload()
 }
 </script>

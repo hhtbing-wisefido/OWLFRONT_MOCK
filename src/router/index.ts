@@ -1,19 +1,17 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import { useUserStoreWithOut } from '@/store/modules/user'
+import BasicLayout from '@/layouts/BasicLayout.vue'
 
 const routes: RouteRecordRaw[] = [
-  {
-    path: '/',
-    redirect: '/login',
-  },
   {
     path: '/login',
     name: 'Login',
     component: () => import('@/views/login/Login.vue'),
     meta: {
-      title: '登录',
+      title: 'Login',
       requiresAuth: false,
+      layout: false, // Do not use layout
     },
   },
   {
@@ -21,8 +19,9 @@ const routes: RouteRecordRaw[] = [
     name: 'TestDataViewer',
     component: () => import('@/views/test/TestDataViewer.vue'),
     meta: {
-      title: '测试数据查看器',
+      title: 'Test Data Viewer',
       requiresAuth: false,
+      layout: false, // Do not use layout
     },
   },
   {
@@ -32,88 +31,122 @@ const routes: RouteRecordRaw[] = [
     meta: {
       title: 'Forgot Password',
       requiresAuth: false,
+      layout: false, // Do not use layout
     },
   },
+  // Pages that require layout
   {
-    path: '/admin/roles',
-    name: 'RoleList',
-    component: () => import('@/views/admin/roles/RoleList.vue'),
-    meta: {
-      title: '角色管理',
-      requiresAuth: true,
+    path: '/',
+    component: BasicLayout,
+    redirect: () => {
+      const userStore = useUserStoreWithOut()
+      // If logged in, redirect to home page (monitoring overview)
+      if (userStore.getToken) {
+        return userStore.getUserHomePath
+      }
+      // If not logged in, redirect to login page
+      return '/login'
     },
-  },
-  {
-    path: '/admin/role-permissions',
-    name: 'RolePermissionList',
-    component: () => import('@/views/admin/permissions/RolePermissionList.vue'),
-    meta: {
-      title: '角色权限管理',
-      requiresAuth: true,
-    },
-  },
-  {
-    path: '/admin/users',
-    name: 'UserList',
-    component: () => import('@/views/admin/users/UserList.vue'),
-    meta: {
-      title: '用户管理',
-      requiresAuth: true,
-    },
-  },
-  {
-    path: '/admin/users/:id',
-    name: 'UserDetail',
-    component: () => import('@/views/admin/users/UserDetail.vue'),
-    meta: {
-      title: '用户详情',
-      requiresAuth: true,
-    },
-  },
-  {
-    path: '/admin/tags',
-    name: 'TagList',
-    component: () => import('@/views/admin/tags/TagList.vue'),
-    meta: {
-      title: '标签管理',
-      requiresAuth: true,
-    },
-  },
-  {
-    path: '/devices',
-    name: 'DeviceList',
-    component: () => import('@/views/devices/DeviceList.vue'),
-    meta: {
-      title: '设备管理',
-      requiresAuth: true,
-    },
-  },
-  {
-    path: '/units',
-    name: 'UnitList',
-    component: () => import('@/views/units/UnitList.vue'),
-    meta: {
-      title: '单元管理',
-      requiresAuth: true,
-    },
-  },
-  {
-    path: '/unitview',
-    name: 'UnitView',
-    component: () => import('@/views/units/UnitView.vue'),
-    meta: {
-      title: '单元查看',
-      requiresAuth: true,
-    },
-  },
-  {
-    path: '/monitoring/vital-focus',
-    name: 'VitalFocus',
-    component: () => import('@/views/monitoring/vital-focus/VitalFocus.vue'),
-    meta: {
-      title: '生命体征监控',
-      requiresAuth: true,
-    },
+    children: [
+      // Core operations area
+      {
+        path: '/monitoring/overview',
+        name: 'MonitoringOverview',
+        component: () => import('@/views/monitoring/overview/Overview.vue'),
+        meta: {
+          title: 'Monitoring Overview',
+          requiresAuth: true,
+        },
+      },
+      {
+        path: '/monitoring/wellness-monitor',
+        name: 'WellnessMonitor',
+        component: () => import('@/views/monitoring/wellness-monitor/WellnessMonitor.vue'),
+        meta: {
+          title: 'Wellness Monitor',
+          requiresAuth: true,
+        },
+      },
+      // Data management area
+      {
+        path: '/devices',
+        name: 'DeviceList',
+        component: () => import('@/views/devices/DeviceList.vue'),
+        meta: {
+          title: 'Device Management',
+          requiresAuth: true,
+        },
+      },
+      {
+        path: '/units',
+        name: 'UnitList',
+        component: () => import('@/views/units/UnitList.vue'),
+        meta: {
+          title: 'Unit Management',
+          requiresAuth: true,
+        },
+      },
+      {
+        path: '/unitview',
+        name: 'UnitView',
+        component: () => import('@/views/units/UnitView.vue'),
+        meta: {
+          title: 'Unit View',
+          requiresAuth: true,
+        },
+      },
+      // System settings area
+      {
+        path: '/admin/users',
+        name: 'UserList',
+        component: () => import('@/views/admin/users/UserList.vue'),
+        meta: {
+          title: 'User Management',
+          requiresAuth: true,
+        },
+      },
+      {
+        path: '/admin/users/:id',
+        name: 'UserDetail',
+        component: () => import('@/views/admin/users/UserDetail.vue'),
+        meta: {
+          title: 'User Details',
+          requiresAuth: true,
+        },
+      },
+      {
+        path: '/admin/roles',
+        name: 'RoleList',
+        component: () => import('@/views/admin/roles/RoleList.vue'),
+        meta: {
+          title: 'Role Management',
+          requiresAuth: true,
+        },
+      },
+      {
+        path: '/admin/permissions',
+        name: 'RolePermissionList',
+        component: () => import('@/views/admin/permissions/RolePermissionList.vue'),
+        meta: {
+          title: 'Permission Management',
+          requiresAuth: true,
+        },
+      },
+      // Compatibility with old routes
+      {
+        path: '/admin/role-permissions',
+        redirect: '/admin/permissions',
+      },
+      {
+        path: '/admin/tags',
+        name: 'TagList',
+        component: () => import('@/views/admin/tags/TagList.vue'),
+        meta: {
+          title: 'Tag Management',
+          requiresAuth: true,
+        },
+      },
+    ],
   },
 ]
 
@@ -122,13 +155,13 @@ const router = createRouter({
   routes,
 })
 
-// 路由守卫：检查页面访问权限
-router.beforeEach((to, from, next) => {
+// Route guard: Check page access permissions
+router.beforeEach((to, _from, next) => {
   const userStore = useUserStoreWithOut()
   
-  // 检查是否需要认证
+  // Check if authentication is required
   if (to.meta.requiresAuth) {
-    // 检查是否已登录
+    // Check if user is logged in
     if (!userStore.getToken) {
       next({
         path: '/login',
@@ -137,12 +170,19 @@ router.beforeEach((to, from, next) => {
       return
     }
     
-    // 检查页面访问权限
-    // 确保 to.path 是字符串类型
+    // Check page access permissions
+    // Ensure to.path is a string type
     const routePath = to.path || ''
     if (!userStore.hasPagePermission(routePath)) {
-      // 无权限访问，重定向到用户首页（homePath）或默认首页
-      const homePath = userStore.getUserHomePath()
+      // No permission to access, redirect to user home page (homePath) or default home page
+      const userInfo = userStore.getUserInfo
+      console.warn('[Router] Permission denied:', {
+        path: routePath,
+        userType: userInfo?.userType,
+        role: userInfo?.role,
+        pagePermissions: userStore.pagePermissions,
+      })
+      const homePath = userStore.getUserHomePath
       next({
         path: homePath,
       })

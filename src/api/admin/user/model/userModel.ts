@@ -1,12 +1,12 @@
 /**
- * User API 数据模型定义
- * 对应 owlRD/db/03_users.sql 中的 users 表结构
+ * User API data model definition
+ * Corresponds to users table structure in owlRD/db/03_users.sql
  * 
  * Note: All field names use snake_case to match database schema (PostgreSQL standard)
  */
 
 /**
- * 用户数据模型
+ * User data model
  */
 export interface User {
   user_id: string
@@ -20,20 +20,20 @@ export interface User {
   alarm_levels?: string[]
   alarm_channels?: string[]
   alarm_scope?: 'ALL' | 'LOCATION-TAG' | 'ASSIGNED_ONLY'
-  last_login_at?: string // ISO 8601 格式的时间字符串
-  tags?: string[] // JSONB 字段，存储为字符串数组
-  preferences?: Record<string, any> // JSONB 字段
+  last_login_at?: string // ISO 8601 format time string
+  tags?: string[] // JSONB field, stored as string array
+  preferences?: Record<string, any> // JSONB field
 }
 
 /**
- * 获取用户列表请求参数
+ * Get user list request parameters
  */
 export interface GetUsersParams {
-  search?: string // 搜索关键词（可选，用于搜索 user_account、nickname、email、phone）
+  search?: string // Search keyword (optional, for searching user_account, nickname, email, phone)
 }
 
 /**
- * 获取用户列表响应
+ * Get user list response
  */
 export interface GetUsersResult {
   items: User[]
@@ -41,7 +41,7 @@ export interface GetUsersResult {
 }
 
 /**
- * 创建用户请求参数
+ * Create user request parameters
  */
 export interface CreateUserParams {
   user_account: string
@@ -49,7 +49,7 @@ export interface CreateUserParams {
   email?: string
   phone?: string
   role: string
-  password: string // 创建时必填
+  password: string // Required when creating
   alarm_levels?: string[]
   alarm_channels?: string[]
   alarm_scope?: 'ALL' | 'LOCATION-TAG' | 'ASSIGNED_ONLY'
@@ -57,15 +57,15 @@ export interface CreateUserParams {
 }
 
 /**
- * 创建用户响应
+ * Create user response
  */
 export interface CreateUserResult {
   user_id: string
 }
 
 /**
- * 更新用户请求参数
- * 用于编辑、删除、禁用操作
+ * Update user request parameters
+ * Used for edit, delete, disable operations
  */
 export interface UpdateUserParams {
   nickname?: string
@@ -77,11 +77,11 @@ export interface UpdateUserParams {
   alarm_channels?: string[]
   alarm_scope?: 'ALL' | 'LOCATION-TAG' | 'ASSIGNED_ONLY'
   tags?: string[]
-  _delete?: boolean // 删除时使用（true：删除）
+  _delete?: boolean // Used when deleting (true: delete)
 }
 
 /**
- * 重置密码请求参数
+ * Reset password request parameters
  */
 export interface ResetPasswordParams {
   user_id: string
@@ -89,7 +89,7 @@ export interface ResetPasswordParams {
 }
 
 /**
- * 重置密码响应
+ * Reset password response
  */
 export interface ResetPasswordResult {
   success: boolean

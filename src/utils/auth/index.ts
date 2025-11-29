@@ -5,53 +5,53 @@
  * Note: All field names use snake_case to match database schema (PostgreSQL standard)
  */
 
-// Token 存储键名常量
+// Token storage key name constants
 export const TOKEN_KEY = 'ACCESS_TOKEN'
 export const REFRESH_TOKEN_KEY = 'REFRESH_TOKEN'
-export const USER_INFO_KEY = 'USER_INFO'  // 包含 userId, userType, residentType, role, nickName, tenant_id, locationType, locationTag, locationName
-export const INSTITUTION_INFO_KEY = 'INSTITUTION_INFO'  // 机构信息
-export const ROLES_KEY = 'ROLES'  // 角色列表（可选，如果需要多个角色）
+export const USER_INFO_KEY = 'USER_INFO'  // Contains userId, userType, residentType, role, nickName, tenant_id, locationType, locationTag, locationName
+export const INSTITUTION_INFO_KEY = 'INSTITUTION_INFO'  // Institution information
+export const ROLES_KEY = 'ROLES'  // Role list (optional, if multiple roles are needed)
 
 /**
- * InstitutionInfo 接口
- * 对应 tenants 表
+ * InstitutionInfo interface
+ * Corresponds to tenants table
  */
 export interface InstitutionInfo {
-  tenant_id: string            // 机构 ID（对应 tenants.tenant_id）
-  tenant_name: string          // 机构名称（对应 tenants.tenant_name）
-  domain?: string             // 机构域名（对应 tenants.domain）
+  tenant_id: string            // Institution ID (corresponds to tenants.tenant_id)
+  tenant_name: string          // Institution name (corresponds to tenants.tenant_name)
+  domain?: string             // Institution domain (corresponds to tenants.domain)
 }
 
 /**
- * 获取认证缓存（通用）
- * @param key 缓存键名
- * @returns 缓存值或 null
+ * Get authentication cache (generic)
+ * @param key Cache key name
+ * @returns Cache value or null
  */
 export function getAuthCache<T>(key: string): T | null {
-  // 使用 localStorage（持久化）
+  // Use localStorage (persistent)
   const value = localStorage.getItem(key)
   return value ? JSON.parse(value) : null
 }
 
 /**
- * 设置认证缓存（通用）
- * @param key 缓存键名
- * @param value 缓存值
+ * Set authentication cache (generic)
+ * @param key Cache key name
+ * @param value Cache value
  */
 export function setAuthCache(key: string, value: any): void {
   localStorage.setItem(key, JSON.stringify(value))
 }
 
 /**
- * 获取 token
- * @returns Access token 或 null
+ * Get token
+ * @returns Access token or null
  */
 export function getToken(): string | null {
   return getAuthCache<string>(TOKEN_KEY)
 }
 
 /**
- * 设置 token
+ * Set token
  * @param token Access token
  */
 export function setToken(token: string): void {
@@ -59,15 +59,15 @@ export function setToken(token: string): void {
 }
 
 /**
- * 获取刷新 token
- * @returns Refresh token 或 null
+ * Get refresh token
+ * @returns Refresh token or null
  */
 export function getRefreshToken(): string | null {
   return getAuthCache<string>(REFRESH_TOKEN_KEY)
 }
 
 /**
- * 设置刷新 token
+ * Set refresh token
  * @param refreshToken Refresh token
  */
 export function setRefreshToken(refreshToken: string): void {
@@ -75,15 +75,15 @@ export function setRefreshToken(refreshToken: string): void {
 }
 
 /**
- * 获取机构信息
- * @returns InstitutionInfo 或 null
+ * Get institution information
+ * @returns InstitutionInfo or null
  */
 export function getInstitutionInfo(): InstitutionInfo | null {
   return getAuthCache<InstitutionInfo>(INSTITUTION_INFO_KEY)
 }
 
 /**
- * 设置机构信息
+ * Set institution information
  * @param info InstitutionInfo
  */
 export function setInstitutionInfo(info: InstitutionInfo | null): void {
@@ -95,14 +95,14 @@ export function setInstitutionInfo(info: InstitutionInfo | null): void {
 }
 
 /**
- * 清除机构信息
+ * Clear institution information
  */
 export function clearInstitutionInfo(): void {
   localStorage.removeItem(INSTITUTION_INFO_KEY)
 }
 
 /**
- * 清除认证缓存（所有认证相关数据）
+ * Clear authentication cache (all authentication-related data)
  */
 export function clearAuthCache(): void {
   localStorage.removeItem(TOKEN_KEY)

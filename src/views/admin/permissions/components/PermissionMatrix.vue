@@ -67,9 +67,9 @@ const emit = defineEmits<{
   update: [permissions: RolePermission[]]
 }>()
 
-// 资源类型列表（只显示表格中列出的资源）
+// Resource type list (only show resources listed in table)
 const resourceTypes = [
-  'vital_monitor', // Vital-Monitor: 是否允许查看 vitalFocus 卡片
+  'vital_monitor', // Vital-Monitor: whether to allow viewing wellnessMonitor cards
   'roles',
   'role_permissions',
   'users',
@@ -88,10 +88,10 @@ const resourceTypes = [
   'devices',
 ] as const
 
-// 当前权限数据（可编辑）
+// Current permission data (editable)
 const currentPermissions = ref<RolePermission[]>(JSON.parse(JSON.stringify(props.permissions)))
 
-// 监听 props.permissions 变化，更新 currentPermissions
+// Watch props.permissions changes, update currentPermissions
 watch(
   () => props.permissions,
   (newPermissions) => {
@@ -100,9 +100,9 @@ watch(
   { deep: true },
 )
 
-// 获取权限是否选中
+// Get whether permission is checked
 const getPermissionChecked = (resource: string, type: PermissionType): boolean => {
-  // 如果该资源有 manage 权限，且类型是 R/C/E/D 之一，则显示为选中
+  // If the resource has manage permission, and type is one of R/C/E/D, show as checked
   const hasManage = currentPermissions.value.some(
     (p) =>
       p.resource_type === resource &&
@@ -124,52 +124,52 @@ const getPermissionChecked = (resource: string, type: PermissionType): boolean =
   )
 }
 
-// 处理权限变化
+// Handle permission changes
 const handlePermissionChange = (resource: string, type: PermissionType, event: any) => {
   const checked = event.target.checked
 
-  // 先获取当前该资源的所有权限类型（在修改前）
+  // First get all permission types for this resource (before modification)
   const existingPermissions = currentPermissions.value.filter(
     (p) => p.resource_type === resource && p.role_code === props.role.code && p.is_active,
   )
   const existingTypes = existingPermissions.map((p) => p.permission_type)
   const hasManage = existingTypes.includes('manage')
-  // 获取现有权限的范围（如果有），否则根据角色决定：NS 和 CG 使用 assigned_only，其他使用 all
+  // Get existing permission scope (if any), otherwise decide based on role: NS and CG use assigned_only, others use all
   const currentScope = existingPermissions[0]?.scope || 
     (props.role.code === 'Nurse' || props.role.code === 'Caregiver' ? 'assigned_only' : 'all')
 
-  // 先删除该资源的所有现有权限（设置为不活跃）
+  // First delete all existing permissions for this resource (set as inactive)
   currentPermissions.value.forEach((p) => {
     if (p.resource_type === resource && p.role_code === props.role.code) {
       p.is_active = false
     }
   })
 
-  // 计算新的权限类型列表
+  // Calculate new permission type list
   let newTypes: PermissionType[] = []
   
   if (hasManage) {
-    // 如果原来有 Manage，拆分为 R+C+E+D
+    // If originally had Manage, split into R+C+E+D
     if (checked) {
-      // 如果选中，保持所有类型
+      // If checked, keep all types
       newTypes = ['read', 'create', 'update', 'delete']
     } else {
-      // 如果取消选中，移除该类型
+      // If unchecked, remove this type
       newTypes = ['read', 'create', 'update', 'delete'].filter((t) => t !== type)
     }
   } else {
-    // 如果原来没有 Manage，基于现有类型计算
+    // If originally didn't have Manage, calculate based on existing types
     if (checked) {
-      // 如果选中，添加新类型
+      // If checked, add new type
       newTypes = existingTypes.filter((t) => t !== type)
       newTypes.push(type)
     } else {
-      // 如果取消选中，移除该类型
+      // If unchecked, remove this type
       newTypes = existingTypes.filter((t) => t !== type)
     }
   }
 
-  // 检查是否选择了 R+C+E+D，如果是则转换为 Manage
+  // Check if R+C+E+D are all selected, if so convert to Manage
   const hasAllBasic =
     newTypes.includes('read') &&
     newTypes.includes('create') &&
@@ -177,7 +177,7 @@ const handlePermissionChange = (resource: string, type: PermissionType, event: a
     newTypes.includes('delete')
 
   if (hasAllBasic) {
-    // 如果选择了 R+C+E+D，创建 Manage 权限
+    // If R+C+E+D are all selected, create Manage permission
     const newPermission: RolePermission = {
       permission_id: `temp-${Date.now()}-${Math.random()}`,
       role_code: props.role.code,
@@ -188,7 +188,7 @@ const handlePermissionChange = (resource: string, type: PermissionType, event: a
     }
     currentPermissions.value.push(newPermission)
   } else if (newTypes.length > 0) {
-    // 否则，为每个选中的类型创建单独的权限
+    // Otherwise, create separate permission for each selected type
     newTypes.forEach((t) => {
       const newPermission: RolePermission = {
         permission_id: `temp-${Date.now()}-${Math.random()}-${t}`,

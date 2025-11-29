@@ -7,63 +7,63 @@ export interface LoginParams {
   account: string // user_account, Email, or Phone (will be hashed before API call)
   password: string // password (will be hashed before API call)
   userType: 'staff' | 'resident'
-  tenant_id?: string  // tenant_id (对应 tenants.tenant_id)
+  tenant_id?: string  // tenant_id (corresponds to tenants.tenant_id)
 }
 
 export interface LoginResult {
   accessToken: string
   refreshToken: string
   userId: string
-  user_account?: string  // 用户账号（非敏感，用于显示和标识）- 登录成功时保存
-  userType: 'staff' | 'resident'  // 登录成功时保存
-  residentType?: 'home' | 'institution'  // Resident 子类型（仅 Resident 需要）- 对应 residents.is_institutional
-  locationType?: 'home' | 'institution'  // Location 类型（当前用户关联的 location）- 对应 locations.location_type
-  role?: string  // 角色编码（如 'Admin', 'Nurse', 'Caregiver'）- 登录成功时保存，用于前端页面展示控制
-  nickName?: string  // 昵称/显示名称（非敏感，用于 UI 显示）
+  user_account?: string  // User account (non-sensitive, for display and identification) - saved on login success
+  userType: 'staff' | 'resident'  // Saved on login success
+  residentType?: 'home' | 'institution'  // Resident subtype (only for Resident) - corresponds to residents.is_institutional
+  locationType?: 'home' | 'institution'  // Location type (location associated with current user) - corresponds to locations.location_type
+  role?: string  // Role code (e.g., 'Admin', 'Nurse', 'Caregiver') - saved on login success, for frontend page display control
+  nickName?: string  // Nickname/display name (non-sensitive, for UI display)
   
-  // 机构信息（tenant 表）
-  tenant_id?: string  // 机构 ID（对应 tenants.tenant_id）- 登录成功时保存
-  tenant_name?: string  // 机构名称（对应 tenants.tenant_name）- 登录成功时保存
-  domain?: string  // 机构域名（对应 tenants.domain）- 登录成功时保存
+  // Institution information (tenant table)
+  tenant_id?: string  // Institution ID (corresponds to tenants.tenant_id) - saved on login success
+  tenant_name?: string  // Institution name (corresponds to tenants.tenant_name) - saved on login success
+  domain?: string  // Institution domain (corresponds to tenants.domain) - saved on login success
   
-  // Location 信息（避免地址泄漏，仅存储非敏感的位置标识）
-  locationTag?: string  // 位置标签（对应 locations.location_tag，如 "A 院区主楼"）- 非敏感，用于分组和路由
-  locationName?: string  // 位置名称（对应 locations.location_name，如 "E203"、"Home-001"）- 非敏感，用于卡片显示
+  // Location information (avoid address leakage, only store non-sensitive location identifiers)
+  locationTag?: string  // Location tag (corresponds to locations.location_tag, e.g., "A Building Main") - non-sensitive, for grouping and routing
+  locationName?: string  // Location name (corresponds to locations.location_name, e.g., "E203", "Home-001") - non-sensitive, for card display
   
-  // 其他信息
-  homePath?: string  // 用户首页路径（用于登录后跳转，由后端根据 userType 和 role 计算）
-  avatar?: string    // 头像 URL（可选，用于用户头像显示）
+  // Other information
+  homePath?: string  // User home page path (for redirect after login, calculated by backend based on userType and role)
+  avatar?: string    // Avatar URL (optional, for user avatar display)
   
-  // 注意：以下敏感信息不应该存储在本地（HIPAA 合规）
-  // 如果需要显示，应该从服务器 API 获取（使用 token）
-  // email?: string        // 不存储（PHI，敏感信息）
-  // phone?: string        // 不存储（PHI，敏感信息）
-  // residentAccount?: string  // 不存储（可能包含敏感信息）
-  // 注意：user_account 可以存储（非敏感，用于显示和标识，不包含 PHI）
-  // building, floor, area_id, door_number 等详细地址信息不存储（可能包含敏感信息）
+  // Note: The following sensitive information should NOT be stored locally (HIPAA compliance)
+  // If display is needed, should be fetched from server API (using token)
+  // email?: string        // Not stored (PHI, sensitive information)
+  // phone?: string        // Not stored (PHI, sensitive information)
+  // residentAccount?: string  // Not stored (may contain sensitive information)
+  // Note: user_account can be stored (non-sensitive, for display and identification, does not contain PHI)
+  // Detailed address information like building, floor, area_id, door_number not stored (may contain sensitive information)
   
-  // 关于 role 存储的说明：
-  // - role 是角色编码（如 'Admin', 'Nurse'），是公开的角色标识，不是敏感的个人信息
-  // - 用于前端控制页面展示（菜单、按钮的显示/隐藏）
-  // - 真实的权限控制仍在后台（role_permissions 表）
-  // - 前端仅用于 UI 展示控制，不用于安全验证
+  // Notes on role storage:
+  // - role is role code (e.g., 'Admin', 'Nurse'), a public role identifier, not sensitive personal information
+  // - Used for frontend page display control (menu, button show/hide)
+  // - Real permission control is still in backend (role_permissions table)
+  // - Frontend only for UI display control, not for security verification
   
-  // 关于 residentType 和 locationType 的说明：
-  // - residentType: 对应 residents.is_institutional (TRUE = 'institution', FALSE = 'home')
-  // - locationType: 对应 locations.location_type (当前用户关联的 location 类型)
-  // - 两者可能不同：例如，Resident 是 home 类型，但其 location 可能是 institution 类型
+  // Notes on residentType and locationType:
+  // - residentType: corresponds to residents.is_institutional (TRUE = 'institution', FALSE = 'home')
+  // - locationType: corresponds to locations.location_type (location type associated with current user)
+  // - They may differ: e.g., Resident is home type, but its location may be institution type
   
-  // 关于 locationTag 和 locationName 的说明：
-  // - locationTag: 位置标签（如 "A 院区主楼"、"Spring 区域组SP"），用于分组和路由，不包含 PHI
-  // - locationName: 位置名称（如 "E203"、"201"、"Home-001"），用于卡片显示，不包含 PHI
-  // - 真实地址信息（如城市、州省、邮编等）存储在加密的 resident_phi 表中，不在此处存储
-  // - 这些字段符合 HIPAA 要求，不包含敏感信息
+  // Notes on locationTag and locationName:
+  // - locationTag: Location tag (e.g., "A Building Main", "Spring Area Group SP"), for grouping and routing, does not contain PHI
+  // - locationName: Location name (e.g., "E203", "201", "Home-001"), for card display, does not contain PHI
+  // - Real address information (e.g., city, state, zip code) stored in encrypted resident_phi table, not stored here
+  // - These fields comply with HIPAA requirements, do not contain sensitive information
 }
 
 export interface Institution {
-  id: string           // 机构 ID（对应 tenants.tenant_id，UUID）
-  name: string         // 机构名称（对应 tenants.tenant_name）
-  domain?: string       // 机构域名（对应 tenants.domain，可选）
+  id: string           // Institution ID (corresponds to tenants.tenant_id, UUID)
+  name: string         // Institution name (corresponds to tenants.tenant_name)
+  domain?: string       // Institution domain (corresponds to tenants.domain, optional)
 }
 
 /**
@@ -76,16 +76,16 @@ export interface Institution {
 export interface SendVerificationCodeParams {
   account: string      // user_account, Email, or Phone (raw value, transmitted via HTTPS)
   userType: 'staff' | 'resident'
-  tenant_name: string  // REQUIRED: Institution name (对应 tenants.tenant_name，防止跨机构重复账号)
-  tenant_id?: string   // Optional: Institution ID (对应 tenants.tenant_id)
+  tenant_name: string  // REQUIRED: Institution name (corresponds to tenants.tenant_name, prevents duplicate accounts across institutions)
+  tenant_id?: string   // Optional: Institution ID (corresponds to tenants.tenant_id)
 }
 
 export interface VerifyCodeParams {
   account: string      // Phone or Email (raw value, transmitted via HTTPS)
   code: string         // 6-digit verification code
   userType: 'staff' | 'resident'
-  tenant_name: string  // REQUIRED: Institution name (对应 tenants.tenant_name)
-  tenant_id?: string   // Optional: Institution ID (对应 tenants.tenant_id)
+  tenant_name: string  // REQUIRED: Institution name (corresponds to tenants.tenant_name)
+  tenant_id?: string   // Optional: Institution ID (corresponds to tenants.tenant_id)
 }
 
 export interface ResetPasswordParams {
@@ -93,8 +93,8 @@ export interface ResetPasswordParams {
   code: string         // 6-digit verification code
   newPassword: string  // New password (will be hashed by backend)
   userType: 'staff' | 'resident'
-  tenant_name: string  // REQUIRED: Institution name (对应 tenants.tenant_name)
-  tenant_id?: string   // Optional: Institution ID (对应 tenants.tenant_id)
+  tenant_name: string  // REQUIRED: Institution name (corresponds to tenants.tenant_name)
+  tenant_id?: string   // Optional: Institution ID (corresponds to tenants.tenant_id)
 }
 
 export interface ForgotPasswordResult {

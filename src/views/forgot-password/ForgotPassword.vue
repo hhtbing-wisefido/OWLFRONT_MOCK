@@ -1,7 +1,7 @@
 <template>
   <div class="forgot-password-container">
     <div class="forgot-password-wrapper">
-      <!-- 左侧：输入区域 -->
+      <!-- Left: Input area -->
       <div class="forgot-password-left">
         <div class="forgot-password-content">
           <div class="forgot-password-header">
@@ -221,7 +221,7 @@
         </div>
       </div>
 
-      <!-- 右侧：展示区域 -->
+      <!-- Right: Display area -->
       <div class="forgot-password-right">
         <div class="display-content">
           <div class="display-slogan">
@@ -584,9 +584,9 @@ const handleResetPassword = async () => {
   overflow: hidden;
 }
 
-/* 左侧：输入区域 */
+/* Left: Input area */
 .forgot-password-left {
-  padding: 36px 37.5px; /* 高度缩小到60%: 60px * 0.6 = 36px, 宽度缩小到75%: 50px * 0.75 = 37.5px */
+  padding: 36px 37.5px; /* Height reduced to 60%: 60px * 0.6 = 36px, width reduced to 75%: 50px * 0.75 = 37.5px */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -600,14 +600,14 @@ const handleResetPassword = async () => {
 
 .forgot-password-header {
   text-align: left;
-  margin-bottom: 24px; /* 40px * 0.6 = 24px (标题上下间距缩小到60%) */
+  margin-bottom: 24px; /* 40px * 0.6 = 24px (title top/bottom spacing reduced to 60%) */
 }
 
 .title {
   font-size: 24px; /* 32px * 0.75 = 24px */
   font-weight: 600;
   color: #1a202c;
-  margin: 0 0 7.2px 0; /* 12px * 0.6 = 7.2px (标题下方间距缩小到60%) */
+  margin: 0 0 7.2px 0; /* 12px * 0.6 = 7.2px (spacing below title reduced to 60%) */
   display: flex;
   align-items: center;
   gap: 9px; /* 12px * 0.75 = 9px */
@@ -717,13 +717,13 @@ const handleResetPassword = async () => {
   max-width: 225px; /* 300px * 0.75 = 225px */
 }
 
-/* 右侧：展示区域 */
+/* Right: Display area */
 .forgot-password-right {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 36px 37.5px; /* 高度缩小到60%: 60px * 0.6 = 36px, 宽度缩小到75%: 50px * 0.75 = 37.5px */
+  padding: 36px 37.5px; /* Height reduced to 60%: 60px * 0.6 = 36px, width reduced to 75%: 50px * 0.75 = 37.5px */
   position: relative;
   background-image: url('@/assets/images/login-bg.png');
   background-size: cover;

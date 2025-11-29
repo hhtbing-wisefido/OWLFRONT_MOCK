@@ -1,7 +1,7 @@
 <template>
   <div class="login-container">
     <div class="login-wrapper">
-      <!-- 左侧：输入区域 -->
+      <!-- Left: Input area -->
       <div class="login-left">
         <div class="login-content">
 
@@ -9,10 +9,10 @@
         </div>
       </div>
 
-      <!-- 右侧：展示区域 -->
+      <!-- Right: Display area -->
       <div class="login-right">
         <div class="display-content">
-          <!-- 使用图片或展示标语 -->
+          <!-- Use image or display slogan -->
           <div class="display-slogan">
             <h2 class="slogan-line1">Your Space. Simply Yours.</h2>
             <h2 class="slogan-line2">Seamlessly Safe.</h2>
@@ -50,9 +50,9 @@ import LoginForm from './LoginForm.vue'
   overflow: hidden;
 }
 
-/* 左侧：输入区域 */
+/* Left: Input area */
 .login-left {
-  padding: 36px 37.5px; /* 高度缩小到60%: 60px * 0.6 = 36px, 宽度缩小到75%: 50px * 0.75 = 37.5px */
+  padding: 36px 37.5px; /* Height reduced to 60%: 60px * 0.6 = 36px, width reduced to 75%: 50px * 0.75 = 37.5px */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -64,15 +64,15 @@ import LoginForm from './LoginForm.vue'
   max-width: 300px; /* 400px * 0.75 = 300px */
 }
 
-/* 右侧：展示区域 */
+/* Right: Display area */
 .login-right {
-  /* 支持背景图片（PNG支持透明），如果没有图片则使用渐变背景 */
+  /* Support background image (PNG supports transparency), if no image then use gradient background */
   background: 
     url('@/assets/images/login-bg.png') center/cover no-repeat,
     linear-gradient(180deg, #87ceeb 0%, #4682b4 100%);
-  /* 回退颜色（如果图片加载失败） */
+  /* Fallback color (if image fails to load) */
   background-color: #87ceeb;
-  padding: 36px 37.5px; /* 高度缩小到60%: 60px * 0.6 = 36px, 宽度缩小到75%: 50px * 0.75 = 37.5px */
+  padding: 36px 37.5px; /* Height reduced to 60%: 60px * 0.6 = 36px, width reduced to 75%: 50px * 0.75 = 37.5px */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -113,7 +113,7 @@ import LoginForm from './LoginForm.vue'
   font-weight: 600;
 }
 
-/* 响应式设计 */
+/* Responsive design */
 @media (max-width: 968px) {
   .login-wrapper {
     grid-template-columns: 1fr;

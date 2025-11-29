@@ -18,7 +18,7 @@ import { delay } from '../../utils/generator'
 
 // 模拟内存存储（用于模拟创建、更新、删除操作）
 let rolesStore: Role[] = [...mockRolesData]
-let nextRoleId = 12 // 下一个可用的角色ID
+let nextRoleId = 9 // 下一个可用的角色ID（从 9 开始，因为系统角色有 8 个）
 
 /**
  * Mock: 获取角色列表

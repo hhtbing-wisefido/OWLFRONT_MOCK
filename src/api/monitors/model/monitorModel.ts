@@ -35,10 +35,10 @@ import type { BackendPagination } from '@/api/model/pagination'
 export interface ServiceLevelInfo {
   level_code: string  // e.g., 'L1', 'L2', 'L3', 'L4', 'L5', 'L6'
   display_name: string  // e.g., 'Independent', 'Assisted'
-  display_name_cn?: string  // e.g., '无需协助', '需部分协助'
+  display_name_cn?: string  // e.g., '无需协助', '需部分协助' (Chinese display name, optional)
   color_tag: string  // e.g., 'green', 'blue', 'yellow', 'orange', 'red', 'purple', 'gray'
   color_hex: string  // e.g., '#28a745', '#007bff'
-  priority: number  // 1=最低风险, 6=最高风险
+  priority: number  // 1=lowest risk, 6=highest risk
 }
 
 /**
@@ -89,17 +89,17 @@ export interface VitalFocusCard {
   resident_count: number
   
   // Alarm info (from cards table)
-  // 未处理报警统计（按级别分别统计）
-  unhandled_alarm_0?: number  // EMERG(0) 未处理报警数量
-  unhandled_alarm_1?: number  // ALERT(1) 未处理报警数量
-  unhandled_alarm_2?: number  // CRIT(2) 未处理报警数量
-  unhandled_alarm_3?: number  // ERR(3) 未处理报警数量
-  unhandled_alarm_4?: number  // WARNING(4) 未处理报警数量
-  total_unhandled_alarms?: number  // 总未处理报警数量（自动计算）
+  // Unhandled alarm statistics (counted by level)
+  unhandled_alarm_0?: number  // EMERG(0) unhandled alarm count
+  unhandled_alarm_1?: number  // ALERT(1) unhandled alarm count
+  unhandled_alarm_2?: number  // CRIT(2) unhandled alarm count
+  unhandled_alarm_3?: number  // ERR(3) unhandled alarm count
+  unhandled_alarm_4?: number  // WARNING(4) unhandled alarm count
+  total_unhandled_alarms?: number  // Total unhandled alarm count (auto-calculated)
   
-  // 报警显示控制（from cards table）
-  icon_alarm_level?: number   // 图标报警级别阈值（默认 3/ERR）
-  pop_alarm_emerge?: number   // 弹出报警级别阈值（默认 0/EMERG）
+  // Alarm display control (from cards table)
+  icon_alarm_level?: number   // Icon alarm level threshold (default 3/ERR)
+  pop_alarm_emerge?: number   // Popup alarm level threshold (default 0/EMERG)
   
   // Device connection status (to be added when device status API is ready)
   r_connection?: number  // Radar connection: 0=offline, 1=online
@@ -111,7 +111,7 @@ export interface VitalFocusCard {
   statuses?: Record<string, any>  // Optional: statuses object (v1.0 style) - contains real-time data
   
   // Physiological data (from iot_timeseries.heart_rate, respiratory_rate, category: 'vital-signs')
-  breath?: number  // Respiratory rate (次/分钟) - from iot_timeseries.respiratory_rate
+  breath?: number  // Respiratory rate (breaths/min) - from iot_timeseries.respiratory_rate
   heart?: number   // Heart rate (bpm) - from iot_timeseries.heart_rate
   breath_source?: 's' | 'r' | '-'  // Source: 's'=sleepace, 'r'=radar, '-'=no data (lowercase, as in v1.0)
   heart_source?: 's' | 'r' | '-'   // Source: 's'=sleepace, 'r'=radar, '-'=no data (lowercase, as in v1.0)
@@ -120,7 +120,7 @@ export interface VitalFocusCard {
   // Note: Sleep state is always pushed together with HR/RR data
   sleep_stage?: number  // Sleep stage: 1=awake, 2=light sleep, 4=deep sleep
   sleep_state_snomed_code?: string  // SNOMED CT code (see owlRD/docs/06_FHIR_Simple_Conversion_Guide.md)
-  sleep_state_display?: string       // Display name (通用英文标准名称): 'Awake', 'Light sleep', 'Deep sleep'
+  sleep_state_display?: string       // Display name (standard English name): 'Awake', 'Light sleep', 'Deep sleep'
   
   // Bed status (from iot_timeseries.event_type: 'ENTER_BED', 'LEFT_BED', category: 'activity')
   bed_status?: number  // 0=in bed, 1=out of bed
@@ -141,19 +141,19 @@ export interface VitalFocusCard {
     event_type: string  // e.g., 'Fall', 'Radar_AbnormalHeartRate', 'SleepPad_LeftBed', 'OfflineAlarm'
     category?: 'safety' | 'clinical' | 'behavioral' | 'device'  // FHIR Flag Category (not TDP Tag Category)
     alarm_level: string | number  // '0'/'EMERG', '1'/'ALERT', '2'/'CRIT', '3'/'ERR', '4'/'WARNING'
-    alarm_status: 'active' | 'acknowledged'  // 报警状态
+    alarm_status: 'active' | 'acknowledged'  // Alarm status
     triggered_at: number  // timestamp (from alarm_events.triggered_at)
     triggered_by?: string  // Device name (e.g., 'Radar01') or 'Cloud'
     trigger_data?: {
       heart_rate?: number
       respiratory_rate?: number
-      posture?: string  // Posture display name (通用英文标准名称)
+      posture?: string  // Posture display name (standard English name)
       event_type?: string
       confidence?: number
       duration_sec?: number
       threshold?: { min?: number; max?: number }
       snomed_code?: string  // SNOMED CT code (see owlRD/docs/06_FHIR_Simple_Conversion_Guide.md)
-      snomed_display?: string  // SNOMED display name (通用英文标准名称)
+      snomed_display?: string  // SNOMED display name (standard English name)
     }
     iot_timeseries_id?: number  // Associated iot_timeseries record ID (for tracing original data)
   }>

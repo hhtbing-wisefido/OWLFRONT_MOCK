@@ -1,6 +1,6 @@
 <template>
   <div style="padding: 15px">
-    <!-- 搜索栏 -->
+    <!-- Search bar -->
     <div class="search-container">
       <a-form layout="inline" class="search-form">
         <a-form-item>
@@ -25,7 +25,7 @@
       </a-form>
     </div>
 
-    <!-- 设备列表表格 -->
+    <!-- Device list table -->
     <a-table
       :dataSource="dataSource"
       :columns="columns"
@@ -37,7 +37,7 @@
       @change="handleTableChange"
     >
       <template #headerCell="{ column }">
-        <!-- Status 列：带筛选器 -->
+        <!-- Status column: with filter -->
         <template v-if="column.dataIndex === 'status'">
           <div class="status-header-cell">
             <span>{{ column.title }}</span>
@@ -58,14 +58,14 @@
             </a-dropdown>
           </div>
         </template>
-        <!-- 其他列：显示标题 -->
+        <!-- Other columns: display title -->
         <template v-else>
           {{ column.title }}
         </template>
       </template>
 
       <template #bodyCell="{ column, record, text }">
-        <!-- Device Name 列：单元格编辑 -->
+        <!-- Device Name column: cell editing -->
         <template v-if="column.dataIndex === 'device_name'">
           <div class="device-name-cell">
             <a-input
@@ -87,7 +87,7 @@
           </div>
         </template>
 
-        <!-- Business Access 列：下拉选择 -->
+        <!-- Business Access column: dropdown selection -->
         <template v-else-if="column.dataIndex === 'business_access'">
           <a-select
             v-model:value="record.business_access"
@@ -104,14 +104,14 @@
           </a-select>
         </template>
 
-        <!-- Status 列：标签显示 -->
+        <!-- Status column: tag display -->
         <template v-else-if="column.dataIndex === 'status'">
           <a-tag :color="getStatusColor(text)">
             {{ text }}
           </a-tag>
         </template>
 
-        <!-- Delete 列：删除按钮 -->
+        <!-- Delete column: delete button -->
         <template v-else-if="column.dataIndex === 'delete'">
           <a-tooltip title="Device can only be deleted when not in use, otherwise it will be disabled" :mouseEnterDelay="0.1">
             <a-button
@@ -125,7 +125,7 @@
           </a-tooltip>
         </template>
 
-        <!-- 其他列：直接显示 -->
+        <!-- Other columns: direct display -->
         <template v-else>
           {{ text || '-' }}
         </template>
@@ -145,7 +145,7 @@ import type { TableProps } from 'ant-design-vue'
 
 const userStore = useUserStore()
 
-// 数据
+// Data
 const dataSource = ref<Device[]>([])
 const loading = ref(false)
 const pagination = ref({
@@ -156,23 +156,23 @@ const pagination = ref({
   showTotal: (total: number) => `Total ${total} devices`,
 })
 
-// 编辑状态
+// Edit state
 const editingDeviceId = ref<string | null>(null)
 const editingField = ref<string | null>(null)
 const editingValue = ref<string>('')
 
-// 删除状态
+// Delete state
 const deletingDeviceId = ref<string | null>(null)
 
-// 搜索状态
+// Search state
 const searchType = ref<'device_name' | 'serial_number' | 'uid'>('device_name')
 const searchKeyword = ref<string>('')
 
-// 排序状态
+// Sort state
 const sortField = ref<string | undefined>(undefined)
 const sortDirection = ref<'asc' | 'desc' | undefined>(undefined)
 
-// Status 筛选器
+// Status filter
 const statusFilterOpen = ref(false)
 const statusFilter = ref<('online' | 'offline' | 'error' | 'disabled')[]>(['online', 'offline', 'error'])
 const statusOptions = [
@@ -182,14 +182,14 @@ const statusOptions = [
   { value: 'disabled', label: 'Disabled' },
 ]
 
-// Business Access 选项
+// Business Access options
 const businessAccessOptions = [
   { value: 'pending', label: 'Pending', color: '#faad14' },
   { value: 'approved', label: 'Approved', color: '#52c41a' },
   { value: 'rejected', label: 'Rejected', color: '#ff4d4f' },
 ]
 
-// 表格列定义
+// Table column definitions
 const columns = [
   {
     title: 'Device Name',
@@ -277,7 +277,7 @@ const columns = [
   },
 ]
 
-// 获取设备列表
+// Get device list
 const fetchDevices = async () => {
   loading.value = true
   try {
@@ -296,18 +296,18 @@ const fetchDevices = async () => {
       size: pagination.value.pageSize,
     }
 
-    // 添加搜索参数
+    // Add search parameters
     if (searchKeyword.value.trim()) {
       params.search_type = searchType.value
       params.search_keyword = searchKeyword.value.trim()
     }
 
-    // 注意：排序由前端处理，不传递排序参数给 server
+    // Note: Sorting is handled on frontend, do not pass sort parameters to server
     const result = await getDevicesApi(params)
     dataSource.value = result.items
     pagination.value.total = result.total
     
-    // 如果有排序条件，对数据进行排序
+    // If there are sort conditions, sort the data
     if (sortField.value && sortDirection.value) {
       applySort()
     }
@@ -319,7 +319,7 @@ const fetchDevices = async () => {
   }
 }
 
-// 应用排序（前端排序）
+// Apply sorting (frontend sorting)
 const applySort = () => {
   if (!sortField.value || !sortDirection.value) return
   
@@ -327,39 +327,39 @@ const applySort = () => {
     const aValue = (a as any)[sortField.value!]
     const bValue = (b as any)[sortField.value!]
     
-    // 处理 null/undefined 值
+    // Handle null/undefined values
     if (aValue == null && bValue == null) return 0
     if (aValue == null) return 1
     if (bValue == null) return -1
     
-    // 字符串比较
+    // String comparison
     if (typeof aValue === 'string' && typeof bValue === 'string') {
       const comparison = aValue.localeCompare(bValue)
       return sortDirection.value === 'asc' ? comparison : -comparison
     }
     
-    // 数字比较
+    // Number comparison
     if (aValue < bValue) return sortDirection.value === 'asc' ? -1 : 1
     if (aValue > bValue) return sortDirection.value === 'asc' ? 1 : -1
     return 0
   })
 }
 
-// 处理表格变化（排序、分页等）
+// Handle table changes (sorting, pagination, etc.)
 const handleTableChange: TableProps['onChange'] = (pag, _filters, sorter) => {
-  // 更新分页
+  // Update pagination
   if (pag) {
     pagination.value.current = pag.current || 1
     pagination.value.pageSize = pag.pageSize || 10
-    // 分页变化需要重新获取数据
+    // Pagination change requires re-fetching data
     fetchDevices()
     return
   }
 
-  // 处理排序（前端排序，不需要重新请求数据）
+  // Handle sorting (frontend sorting, no need to re-request data)
   if (sorter) {
     if (Array.isArray(sorter)) {
-      // 多列排序（暂不支持，取第一个）
+      // Multi-column sorting (not supported yet, take the first one)
       if (sorter.length > 0) {
         const firstSorter = sorter[0]
         if (firstSorter && firstSorter.order) {
@@ -371,28 +371,28 @@ const handleTableChange: TableProps['onChange'] = (pag, _filters, sorter) => {
         }
       }
     } else {
-      // 单列排序
+      // Single column sorting
       if (sorter.order) {
         sortField.value = sorter.field as string
         sortDirection.value = sorter.order === 'ascend' ? 'asc' : 'desc'
       } else {
-        // 取消排序
+        // Cancel sorting
         sortField.value = undefined
         sortDirection.value = undefined
       }
     }
     
-    // 前端排序：直接对当前数据进行排序
+    // Frontend sorting: directly sort current data
     if (sortField.value && sortDirection.value) {
       applySort()
     } else {
-      // 取消排序，重新获取数据恢复原始顺序
+      // Cancel sorting, re-fetch data to restore original order
       fetchDevices()
     }
   }
 }
 
-// 处理 Status 筛选器变化
+// Handle Status filter changes
 const handleStatusFilterChange = (value: 'online' | 'offline' | 'error' | 'disabled', event: any) => {
   if (event.target.checked) {
     if (!statusFilter.value.includes(value)) {
@@ -401,25 +401,25 @@ const handleStatusFilterChange = (value: 'online' | 'offline' | 'error' | 'disab
   } else {
     statusFilter.value = statusFilter.value.filter((v) => v !== value)
   }
-  // 重新获取数据
+  // Re-fetch data
   pagination.value.current = 1
   fetchDevices()
 }
 
-// 开始编辑
+// Start editing
 const handleStartEdit = (record: Device, field: string, value: string) => {
   editingDeviceId.value = record.device_id
   editingField.value = field
   editingValue.value = value
 }
 
-// 保存编辑
+// Save edit
 const handleSaveEdit = async (record: Device) => {
   if (!editingDeviceId.value || !editingField.value) return
 
   const newValue = editingValue.value.trim()
   if (newValue === record.device_name) {
-    // 值没有变化，取消编辑
+    // Value hasn't changed, cancel edit
     handleCancelEdit()
     return
   }
@@ -432,24 +432,24 @@ const handleSaveEdit = async (record: Device) => {
     await fetchDevices()
   } catch (error: any) {
     message.error(error?.message || 'Failed to update device name')
-    // 恢复原值
+    // Restore original value
     await fetchDevices()
   } finally {
     handleCancelEdit()
   }
 }
 
-// 取消编辑
+// Cancel edit
 const handleCancelEdit = () => {
   editingDeviceId.value = null
   editingField.value = null
   editingValue.value = ''
 }
 
-// 处理 Business Access 变化
+// Handle Business Access change
 const handleBusinessAccessChange = async (record: Device, value: 'pending' | 'approved' | 'rejected') => {
   try {
-    // 如果值没有变化，不执行更新
+    // If value hasn't changed, don't perform update
     if (record.business_access === value) {
       return
     }
@@ -460,13 +460,13 @@ const handleBusinessAccessChange = async (record: Device, value: 'pending' | 'ap
     message.success('Business access updated successfully')
     await fetchDevices()
   } catch (error: any) {
-    // 恢复原值
+    // Restore original value
     await fetchDevices()
     message.error(error?.message || 'Failed to update business access')
   }
 }
 
-// 处理删除
+// Handle delete
 const handleDelete = async (record: Device) => {
   try {
     deletingDeviceId.value = record.device_id
@@ -480,7 +480,7 @@ const handleDelete = async (record: Device) => {
   }
 }
 
-// 获取 Status 颜色
+// Get Status color
 const getStatusColor = (status: string): string => {
   switch (status) {
     case 'online':
@@ -496,7 +496,7 @@ const getStatusColor = (status: string): string => {
   }
 }
 
-// 获取搜索框占位符
+// Get search box placeholder
 const getSearchPlaceholder = (): string => {
   switch (searchType.value) {
     case 'device_name':
@@ -510,13 +510,13 @@ const getSearchPlaceholder = (): string => {
   }
 }
 
-// 处理搜索
+// Handle search
 const handleSearch = () => {
   pagination.value.current = 1
   fetchDevices()
 }
 
-// 初始化
+// Initialize
 onMounted(() => {
   fetchDevices()
 })

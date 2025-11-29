@@ -5,7 +5,7 @@
 **接口**: `GET /auth/api/v1/institutions/search`
 
 **输入参数（Query String）**:
-- `accountHash` (string, 必填) - 账号的 SHA-256 hash（phone/email/username），不传输原始 PHI
+- `accountHash` (string, 必填) - 账号的 SHA-256 hash（phone/email/userAccount），不传输原始 PHI
 - `accountPasswordHash` (string, 必填) - 账号+密码的 SHA-256 hash（格式：`sha256(account:password)`），不传输明文密码
 - `userType` ('staff' | 'resident', 必填) - 用户类型
 
@@ -66,7 +66,7 @@ const accountPasswordHash = sha256(`${account.toLowerCase().trim()}:${password}`
 **输入参数（Request Body）**:
 ```typescript
 {
-  accountHash: string,          // SHA-256 hash of account (phone/email/username) - NO raw PHI
+  accountHash: string,          // SHA-256 hash of account (phone/email/userAccount) - NO raw PHI
   accountPasswordHash: string,  // SHA-256 hash of account:password - NO raw password
   userType: 'staff' | 'resident',  // 用户类型
   tenant_id?: string             // 机构 ID（对应 tenants.tenant_id，当匹配到多个机构时必填）
@@ -110,7 +110,7 @@ const accountPasswordHash = sha256(`${account.toLowerCase().trim()}:${password}`
     avatar?: string              // 头像 URL（可选）
     
     // 注意：以下敏感信息不返回（HIPAA 合规）
-    // username, email, phone 等敏感信息不包含在响应中
+    // user_account, email, phone 等敏感信息不包含在响应中
   },
   message: 'Login successful',
   type: 'success'
@@ -198,7 +198,7 @@ const accountPasswordHash = sha256(`${account.toLowerCase().trim()}:${password}`
 
 ## 安全说明
 
-1. **HIPAA 合规**: 只传输 hash，不传输原始 PHI（phone/email/username/password）
+1. **HIPAA 合规**: 只传输 hash，不传输原始 PHI（phone/email/user_account/password）
 2. **Rate Limiting（后端实现）**: 每 IP 每分钟最多 10 次，每账号每分钟最多 6 次
    - 前端不进行 rate limiting，避免影响手工测试和开发调试
    - 后端返回 429 状态码时，前端显示错误提示

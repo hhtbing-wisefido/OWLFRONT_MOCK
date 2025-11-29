@@ -343,7 +343,7 @@ const confirmMessage = ref('')
 const availableRoles = ref<Role[]>([])
 const resetPasswordUserId = ref('')
 
-// 角色映射（role_code -> display_name）
+// Role mapping (role_code -> display_name)
 const roleMap = computed(() => {
   const map: Record<string, string> = {}
   availableRoles.value.forEach((role) => {
@@ -373,13 +373,13 @@ const resetPasswordData = ref({
   confirm_password: '',
 })
 
-// 检查是否有管理权限
+// Check if user has management permission
 const hasManagePermission = computed(() => {
   const userInfo = userStore.getUserInfo
   if (!userInfo) return false
   
-  // 检查是否有 users.update 权限（这里简化处理，实际应该从 role-permissions 检查）
-  // TODO: 实现完整的权限检查逻辑
+  // Check if user has users.update permission (simplified here, should actually check from role-permissions)
+  // TODO: Implement complete permission check logic
   const allowedRoles = ['Admin', 'Director', 'IT']
   return allowedRoles.includes(userInfo.role || '')
 })
@@ -524,7 +524,7 @@ const getStatusText = (status: string) => {
   }
 }
 
-// 将 alarm level 数字转换为文本显示
+// Convert alarm level number to text display
 const getAlarmLevelText = (level: string | number): string => {
   const levelStr = String(level)
   const levelMap: Record<string, string> = {
@@ -537,15 +537,15 @@ const getAlarmLevelText = (level: string | number): string => {
   return levelMap[levelStr] || levelStr
 }
 
-// 获取 alarm level 对应的颜色
+// Get color corresponding to alarm level
 const getAlarmLevelColor = (level: string | number): string => {
   const levelStr = String(level)
   const colorMap: Record<string, string> = {
-    '0': '#d32f2f', // EMERG - 红色
-    '1': '#d32f2f', // ALERT - 红色
-    '2': '#f3783f', // CRIT - 橙色
-    '3': '#f3783f', // ERR - 橙色
-    '4': '#f3783f', // WARNING - 橙色
+    '0': '#d32f2f', // EMERG - red
+    '1': '#d32f2f', // ALERT - red
+    '2': '#f3783f', // CRIT - orange
+    '3': '#f3783f', // ERR - orange
+    '4': '#f3783f', // WARNING - orange
   }
   return colorMap[levelStr] || '#999'
 }
@@ -573,12 +573,12 @@ const addUser = () => {
 }
 
 const handleRowDoubleClick = (record: User) => {
-  // 双击行进入详情页
+  // Double-click row to enter detail page
   router.push(`/admin/users/${record.user_id}`)
 }
 
 const editUser = (record: User) => {
-  // 点击编辑按钮进入详情页
+  // Click edit button to enter detail page
   router.push(`/admin/users/${record.user_id}`)
 }
 
@@ -621,7 +621,7 @@ const handleSave = async () => {
     .then(async () => {
       try {
         if (!editModel.value) {
-          // 创建新用户
+          // Create new user
           const params: CreateUserParams = {
             user_account: editData.value.user_account!,
             nickname: editData.value.nickname,
@@ -637,8 +637,8 @@ const handleSave = async () => {
           await createUserApi(params)
           message.success('User created successfully')
         } else {
-          // 更新用户（这里不应该在列表页编辑，应该跳转到详情页）
-          // 保留此逻辑以防万一
+          // Update user (should not edit in list page, should navigate to detail page)
+          // Keep this logic just in case
         }
         handleCancel()
         refreshData()
@@ -801,18 +801,18 @@ onMounted(() => {
   color: #8c8c8c;
 }
 
-/* 强制表格使用 auto 布局，允许列根据内容自动调整 */
+/* Force table to use auto layout, allow columns to adjust automatically based on content */
 .user-table :deep(.ant-table table) {
   table-layout: auto !important;
   width: 100% !important;
 }
 
-/* 确保表格容器允许换行 */
+/* Ensure table container allows wrapping */
 .user-table :deep(.ant-table-container) {
   overflow-x: auto;
 }
 
-/* User Account 列：灵活宽度配置 */
+/* User Account column: Flexible width configuration */
 :deep(.ant-table-thead > tr > th.user-account-column),
 :deep(.ant-table-tbody > tr > td.user-account-column) {
   min-width: 100px !important;
@@ -829,7 +829,7 @@ onMounted(() => {
   text-decoration: underline;
 }
 
-/* Nickname 列：灵活宽度配置 */
+/* Nickname column: Flexible width configuration */
 :deep(.ant-table-thead > tr > th.nickname-column),
 :deep(.ant-table-tbody > tr > td.nickname-column) {
   min-width: 100px !important;
@@ -840,7 +840,7 @@ onMounted(() => {
   text-overflow: ellipsis;
 }
 
-/* Email 列：灵活宽度配置 */
+/* Email column: Flexible width configuration */
 :deep(.ant-table-thead > tr > th.email-column),
 :deep(.ant-table-tbody > tr > td.email-column) {
   min-width: 150px !important;
@@ -851,7 +851,7 @@ onMounted(() => {
   text-overflow: ellipsis;
 }
 
-/* Phone 列：灵活宽度配置 */
+/* Phone column: Flexible width configuration */
 :deep(.ant-table-thead > tr > th.phone-column),
 :deep(.ant-table-tbody > tr > td.phone-column) {
   min-width: 120px !important;
@@ -862,7 +862,7 @@ onMounted(() => {
   text-overflow: ellipsis;
 }
 
-/* Role 列：灵活宽度配置 */
+/* Role column: Flexible width configuration */
 :deep(.ant-table-thead > tr > th.role-column),
 :deep(.ant-table-tbody > tr > td.role-column) {
   min-width: 100px !important;
@@ -873,7 +873,7 @@ onMounted(() => {
   text-overflow: ellipsis;
 }
 
-/* Alarm Levels 列：灵活宽度配置，支持换行 */
+/* Alarm Levels column: Flexible width configuration, supports wrapping */
 :deep(.ant-table-thead > tr > th.alarm-levels-column),
 :deep(.ant-table-tbody > tr > td.alarm-levels-column) {
   min-width: 120px !important;
@@ -883,7 +883,7 @@ onMounted(() => {
   word-break: break-word !important;
 }
 
-/* Alarm Channels 列：灵活宽度配置，支持换行 */
+/* Alarm Channels column: Flexible width configuration, supports wrapping */
 :deep(.ant-table-thead > tr > th.alarm-channels-column),
 :deep(.ant-table-tbody > tr > td.alarm-channels-column) {
   min-width: 120px !important;
@@ -893,7 +893,7 @@ onMounted(() => {
   word-break: break-word !important;
 }
 
-/* Alarm Scope 列：灵活宽度配置 */
+/* Alarm Scope column: Flexible width configuration */
 :deep(.ant-table-thead > tr > th.alarm-scope-column),
 :deep(.ant-table-tbody > tr > td.alarm-scope-column) {
   min-width: 120px !important;
@@ -904,7 +904,7 @@ onMounted(() => {
   text-overflow: ellipsis;
 }
 
-/* Tags 列：灵活宽度，占用剩余空间，支持换行 */
+/* Tags column: Flexible width, occupies remaining space, supports wrapping */
 :deep(.ant-table-thead > tr > th.tags-column),
 :deep(.ant-table-tbody > tr > td.tags-column) {
   white-space: normal !important;

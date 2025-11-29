@@ -1,10 +1,10 @@
 /**
- * Role API 数据模型定义
- * 对应 owlRD/db/02_roles.sql 中的 roles 表结构
+ * Role API data model definition
+ * Corresponds to roles table structure in owlRD/db/02_roles.sql
  */
 
 /**
- * 角色数据模型
+ * Role data model
  */
 export interface Role {
   role_id: string
@@ -17,14 +17,14 @@ export interface Role {
 }
 
 /**
- * 获取角色列表请求参数
+ * Get role list request parameters
  */
 export interface GetRolesParams {
-  search?: string // 搜索关键词（可选，用于搜索 role_code 或 display_name 或 description）
+  search?: string // Search keyword (optional, for searching role_code, display_name, or description)
 }
 
 /**
- * 获取角色列表响应
+ * Get role list response
  */
 export interface GetRolesResult {
   items: Role[]
@@ -32,7 +32,7 @@ export interface GetRolesResult {
 }
 
 /**
- * 创建角色请求参数
+ * Create role request parameters
  */
 export interface CreateRoleParams {
   role_code: string
@@ -41,20 +41,20 @@ export interface CreateRoleParams {
 }
 
 /**
- * 创建角色响应
+ * Create role response
  */
 export interface CreateRoleResult {
   role_id: string
 }
 
 /**
- * 更新角色请求参数
- * 用于编辑、删除、禁用操作
+ * Update role request parameters
+ * Used for edit, delete, disable operations
  */
 export interface UpdateRoleParams {
-  display_name?: string // 编辑时使用
-  description?: string // 编辑时使用
-  is_active?: boolean // 禁用时使用（true：启用，false：禁用）
-  _delete?: boolean // 删除时使用（true：删除）
+  display_name?: string // Used when editing
+  description?: string // Used when editing
+  is_active?: boolean // Used when disabling (true: enable, false: disable)
+  _delete?: boolean // Used when deleting (true: delete)
 }
 

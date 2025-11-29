@@ -260,15 +260,15 @@ const updateTableData = () => {
 // Get minimum width for each column
 const getMinWidthForColumn = (columnKey: string): number => {
   const minWidths: Record<string, number> = {
-    location_tag: 50,  // DV1, SPR 等较短值
-    Building: 20,      // A, B 等单字符
-    Floor: 20,         // 1F, 2F 等较短值
-    area_tag: 50,      // East, West, MemaryCare 等
-    UnitName: 50,      // E101, W201, M110 等
-    UnitNumb: 50,      // 101, 201, 110 等数字
-    UnitType: 50,      // Facility, Home 等
-    room: 50,          // bedroom, bathroom, LivingRoom 等
-    bed: 50,           // BedA, BedB 等
+    location_tag: 50,  // Short values like DV1, SPR
+    Building: 20,      // Single characters like A, B
+    Floor: 20,         // Short values like 1F, 2F
+    area_tag: 50,      // Values like East, West, MemaryCare
+    UnitName: 50,      // Values like E101, W201, M110
+    UnitNumb: 50,      // Numbers like 101, 201, 110
+    UnitType: 50,      // Values like Facility, Home
+    room: 50,          // Values like bedroom, bathroom, LivingRoom
+    bed: 50,           // Values like BedA, BedB
   }
   return minWidths[columnKey] || 50 // Default minimum 50px
 }
@@ -332,7 +332,7 @@ const transformToTableData = (
   const rows: any[] = []
 
   // Separate units with and without buildings
-  // DB 保证 building 不为空，默认值为 "-"
+  // DB guarantees building is non-null, default value is "-"
   const unitsWithBuilding = units.filter((unit) => unit.building && unit.building !== '-')
   const unitsWithoutBuilding = units.filter((unit) => unit.building === '-')
 

@@ -28,16 +28,16 @@ import type { RolePermission } from '@/api/admin/role-permission/model/rolePermi
 import { ROLES } from '@test/admin/role-permissions/data'
 import RoleCard from '@/views/admin/permissions/components/RoleCard.vue'
 
-// 所有角色
+// All roles
 const roles = ROLES
 
-// 展开的角色
+// Expanded role
 const expandedRole = ref<string | null>(null)
 
-// 所有权限数据
+// All permission data
 const allPermissions = ref<RolePermission[]>([])
 
-// 按角色分组的权限
+// Permissions grouped by role
 const rolePermissions = computed(() => {
   const result: Record<string, RolePermission[]> = {}
   
@@ -55,25 +55,25 @@ const rolePermissions = computed(() => {
   return result
 })
 
-// 展开详情
+// Expand details
 const handleExpand = (roleCode: string) => {
   expandedRole.value = roleCode
 }
 
-// 收起详情
+// Collapse details
 const handleCollapse = (roleCode: string) => {
   if (expandedRole.value === roleCode) {
     expandedRole.value = null
   }
 }
 
-// 保存权限
+// Save permissions
 const handleSave = async (roleCode: string, permissions: RolePermission[]) => {
   try {
-    // TODO: 实现保存逻辑
+    // TODO: Implement save logic
     console.log('Save permissions for role:', roleCode, permissions)
     message.success('Permissions saved successfully')
-    // 刷新数据
+    // Refresh data
     await fetchPermissions()
   } catch (error: any) {
     console.error('Failed to save permissions:', error)
@@ -81,7 +81,7 @@ const handleSave = async (roleCode: string, permissions: RolePermission[]) => {
   }
 }
 
-// 获取权限数据
+// Get permission data
 const fetchPermissions = async () => {
   try {
     const result = await getRolePermissionsApi()

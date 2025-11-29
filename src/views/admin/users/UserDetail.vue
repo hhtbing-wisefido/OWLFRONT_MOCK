@@ -18,7 +18,7 @@
 
     <div class="form-container">
       <a-row :gutter="24">
-        <!-- 左列 -->
+        <!-- Left column -->
         <a-col :span="10">
           <a-form
             layout="vertical"
@@ -26,7 +26,7 @@
             ref="formRef"
             :rules="rules"
           >
-            <!-- 基本信息区域 -->
+            <!-- Basic information area -->
             <a-divider orientation="left">Basic Information</a-divider>
             
             <a-form-item label="User Account" name="user_account">
@@ -107,14 +107,14 @@
           </a-form>
         </a-col>
 
-        <!-- 右列 -->
+        <!-- Right column -->
         <a-col :span="14">
           <a-form
             layout="vertical"
             :model="userData"
             ref="formRefRight"
           >
-            <!-- 告警配置区域 -->
+            <!-- Alarm configuration area -->
             <a-divider orientation="left">Alarm Configuration</a-divider>
 
             <a-form-item label="Receive Alarm Levels" name="alarm_levels">
@@ -161,7 +161,7 @@
               </span>
             </a-form-item>
 
-            <!-- 其他信息区域 -->
+            <!-- Other information area -->
             <a-divider orientation="left">Other Information</a-divider>
 
             <a-form-item label="Tags" name="tags">
@@ -250,15 +250,15 @@ const userStore = useUserStore()
 
 const userId = computed(() => route.params.id as string)
 
-// 使用权限检查 Composable
+// Use permission check Composable
 const { hasManagePermission, isCurrentUser: checkIsCurrentUser } = usePermission()
 
-// 检查是否是当前用户
+// Check if it's the current user
 const isCurrentUser = computed(() => {
   return checkIsCurrentUser(userId.value)
 })
 
-// 调试：打印权限信息（开发环境）
+// Debug: print permission info (development environment)
 if (import.meta.env.DEV) {
   watchEffect(() => {
     const userInfo = userStore.getUserInfo
@@ -271,14 +271,14 @@ if (import.meta.env.DEV) {
   })
 }
 
-const editModel = ref(true) // 详情页默认可编辑
+const editModel = ref(true) // Detail page is editable by default
 const formRef = ref()
 const formRefRight = ref()
 const resetPasswordFormRef = ref()
 const saving = ref(false)
 const isResetPasswordModalVisible = ref(false)
 const availableRoles = ref<Role[]>([])
-const allTagsList = ref<string[]>([]) // 所有可用的 tags 列表
+const allTagsList = ref<string[]>([]) // All available tags list
 
 
 const userData = ref<Partial<User>>({
@@ -300,7 +300,7 @@ const resetPasswordData = ref({
   confirm_password: '',
 })
 
-// 检查是否可以编辑字段
+// Check if field can be edited
 const canEditNickname = computed(() => {
   return isCurrentUser.value || hasManagePermission.value
 })
@@ -349,27 +349,27 @@ const fetchRoles = async () => {
   }
 }
 
-// 将旧的 alarm_levels 格式转换为新的数字格式
+// Convert old alarm_levels format to new numeric format
 const normalizeAlarmLevels = (levels: string[] | undefined): string[] => {
   if (!levels || levels.length === 0) return []
   
-  // 旧格式到新格式的映射
+  // Old format to new format mapping
   const oldToNewMap: Record<string, string> = {
     'EMERGENCY': '0',
     'WARNING': '4',
     'ERROR': '3',
   }
   
-  // 如果已经是数字格式，直接返回
-  // 如果是旧格式，转换为新格式
+  // If already in numeric format, return directly
+  // If in old format, convert to new format
   return levels.map(level => {
-    // 如果已经是数字字符串（0-7），直接返回
+    // If already a numeric string (0-7), return directly
     if (/^[0-7]$/.test(level)) {
       return level
     }
-    // 如果是旧格式，转换为新格式
+    // If in old format, convert to new format
     return oldToNewMap[level] || level
-  }).filter(Boolean) // 过滤掉未映射的值
+  }).filter(Boolean) // Filter out unmapped values
 }
 
 const fetchUser = async () => {
@@ -382,7 +382,7 @@ const fetchUser = async () => {
       alarm_scope: user.alarm_scope || 'ALL',
       tags: user.tags || [],
     }
-    // 初始化所有 tags 列表（从 tags_catalog API 获取）
+    // Initialize all tags list (from tags_catalog API)
     await initializeTagsList()
   } catch (error: any) {
     console.error('Failed to fetch user:', error)
@@ -391,10 +391,10 @@ const fetchUser = async () => {
   }
 }
 
-// 初始化 tags 列表（从 tags_catalog API 获取）
+// Initialize tags list (from tags_catalog API)
 const initializeTagsList = async () => {
   try {
-    // 获取当前用户的 tenant_id
+    // Get current user's tenant_id
     const userInfo = userStore.getUserInfo
     const tenantId = userInfo?.tenant_id || userData.value.tenant_id
     
@@ -404,23 +404,23 @@ const initializeTagsList = async () => {
       return
     }
     
-    // 从 API 获取 tags（只获取启用的 tags）
+    // Get tags from API (only get enabled tags)
     const result = await getTagsApi({
       tenant_id: tenantId,
       is_active: true,
       include_system_tags: true,
     })
     
-    // 提取 tag_name 列表
+    // Extract tag_name list
     allTagsList.value = result.items.map(tag => tag.tag_name).sort()
   } catch (error: any) {
     console.error('Failed to fetch tags:', error)
-    // 如果 API 调用失败，使用空列表（避免显示错误）
+    // If API call fails, use empty list (avoid showing error)
     allTagsList.value = []
   }
 }
 
-// 处理 tag checkbox 取消选择
+// Handle tag checkbox uncheck
 const handleTagUncheck = (tag: string, checked: boolean) => {
   if (!hasManagePermission.value) {
     message.warning('Only administrators can edit tags')
@@ -428,7 +428,7 @@ const handleTagUncheck = (tag: string, checked: boolean) => {
   }
   
   if (!checked) {
-    // 取消选择：从 tags 列表中移除
+    // Uncheck: remove from tags list
     if (userData.value.tags) {
       const index = userData.value.tags.indexOf(tag)
       if (index > -1) {
@@ -437,7 +437,7 @@ const handleTagUncheck = (tag: string, checked: boolean) => {
       }
     }
   } else {
-    // 重新选择：添加到 tags 列表
+    // Re-check: add to tags list
     if (!userData.value.tags) {
       userData.value.tags = []
     }
@@ -450,7 +450,7 @@ const handleTagUncheck = (tag: string, checked: boolean) => {
 
 
 const handleSave = async () => {
-  // 验证两个表单
+  // Validate both forms
   Promise.all([
     formRef.value?.validate(),
     formRefRight.value?.validate(),
@@ -471,7 +471,7 @@ const handleSave = async () => {
         }
         await updateUserApi(userId.value, params)
         message.success('User updated successfully')
-        fetchUser() // 刷新数据
+        fetchUser() // Refresh data
       } catch (error: any) {
         console.error('Failed to update user:', error)
         message.error(error?.message || 'Failed to update user')
@@ -592,7 +592,7 @@ onMounted(() => {
 }
 
 
-/* 告警级别颜色 - 与 vitalFocus.md 保持一致，只改变文字颜色 */
+/* Alarm level colors - consistent with wellnessMonitor, only change text color */
 :deep(.alarm-text-emerg) {
   color: #d32f2f !important;
   font-weight: 500;

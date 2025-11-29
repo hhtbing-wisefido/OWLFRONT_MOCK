@@ -73,3 +73,27 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+/* Global override for Ant Design Vue dark theme menu background */
+/* Ant Design Vue default: .ant-menu.ant-menu-dark { background: #001529; } */
+/* Override the root cause - change the menu background globally */
+.ant-menu.ant-menu-dark,
+.ant-menu-dark.ant-menu,
+.ant-menu-dark .ant-menu-sub,
+.ant-menu.ant-menu-dark .ant-menu-sub {
+  background: #70c5e7 !important;
+  background-color: #70c5e7 !important;
+}
+
+/* Menu divider style - now dividers will inherit the correct background */
+.ant-menu-item-divider,
+.ant-menu-dark .ant-menu-item-divider,
+.ant-menu.ant-menu-dark .ant-menu-item-divider {
+  background: transparent !important;
+  background-color: transparent !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-bottom: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}

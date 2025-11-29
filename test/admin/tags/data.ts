@@ -17,7 +17,7 @@ export const mockTagsData: TagCatalogItem[] = [
     tag_objects: {
       user: {
         'user-001': 'Admin User',
-        'user-002': 'Director User',
+        'user-002': 'Manager User',
       },
     },
     is_system_tag_type: false, // user_tag 是用户自定义类型

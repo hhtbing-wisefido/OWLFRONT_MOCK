@@ -1,6 +1,6 @@
 /**
- * 用户状态管理 Store
- * 管理用户认证状态，包括 token、用户信息、角色等
+ * User state management Store
+ * Manages user authentication state, including token, user info, roles, etc.
  * 
  * Note: All field names use snake_case to match database schema (PostgreSQL standard)
  */
@@ -26,56 +26,56 @@ import { loginApi } from '@/api/auth/auth'
 import { store } from '../index'
 
 /**
- * UserInfo 接口定义
- * 仅包含非敏感信息，符合 HIPAA 合规要求
+ * UserInfo interface definition
+ * Contains only non-sensitive information, compliant with HIPAA requirements
  * 
  * Note: This interface should match the structure returned from LoginResult
  * All field names use snake_case to match database schema
  */
 export interface UserInfo {
-  // 基本信息（仅非敏感信息）
-  userId: string                    // 用户 ID（非敏感）
-  user_account: string              // 用户账号（非敏感）
-  userType: 'staff' | 'resident'   // 用户类型（必须，非敏感）- 登录成功时保存
-  residentType?: 'home' | 'institution'  // Resident 子类型 - 对应 residents.is_institutional
-  locationType?: 'home' | 'institution'  // Location 类型 - 对应 locations.location_type
-  role?: string                     // 角色编码（如 'Admin', 'Nurse', 'Caregiver'）- 登录成功时保存
-  nickName?: string                 // 昵称/显示名称（非敏感，用于 UI 显示）- 登录成功时保存
+  // Basic information (non-sensitive only)
+  userId: string                    // User ID (non-sensitive)
+  user_account: string              // User account (non-sensitive)
+  userType: 'staff' | 'resident'   // User type (required, non-sensitive) - saved on login success
+  residentType?: 'home' | 'institution'  // Resident subtype - corresponds to residents.is_institutional
+  locationType?: 'home' | 'institution'  // Location type - corresponds to locations.location_type
+  role?: string                     // Role code (e.g., 'Admin', 'Nurse', 'Caregiver') - saved on login success
+  nickName?: string                 // Nickname/display name (non-sensitive, for UI display) - saved on login success
   
-  // 机构信息（Tenant 表，所有用户类型都需要，非敏感）
-  tenant_id: string                  // 机构 ID（对应 tenants.tenant_id）- 登录成功时保存
-  tenant_name: string                // 机构名称（对应 tenants.tenant_name）- 登录成功时保存
-  domain?: string                   // 机构域名（对应 tenants.domain）- 登录成功时保存
+  // Institution information (Tenant table, required for all user types, non-sensitive)
+  tenant_id: string                  // Institution ID (corresponds to tenants.tenant_id) - saved on login success
+  tenant_name: string                // Institution name (corresponds to tenants.tenant_name) - saved on login success
+  domain?: string                   // Institution domain (corresponds to tenants.domain) - saved on login success
   
-  // Location 信息（避免地址泄漏，仅存储非敏感的位置标识）
-  locationTag?: string              // 位置标签（对应 locations.location_tag）- 非敏感，用于分组和路由
-  locationName?: string             // 位置名称（对应 locations.location_name）- 非敏感，用于卡片显示
+  // Location information (avoid address leakage, only store non-sensitive location identifiers)
+  locationTag?: string              // Location tag (corresponds to locations.location_tag) - non-sensitive, for grouping and routing
+  locationName?: string             // Location name (corresponds to locations.location_name) - non-sensitive, for card display
   
-  // 其他
-  homePath?: string                 // 用户首页路径（非敏感）
-  avatar?: string                   // 头像 URL（非敏感，可选）
+  // Other
+  homePath?: string                 // User home page path (non-sensitive)
+  avatar?: string                   // Avatar URL (non-sensitive, optional)
 }
 
 interface UserState {
   userInfo: UserInfo | null
-  institutionInfo: InstitutionInfo | null  // 机构信息（Tenant 表）
+  institutionInfo: InstitutionInfo | null  // Institution information (Tenant table)
   accessToken: string | null
   refreshToken: string | null
   roleList: string[]
-  pagePermissions: Record<string, string[]>  // 页面访问权限：{ routePath: [allowedRoles] }
+  pagePermissions: Record<string, string[]>  // Page access permissions: { routePath: [allowedRoles] }
   lastUpdateTime: number
-  // 注意：PIN 码不存储在 state 中（仅内存，不持久化）
-  // 注意：locationTag 和 locationName 存储在 userInfo 中
+  // Note: PIN code is not stored in state (memory only, not persisted)
+  // Note: locationTag and locationName are stored in userInfo
 }
 
 export const useUserStore = defineStore('user', {
   state: (): UserState => ({
     userInfo: null,
-    institutionInfo: null,  // 机构信息
+    institutionInfo: null,  // Institution information
     accessToken: null,
     refreshToken: null,
     roleList: [],
-    pagePermissions: {},  // 页面访问权限
+    pagePermissions: {},  // Page access permissions
     lastUpdateTime: 0,
   }),
 
@@ -91,7 +91,7 @@ export const useUserStore = defineStore('user', {
     getUserInfo(): UserInfo | null {
       const userInfo = this.userInfo || getAuthCache<UserInfo>(USER_INFO_KEY)
       
-      // 开发环境：支持测试角色覆盖
+      // Development environment: support test role override
       if (import.meta.env.DEV && userInfo) {
         const testRole = localStorage.getItem('dev_test_role')
         if (testRole) {
@@ -109,13 +109,13 @@ export const useUserStore = defineStore('user', {
       return this.institutionInfo || getInstitutionInfo()
     },
     
-    // 判断是否为 Home Resident
+    // Check if user is a Home Resident
     isHomeResident(): boolean {
       return this.userInfo?.userType === 'resident' && 
              this.userInfo?.residentType === 'home'
     },
     
-    // 判断是否为 Institution Resident
+    // Check if user is an Institution Resident
     isInstitutionResident(): boolean {
       return this.userInfo?.userType === 'resident' && 
              this.userInfo?.residentType === 'institution'
@@ -131,54 +131,81 @@ export const useUserStore = defineStore('user', {
       return this.lastUpdateTime
     },
     
-    // 获取用户首页路径
+    // Get user home page path
     getUserHomePath(): string {
       const userInfo = this.getUserInfo
-      // 优先使用后端返回的 homePath
+      // Prefer backend-returned homePath
       if (userInfo?.homePath) {
         return userInfo.homePath
       }
-      // 默认首页：所有用户都使用 /monitoring/vital-focus
-      return '/monitoring/vital-focus'
+      // Default home page: all users use /monitoring/overview
+      return '/monitoring/overview'
     },
   },
 
   actions: {
-    // 检查是否有页面访问权限
+    // Check if user has page access permission
     hasPagePermission(routePath: string | undefined | null): boolean {
-      // 如果 routePath 不存在或不是字符串，默认允许访问（避免错误）
+      // If routePath doesn't exist or is not a string, allow access by default (to avoid errors)
       if (!routePath || typeof routePath !== 'string') {
         return true
       }
       
-      // 确保 routePath 是字符串类型
+      // Ensure routePath is a string type
       const path = String(routePath)
       
       const userInfo = this.getUserInfo
       if (!userInfo) {
+        if (import.meta.env.DEV) {
+          console.warn('[UserStore] hasPagePermission: No userInfo', { path })
+        }
         return false
       }
       
-      // Admin 模块仅允许 staff 用户访问
+      // Admin module only allows staff users to access
       if (path.startsWith('/admin')) {
         if (userInfo.userType !== 'staff') {
+          if (import.meta.env.DEV) {
+            console.warn('[UserStore] hasPagePermission: Admin path requires staff userType', {
+              path,
+              userType: userInfo.userType,
+            })
+          }
           return false
         }
       }
       
       const allowedRoles = this.pagePermissions[path]
       if (!allowedRoles || allowedRoles.length === 0) {
-        // 如果没有配置权限，默认允许访问
+        // If no permission config, allow access by default
+        if (import.meta.env.DEV) {
+          console.log('[UserStore] hasPagePermission: No permission config, allowing access', { path })
+        }
         return true
       }
       const userRole = userInfo.role
       if (!userRole) {
+        if (import.meta.env.DEV) {
+          console.warn('[UserStore] hasPagePermission: No user role', {
+            path,
+            allowedRoles,
+            userInfo: { userType: userInfo.userType, userId: userInfo.userId },
+          })
+        }
         return false
       }
-      return allowedRoles.includes(userRole)
+      const hasPermission = allowedRoles.includes(userRole)
+      if (!hasPermission && import.meta.env.DEV) {
+        console.warn('[UserStore] hasPagePermission: Role not in allowed list', {
+          path,
+          userRole,
+          allowedRoles,
+        })
+      }
+      return hasPermission
     },
     
-    // 设置 token
+    // Set token
     setToken(token: string | null) {
       this.accessToken = token
       if (token) {
@@ -188,7 +215,7 @@ export const useUserStore = defineStore('user', {
       }
     },
 
-    // 设置刷新 token
+    // Set refresh token
     setRefreshToken(refreshToken: string | null) {
       this.refreshToken = refreshToken
       if (refreshToken) {
@@ -198,7 +225,7 @@ export const useUserStore = defineStore('user', {
       }
     },
 
-    // 设置用户信息
+    // Set user information
     setUserInfo(userInfo: UserInfo | null) {
       this.userInfo = userInfo
       this.lastUpdateTime = Date.now()
@@ -209,7 +236,7 @@ export const useUserStore = defineStore('user', {
       }
     },
 
-    // 设置机构信息
+    // Set institution information
     setInstitutionInfo(info: InstitutionInfo | null) {
       this.institutionInfo = info
       if (info) {
@@ -219,7 +246,7 @@ export const useUserStore = defineStore('user', {
       }
     },
 
-    // 设置角色列表
+    // Set role list
     setRoleList(roleList: string[]) {
       this.roleList = roleList
       if (roleList.length > 0) {
@@ -229,38 +256,53 @@ export const useUserStore = defineStore('user', {
       }
     },
     
-    // 设置页面访问权限
+    // Set page access permissions
     setPagePermissions(permissions: Record<string, string[]>) {
       this.pagePermissions = permissions
-      // 页面权限可以存储在 localStorage 中，但通常不需要持久化（每次登录时重新设置）
+      // Page permissions can be stored in localStorage, but usually don't need persistence (reset on each login)
     },
     
-    // 初始化页面访问权限（根据角色配置）
+    // Initialize page access permissions (based on role configuration)
+    // Note: Roles have been updated to simplified version, only SystemAdmin can globally modify roles (system built-in)
+    // Tenants (Admin and others) cannot modify system roles, can only view or manage tenant custom roles
     initPagePermissions() {
-      // 默认页面权限配置
-      // 注意：Admin 模块仅允许 staff 用户访问（在 hasPagePermission 中检查 userType）
+      // Default page permission configuration
+      // Note: Admin module only allows staff users to access (checked in hasPagePermission by userType)
       const defaultPermissions: Record<string, string[]> = {
-        // Admin 模块页面权限配置
-        '/admin/roles': ['Admin', 'Director', 'CO', 'IT'],
-        '/admin/role-permissions': ['Admin', 'Director', 'CO', 'IT'],
-        '/admin/users': ['Admin', 'Director', 'IT'],
-        '/admin/tags': ['Admin', 'Director', 'IT', 'NurseManager'],
-        // 可以根据需要添加更多 admin 页面的权限配置
-        // 例如：
-        // '/admin/settings': ['Admin', 'Director'],
+        // Core operations area
+        '/monitoring/overview': ['SystemAdmin', 'Admin', 'Manager', 'IT', 'Nurse', 'Caregiver', 'Resident', 'Family'],
+        '/alarm/history': ['SystemAdmin', 'Admin', 'Manager', 'IT', 'Nurse'],
+        '/alarm/settings': ['SystemAdmin', 'Admin', 'IT'],
+
+        // Data management area
+        '/residents': ['SystemAdmin', 'Admin', 'Manager', 'IT', 'Nurse', 'Caregiver'], // List page
+        '/resident/:id': ['SystemAdmin', 'Admin', 'Manager', 'IT', 'Nurse', 'Caregiver', 'Resident', 'Family'], // Detail page (general)
+        '/resident/:id/profile': ['SystemAdmin', 'Admin', 'Manager', 'IT', 'Nurse', 'Caregiver', 'Resident', 'Family'],
+        '/resident/:id/phi': ['SystemAdmin', 'Admin', 'Manager', 'IT', 'Nurse', 'Caregiver'], // PHI sensitive information
+        '/resident/:id/contacts': ['SystemAdmin', 'Admin', 'Manager', 'IT', 'Nurse', 'Caregiver', 'Resident', 'Family'],
+        '/care-coordination/assignments': ['SystemAdmin', 'Admin', 'Manager', 'IT', 'Nurse'],
+        '/care-coordination/resident-dashboard': ['SystemAdmin', 'Admin', 'Manager', 'IT', 'Nurse'],
+
+        // System settings area
+        '/devices': ['SystemAdmin', 'Admin', 'IT'],
+        '/units': ['SystemAdmin', 'Admin', 'IT'],
+        '/admin/users': ['SystemAdmin', 'Admin', 'IT'],
+        '/admin/roles': ['SystemAdmin', 'Admin', 'Manager', 'IT'],
+        '/admin/permissions': ['SystemAdmin', 'Admin', 'Manager', 'IT'], // New permission management path
+        '/admin/tags': ['SystemAdmin', 'Admin', 'IT'],
       }
       this.setPagePermissions(defaultPermissions)
     },
 
-    // 登录
+    // Login
     async login(params: LoginParams): Promise<LoginResult> {
       const result = await loginApi(params)
       
-      // 保存 token
+      // Save token
       this.setToken(result.accessToken)
       this.setRefreshToken(result.refreshToken)
       
-      // 保存机构信息（Tenant 表）
+      // Save institution information (Tenant table)
       if (result.tenant_id && result.tenant_name) {
         this.setInstitutionInfo({
           tenant_id: result.tenant_id,
@@ -269,10 +311,10 @@ export const useUserStore = defineStore('user', {
         })
       }
       
-      // 保存用户信息（登录时一次性返回完整信息，包含 homePath 和 avatar）
+      // Save user information (complete information returned once on login, including homePath and avatar)
       this.setUserInfo({
         userId: result.userId,
-        user_account: result.user_account || '', // 用户账号（非敏感，用于显示和标识）
+        user_account: result.user_account || '', // User account (non-sensitive, for display and identification)
         userType: result.userType,
         residentType: result.residentType,
         locationType: result.locationType,
@@ -287,49 +329,49 @@ export const useUserStore = defineStore('user', {
         avatar: result.avatar,
       })
       
-      // 设置角色列表
+      // Set role list
       if (result.role) {
         this.setRoleList([result.role])
       }
       
-      // 初始化页面访问权限
+      // Initialize page access permissions
       this.initPagePermissions()
       
       return result
     },
 
-    // 获取用户信息（用于刷新用户信息，登录时不需要调用，因为 login 已返回完整信息）
+    // Get user information (for refreshing user info, not needed on login since login already returns complete info)
     async getUserInfoAction(): Promise<UserInfo | null> {
       if (!this.getToken) {
         return null
       }
       
-      // TODO: 实现 getUserInfoApi
+      // TODO: Implement getUserInfoApi
       // const userInfo = await getUserInfoApi()
       // this.setUserInfo(userInfo)
       
-      // 设置角色列表（如果有）
+      // Set role list (if any)
       const userInfo = this.getUserInfo
       if (userInfo?.role) {
         this.setRoleList([userInfo.role])
       }
       
-      // 初始化页面访问权限
+      // Initialize page access permissions
       this.initPagePermissions()
       
       return userInfo
     },
 
-    // 登录后的操作（加载路由等，不需要获取用户信息，因为 login 已返回完整信息）
+    // Actions after login (load routes, etc., no need to get user info since login already returns complete info)
     async afterLoginAction(goHome = true): Promise<UserInfo | null> {
       if (!this.getToken) {
         return null
       }
       
-      // 从 store 获取用户信息（登录时已保存）
+      // Get user info from store (saved on login)
       const userInfo = this.getUserInfo
       
-      // TODO: 加载动态路由（如果需要）
+      // TODO: Load dynamic routes (if needed)
       // const permissionStore = usePermissionStore()
       // if (!permissionStore.isDynamicAddedRoute) {
       //   const routes = await permissionStore.buildRoutesAction()
@@ -338,8 +380,8 @@ export const useUserStore = defineStore('user', {
       //   })
       // }
       
-      // 跳转到首页（如果需要）
-      // 使用 getUserHomePath getter 获取首页路径（优先使用后端返回的 homePath）
+      // Navigate to home page (if needed)
+      // Use getUserHomePath getter to get home page path (prefer backend-returned homePath)
       if (goHome) {
         const router = (await import('@/router')).default
         router.push(this.getUserHomePath)
@@ -348,7 +390,7 @@ export const useUserStore = defineStore('user', {
       return userInfo
     },
 
-    // 刷新 token
+    // Refresh token
     async refreshTokenAction(): Promise<string | null> {
       const currentRefreshToken = this.getRefreshToken
       if (!currentRefreshToken) {
@@ -356,27 +398,27 @@ export const useUserStore = defineStore('user', {
       }
       
       try {
-        // TODO: 实现 refreshTokenApi
+        // TODO: Implement refreshTokenApi
         // const data = await refreshTokenApi({ refreshToken: currentRefreshToken })
         
-        // 保存新 token
+        // Save new token
         // this.setToken(data.accessToken)
         // this.setRefreshToken(data.refreshToken)
         
         // return data.accessToken
         throw new Error('refreshTokenApi not implemented yet')
       } catch (error) {
-        // 刷新失败，清除 token 并跳转到登录页
+        // Refresh failed, clear token and navigate to login page
         await this.logout(true)
         throw error
       }
     },
 
-    // 登出
+    // Logout
     async logout(goLogin = false) {
       if (this.getToken) {
         try {
-          // TODO: 实现 logoutApi
+          // TODO: Implement logoutApi
           // const refreshToken = this.getRefreshToken
           // if (refreshToken) {
           //   await logoutApi({ refreshToken })
@@ -386,20 +428,20 @@ export const useUserStore = defineStore('user', {
         }
       }
       
-      // 清除状态
+      // Clear state
       this.resetState()
       
-      // 跳转到登录页
+      // Navigate to login page
       if (goLogin) {
         const router = (await import('@/router')).default
         router.push('/login')
       }
     },
 
-    // 重置状态
+    // Reset state
     resetState() {
       this.userInfo = null
-      this.institutionInfo = null  // 清除机构信息
+      this.institutionInfo = null  // Clear institution information
       this.accessToken = null
       this.refreshToken = null
       this.roleList = []
@@ -410,8 +452,7 @@ export const useUserStore = defineStore('user', {
   },
 })
 
-// 在 setup 外使用（用于路由守卫、HTTP 拦截器等）
+// Use outside setup (for route guards, HTTP interceptors, etc.)
 export function useUserStoreWithOut() {
   return useUserStore(store)
 }
-

@@ -18,9 +18,9 @@
       </div>
     </AFormItem>
 
-    <!-- Username, Email, or Phone -->
+    <!-- UserAccount, Email, or Phone -->
     <AFormItem
-      label="Username, Email, or Phone"
+      label="UserAccount, Email, or Phone"
       name="account"
       :validate-status="accountError ? 'error' : institutionLoading ? 'validating' : ''"
       :help="accountError"
@@ -47,22 +47,28 @@
       />
     </AFormItem>
 
-    <!-- Institution -->
+    <!-- Organize -->
     <AFormItem
-      label="Institution"
+      label="Organize"
       name="institution"
+      :validate-status="institutionInputError ? 'error' : ''"
+      :help="institutionInputError"
     >
-      <!-- Display institution name to user (not ID) -->
+      <!-- For UserAccount with multiple institutions: editable input with auto-complete -->
+      <!-- For Email/Phone with multiple institutions: show selection list -->
+      <!-- For single institution: readonly auto-filled -->
       <AInput
         v-model:value="formData.tenant_name"
-        placeholder="Leave empty for auto-detection"
+        :placeholder="requiresManualInstitutionInput ? 'Please input Organize name' : 'Leave empty for auto-detection'"
         size="large"
-        readonly
-        :disabled="matchedInstitutions.length === 0"
+        :readonly="!requiresManualInstitutionInput"
+        :disabled="matchedInstitutions.length === 0 && !requiresManualInstitutionInput"
+        @input="handleInstitutionInput"
+        @blur="handleInstitutionBlur"
       />
-      <!-- Display matched institutions if multiple found -->
-      <div v-if="matchedInstitutions.length > 1" class="matched-institutions">
-        <div class="matched-title">Multiple institutions found. Please select one:</div>
+      <!-- Display matched institutions if multiple found (only for Email/Phone) -->
+      <div v-if="matchedInstitutions.length > 1 && !requiresManualInstitutionInput" class="matched-institutions">
+        <div class="matched-title">Multiple organizes found. Please select one:</div>
         <div class="matched-list">
           <div
             v-for="inst in matchedInstitutions"
@@ -123,6 +129,25 @@ const ASelect = Select
 const ASelectOption = Select.Option
 const ACheckbox = Checkbox
 
+/**
+ * Detect account type: 'email' | 'phone' | 'userAccount'
+ * - Email: contains '@'
+ * - Phone: only digits (may contain spaces/dashes)
+ * - UserAccount: everything else
+ */
+function detectAccountType(account: string): 'email' | 'phone' | 'userAccount' {
+  const trimmed = account.trim()
+  if (trimmed.includes('@')) {
+    return 'email'
+  }
+  // Check if it's a phone number (only digits, spaces, dashes, parentheses, plus)
+  const phonePattern = /^[\d\s\-\(\)\+]+$/
+  if (phonePattern.test(trimmed) && trimmed.replace(/\D/g, '').length >= 7) {
+    return 'phone'
+  }
+  return 'userAccount'
+}
+
 // Form data
 const formData = reactive({
   userType: 'staff' as 'staff' | 'resident',
@@ -146,6 +171,10 @@ const institutionLoading = ref(false)
 const matchedInstitutions = ref<Institution[]>([])
 const accountError = ref('')
 
+// Track if user needs to manually input institution name (for UserAccount with multiple institutions)
+const requiresManualInstitutionInput = ref(false)
+const institutionInputError = ref('')
+
 // Form rules
 // Note: Frontend only checks for length range (based on DB constraints)
 // Detailed security validation (password strength, etc.) is handled by backend/DB
@@ -153,7 +182,7 @@ const accountError = ref('')
 // Validation rules: 1 <= account length <= 100, 4 <= password length <= 100
 const formRules: Record<string, Rule[]> = {
   account: [
-    { required: true, message: 'Please enter your username, email, or phone', trigger: 'blur' },
+    { required: true, message: 'Please enter your user account, email, or phone', trigger: 'blur' },
     { min: 1, message: 'Account must be at least 1 character', trigger: 'blur' },
     { max: 100, message: 'Account must not exceed 100 characters', trigger: 'blur' },
   ],
@@ -169,8 +198,14 @@ const formRules: Record<string, Rule[]> = {
     {
       validator: (_rule: any, _value: any) => {
         // Validate tenant_id (not tenant_name)
-        if (matchedInstitutions.value.length > 1 && !formData.tenant_id) {
-          return Promise.reject('Please select an institution')
+        if (requiresManualInstitutionInput.value) {
+          // For UserAccount with multiple institutions: must have valid institution
+          if (!formData.tenant_id) {
+            return Promise.reject('Please enter a valid organize name')
+          }
+        } else if (matchedInstitutions.value.length > 1 && !formData.tenant_id) {
+          // For Email/Phone with multiple institutions: must select one
+          return Promise.reject('Please select an organize')
         }
         return Promise.resolve()
       },
@@ -252,7 +287,7 @@ const debouncedSearchInstitutions = debounce(async (account: string, password: s
     institutionLoading.value = true
     accountError.value = ''
     
-    console.log('%c[LoginForm] Searching institutions', 'color: #1890ff; font-weight: bold', {
+    console.log('%c[LoginForm] Searching organizes', 'color: #1890ff; font-weight: bold', {
       account: account.trim(),
       password: '***',
       userType,
@@ -260,12 +295,15 @@ const debouncedSearchInstitutions = debounce(async (account: string, password: s
     
     const institutions = await searchInstitutionsApi(accountTrimmed, passwordTrimmed, userType)
     
-    console.log('%c[LoginForm] Institutions found', 'color: #52c41a; font-weight: bold', {
+    console.log('%c[LoginForm] Organizes found', 'color: #52c41a; font-weight: bold', {
       count: institutions.length,
       institutions: institutions.map(i => i.name),
     })
     
     matchedInstitutions.value = institutions
+
+    // Detect account type
+    const accountType = detectAccountType(accountTrimmed)
 
     if (institutions.length === 0) {
       // Security: Don't reveal if account exists or not
@@ -273,6 +311,7 @@ const debouncedSearchInstitutions = debounce(async (account: string, password: s
       accountError.value = ''
       formData.tenant_id = undefined
       formData.tenant_name = undefined
+      requiresManualInstitutionInput.value = false
     } else if (institutions.length === 1 && institutions[0]) {
       // Auto-fill if only one institution found (user can still modify)
       if (!formData.tenant_id) {
@@ -281,30 +320,44 @@ const debouncedSearchInstitutions = debounce(async (account: string, password: s
         formData.tenant_name = institutions[0].name
       }
       accountError.value = ''
+      requiresManualInstitutionInput.value = false
     } else {
-      // Multiple institutions found - user must select
-      institutionOptions.value = institutions.map((inst) => ({
-        label: inst.name,
-        value: inst.id,
-      }))
-      formData.tenant_id = undefined // Clear selection, force user to choose
-      formData.tenant_name = undefined
-      accountError.value = ''
+      // Multiple institutions found - this is a successful search, clear any errors
+      accountError.value = '' // Clear error message - multiple matches is normal
+      
+      if (accountType === 'userAccount') {
+        // For UserAccount: require manual input, don't show list
+        requiresManualInstitutionInput.value = true
+        formData.tenant_id = undefined
+        formData.tenant_name = undefined
+        institutionInputError.value = 'Please enter the organize name'
+      } else {
+        // For Email/Phone: show list for selection (existing behavior)
+        requiresManualInstitutionInput.value = false
+        institutionOptions.value = institutions.map((inst) => ({
+          label: inst.name,
+          value: inst.id,
+        }))
+        formData.tenant_id = undefined // Clear selection, force user to choose
+        formData.tenant_name = undefined
+      }
     }
   } catch (error: any) {
-    console.error('Failed to search institutions:', error)
+    console.error('Failed to search organizes:', error)
     
     // Handle rate limiting errors from backend (429 Too Many Requests)
     if (error?.response?.status === 429) {
       accountError.value = 'Too many requests. Please wait a moment and try again.'
     } else {
       // Security: Don't reveal specific error details
-      accountError.value = 'Unable to search institutions. Please try again.'
+      accountError.value = 'Unable to search organizes. Please try again.'
     }
     
     matchedInstitutions.value = []
     formData.tenant_id = undefined
     formData.tenant_name = undefined
+    requiresManualInstitutionInput.value = false
+    institutionInputError.value = ''
   } finally {
     institutionLoading.value = false
   }
@@ -330,6 +383,8 @@ const handleAccountInput = () => {
     matchedInstitutions.value = []
     formData.tenant_id = undefined
     formData.tenant_name = undefined
+    requiresManualInstitutionInput.value = false
+    institutionInputError.value = ''
   }
 }
 
@@ -352,6 +407,8 @@ const handlePasswordInput = () => {
     matchedInstitutions.value = []
     formData.tenant_id = undefined
     formData.tenant_name = undefined
+    requiresManualInstitutionInput.value = false
+    institutionInputError.value = ''
   }
 }
 
@@ -377,6 +434,8 @@ watch(
       matchedInstitutions.value = []
       formData.tenant_id = undefined
       formData.tenant_name = undefined
+      requiresManualInstitutionInput.value = false
+      institutionInputError.value = ''
       debouncedSearchInstitutions(formData.account, formData.password, formData.userType)
     }
   },
@@ -386,6 +445,95 @@ watch(
 const selectInstitution = (institution: Institution) => {
   formData.tenant_id = institution.id // Store ID for API (e.g., "tenant-001")
   formData.tenant_name = institution.name // Store name for display (e.g., "Sunset")
+}
+
+/**
+ * Match institutions by prefix (case-insensitive)
+ * Returns array of matching institutions
+ */
+function matchInstitutionsByPrefix(input: string): Institution[] {
+  if (!input || !input.trim()) {
+    return []
+  }
+  const prefix = input.trim().toLowerCase()
+  return matchedInstitutions.value.filter((inst) =>
+    inst.name.toLowerCase().startsWith(prefix)
+  )
+}
+
+/**
+ * Handle institution input - real-time matching and auto-fill
+ * When only 1 institution matches, auto-fill and select
+ * When multiple match, wait for more input (no dropdown)
+ */
+const handleInstitutionInput = () => {
+  institutionInputError.value = ''
+  
+  if (!requiresManualInstitutionInput.value) {
+    return
+  }
+  
+  const input = formData.tenant_name || ''
+  const matches = matchInstitutionsByPrefix(input)
+  
+  if (matches.length === 0) {
+    // No match - clear selection, wait for more input
+    formData.tenant_id = undefined
+  } else if (matches.length === 1) {
+    // Single match - auto-fill full name and select
+    const matched = matches[0]
+    if (matched) {
+      formData.tenant_name = matched.name
+      formData.tenant_id = matched.id
+      institutionInputError.value = ''
+      console.log('%c[LoginForm] Auto-filled organize', 'color: #52c41a; font-weight: bold', {
+        input,
+        matched: matched.name,
+      })
+    }
+  } else {
+    // Multiple matches - clear selection, wait for more input to distinguish
+    formData.tenant_id = undefined
+    console.log('%c[LoginForm] Multiple organizes match', 'color: #fa8c16; font-weight: bold', {
+      input,
+      matches: matches.map(m => m.name),
+      message: 'Continue typing to distinguish',
+    })
+  }
+}
+
+/**
+ * Handle institution blur - validate input
+ * If input doesn't match any institution or matches multiple, show error
+ */
+const handleInstitutionBlur = () => {
+  if (!requiresManualInstitutionInput.value) {
+    return
+  }
+  
+  const input = formData.tenant_name || ''
+  const matches = matchInstitutionsByPrefix(input)
+  
+  if (!input.trim()) {
+    institutionInputError.value = 'Please enter organize name'
+    formData.tenant_id = undefined
+  } else if (matches.length === 0) {
+    // No match - show error
+    institutionInputError.value = 'Organize name not found'
+    formData.tenant_id = undefined
+  } else if (matches.length === 1) {
+    // Single match - ensure it's selected
+    const matched = matches[0]
+    if (matched) {
+      formData.tenant_name = matched.name
+      formData.tenant_id = matched.id
+      institutionInputError.value = ''
+    }
+  } else {
+    // Multiple matches - need more input
+    institutionInputError.value = 'Please enter more characters to distinguish the organize'
+    formData.tenant_id = undefined
+  }
 }
 
 // Handle forgot password navigation
