@@ -37,7 +37,7 @@
     >
       <template #bodyCell="{ column, record }">
         <template v-if="column.dataIndex === 'description'">
-          <div class="description-content">{{ record.description }}</div>
+          <div class="description-content" v-html="formatDescription(record.description)"></div>
         </template>
         <template v-else-if="column.dataIndex === 'is_active'">
           <span :class="record.is_active ? 'status-active' : 'status-inactive'">
@@ -46,11 +46,20 @@
         </template>
         <template v-else-if="column.key === 'operation'">
           <div class="operation-buttons">
-            <!-- Edit button: System roles can only be edited by SystemAdmin -->
+            <!-- Disable button: Only Resident and Family can be disabled by non-SystemAdmin -->
+            <a-button
+              v-if="record.is_active"
+              size="small"
+              @click="disableRole(record)"
+              :disabled="!canDisableRole(record)"
+            >
+              Disable
+            </a-button>
+            <!-- Edit button: Only SystemAdmin can see Edit button, System roles can only be edited by SystemAdmin -->
             <a-button 
+              v-if="isSystemAdmin"
               size="small" 
               @click="editRole(record)"
-              :disabled="record.is_system && !isSystemAdmin"
             >
               Edit
             </a-button>
@@ -62,15 +71,6 @@
               @click="deleteRole(record)"
             >
               Delete
-            </a-button>
-            <!-- Disable button: System roles can only be disabled by SystemAdmin -->
-            <a-button
-              v-if="record.is_active"
-              size="small"
-              @click="disableRole(record)"
-              :disabled="record.is_system && !isSystemAdmin"
-            >
-              Disable
             </a-button>
           </div>
         </template>
@@ -110,7 +110,11 @@
           />
         </a-form-item>
         <a-form-item label="Display Name" name="display_name">
-          <a-input placeholder="Please enter display name" v-model:value="editData.display_name" />
+          <a-input 
+            placeholder="Please enter display name" 
+            v-model:value="editData.display_name"
+            :disabled="editData.is_system"
+          />
         </a-form-item>
         <a-form-item label="Description" name="description">
           <a-textarea
@@ -118,6 +122,7 @@
             :auto-size="{ minRows: 3, maxRows: 5 }"
             show-count
             :maxlength="500"
+            :disabled="editData.is_system"
           />
         </a-form-item>
       </a-form>
@@ -176,6 +181,18 @@ import type {
 const userStore = useUserStore()
 const currentUserRole = computed(() => userStore.getUserInfo?.role || '')
 const isSystemAdmin = computed(() => currentUserRole.value === 'SystemAdmin')
+const isAdminOrManager = computed(() => currentUserRole.value === 'Admin' || currentUserRole.value === 'Manager')
+
+// Format description to convert \n to <br> for proper line breaks
+const formatDescription = (description: string | undefined): string => {
+  if (!description) return ''
+  // Convert \n to <br> and escape HTML to prevent XSS
+  return description
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\n/g, '<br>')
+}
 
 interface Role {
   role_id: string
@@ -253,7 +270,8 @@ const rules: Record<string, Rule[]> = {
 const onSearch = () => {
   let filtered = dataSource.value
   
-  // If not SystemAdmin, filter out SystemAdmin role first
+  // SystemAdmin role is not visible to tenants (only SystemAdmin users can see it)
+  // Filter out SystemAdmin role for non-SystemAdmin users
   if (!isSystemAdmin.value) {
     filtered = dataSource.value.filter((role) => role.role_code !== 'SystemAdmin')
   }
@@ -279,9 +297,9 @@ const addRole = () => {
 }
 
 const editRole = (record: Role) => {
-  // System roles can only be modified by SystemAdmin
-  if (record.is_system && !isSystemAdmin.value) {
-    message.warning('System roles can only be modified by SystemAdmin')
+  // System roles cannot be modified (only SystemAdmin can see Edit button, but system roles should not be modified)
+  if (record.is_system) {
+    message.warning('System roles cannot be modified')
     return
   }
   editData.value = { ...record }
@@ -301,12 +319,55 @@ const deleteRole = (record: Role) => {
   isConfirmModalVisible.value = true
 }
 
+// Check if a role can be disabled
+const canDisableRole = (record: Role): boolean => {
+  // SystemAdmin can disable any role
+  if (isSystemAdmin.value) {
+    return true
+  }
+  // Non-SystemAdmin can only disable Resident and Family roles
+  return record.role_code === 'Resident' || record.role_code === 'Family'
+}
+
 const disableRole = (record: Role) => {
-  // System roles can only be disabled by SystemAdmin
-  if (record.is_system && !isSystemAdmin.value) {
+  // SystemAdmin can disable any role
+  if (isSystemAdmin.value) {
+    action.value = 'disable'
+    affectedRoleId.value = record.role_id
+    confirmTitle.value = 'Disable Role'
+    confirmMessage.value = `Are you sure you want to disable role "${record.display_name}" (${record.role_code})?`
+    isConfirmModalVisible.value = true
+    return
+  }
+  
+  // Admin and Manager can disable Resident and Family (even if they are system roles)
+  if (isAdminOrManager.value && (record.role_code === 'Resident' || record.role_code === 'Family')) {
+    action.value = 'disable'
+    affectedRoleId.value = record.role_id
+    confirmTitle.value = 'Disable Role'
+    confirmMessage.value = `Are you sure you want to disable role "${record.display_name}" (${record.role_code})?`
+    isConfirmModalVisible.value = true
+    return
+  }
+  
+  // Resident and Family roles can only be disabled by Admin or Manager
+  if ((record.role_code === 'Resident' || record.role_code === 'Family') && !isAdminOrManager.value) {
+    message.warning('Resident and Family roles can only be disabled by Admin or Manager')
+    return
+  }
+  
+  // Other system roles can only be disabled by SystemAdmin
+  if (record.is_system) {
     message.warning('System roles can only be disabled by SystemAdmin')
     return
   }
+  
+  // Non-system roles: Only Resident and Family can be disabled by Admin/Manager
+  if (record.role_code !== 'Resident' && record.role_code !== 'Family') {
+    message.warning('Only Resident and Family roles can be disabled')
+    return
+  }
+  
   action.value = 'disable'
   affectedRoleId.value = record.role_id
   confirmTitle.value = 'Disable Role'
@@ -330,9 +391,9 @@ const handleSave = async () => {
           message.success('Role created successfully')
         } else {
           // Update role
-          // System roles can only be modified by SystemAdmin
-          if (editData.value.is_system && !isSystemAdmin.value) {
-            message.error('System roles can only be modified by SystemAdmin')
+          // System roles cannot be modified
+          if (editData.value.is_system) {
+            message.error('System roles cannot be modified')
             return
           }
           const params: UpdateRoleParams = {
@@ -397,7 +458,8 @@ const fetchData = async () => {
     const data = await getRolesApi(params)
     dataSource.value = data.items
     
-    // Filter data: If not SystemAdmin, do not display SystemAdmin role
+    // SystemAdmin role is not visible to tenants (only SystemAdmin users can see it)
+    // Filter out SystemAdmin role for non-SystemAdmin users
     let filtered = data.items
     if (!isSystemAdmin.value) {
       filtered = data.items.filter((role) => role.role_code !== 'SystemAdmin')
@@ -476,26 +538,25 @@ onMounted(() => {
   overflow-x: auto;
 }
 
-/* Role Code column: Flexible width configuration */
+/* Role Code column: Flexible width with min-width to fit "Role Code" text */
 :deep(.ant-table-thead > tr > th.role-code-column),
 :deep(.ant-table-tbody > tr > td.role-code-column) {
-  min-width: 80px !important;
-  max-width: 150px !important;
+  min-width: 120px !important;
   width: auto !important;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* Description column: Allow wrapping, occupy remaining space */
+/* Description column: Flexible width with min-width 200px */
 :deep(.ant-table-thead > tr > th.description-column),
 :deep(.ant-table-tbody > tr > td.description-column) {
+  min-width: 200px !important;
+  width: auto !important;
   white-space: normal !important;
   word-break: break-word !important;
   word-wrap: break-word !important;
   overflow-wrap: break-word !important;
-  min-width: 150px;
-  max-width: none !important;
 }
 
 /* Ensure Description column content container can also wrap */
@@ -507,9 +568,9 @@ onMounted(() => {
 
 /* Description content: Preserve line breaks */
 .description-content {
-  white-space: pre-line;
   word-break: break-word;
   line-height: 1.6;
+  display: block;
 }
 </style>
 

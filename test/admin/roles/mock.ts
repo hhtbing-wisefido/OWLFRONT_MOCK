@@ -95,17 +95,38 @@ export async function mockUpdateRole(roleId: string, params: UpdateRoleParams): 
 
   const role = rolesStore[roleIndex]
 
-  // 系统角色不允许修改 role_code
+  // 系统角色规则：
+  // 1. 可以禁用/启用（is_active 字段可以修改）
+  // 2. 不能修改其他字段（display_name, description, role_code）
   if (role.is_system) {
-    throw new Error('System roles cannot be modified')
+    // 如果只是更新 is_active 字段，允许（用于禁用/启用）
+    if (params.is_active !== undefined && Object.keys(params).length === 1) {
+      rolesStore[roleIndex].is_active = params.is_active
+      return
+    }
+    // 如果尝试修改其他字段，不允许
+    if (params.display_name !== undefined || params.description !== undefined) {
+      throw new Error('System roles cannot be modified')
+    }
+    // 如果尝试删除系统角色，不允许
+    if (params._delete) {
+      throw new Error('System roles cannot be deleted')
+    }
   }
 
-  // 更新角色信息
+  // 更新角色信息（非系统角色，或系统角色的 is_active）
   if (params.display_name !== undefined) {
     rolesStore[roleIndex].display_name = params.display_name
   }
   if (params.description !== undefined) {
     rolesStore[roleIndex].description = params.description
+  }
+  if (params.is_active !== undefined) {
+    rolesStore[roleIndex].is_active = params.is_active
+  }
+  if (params._delete) {
+    // 删除角色
+    rolesStore.splice(roleIndex, 1)
   }
 }
 
