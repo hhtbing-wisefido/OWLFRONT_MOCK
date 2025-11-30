@@ -20,7 +20,6 @@ export const mockTagsData: TagCatalogItem[] = [
         'user-002': 'Manager User',
       },
     },
-    is_system_tag_type: false, // user_tag 是用户自定义类型
   },
   {
     tag_id: '2',
@@ -32,7 +31,6 @@ export const mockTagsData: TagCatalogItem[] = [
         'user-003': 'IT User',
       },
     },
-    is_system_tag_type: false,
   },
   {
     tag_id: '3',
@@ -48,7 +46,6 @@ export const mockTagsData: TagCatalogItem[] = [
         'loc-001': 'Tech Lab',
       },
     },
-    is_system_tag_type: false,
   },
   {
     tag_id: '4',
@@ -64,7 +61,6 @@ export const mockTagsData: TagCatalogItem[] = [
         'card-001': 'Device Card 1',
       },
     },
-    is_system_tag_type: true, // alarm_tag 是系统预定义类型
   },
   {
     tag_id: '5',
@@ -78,7 +74,6 @@ export const mockTagsData: TagCatalogItem[] = [
         'user-008': 'Night Caregiver',
       },
     },
-    is_system_tag_type: false,
   },
   {
     tag_id: '6',
@@ -91,7 +86,6 @@ export const mockTagsData: TagCatalogItem[] = [
         'res-002': 'Resident A2',
       },
     },
-    is_system_tag_type: true, // family_tag 是系统预定义类型
   },
   {
     tag_id: '7',
@@ -103,7 +97,6 @@ export const mockTagsData: TagCatalogItem[] = [
         'building-1': 'Building A',
       },
     },
-    is_system_tag_type: true, // location_tag 是系统预定义类型
   },
   {
     tag_id: '10',
@@ -115,7 +108,6 @@ export const mockTagsData: TagCatalogItem[] = [
         'building-2': 'Building B',
       },
     },
-    is_system_tag_type: true, // location_tag 是系统预定义类型
   },
   {
     tag_id: '14',
@@ -128,27 +120,24 @@ export const mockTagsData: TagCatalogItem[] = [
         'unit-8': 'BD_king',
       },
     },
-    is_system_tag_type: true, // location_tag 是系统预定义类型
   },
   {
     tag_id: '8',
     tenant_id: '550e8400-e29b-41d4-a716-446655440000',
-    tag_type: 'nursestation_tag',
+    tag_type: 'location_tag', // Changed from nursestation_tag (not in schema)
     tag_name: 'Station-A',
     tag_objects: {
       location: {
         'loc-006': 'Nurse Station A',
       },
     },
-    is_system_tag_type: true, // nursestation_tag 是系统预定义类型
   },
   {
     tag_id: '9',
     tenant_id: '550e8400-e29b-41d4-a716-446655440000',
-    tag_type: null, // 无类型标签（用户自定义）
+    tag_type: 'custom_tag', // 用户自定义标签（默认类型）
     tag_name: 'Custom-Tag-1',
     tag_objects: {},
-    is_system_tag_type: false,
   },
   {
     tag_id: '11',
@@ -156,7 +145,6 @@ export const mockTagsData: TagCatalogItem[] = [
     tag_type: 'area_tag',
     tag_name: 'East',
     tag_objects: {},
-    is_system_tag_type: true, // area_tag 是系统预定义类型
   },
   {
     tag_id: '12',
@@ -164,7 +152,6 @@ export const mockTagsData: TagCatalogItem[] = [
     tag_type: 'area_tag',
     tag_name: 'West',
     tag_objects: {},
-    is_system_tag_type: true, // area_tag 是系统预定义类型
   },
   {
     tag_id: '13',
@@ -172,7 +159,6 @@ export const mockTagsData: TagCatalogItem[] = [
     tag_type: 'area_tag',
     tag_name: 'MemaryCare',
     tag_objects: {},
-    is_system_tag_type: true, // area_tag 是系统预定义类型
   },
 ]
 

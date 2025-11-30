@@ -40,12 +40,32 @@ export async function mockGetTags(params?: GetTagsParams): Promise<GetTagsResult
   // 按 include_system_tag_types 过滤（默认包含系统预定义 tag_type）
   const includeSystemTagTypes = params?.include_system_tag_types !== false // 默认 true
   if (!includeSystemTagTypes) {
-    filteredTags = filteredTags.filter(tag => !tag.is_system_tag_type)
+    // System predefined types: alarm_tag, location_tag, family_tag, area_tag
+    const systemPredefinedTypes = ['alarm_tag', 'location_tag', 'family_tag', 'area_tag']
+    filteredTags = filteredTags.filter(tag => !systemPredefinedTypes.includes(tag.tag_type))
   }
   
   return {
     items: filteredTags,
     total: filteredTags.length,
+    // Provide available tag types from server (all available tag types)
+    // This avoids hardcoding tag_type values in frontend
+    available_tag_types: [
+      'alarm_tag',
+      'location_tag',
+      'family_tag',
+      'area_tag',
+      'user_tag',
+      'custom_tag',
+    ],
+    // System predefined tag types (cannot be deleted, only SystemAdmin can modify)
+    // These are the built-in tag types: alarm_tag, location_tag, family_tag, area_tag
+    system_predefined_tag_types: [
+      'alarm_tag',
+      'location_tag',
+      'family_tag',
+      'area_tag',
+    ],
   }
 }
 
@@ -64,20 +84,15 @@ export async function mockCreateTag(params: CreateTagParams): Promise<CreateTagR
     throw new Error(`Tag name "${params.tag_name}" already exists. Tag names must be unique across all tag types.`)
   }
   
-  // 根据 tag_type 自动设置 is_system_tag_type
-  // 系统预定义类型：alarm_tag, location_tag, area_tag, family_tag, nursestation_tag
-  // 如果 tag_type 为 NULL，则 is_system_tag_type = FALSE
-  const isSystemTagType = params.tag_type
-    ? ['alarm_tag', 'location_tag', 'area_tag', 'family_tag', 'nursestation_tag'].includes(params.tag_type)
-    : false
+  // tag_type is now required (NOT NULL), default to 'custom_tag' if not provided
+  const tagType = params.tag_type || 'custom_tag'
   
   const newTag: TagCatalogItem = {
     tag_id: String(mockTagsData.length + 1),
     tenant_id: params.tenant_id,
-    tag_type: params.tag_type,
+    tag_type: tagType,
     tag_name: params.tag_name,
     tag_objects: {},
-    is_system_tag_type: isSystemTagType,
   }
   
   mockTagsData.push(newTag)
@@ -101,7 +116,9 @@ export async function mockUpdateTag(tagId: string, params: UpdateTagParams): Pro
   if (params.tag_name !== undefined) {
     tag.tag_name = params.tag_name
   }
-  // 注意：tag_type 和 is_system_tag_type 不能修改
+  if (params.tag_type !== undefined) {
+    tag.tag_type = params.tag_type || 'custom_tag'
+  }
   
   return { success: true }
 }
@@ -126,9 +143,10 @@ export async function mockDeleteTag(params: DeleteTagParams): Promise<{ success:
     throw new Error(`Tag "${params.tag_name}" not found`)
   }
   
-  // 系统预定义 tag_type 不能删除
-  if (tag.is_system_tag_type) {
-    throw new Error(`Cannot delete system tag_type: "${params.tag_name}" (type: ${tag.tag_type || 'NULL'}). System tag_types cannot be deleted because they are used by other tables.`)
+  // System predefined tag types cannot be deleted (alarm_tag, location_tag, family_tag, area_tag)
+  const systemPredefinedTypes = ['alarm_tag', 'location_tag', 'family_tag', 'area_tag']
+  if (tag.tag_type && systemPredefinedTypes.includes(tag.tag_type)) {
+    throw new Error(`Cannot delete system predefined tag_type: "${params.tag_name}" (type: ${tag.tag_type}). System predefined tag types cannot be deleted because they are used by other tables.`)
   }
   
   // 检查 tag_name 下面是否有对象
@@ -191,14 +209,10 @@ export async function mockDeleteTagType(params: DeleteTagTypeParams): Promise<{ 
     throw new Error(`Tag type not found: ${params.tag_type}`)
   }
   
-  // 检查是否为系统预定义 tag_type
-  const firstTag = tagsOfType[0]
-  if (!firstTag) {
-    throw new Error(`Tag type not found: ${params.tag_type}`)
-  }
-  const isSystemTagType = firstTag.is_system_tag_type
-  if (isSystemTagType) {
-    throw new Error(`Cannot delete system tag_type: ${params.tag_type}. System tag_types cannot be deleted because they are used by other tables.`)
+  // Check if it's a system predefined tag_type (cannot be deleted)
+  const systemPredefinedTypes = ['alarm_tag', 'location_tag', 'family_tag', 'area_tag']
+  if (systemPredefinedTypes.includes(params.tag_type)) {
+    throw new Error(`Cannot delete system predefined tag_type: ${params.tag_type}. System predefined tag types cannot be deleted because they are used by other tables.`)
   }
   
   // 检查是否还有 tag_name
@@ -233,13 +247,12 @@ export async function mockGetTagsForObject(params: GetTagsForObjectParams): Prom
       continue
     }
     const objectName = typeObjects[params.object_id]
-    if (objectName && tag.tag_type !== null) {
+    if (objectName && tag.tag_type) {
       result.push({
         tag_id: tag.tag_id,
-        tag_type: tag.tag_type, // tag_type 不能为 null，因为 TagForObject 要求 string
+        tag_type: tag.tag_type, // tag_type is required (NOT NULL)
         tag_name: tag.tag_name,
         object_name_in_tag: objectName,
-        is_system_tag_type: tag.is_system_tag_type,
       })
     }
   }

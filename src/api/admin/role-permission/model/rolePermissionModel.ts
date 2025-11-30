@@ -108,6 +108,7 @@ export const RESOURCE_TYPES = [
   'resident_contacts',
   'resident_caregivers',
   'devices',
+  'device_store',
   'iot_timeseries',
   'iot_monitor_alarms',
   'cloud_alarm_policies',
@@ -132,4 +133,11 @@ export const PERMISSION_TYPES: PermissionType[] = ['read', 'create', 'update', '
  * Permission scope options (for dropdown selection)
  */
 export const PERMISSION_SCOPES: PermissionScope[] = ['all', 'assigned_only', 'location_tag']
+
+/**
+ * Get resource types response
+ */
+export interface GetResourceTypesResult {
+  resource_types: string[]
+}
 

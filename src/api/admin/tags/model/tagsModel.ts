@@ -9,10 +9,9 @@
 export interface TagCatalogItem {
   tag_id: string
   tenant_id: string
-  tag_type: string | null // Tag type: optional, 'alarm_tag', 'location_tag', 'family_tag', 'nursestation_tag', 'user_tag', 'caregiver_tag' or NULL
+  tag_type: string // Tag type: required, 'alarm_tag', 'location_tag', 'family_tag', 'area_tag', 'user_tag', 'custom_tag'
   tag_name: string // Tag name: required, globally unique within same tenant_id (across all tag_type)
   tag_objects?: Record<string, Record<string, string>> // JSONB format: {"resident": {"uuid1": "name1"}, "location": {"uuid2": "name2"}}
-  is_system_tag_type: boolean // Whether it's a system predefined tag_type (TRUE means system predefined, cannot be deleted)
 }
 
 /**
@@ -30,6 +29,12 @@ export interface GetTagsParams {
 export interface GetTagsResult {
   items: TagCatalogItem[]
   total: number
+  // Available tag types (system predefined types that can be used)
+  // This list is provided by the server to avoid hardcoding in frontend
+  available_tag_types?: string[] // Optional: list of all available tag_type values (e.g., ['alarm_tag', 'location_tag', 'family_tag', 'area_tag', 'user_tag', 'custom_tag'])
+  // System predefined tag types (cannot be deleted, only SystemAdmin can modify)
+  // These are the built-in tag types: alarm_tag, location_tag, family_tag, area_tag
+  system_predefined_tag_types?: string[] // Optional: list of system predefined tag_type values that cannot be deleted (e.g., ['alarm_tag', 'location_tag', 'family_tag', 'area_tag'])
 }
 
 /**
@@ -37,9 +42,8 @@ export interface GetTagsResult {
  */
 export interface CreateTagParams {
   tenant_id: string
-  tag_type: string | null // Tag type: optional, 'alarm_tag', 'location_tag', 'family_tag', 'nursestation_tag', 'user_tag', 'caregiver_tag' or NULL
+  tag_type: string | null // Tag type: optional, defaults to 'custom_tag' for non-SystemAdmin users. Only SystemAdmin can specify other tag_type values
   tag_name: string // Tag name: required, globally unique within same tenant_id (across all tag_type)
-  // Note: is_system_tag_type is automatically set by backend based on tag_type, cannot be manually specified
 }
 
 /**
@@ -54,8 +58,7 @@ export interface CreateTagResult {
  */
 export interface UpdateTagParams {
   tag_name?: string
-  tag_type?: string | null // Allow modifying tag_type
-  // Note: is_system_tag_type cannot be modified
+  tag_type?: string | null // Allow modifying tag_type (only SystemAdmin can modify)
 }
 
 /**
@@ -100,6 +103,5 @@ export interface TagForObject {
   tag_type: string
   tag_name: string
   object_name_in_tag: string // Object name stored in tag_objects (may be outdated)
-  is_system_tag_type: boolean
 }
 

@@ -88,7 +88,7 @@ export const menuItems: MenuItem[] = [
     label: 'Permission Management',
     icon: 'KeyOutlined',
     path: '/admin/permissions',
-    permission: ['SystemAdmin', 'Admin', 'Manager', 'IT'],
+    permission: ['SystemAdmin'], // Only SystemAdmin can access
   },
   {
     key: 'admin-tags',

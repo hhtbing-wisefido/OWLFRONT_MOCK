@@ -288,7 +288,7 @@ export const useUserStore = defineStore('user', {
         '/units': ['SystemAdmin', 'Admin', 'IT'],
         '/admin/users': ['SystemAdmin', 'Admin', 'IT'],
         '/admin/roles': ['SystemAdmin', 'Admin', 'Manager', 'IT'],
-        '/admin/permissions': ['SystemAdmin', 'Admin', 'Manager', 'IT'], // New permission management path
+        '/admin/permissions': ['SystemAdmin'], // Only SystemAdmin can access Permission Management
         '/admin/tags': ['SystemAdmin', 'Admin', 'IT'],
       }
       this.setPagePermissions(defaultPermissions)

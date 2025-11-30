@@ -90,6 +90,9 @@ const mainPermissions = computed(() => {
     if (perms.some((p) => p.resource_type === 'tags_catalog' && p.permission_type === 'manage')) {
       descriptions.push('Tags Catalog Management')
     }
+    if (perms.some((p) => p.resource_type === 'device_store' && p.permission_type === 'manage')) {
+      descriptions.push('Device Store Management')
+    }
   } else if (props.role.code === 'Admin') {
     if (perms.some((p) => p.resource_type === 'users' && p.permission_type === 'manage')) {
       descriptions.push('User Management')

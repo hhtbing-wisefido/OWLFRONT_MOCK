@@ -2,7 +2,12 @@
   <div class="role-permission-list">
     <div class="page-header">
       <h1>Role Permissions</h1>
-      <p class="page-description">C (Create) | E (Edit) | D (Delete) | R (Read). NS and CG can only modify assigned residents. Admin cannot be modified.</p>
+      <p class="page-description">
+        C (Create) | E (Edit) | D (Delete) | R (Read). 
+        A: assigned_only. 
+        NS and CG can only modify assigned residents. 
+        Admin cannot be modified.
+      </p>
     </div>
 
     <div class="role-cards">

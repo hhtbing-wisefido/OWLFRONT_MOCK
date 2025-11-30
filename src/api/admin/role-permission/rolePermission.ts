@@ -14,6 +14,7 @@ import type {
   BatchCreateRolePermissionsParams,
   UpdateRolePermissionParams,
   UpdateRolePermissionStatusParams,
+  GetResourceTypesResult,
 } from './model/rolePermissionModel'
 
 // Define API path enum
@@ -24,6 +25,7 @@ export enum Api {
   Update = '/admin/api/v1/role-permissions/:id',
   Delete = '/admin/api/v1/role-permissions/:id',
   UpdateStatus = '/admin/api/v1/role-permissions/:id/status',
+  GetResourceTypes = '/admin/api/v1/role-permissions/resource-types',
 }
 
 // Mock mode: In development, use mock data instead of real API calls
@@ -312,6 +314,47 @@ export function changeRolePermissionStatusApi(
     {
       url: Api.UpdateStatus.replace(':id', permissionId),
       params,
+    },
+    {
+      errorMessageMode: mode,
+    },
+  )
+}
+
+/**
+ * @description: Get resource types list
+ * @param mode - Error message mode
+ */
+export function getResourceTypesApi(mode: ErrorMessageMode = 'modal') {
+  // In development with mock enabled, return mock data directly
+  if (useMock) {
+    return import('@test/index').then(({ rolePermissions }) => {
+      console.log(
+        '%c[Mock] Get Resource Types API Request',
+        'color: #1890ff; font-weight: bold',
+      )
+      return rolePermissions.mock.mockGetResourceTypes().then((result) => {
+        console.log(
+          '%c[Mock] Get Resource Types API - Success',
+          'color: #52c41a; font-weight: bold',
+          { result },
+        )
+        return result
+      }).catch((error: any) => {
+        console.log(
+          '%c[Mock] Get Resource Types API - Failed',
+          'color: #ff4d4f; font-weight: bold',
+          { error: error.message },
+        )
+        throw error
+      })
+    })
+  }
+
+  // Production: Call real API
+  return defHttp.get<GetResourceTypesResult>(
+    {
+      url: Api.GetResourceTypes,
     },
     {
       errorMessageMode: mode,

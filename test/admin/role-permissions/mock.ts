@@ -13,6 +13,7 @@ import type {
   UpdateRolePermissionParams,
   UpdateRolePermissionStatusParams,
   RolePermission,
+  GetResourceTypesResult,
 } from '@/api/admin/role-permission/model/rolePermissionModel'
 import { mockRolePermissionsData } from './data'
 import { delay } from '../../utils/generator'
@@ -234,5 +235,74 @@ export async function mockChangeRolePermissionStatus(
 
   // 更新权限状态
   permissionsStore[permissionIndex].is_active = params.is_active
+}
+
+/**
+ * Resource type order mapping (01-24) from SQL file
+ * This ensures resources are displayed in the correct sequence
+ */
+const RESOURCE_TYPE_ORDER: Record<string, number> = {
+  'tenants': 1,
+  'roles': 2,
+  'role_permissions': 3,
+  'users': 4,
+  'units': 5,
+  'rooms': 6,
+  'beds': 7,
+  'residents': 8,
+  'resident_phi': 9,
+  'resident_contacts': 10,
+  'resident_caregivers': 11,
+  'devices': 12,
+  'device_store': 13,
+  'iot_timeseries': 14,
+  'alarm_events': 15,
+  'alarm_device': 16,
+  'alarm_cloud': 17,
+  'config_versions': 18,
+  'service_levels': 20,
+  'cards': 21,
+  'tags_catalog': 22,
+  'rounds': 23,
+  'round_details': 24,
+}
+
+/**
+ * Mock: 获取资源类型列表
+ * 对应 getResourceTypesApi
+ * 从权限数据中提取所有唯一的资源类型，并按 01-24 顺序排列
+ */
+export async function mockGetResourceTypes(): Promise<GetResourceTypesResult> {
+  // 模拟网络延迟
+  await delay(200)
+
+  // 确保权限存储已初始化
+  initializePermissionsStore()
+
+  // 从权限数据中提取所有唯一的资源类型
+  const resourceTypesSet = new Set<string>()
+  
+  // 从 mock 数据中提取
+  mockRolePermissionsData.forEach((perm) => {
+    resourceTypesSet.add(perm.resource_type)
+  })
+
+  // 从权限存储中提取（可能包含动态创建的权限）
+  permissionsStore.forEach((perm) => {
+    resourceTypesSet.add(perm.resource_type)
+  })
+
+  // 转换为数组并按顺序排序
+  const resourceTypes = Array.from(resourceTypesSet).sort((a, b) => {
+    const orderA = RESOURCE_TYPE_ORDER[a] || 999 // Unknown resources go to the end
+    const orderB = RESOURCE_TYPE_ORDER[b] || 999
+    return orderA - orderB
+  })
+
+  console.log('[Mock] mockGetResourceTypes - Found', resourceTypes.length, 'resource types (ordered):', resourceTypes)
+
+  return {
+    resource_types: resourceTypes,
+  }
 }
 

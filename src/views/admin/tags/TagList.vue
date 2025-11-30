@@ -1,65 +1,29 @@
 <template>
   <div style="padding: 15px">
-    <!-- Search area -->
+    <!-- Create Tag Area -->
     <div class="form-container">
-      <a-form layout="inline" class="flex-form">
-        <!-- Save Button -->
-        <a-form-item>
-          <a-button type="primary" @click="handleSaveAll">Save</a-button>
-        </a-form-item>
-
-        <!-- Create Tag -->
-        <a-form-item>
-          <div class="create-tag-row">
-            <a-button type="primary" @click="handleCreateTag">Create Tag</a-button>
-            <span class="separator">:</span>
-            <a-input
-              v-model:value="createTagData.tag_name"
-              placeholder="Tag Name"
-              style="width: 200px"
-              @pressEnter="handleCreateTag"
-            />
+      <div class="form-row">
+        <span class="label">Select type:</span>
+        <div class="tag-type-selector">
+          <div
+            v-for="(tagType, index) in availableTagTypesForSelection"
+            :key="tagType ?? `null-${index}`"
+            class="tag-type-option"
+            :class="{ 'tag-type-option-selected': selectedTagType === tagType }"
+            @click="selectedTagType = tagType"
+          >
+            <span class="tag-type-option-label">{{ formatTagTypeName(tagType) }}</span>
           </div>
-        </a-form-item>
-        <!-- Create Type -->
-        <a-form-item>
-          <div class="create-tag-row">
-            <a-button type="primary" @click="handleCreateTagType">Create Type</a-button>
-            <span class="separator">:</span>
-            <a-input
-              v-model:value="newTagType"
-              placeholder="Tag type"
-              style="width: 200px"
-              @pressEnter="handleCreateTagType"
-            />
-          </div>
-        </a-form-item>
-        <a-form-item style="flex: 1; min-width: 200px;">
-          <div class="tag-type-list-container">
-            <div
-              v-for="(tagType, index) in selectedTagTypeList"
-              :key="tagType ?? `null-${index}`"
-              class="tag-type-item"
-            >
-              <div class="tag-type-box-item">
-                <span class="tag-type-label">{{ formatTagTypeName(tagType) }}</span>
-                <a-tooltip
-                  v-if="!isSystemTagType(tagType)"
-                  title="delete"
-                  :mouseEnterDelay="0.1"
-                >
-                  <span
-                    class="delete-tag-type-icon"
-                    @click="deleteTagTypeByValue(tagType)"
-                  >
-                    ×
-                  </span>
-                </a-tooltip>
-              </div>
-            </div>
-          </div>
-        </a-form-item>
-      </a-form>
+        </div>
+        <span class="label">Tag Name:</span>
+        <a-input
+          v-model:value="createTagData.tag_name"
+          placeholder="Tag Name"
+          style="width: 150px"
+          @pressEnter="handleCreateTag"
+        />
+        <a-button type="primary" @click="handleCreateTag">Create Tag</a-button>
+      </div>
     </div>
 
     <!-- Table -->
@@ -109,6 +73,15 @@
             <span v-else style="color: #d9d9d9; font-size: 12px;">⇅</span>
           </div>
         </template>
+        <template v-else-if="column.key === 'objects'">
+          <div class="member-header-with-buttons">
+            <span>Member</span>
+            <div class="header-buttons">
+              <a-button size="small" @click="handleCancel">Cancel</a-button>
+              <a-button type="primary" size="small" @click="handleSaveAll">Save</a-button>
+            </div>
+          </div>
+        </template>
       </template>
       <template #bodyCell="{ column, record }">
         <!-- Tag_name column: only display tag_name itself (square shape, cross in top-right corner) -->
@@ -132,22 +105,10 @@
           </div>
         </template>
 
-        <!-- Tag_type column: dropdown to select tag_type (type of this row's tag_name) -->
+        <!-- Tag_type column: read-only display (tag_type is system predefined, cannot be modified) -->
         <template v-else-if="column.dataIndex === 'tag_type'">
           <div class="tag-type-cell">
-              <a-select
-                v-model:value="record.tag_type"
-                style="width: 100%"
-                @change="(value: string | null) => handleTagTypeChange(record, value)"
-              >
-              <a-select-option
-                v-for="tagType in availableTagTypes"
-                :key="tagType.value"
-                :value="tagType.value"
-              >
-                {{ tagType.label }}
-              </a-select-option>
-            </a-select>
+            <span class="tag-type-display">{{ formatTagTypeName(record.tag_type) }}</span>
           </div>
         </template>
 
@@ -193,7 +154,6 @@ import {
   createTagApi,
   updateTagApi,
   deleteTagApi,
-  deleteTagTypeApi,
   removeTagObjectsApi,
 } from '@/api/admin/tags/tags'
 import type {
@@ -201,64 +161,39 @@ import type {
   CreateTagParams,
   UpdateTagParams,
   DeleteTagParams,
-  DeleteTagTypeParams,
   RemoveTagObjectsParams,
 } from '@/api/admin/tags/model/tagsModel'
 import { useUserStore } from '@/store/modules/user'
 
 const userStore = useUserStore()
+const currentUserRole = computed(() => userStore.getUserInfo?.role || '')
+const isSystemAdmin = computed(() => currentUserRole.value === 'SystemAdmin')
 
 // Data
 const loading = ref(false)
 const dataSource = ref<TagCatalogItem[]>([])
-const createTagData = ref<{ tag_name: string; tag_type: string | null }>({
+// Create tag data: tag_type defaults to 'custom_tag' for user-created tags
+// SystemAdmin can choose tag_type, non-SystemAdmin always uses 'custom_tag'
+const createTagData = ref<{ tag_name: string }>({
   tag_name: '',
-  tag_type: null,
 })
-const newTagType = ref<string>('')
+const selectedTagType = ref<string | null>('custom_tag') // Default to 'custom_tag' for new tags
 const selectedTagTypeList = ref<(string | null)[]>([])
 const selectedObjects = ref<Record<string, string[]>>({}) // tag_id -> selected object keys
 const objectsToRemove = ref<Record<string, Array<{ objectType: string; objectId: string }>>>({}) // tag_id -> objects to remove
 
-// Get all available tag_type (extracted from data)
-const availableTagTypes = computed(() => {
-  const tagTypes = new Set<string | null>()
-  dataSource.value.forEach((tag) => {
-    if (tag.tag_type !== null) {
-      tagTypes.add(tag.tag_type)
-    }
-  })
-  
-  // Add common system tag_type
-  const systemTagTypes = [
-    'alarm_tag',
-    'location_tag',
-    'family_tag',
-    'nursestation_tag',
-    'user_tag',
-    'caregiver_tag',
-  ]
-  systemTagTypes.forEach((type) => {
-    tagTypes.add(type)
-  })
-  
-  // Convert to options array
-  const options: Array<{ value: string | null; label: string }> = [
-    { value: null, label: '(None)' },
-  ]
-  
-  Array.from(tagTypes)
-    .sort()
-    .forEach((type) => {
-      if (type !== null) {
-        options.push({
-          value: type,
-          label: type.replace(/_tag$/, '').replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
-        })
-      }
-    })
-  
-  return options
+// Available tag types from server (all available tag types)
+// This is populated from API response to avoid hardcoding (for display purposes only)
+const availableTagTypesFromServer = ref<string[]>([])
+
+// System predefined tag types from server (for reference only, not used for modification)
+const systemPredefinedTagTypesFromServer = ref<string[]>([])
+
+// Available tag types for selection (for Create Tag dropdown)
+const availableTagTypesForSelection = computed(() => {
+  return availableTagTypesFromServer.value.length > 0
+    ? availableTagTypesFromServer.value
+    : ['custom_tag', 'user_tag', 'alarm_tag', 'location_tag', 'family_tag', 'area_tag']
 })
 
 // Sort state
@@ -280,7 +215,7 @@ const columns = [
     width: 250,
   },
   {
-    title: 'objects of Tag_name',
+    title: 'Member',
     dataIndex: 'objects',
     key: 'objects',
     width: 'auto',
@@ -367,6 +302,31 @@ const fetchTags = async () => {
     })
 
     dataSource.value = result.items
+    
+    // Store available tag types from server (if provided)
+    // This avoids hardcoding tag_type values in frontend
+    if (result.available_tag_types && result.available_tag_types.length > 0) {
+      availableTagTypesFromServer.value = result.available_tag_types
+    } else {
+      // Fallback: extract unique tag_type from returned data
+      const types = new Set<string>()
+      result.items.forEach((tag) => {
+        if (tag.tag_type) {
+          types.add(tag.tag_type)
+        }
+      })
+      availableTagTypesFromServer.value = Array.from(types)
+    }
+    
+    // Store system predefined tag types from server (if provided)
+    // These are the built-in tag types that cannot be deleted
+    if (result.system_predefined_tag_types && result.system_predefined_tag_types.length > 0) {
+      systemPredefinedTagTypesFromServer.value = result.system_predefined_tag_types
+    } else {
+      // Fallback: use default system predefined types (alarm_tag, location_tag, family_tag, area_tag)
+      // These are the built-in types that cannot be deleted according to database schema
+      systemPredefinedTagTypesFromServer.value = ['alarm_tag', 'location_tag', 'family_tag', 'area_tag']
+    }
     // Initialize selectedObjects: all objects selected by default
     result.items.forEach((tag) => {
       const allKeys: string[] = []
@@ -381,23 +341,15 @@ const fetchTags = async () => {
       objectsToRemove.value[tag.tag_id] = []
     })
     
-    // Initialize selectedTagTypeList: list all tag_type (including preset system tags and newly created)
+    // Initialize selectedTagTypeList: list all tag_type (from server response, not hardcoded)
     const tagTypes = new Set<string | null>()
     
-    // Add preset system tag_type
-    const systemTagTypes = [
-      'alarm_tag',
-      'location_tag',
-      'family_tag',
-      'nursestation_tag',
-      'user_tag',
-      'caregiver_tag',
-    ]
-    systemTagTypes.forEach((type) => {
+    // Use available tag types from server (already stored in availableTagTypesFromServer)
+    availableTagTypesFromServer.value.forEach((type) => {
       tagTypes.add(type)
     })
     
-    // Add tag_type from data (including newly created)
+    // Add tag_type from data (including newly created, in case server doesn't provide all types)
     result.items.forEach((tag) => {
       if (tag.tag_type !== null) {
         tagTypes.add(tag.tag_type)
@@ -424,57 +376,11 @@ const getTagsByType = (tagType: string | null): TagCatalogItem[] => {
   return dataSource.value.filter((tag) => tag.tag_type === tagType)
 }
 
-// Check if it's a system Tag Type
-const isSystemTagType = (tagType: string | null): boolean => {
-  if (!tagType) return false
-  // Preset system tag_type
-  const systemTagTypes = [
-    'alarm_tag',
-    'location_tag',
-    'family_tag',
-    'nursestation_tag',
-    'user_tag',
-    'caregiver_tag',
-  ]
-  return systemTagTypes.includes(tagType)
-}
 
-// Delete Tag Type by value
-const deleteTagTypeByValue = async (tagType: string | null) => {
-  try {
-    if (!tagType) {
-      message.warning('Tag type is empty')
-      return
-    }
-
-    // Check if it's a system tag_type
-    if (isSystemTagType(tagType)) {
-      message.warning('Cannot delete system tag type')
-      return
-    }
-
-    const userInfo = userStore.getUserInfo
-    const tenantId = userInfo?.tenant_id
-
-    if (!tenantId) {
-      message.error('No tenant ID available')
-      return
-    }
-
-    const params: DeleteTagTypeParams = {
-      tenant_id: tenantId,
-      tag_type: tagType,
-    }
-
-    await deleteTagTypeApi(params)
-    message.success('Tag type deleted successfully')
-    await fetchTags()
-  } catch (error: any) {
-    message.error(error?.message || 'Failed to delete tag type')
-  }
-}
 
 // Create Tag
+// Note: tag_type is automatically set to 'custom_tag' by backend (application layer control)
+// Users cannot modify tag_type, it's system predefined
 const handleCreateTag = async () => {
   try {
     if (!createTagData.value.tag_name.trim()) {
@@ -490,9 +396,11 @@ const handleCreateTag = async () => {
       return
     }
 
+    // tag_type is automatically set to 'custom_tag' by backend (application layer control)
+    // Users cannot specify tag_type, it's system predefined
     const params: CreateTagParams = {
       tenant_id: tenantId,
-      tag_type: createTagData.value.tag_type,
+      tag_type: null, // Backend will set to 'custom_tag' automatically
       tag_name: createTagData.value.tag_name.trim(),
     }
     
@@ -502,8 +410,8 @@ const handleCreateTag = async () => {
     // Reset form
     createTagData.value = {
       tag_name: '',
-      tag_type: null,
     }
+    selectedTagType.value = 'custom_tag' // Reset to default
     
     await fetchTags()
   } catch (error: any) {
@@ -511,49 +419,6 @@ const handleCreateTag = async () => {
   }
 }
 
-// Create TagType
-const handleCreateTagType = async () => {
-  try {
-    if (!newTagType.value.trim()) {
-      message.warning('Please enter tag type')
-      return
-    }
-
-    const tagTypeValue = newTagType.value.trim()
-    
-    // Check if it already exists
-    if (selectedTagTypeList.value.includes(tagTypeValue)) {
-      message.warning('Tag type already exists')
-      return
-    }
-
-    // Check if it's a system preset tag_type
-    const systemTagTypes = [
-      'alarm_tag',
-      'location_tag',
-      'family_tag',
-      'nursestation_tag',
-      'user_tag',
-      'caregiver_tag',
-    ]
-    if (systemTagTypes.includes(tagTypeValue)) {
-      message.warning('This is a system tag type and cannot be created')
-      return
-    }
-
-    // Add to list (actual creation needs to be done by creating a tag, because tag_type is specified when creating a tag)
-    // Here we add to list first, actual use requires creating a tag to use this tag_type
-    selectedTagTypeList.value.push(tagTypeValue)
-    selectedTagTypeList.value.sort()
-    
-    message.success('Tag type added successfully')
-    
-    // Reset input field
-    newTagType.value = ''
-  } catch (error: any) {
-    message.error(error?.message || 'Failed to create tag type')
-  }
-}
 
 // Check if tag has objects
 const hasObjects = (record: TagCatalogItem): boolean => {
@@ -591,67 +456,7 @@ const deleteTagName = async (record: TagCatalogItem) => {
   }
 }
 
-// Handle Tag Type change
-const handleTagTypeChange = async (record: TagCatalogItem, newTagType: string | null) => {
-  try {
-    // If value hasn't changed, don't perform update
-    if (record.tag_type === newTagType) {
-      return
-    }
 
-    const oldTagType = record.tag_type
-    // Update local display first
-    record.tag_type = newTagType
-
-    const params: UpdateTagParams = {
-      tag_name: record.tag_name,
-      tag_type: newTagType,
-    }
-
-    await updateTagApi(record.tag_id, params)
-    message.success('Tag type updated successfully')
-    await fetchTags()
-  } catch (error: any) {
-    // Restore original value
-    await fetchTags()
-    message.error(error?.message || 'Failed to update tag type')
-  }
-}
-
-// Delete Tag Type
-const deleteTagType = async (record: TagCatalogItem) => {
-  try {
-    // Check if it's a system tag_type
-    if (record.is_system_tag_type) {
-      message.warning('Cannot delete system tag type')
-      return
-    }
-
-    if (!record.tag_type) {
-      message.warning('Tag type is empty')
-      return
-    }
-
-    const userInfo = userStore.getUserInfo
-    const tenantId = userInfo?.tenant_id
-
-    if (!tenantId) {
-      message.error('No tenant ID available')
-      return
-    }
-
-    const params: DeleteTagTypeParams = {
-      tenant_id: tenantId,
-      tag_type: record.tag_type,
-    }
-
-    await deleteTagTypeApi(params)
-    message.success('Tag type deleted successfully')
-    await fetchTags()
-  } catch (error: any) {
-    message.error(error?.message || 'Failed to delete tag type')
-  }
-}
 
 // Handle object checkbox changes
 const handleObjectCheckChange = (record: TagCatalogItem, checkedValues: string[]) => {
@@ -691,6 +496,28 @@ const handleObjectCheckChange = (record: TagCatalogItem, checkedValues: string[]
   selectedObjects.value[tagId] = checkedValues
 }
 
+// Cancel changes (reset to original state)
+// Resets member modifications and clears object removal list
+const handleCancel = () => {
+  // Reset selected objects to original state
+  dataSource.value.forEach((tag) => {
+    const allKeys: string[] = []
+    if (tag.tag_objects) {
+      for (const [objectType, objects] of Object.entries(tag.tag_objects)) {
+        for (const objectId of Object.keys(objects)) {
+          allKeys.push(`${objectType}:${objectId}`)
+        }
+      }
+    }
+    selectedObjects.value[tag.tag_id] = allKeys
+  })
+  
+  // Clear removal list
+  objectsToRemove.value = {}
+  
+  message.info('Changes cancelled')
+}
+
 // Save all changes (submit to server)
 const handleSaveAll = async () => {
   try {
@@ -699,9 +526,17 @@ const handleSaveAll = async () => {
     // Handle all objects that need to be removed
     for (const [tagId, objects] of Object.entries(objectsToRemove.value)) {
       if (objects.length > 0) {
-        hasChanges = true
         const record = dataSource.value.find((tag) => tag.tag_id === tagId)
         if (!record) continue
+        
+        // Check if tag_type is Area or Custom (only these support object deletion)
+        const allowedTagTypes = ['area_tag', 'custom_tag']
+        if (!record.tag_type || !allowedTagTypes.includes(record.tag_type)) {
+          message.warning(`Object deletion is only supported for Area and Custom tag types. Tag "${record.tag_name}" has type "${record.tag_type}"`)
+          continue
+        }
+        
+        hasChanges = true
         
         // Group by objectType
         const groupedByType: Record<string, string[]> = {}
@@ -772,21 +607,118 @@ onMounted(() => {
   margin-bottom: 16px;
 }
 
-.flex-form {
+.member-header-with-buttons {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.header-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.form-row {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: nowrap;
+  width: 100%;
 }
 
-.create-tag-row {
+.form-row-second {
+  margin-top: 0;
+}
+
+.label {
+  font-weight: 500;
+  color: #595959;
+  white-space: nowrap;
+}
+
+/* Tag Type Selector (container style) */
+.tag-type-selector {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 4px 8px;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  background: #fafafa;
+  min-height: 32px;
 }
 
-.separator {
-  margin: 0 2px;
-  color: #666;
+.tag-type-option {
+  padding: 4px 12px;
+  background: #f0f0f0;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.tag-type-option:hover {
+  background: #e6f7ff;
+  border-color: #1890ff;
+}
+
+.tag-type-option-selected {
+  background: #1890ff;
+  border-color: #1890ff;
+  color: #fff;
+}
+
+.tag-type-option-selected .tag-type-option-label {
+  color: #fff;
+  font-weight: 500;
+}
+
+.tag-type-option-label {
+  font-weight: 500;
+  color: #595959;
+}
+
+/* Objects display */
+.objects-display-container {
+  min-width: 150px;
+  padding: 4px 12px;
+  background: #f5f5f5;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.objects-count {
+  color: #1890ff;
+  font-weight: 500;
+}
+
+.objects-placeholder {
+  color: #999;
+  font-style: italic;
+}
+
+.tag-type-display-inline {
+  font-weight: 500;
+  color: #595959;
+  font-size: 14px;
+  padding: 4px 12px;
+  background: #f5f5f5;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  min-width: 120px;
+  display: inline-block;
+  text-align: center;
+}
+
+.tag-type-list-wrapper {
+  flex: 1;
+  min-width: 200px;
+  overflow: hidden;
 }
 
 .tag-table {
@@ -816,6 +748,16 @@ onMounted(() => {
 .tag-type-cell {
   display: flex;
   align-items: center;
+}
+
+.tag-type-display {
+  font-weight: 500;
+  color: #595959;
+  font-size: 14px;
+  padding: 4px 8px;
+  background: #f5f5f5;
+  border-radius: 4px;
+  display: inline-block;
 }
 
 .tag-name-box,
@@ -984,7 +926,9 @@ onMounted(() => {
   border: 1px solid #d9d9d9;
   border-radius: 4px;
   background: #fafafa;
-  min-height: 90px;
+  min-height: 40px;
+  max-height: 60px;
+  overflow-y: auto;
   align-content: flex-start;
 }
 

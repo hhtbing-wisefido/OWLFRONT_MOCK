@@ -1,13 +1,14 @@
 /**
- * Role Permission 测试数据
- * 对应 owlRD/db/21_role_permissions.sql 中的预置权限配置
+ * Role Permission Test Data
+ * Corresponds to owlRD/db/03_role_permissions.sql preset permission configuration
+ * Updated to match the permission matrix table
  */
 
 import type { RolePermission } from '@/api/admin/role-permission/model/rolePermissionModel'
 
 /**
- * 角色定义（每个角色单独列出）
- * 与 owlRD/db/02_roles.sql 保持一致，使用新的简化角色系统
+ * Role definitions (each role listed separately)
+ * Consistent with owlRD/db/02_roles.sql, using the new simplified role system
  */
 export const ROLES = [
   {
@@ -61,179 +62,184 @@ export const ROLES = [
 ] as const
 
 /**
- * 权限数据（根据权限表设置）
+ * Permission data (based on permission matrix table)
+ * Resource type mapping:
+ * - cards(vital-monitor) → cards
+ * - cloud_alarm_polices → alarm_cloud
+ * - Iot_Monitor_alarm → alarm_device
+ * - device-store → device_store
+ * - role-permissions → role_permissions
+ * - service_level → service_levels
+ * - alarm_event → alarm_events
+ * - device → devices
  */
 export const mockRolePermissionsData: RolePermission[] = [
-  // ========== Admin（超级管理员）==========
-  { permission_id: '0', role_code: 'Admin', resource_type: 'vital_monitor', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '0-1', role_code: 'Admin', resource_type: 'roles', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '0-1-1', role_code: 'Admin', resource_type: 'role_permissions', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '0-2', role_code: 'Admin', resource_type: 'users', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '0-3', role_code: 'Admin', resource_type: 'residents', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '0-4', role_code: 'Admin', resource_type: 'resident_phi', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '0-5', role_code: 'Admin', resource_type: 'resident_contacts', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '0-6', role_code: 'Admin', resource_type: 'resident_caregivers', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '0-7', role_code: 'Admin', resource_type: 'cloud_alarm_policies', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '0-8', role_code: 'Admin', resource_type: 'iot_monitor_alarms', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '0-9', role_code: 'Admin', resource_type: 'service_levels', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '0-10', role_code: 'Admin', resource_type: 'alarm_events', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '0-11', role_code: 'Admin', resource_type: 'rounds', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '0-12', role_code: 'Admin', resource_type: 'locations', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '0-13', role_code: 'Admin', resource_type: 'rooms', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '0-14', role_code: 'Admin', resource_type: 'beds', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '0-15', role_code: 'Admin', resource_type: 'devices', permission_type: 'manage', scope: 'all', is_active: true },
+  // ========== SystemAdmin: System-level administrator ==========
+  // Matrix: roles (RCDU), role-permissions (RCDU), tenants (RCDU), tags_catalog (RCDU), device-store (RCDU)
+  { permission_id: 'sa-1', role_code: 'SystemAdmin', resource_type: 'roles', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'sa-2', role_code: 'SystemAdmin', resource_type: 'role_permissions', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'sa-3', role_code: 'SystemAdmin', resource_type: 'tenants', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'sa-4', role_code: 'SystemAdmin', resource_type: 'tags_catalog', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'sa-5', role_code: 'SystemAdmin', resource_type: 'device_store', permission_type: 'manage', scope: 'all', is_active: true },
 
-  // ========== Director（院长）==========
-  { permission_id: '1', role_code: 'Director', resource_type: 'vital_monitor', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '1-1', role_code: 'Director', resource_type: 'roles', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '1-1-1', role_code: 'Director', resource_type: 'role_permissions', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '2', role_code: 'Director', resource_type: 'users', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '3', role_code: 'Director', resource_type: 'residents', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '4', role_code: 'Director', resource_type: 'resident_phi', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '5', role_code: 'Director', resource_type: 'resident_contacts', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '6', role_code: 'Director', resource_type: 'resident_caregivers', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '7', role_code: 'Director', resource_type: 'cloud_alarm_policies', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '8', role_code: 'Director', resource_type: 'iot_monitor_alarms', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '9', role_code: 'Director', resource_type: 'service_levels', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '10', role_code: 'Director', resource_type: 'alarm_events', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '11', role_code: 'Director', resource_type: 'rounds', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '12', role_code: 'Director', resource_type: 'locations', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '13', role_code: 'Director', resource_type: 'rooms', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '14', role_code: 'Director', resource_type: 'beds', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '15', role_code: 'Director', resource_type: 'devices', permission_type: 'manage', scope: 'all', is_active: true },
+  // ========== Admin: Tenant administrator ==========
+  // Matrix: cards (RCDU), roles (RU), users (RCDU), resident (RCDU), resident_phi (RCDU), resident_contacts (RCDU),
+  //         resident_caregivers (RCDU), cloud_alarm_polices (RCDU), Iot_Monitor_alarm (RCDU), tags_catalog (RCDU),
+  //         service_level (RCDU), alarm_event (RCDU), rounds (RCDU), round_details (RCDU), units (RCDU),
+  //         rooms (RCDU), beds (RCDU), device (RCDU), config_versions (RCDU), iot_timeseries (RCDU),
+  //         role-permissions (R), device-store (R - read only, assigned_only)
+  { permission_id: 'admin-1', role_code: 'Admin', resource_type: 'cards', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'admin-2', role_code: 'Admin', resource_type: 'roles', permission_type: 'read', scope: 'all', is_active: true },
+  { permission_id: 'admin-3', role_code: 'Admin', resource_type: 'roles', permission_type: 'update', scope: 'all', is_active: true },
+  { permission_id: 'admin-4', role_code: 'Admin', resource_type: 'role_permissions', permission_type: 'read', scope: 'all', is_active: true },
+  { permission_id: 'admin-5', role_code: 'Admin', resource_type: 'users', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'admin-6', role_code: 'Admin', resource_type: 'residents', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'admin-7', role_code: 'Admin', resource_type: 'resident_phi', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'admin-8', role_code: 'Admin', resource_type: 'resident_contacts', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'admin-9', role_code: 'Admin', resource_type: 'resident_caregivers', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'admin-10', role_code: 'Admin', resource_type: 'alarm_cloud', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'admin-11', role_code: 'Admin', resource_type: 'alarm_device', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'admin-12', role_code: 'Admin', resource_type: 'tags_catalog', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'admin-13', role_code: 'Admin', resource_type: 'service_levels', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'admin-14', role_code: 'Admin', resource_type: 'alarm_events', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'admin-15', role_code: 'Admin', resource_type: 'rounds', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'admin-16', role_code: 'Admin', resource_type: 'round_details', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'admin-17', role_code: 'Admin', resource_type: 'units', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'admin-18', role_code: 'Admin', resource_type: 'rooms', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'admin-19', role_code: 'Admin', resource_type: 'beds', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'admin-20', role_code: 'Admin', resource_type: 'devices', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'admin-21', role_code: 'Admin', resource_type: 'config_versions', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'admin-22', role_code: 'Admin', resource_type: 'iot_timeseries', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'admin-23', role_code: 'Admin', resource_type: 'device_store', permission_type: 'read', scope: 'assigned_only', is_active: true },
 
-  // ========== DON（护士长）==========
-  { permission_id: '16', role_code: 'DON', resource_type: 'vital_monitor', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '16-1', role_code: 'DON', resource_type: 'roles', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '16-2', role_code: 'DON', resource_type: 'role_permissions', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '17', role_code: 'DON', resource_type: 'users', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '18', role_code: 'DON', resource_type: 'residents', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '19', role_code: 'DON', resource_type: 'resident_phi', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '20', role_code: 'DON', resource_type: 'resident_contacts', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '21', role_code: 'DON', resource_type: 'resident_caregivers', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '22', role_code: 'DON', resource_type: 'cloud_alarm_policies', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '23', role_code: 'DON', resource_type: 'iot_monitor_alarms', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '24', role_code: 'DON', resource_type: 'service_levels', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '25', role_code: 'DON', resource_type: 'alarm_events', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '26', role_code: 'DON', resource_type: 'rounds', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '27', role_code: 'DON', resource_type: 'locations', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '28', role_code: 'DON', resource_type: 'rooms', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '29', role_code: 'DON', resource_type: 'beds', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '30', role_code: 'DON', resource_type: 'devices', permission_type: 'manage', scope: 'all', is_active: true },
+  // ========== Manager: Executive Director / Facility Director ==========
+  // Matrix: cards (R), roles (RU), users (RCDU), resident (RCDU), resident_phi (RCDU), resident_contacts (RCDU),
+  //         resident_caregivers (RCDU), cloud_alarm_polices (RCDU), Iot_Monitor_alarm (RCDU), tags_catalog (RCDU),
+  //         service_level (RCDU), alarm_event (RCDU), rounds (RCDU), round_details (RCDU), units (RCDU),
+  //         rooms (RCDU), beds (RCDU), device (RCDU), iot_timeseries (R), role-permissions (R), device-store (R - read only, assigned_only)
+  { permission_id: 'mgr-1', role_code: 'Manager', resource_type: 'cards', permission_type: 'read', scope: 'all', is_active: true },
+  { permission_id: 'mgr-2', role_code: 'Manager', resource_type: 'roles', permission_type: 'read', scope: 'all', is_active: true },
+  { permission_id: 'mgr-3', role_code: 'Manager', resource_type: 'roles', permission_type: 'update', scope: 'all', is_active: true },
+  { permission_id: 'mgr-4', role_code: 'Manager', resource_type: 'role_permissions', permission_type: 'read', scope: 'all', is_active: true },
+  { permission_id: 'mgr-5', role_code: 'Manager', resource_type: 'users', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'mgr-6', role_code: 'Manager', resource_type: 'residents', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'mgr-7', role_code: 'Manager', resource_type: 'resident_phi', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'mgr-8', role_code: 'Manager', resource_type: 'resident_contacts', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'mgr-9', role_code: 'Manager', resource_type: 'resident_caregivers', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'mgr-10', role_code: 'Manager', resource_type: 'alarm_cloud', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'mgr-11', role_code: 'Manager', resource_type: 'alarm_device', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'mgr-12', role_code: 'Manager', resource_type: 'tags_catalog', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'mgr-13', role_code: 'Manager', resource_type: 'service_levels', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'mgr-14', role_code: 'Manager', resource_type: 'alarm_events', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'mgr-15', role_code: 'Manager', resource_type: 'rounds', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'mgr-16', role_code: 'Manager', resource_type: 'round_details', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'mgr-17', role_code: 'Manager', resource_type: 'units', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'mgr-18', role_code: 'Manager', resource_type: 'rooms', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'mgr-19', role_code: 'Manager', resource_type: 'beds', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'mgr-20', role_code: 'Manager', resource_type: 'devices', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'mgr-21', role_code: 'Manager', resource_type: 'iot_timeseries', permission_type: 'read', scope: 'all', is_active: true },
+  { permission_id: 'mgr-22', role_code: 'Manager', resource_type: 'device_store', permission_type: 'read', scope: 'assigned_only', is_active: true },
 
-  // ========== CM（护理主管）==========
-  { permission_id: '31', role_code: 'CM', resource_type: 'vital_monitor', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '32', role_code: 'CM', resource_type: 'users', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '33', role_code: 'CM', resource_type: 'residents', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '34', role_code: 'CM', resource_type: 'resident_phi', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '35', role_code: 'CM', resource_type: 'resident_contacts', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '36', role_code: 'CM', resource_type: 'resident_caregivers', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '37', role_code: 'CM', resource_type: 'cloud_alarm_policies', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '38', role_code: 'CM', resource_type: 'iot_monitor_alarms', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '39', role_code: 'CM', resource_type: 'service_levels', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '40', role_code: 'CM', resource_type: 'alarm_events', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '41', role_code: 'CM', resource_type: 'rounds', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '42', role_code: 'CM', resource_type: 'locations', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '43', role_code: 'CM', resource_type: 'locations', permission_type: 'update', scope: 'all', is_active: true },
-  { permission_id: '44', role_code: 'CM', resource_type: 'rooms', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '45', role_code: 'CM', resource_type: 'rooms', permission_type: 'update', scope: 'all', is_active: true },
-  { permission_id: '46', role_code: 'CM', resource_type: 'beds', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '47', role_code: 'CM', resource_type: 'beds', permission_type: 'update', scope: 'all', is_active: true },
-  { permission_id: '48', role_code: 'CM', resource_type: 'devices', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '49', role_code: 'CM', resource_type: 'devices', permission_type: 'update', scope: 'all', is_active: true },
+  // ========== IT: IT Support ==========
+  // Matrix: roles (read), users (RCDU), resident (read), resident_caregivers (read), Iot_Monitor_alarm (RCDU),
+  //         tags_catalog (RCDU), alarm_event (R), units (RCDU), rooms (RCDU), beds (RCDU), device (RCDU),
+  //         config_versions (RCDU), role-permissions (R), device-store (RA - read only, assigned_only)
+  { permission_id: 'it-1', role_code: 'IT', resource_type: 'roles', permission_type: 'read', scope: 'all', is_active: true },
+  { permission_id: 'it-2', role_code: 'IT', resource_type: 'role_permissions', permission_type: 'read', scope: 'all', is_active: true },
+  { permission_id: 'it-3', role_code: 'IT', resource_type: 'users', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'it-4', role_code: 'IT', resource_type: 'residents', permission_type: 'read', scope: 'all', is_active: true },
+  { permission_id: 'it-5', role_code: 'IT', resource_type: 'resident_caregivers', permission_type: 'read', scope: 'all', is_active: true },
+  { permission_id: 'it-6', role_code: 'IT', resource_type: 'alarm_device', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'it-7', role_code: 'IT', resource_type: 'tags_catalog', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'it-8', role_code: 'IT', resource_type: 'alarm_events', permission_type: 'read', scope: 'all', is_active: true },
+  { permission_id: 'it-9', role_code: 'IT', resource_type: 'units', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'it-10', role_code: 'IT', resource_type: 'rooms', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'it-11', role_code: 'IT', resource_type: 'beds', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'it-12', role_code: 'IT', resource_type: 'devices', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'it-13', role_code: 'IT', resource_type: 'config_versions', permission_type: 'manage', scope: 'all', is_active: true },
+  { permission_id: 'it-14', role_code: 'IT', resource_type: 'device_store', permission_type: 'read', scope: 'assigned_only', is_active: true },
 
-  // ========== CS（临床主管）==========
-  { permission_id: '50', role_code: 'CS', resource_type: 'vital_monitor', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '51', role_code: 'CS', resource_type: 'residents', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '52', role_code: 'CS', resource_type: 'resident_phi', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '53', role_code: 'CS', resource_type: 'resident_contacts', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '54', role_code: 'CS', resource_type: 'resident_caregivers', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '55', role_code: 'CS', resource_type: 'cloud_alarm_policies', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '56', role_code: 'CS', resource_type: 'iot_monitor_alarms', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '57', role_code: 'CS', resource_type: 'service_levels', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '58', role_code: 'CS', resource_type: 'alarm_events', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '59', role_code: 'CS', resource_type: 'rounds', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '60', role_code: 'CS', resource_type: 'locations', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '61', role_code: 'CS', resource_type: 'locations', permission_type: 'update', scope: 'all', is_active: true },
-  { permission_id: '62', role_code: 'CS', resource_type: 'rooms', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '63', role_code: 'CS', resource_type: 'beds', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '64', role_code: 'CS', resource_type: 'devices', permission_type: 'read', scope: 'all', is_active: true },
+  // ========== Nurse: Clinical intervention ==========
+  // Matrix: cards (R), resident (RA/UA), resident_phi (RA), resident_contacts (RA/UA), resident_caregivers (R),
+  //         cloud_alarm_polices (R), Iot_Monitor_alarm (R/CA/UA), tags_catalog (R), service_level (R),
+  //         alarm_event (RU), rounds (RCU), round_details (RCU), units (R), rooms (R), beds (R), device (R)
+  // Note: units/rooms/beds/devices read permissions (all scope) allow Nurse to know all units/rooms/beds/devices for workflow, does not expose resident information
+  { permission_id: 'nurse-1', role_code: 'Nurse', resource_type: 'cards', permission_type: 'read', scope: 'all', is_active: true },
+  { permission_id: 'nurse-2', role_code: 'Nurse', resource_type: 'residents', permission_type: 'read', scope: 'assigned_only', is_active: true },
+  { permission_id: 'nurse-3', role_code: 'Nurse', resource_type: 'residents', permission_type: 'update', scope: 'assigned_only', is_active: true },
+  { permission_id: 'nurse-4', role_code: 'Nurse', resource_type: 'resident_phi', permission_type: 'read', scope: 'assigned_only', is_active: true },
+  { permission_id: 'nurse-5', role_code: 'Nurse', resource_type: 'resident_contacts', permission_type: 'read', scope: 'assigned_only', is_active: true },
+  { permission_id: 'nurse-6', role_code: 'Nurse', resource_type: 'resident_contacts', permission_type: 'update', scope: 'assigned_only', is_active: true },
+  { permission_id: 'nurse-7', role_code: 'Nurse', resource_type: 'resident_caregivers', permission_type: 'read', scope: 'all', is_active: true },
+  { permission_id: 'nurse-8', role_code: 'Nurse', resource_type: 'alarm_cloud', permission_type: 'read', scope: 'all', is_active: true },
+  { permission_id: 'nurse-9', role_code: 'Nurse', resource_type: 'alarm_device', permission_type: 'read', scope: 'all', is_active: true },
+  { permission_id: 'nurse-10', role_code: 'Nurse', resource_type: 'alarm_device', permission_type: 'create', scope: 'assigned_only', is_active: true },
+  { permission_id: 'nurse-11', role_code: 'Nurse', resource_type: 'alarm_device', permission_type: 'update', scope: 'assigned_only', is_active: true },
+  { permission_id: 'nurse-12', role_code: 'Nurse', resource_type: 'tags_catalog', permission_type: 'read', scope: 'all', is_active: true },
+  { permission_id: 'nurse-13', role_code: 'Nurse', resource_type: 'service_levels', permission_type: 'read', scope: 'all', is_active: true },
+  { permission_id: 'nurse-14', role_code: 'Nurse', resource_type: 'alarm_events', permission_type: 'read', scope: 'assigned_only', is_active: true },
+  { permission_id: 'nurse-15', role_code: 'Nurse', resource_type: 'alarm_events', permission_type: 'update', scope: 'assigned_only', is_active: true },
+  { permission_id: 'nurse-16', role_code: 'Nurse', resource_type: 'rounds', permission_type: 'read', scope: 'assigned_only', is_active: true },
+  { permission_id: 'nurse-17', role_code: 'Nurse', resource_type: 'rounds', permission_type: 'create', scope: 'assigned_only', is_active: true },
+  { permission_id: 'nurse-18', role_code: 'Nurse', resource_type: 'rounds', permission_type: 'update', scope: 'assigned_only', is_active: true },
+  { permission_id: 'nurse-19', role_code: 'Nurse', resource_type: 'round_details', permission_type: 'read', scope: 'assigned_only', is_active: true },
+  { permission_id: 'nurse-20', role_code: 'Nurse', resource_type: 'round_details', permission_type: 'create', scope: 'assigned_only', is_active: true },
+  { permission_id: 'nurse-21', role_code: 'Nurse', resource_type: 'round_details', permission_type: 'update', scope: 'assigned_only', is_active: true },
+  { permission_id: 'nurse-22', role_code: 'Nurse', resource_type: 'units', permission_type: 'read', scope: 'all', is_active: true },
+  { permission_id: 'nurse-23', role_code: 'Nurse', resource_type: 'rooms', permission_type: 'read', scope: 'all', is_active: true },
+  { permission_id: 'nurse-24', role_code: 'Nurse', resource_type: 'beds', permission_type: 'read', scope: 'all', is_active: true },
+  { permission_id: 'nurse-25', role_code: 'Nurse', resource_type: 'devices', permission_type: 'read', scope: 'all', is_active: true },
+  // Note: Nurse needs read permission (all scope) for units, rooms, beds, devices to know all units/rooms/beds/devices for workflow, does not expose resident information
 
-  // ========== CO（合规官）==========
-  { permission_id: '65', role_code: 'CO', resource_type: 'vital_monitor', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '66', role_code: 'CO', resource_type: 'roles', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '66-1', role_code: 'CO', resource_type: 'role_permissions', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '67', role_code: 'CO', resource_type: 'users', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '68', role_code: 'CO', resource_type: 'residents', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '69', role_code: 'CO', resource_type: 'resident_phi', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '70', role_code: 'CO', resource_type: 'resident_contacts', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '71', role_code: 'CO', resource_type: 'resident_caregivers', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '72', role_code: 'CO', resource_type: 'cloud_alarm_policies', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '73', role_code: 'CO', resource_type: 'iot_monitor_alarms', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '74', role_code: 'CO', resource_type: 'service_levels', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '75', role_code: 'CO', resource_type: 'alarm_events', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '76', role_code: 'CO', resource_type: 'rounds', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '77', role_code: 'CO', resource_type: 'locations', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '78', role_code: 'CO', resource_type: 'rooms', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '79', role_code: 'CO', resource_type: 'beds', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '80', role_code: 'CO', resource_type: 'devices', permission_type: 'read', scope: 'all', is_active: true },
+  // ========== Caregiver: Basic first aid (CPR) ==========
+  // Matrix: cards (RA), resident (RA), resident_phi (RA), resident_contacts (RA), resident_caregivers (R),
+  //         cloud_alarm_polices (R), Iot_Monitor_alarm (RA), tags_catalog (R), service_level (R),
+  //         alarm_event (RU), rounds (RCU), round_details (RCU), units (R), rooms (R), beds (R), device (R)
+  // Note: units/rooms/beds/devices read permissions (all scope) allow Caregiver to know all units/rooms/beds/devices to avoid workflow blocking, does not expose resident information
+  { permission_id: 'cg-1', role_code: 'Caregiver', resource_type: 'cards', permission_type: 'read', scope: 'assigned_only', is_active: true },
+  { permission_id: 'cg-2', role_code: 'Caregiver', resource_type: 'residents', permission_type: 'read', scope: 'assigned_only', is_active: true },
+  { permission_id: 'cg-3', role_code: 'Caregiver', resource_type: 'resident_phi', permission_type: 'read', scope: 'assigned_only', is_active: true },
+  { permission_id: 'cg-4', role_code: 'Caregiver', resource_type: 'resident_contacts', permission_type: 'read', scope: 'assigned_only', is_active: true },
+  { permission_id: 'cg-5', role_code: 'Caregiver', resource_type: 'resident_caregivers', permission_type: 'read', scope: 'all', is_active: true },
+  { permission_id: 'cg-6', role_code: 'Caregiver', resource_type: 'alarm_cloud', permission_type: 'read', scope: 'all', is_active: true },
+  { permission_id: 'cg-7', role_code: 'Caregiver', resource_type: 'alarm_device', permission_type: 'read', scope: 'assigned_only', is_active: true },
+  { permission_id: 'cg-8', role_code: 'Caregiver', resource_type: 'tags_catalog', permission_type: 'read', scope: 'all', is_active: true },
+  { permission_id: 'cg-9', role_code: 'Caregiver', resource_type: 'service_levels', permission_type: 'read', scope: 'all', is_active: true },
+  { permission_id: 'cg-10', role_code: 'Caregiver', resource_type: 'alarm_events', permission_type: 'read', scope: 'assigned_only', is_active: true },
+  { permission_id: 'cg-11', role_code: 'Caregiver', resource_type: 'alarm_events', permission_type: 'update', scope: 'assigned_only', is_active: true },
+  { permission_id: 'cg-12', role_code: 'Caregiver', resource_type: 'rounds', permission_type: 'read', scope: 'assigned_only', is_active: true },
+  { permission_id: 'cg-13', role_code: 'Caregiver', resource_type: 'rounds', permission_type: 'create', scope: 'assigned_only', is_active: true },
+  { permission_id: 'cg-14', role_code: 'Caregiver', resource_type: 'rounds', permission_type: 'update', scope: 'assigned_only', is_active: true },
+  { permission_id: 'cg-15', role_code: 'Caregiver', resource_type: 'round_details', permission_type: 'read', scope: 'assigned_only', is_active: true },
+  { permission_id: 'cg-16', role_code: 'Caregiver', resource_type: 'round_details', permission_type: 'create', scope: 'assigned_only', is_active: true },
+  { permission_id: 'cg-17', role_code: 'Caregiver', resource_type: 'round_details', permission_type: 'update', scope: 'assigned_only', is_active: true },
+  { permission_id: 'cg-18', role_code: 'Caregiver', resource_type: 'units', permission_type: 'read', scope: 'all', is_active: true },
+  { permission_id: 'cg-19', role_code: 'Caregiver', resource_type: 'rooms', permission_type: 'read', scope: 'all', is_active: true },
+  { permission_id: 'cg-20', role_code: 'Caregiver', resource_type: 'beds', permission_type: 'read', scope: 'all', is_active: true },
+  { permission_id: 'cg-21', role_code: 'Caregiver', resource_type: 'devices', permission_type: 'read', scope: 'all', is_active: true },
+  // Note: Caregiver needs read permission (all scope) for units, rooms, beds, devices to avoid workflow blocking, does not expose resident information
 
-  // ========== IT（IT支持）==========
-  // IT 没有 vital_monitor 权限（根据权限表）
-  { permission_id: '82', role_code: 'IT', resource_type: 'roles', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '82-1', role_code: 'IT', resource_type: 'role_permissions', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '83', role_code: 'IT', resource_type: 'users', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '84', role_code: 'IT', resource_type: 'residents', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '85', role_code: 'IT', resource_type: 'resident_caregivers', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '86', role_code: 'IT', resource_type: 'devices', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '87', role_code: 'IT', resource_type: 'locations', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '88', role_code: 'IT', resource_type: 'rooms', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '89', role_code: 'IT', resource_type: 'beds', permission_type: 'manage', scope: 'all', is_active: true },
-  { permission_id: '90', role_code: 'IT', resource_type: 'iot_monitor_alarms', permission_type: 'manage', scope: 'all', is_active: true },
+  // ========== Resident: Can only see own cards ==========
+  // Matrix: resident_contacts (RA/UA/CA), alarm_event (RA/UA(homecare))
+  // Note: cards permission is handled at application layer (self_only scope)
+  { permission_id: 'res-1', role_code: 'Resident', resource_type: 'cards', permission_type: 'read', scope: 'self_only', is_active: true },
+  { permission_id: 'res-2', role_code: 'Resident', resource_type: 'resident_contacts', permission_type: 'read', scope: 'self_only', is_active: true },
+  { permission_id: 'res-3', role_code: 'Resident', resource_type: 'resident_contacts', permission_type: 'update', scope: 'self_only', is_active: true },
+  { permission_id: 'res-4', role_code: 'Resident', resource_type: 'resident_contacts', permission_type: 'create', scope: 'self_only', is_active: true },
+  { permission_id: 'res-5', role_code: 'Resident', resource_type: 'alarm_events', permission_type: 'read', scope: 'self_only', is_active: true },
+  { permission_id: 'res-6', role_code: 'Resident', resource_type: 'alarm_events', permission_type: 'update', scope: 'self_only', is_active: true },
+  // Note: alarm_events update permission varies by scenario (Facility vs Homecare) - handled at application layer
+  // Note: Resident cannot create alarm events, only read and update existing ones
 
-  // ========== Nurse（护士）==========
-  { permission_id: '91', role_code: 'Nurse', resource_type: 'vital_monitor', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '92', role_code: 'Nurse', resource_type: 'residents', permission_type: 'manage', scope: 'assigned_only', is_active: true },
-  { permission_id: '93', role_code: 'Nurse', resource_type: 'resident_phi', permission_type: 'manage', scope: 'assigned_only', is_active: true },
-  { permission_id: '94', role_code: 'Nurse', resource_type: 'resident_contacts', permission_type: 'manage', scope: 'assigned_only', is_active: true },
-  { permission_id: '95', role_code: 'Nurse', resource_type: 'resident_caregivers', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '96', role_code: 'Nurse', resource_type: 'cloud_alarm_policies', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '97', role_code: 'Nurse', resource_type: 'iot_monitor_alarms', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '98', role_code: 'Nurse', resource_type: 'iot_monitor_alarms', permission_type: 'manage', scope: 'assigned_only', is_active: true },
-  { permission_id: '99', role_code: 'Nurse', resource_type: 'service_levels', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '100', role_code: 'Nurse', resource_type: 'alarm_events', permission_type: 'read', scope: 'assigned_only', is_active: true },
-  { permission_id: '101', role_code: 'Nurse', resource_type: 'alarm_events', permission_type: 'update', scope: 'assigned_only', is_active: true },
-  { permission_id: '102', role_code: 'Nurse', resource_type: 'rounds', permission_type: 'read', scope: 'assigned_only', is_active: true },
-  { permission_id: '103', role_code: 'Nurse', resource_type: 'rounds', permission_type: 'create', scope: 'assigned_only', is_active: true },
-  { permission_id: '104', role_code: 'Nurse', resource_type: 'rounds', permission_type: 'update', scope: 'assigned_only', is_active: true },
-  { permission_id: '105', role_code: 'Nurse', resource_type: 'locations', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '106', role_code: 'Nurse', resource_type: 'rooms', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '107', role_code: 'Nurse', resource_type: 'beds', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '108', role_code: 'Nurse', resource_type: 'devices', permission_type: 'read', scope: 'all', is_active: true },
-
-  // ========== Caregiver（护工）==========
-  { permission_id: '109', role_code: 'Caregiver', resource_type: 'vital_monitor', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '110', role_code: 'Caregiver', resource_type: 'residents', permission_type: 'read', scope: 'assigned_only', is_active: true },
-  { permission_id: '111', role_code: 'Caregiver', resource_type: 'resident_phi', permission_type: 'read', scope: 'assigned_only', is_active: true },
-  { permission_id: '112', role_code: 'Caregiver', resource_type: 'resident_contacts', permission_type: 'read', scope: 'assigned_only', is_active: true },
-  { permission_id: '113', role_code: 'Caregiver', resource_type: 'resident_caregivers', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '114', role_code: 'Caregiver', resource_type: 'cloud_alarm_policies', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '115', role_code: 'Caregiver', resource_type: 'iot_monitor_alarms', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '116', role_code: 'Caregiver', resource_type: 'iot_monitor_alarms', permission_type: 'read', scope: 'assigned_only', is_active: true },
-  { permission_id: '117', role_code: 'Caregiver', resource_type: 'service_levels', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '118', role_code: 'Caregiver', resource_type: 'alarm_events', permission_type: 'read', scope: 'assigned_only', is_active: true },
-  { permission_id: '119', role_code: 'Caregiver', resource_type: 'alarm_events', permission_type: 'update', scope: 'assigned_only', is_active: true },
-  { permission_id: '120', role_code: 'Caregiver', resource_type: 'rounds', permission_type: 'read', scope: 'assigned_only', is_active: true },
-  { permission_id: '121', role_code: 'Caregiver', resource_type: 'rounds', permission_type: 'create', scope: 'assigned_only', is_active: true },
-  { permission_id: '122', role_code: 'Caregiver', resource_type: 'rounds', permission_type: 'update', scope: 'assigned_only', is_active: true },
-  { permission_id: '123', role_code: 'Caregiver', resource_type: 'locations', permission_type: 'read', scope: 'assigned_only', is_active: true },
-  { permission_id: '124', role_code: 'Caregiver', resource_type: 'rooms', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '125', role_code: 'Caregiver', resource_type: 'beds', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '126', role_code: 'Caregiver', resource_type: 'devices', permission_type: 'read', scope: 'all', is_active: true },
-
-  // ========== ResidentsFamily（住户及家属）==========
-  { permission_id: '127', role_code: 'ResidentsFamily', resource_type: 'vital_monitor', permission_type: 'read', scope: 'assigned_only', is_active: true },
-  { permission_id: '128', role_code: 'ResidentsFamily', resource_type: 'resident_contacts', permission_type: 'manage', scope: 'assigned_only', is_active: true },
-  { permission_id: '129', role_code: 'ResidentsFamily', resource_type: 'resident_caregivers', permission_type: 'read', scope: 'all', is_active: true },
-  { permission_id: '130', role_code: 'ResidentsFamily', resource_type: 'locations', permission_type: 'read', scope: 'all', is_active: true },
+  // ========== Family: Can only see linked residents' cards ==========
+  // Matrix: cards (RA), resident_contacts (RA/UA/CA), alarm_event (RA/UA(homecare))
+  // Note: cards permission is handled at application layer (linked_residents_only scope)
+  { permission_id: 'fam-1', role_code: 'Family', resource_type: 'cards', permission_type: 'read', scope: 'linked_residents_only', is_active: true },
+  { permission_id: 'fam-2', role_code: 'Family', resource_type: 'resident_contacts', permission_type: 'read', scope: 'linked_residents_only', is_active: true },
+  { permission_id: 'fam-3', role_code: 'Family', resource_type: 'resident_contacts', permission_type: 'update', scope: 'linked_residents_only', is_active: true },
+  { permission_id: 'fam-4', role_code: 'Family', resource_type: 'resident_contacts', permission_type: 'create', scope: 'linked_residents_only', is_active: true },
+  { permission_id: 'fam-5', role_code: 'Family', resource_type: 'alarm_events', permission_type: 'read', scope: 'linked_residents_only', is_active: true },
+  { permission_id: 'fam-6', role_code: 'Family', resource_type: 'alarm_events', permission_type: 'update', scope: 'linked_residents_only', is_active: true },
+  // Note: alarm_events update permission varies by scenario (Facility vs Homecare) - handled at application layer
+  // Note: Family cannot create alarm events, only read and update existing ones
 ]
