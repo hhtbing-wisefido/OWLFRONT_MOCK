@@ -138,10 +138,11 @@
 import { ref, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import { FilterOutlined } from '@ant-design/icons-vue'
-import { getDevicesApi, updateDeviceApi, deleteDeviceApi } from '@/api/devices/device'
+import { getDevicesApi, deleteDeviceApi } from '@/api/devices/device'
 import type { Device, GetDevicesParams } from '@/api/devices/model/deviceModel'
 import { useUserStore } from '@/store/modules/user'
 import type { TableProps } from 'ant-design-vue'
+import { useDeviceEdit } from './composables/useDeviceEdit'
 
 const userStore = useUserStore()
 
@@ -155,11 +156,6 @@ const pagination = ref({
   showSizeChanger: true,
   showTotal: (total: number) => `Total ${total} devices`,
 })
-
-// Edit state
-const editingDeviceId = ref<string | null>(null)
-const editingField = ref<string | null>(null)
-const editingValue = ref<string>('')
 
 // Delete state
 const deletingDeviceId = ref<string | null>(null)
@@ -345,6 +341,16 @@ const applySort = () => {
   })
 }
 
+// Use shared device edit composable (after fetchDevices is defined)
+const {
+  editingDeviceId,
+  editingField,
+  editingValue,
+  handleStartEdit,
+  handleSaveEdit,
+  handleCancelEdit,
+} = useDeviceEdit(fetchDevices)
+
 // Handle table changes (sorting, pagination, etc.)
 const handleTableChange: TableProps['onChange'] = (pag, _filters, sorter) => {
   // Update pagination
@@ -406,45 +412,7 @@ const handleStatusFilterChange = (value: 'online' | 'offline' | 'error' | 'disab
   fetchDevices()
 }
 
-// Start editing
-const handleStartEdit = (record: Device, field: string, value: string) => {
-  editingDeviceId.value = record.device_id
-  editingField.value = field
-  editingValue.value = value
-}
-
-// Save edit
-const handleSaveEdit = async (record: Device) => {
-  if (!editingDeviceId.value || !editingField.value) return
-
-  const newValue = editingValue.value.trim()
-  if (newValue === record.device_name) {
-    // Value hasn't changed, cancel edit
-    handleCancelEdit()
-    return
-  }
-
-  try {
-    await updateDeviceApi(record.device_id, {
-      device_name: newValue,
-    })
-    message.success('Device name updated successfully')
-    await fetchDevices()
-  } catch (error: any) {
-    message.error(error?.message || 'Failed to update device name')
-    // Restore original value
-    await fetchDevices()
-  } finally {
-    handleCancelEdit()
-  }
-}
-
-// Cancel edit
-const handleCancelEdit = () => {
-  editingDeviceId.value = null
-  editingField.value = null
-  editingValue.value = ''
-}
+// Device edit functions are now provided by useDeviceEdit composable
 
 // Handle Business Access change
 const handleBusinessAccessChange = async (record: Device, value: 'pending' | 'approved' | 'rejected') => {

@@ -291,7 +291,6 @@ const fetchAllData = async () => {
     // Fetch all Units
     const allUnitsResult = await getUnitsApi({
       tenant_id: tenantId,
-      is_active: true,
     })
     const allUnits = allUnitsResult.items
 

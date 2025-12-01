@@ -59,7 +59,7 @@
               expanded: expandedBuildings.has(building.building_id || ''),
             }"
           >
-            <div class="building-tag-header" @click="handleToggleBuildingTag(building)">
+            <div class="building-tag-header" @click="handleToggleBuildingTagWrapper(building)">
               <EditOutlined
                 v-if="editingBuildingId !== building.building_id"
                 class="building-tag-edit-icon"
@@ -111,7 +111,7 @@
               <DeleteOutlined
                 v-if="editingBuildingId !== building.building_id"
                 class="building-tag-delete-icon"
-                @click.stop="handleDeleteBuilding(building)"
+                @click.stop="handleDeleteBuildingWrapper(building)"
               />
             </div>
             <div class="building-tag-floors" v-if="expandedBuildings.has(building.building_id || '')" @click.stop>
@@ -123,13 +123,13 @@
                 <a-button
                   :type="selectedFloor === `${floorNum}F` ? 'primary' : 'default'"
                   class="floor-button-small"
-                  @click.stop="handleSelectFloor(building, `${floorNum}F`)"
+                  @click.stop="handleSelectFloorWrapper(building, `${floorNum}F`)"
                 >
                   floor{{ floorNum }}
                 </a-button>
                 <DeleteOutlined
                   class="floor-delete-icon"
-                  @click.stop="handleDeleteFloor(building, floorNum)"
+                  @click.stop="handleDeleteFloorWrapper(building, floorNum)"
                 />
               </div>
             </div>
@@ -152,7 +152,7 @@
               active: selectedBuilding?.building_id === building.building_id,
             }"
           >
-            <div class="building-header" @click="handleToggleBuildingCard(building)">
+            <div class="building-header" @click="handleToggleBuildingCardWrapper(building)">
               <EditOutlined
                 v-if="editingBuildingId !== building.building_id"
                 class="building-edit-icon"
@@ -204,7 +204,7 @@
               <DeleteOutlined
                 v-if="editingBuildingId !== building.building_id"
                 class="building-delete-icon"
-                @click.stop="handleDeleteBuilding(building)"
+                @click.stop="handleDeleteBuildingWrapper(building)"
               />
             </div>
             <div class="floors" v-if="selectedBuilding?.building_id === building.building_id" @click.stop>
@@ -216,13 +216,13 @@
                 <a-button
                   :type="selectedFloor === `${floorNum}F` ? 'primary' : 'default'"
                   class="floor-button"
-                  @click.stop="handleSelectFloor(building, `${floorNum}F`)"
+                  @click.stop="handleSelectFloorWrapper(building, `${floorNum}F`)"
                 >
                   floor{{ floorNum }}
                 </a-button>
                 <DeleteOutlined
                   class="floor-delete-icon"
-                  @click.stop="handleDeleteFloor(building, floorNum)"
+                  @click.stop="handleDeleteFloorWrapper(building, floorNum)"
                 />
               </div>
             </div>
@@ -367,14 +367,6 @@
         <!-- EditUnit Container -->
         <div 
           class="unit-edit-container"
-          :class="{ 
-            'drag-over': dragOverTarget?.type === 'unit' && dragOverTarget?.id === editingUnit?.unit_id,
-            'dev-container-active': devContainerTarget?.type === 'unit' && devContainerTarget?.id === editingUnit?.unit_id
-          }"
-          
-          @dragover.prevent="editingUnit && handleDragOver($event, 'unit', editingUnit.unit_id)"
-          @dragleave="handleDragLeave"
-          @drop="editingUnit && handleDeviceDrop($event, 'unit', editingUnit.unit_id)"
         >
           <!-- Unit Basic Information -->
         <div class="unit-fields">
@@ -443,12 +435,12 @@
           <div class="unit-field full-row">
             <label>Time Zone:</label>
             <a-select
-              v-model:value="editUnitForm.time_zone"
+              v-model:value="editUnitForm.timezone"
               placeholder="Select time zone"
               allow-clear
               show-search
               :filter-option="filterTimeZoneOption"
-              style="width: 200px"
+              style="width: 100%"
             >
               <a-select-option
                 v-for="tz in usTimeZones"
@@ -458,6 +450,22 @@
                 {{ tz.label }}
               </a-select-option>
             </a-select>
+          </div>
+          <!-- Unit action buttons -->
+          <div class="unit-field full-row unit-actions-row">
+            <span class="unit-action-label">Unit:</span>
+            <a-button 
+              v-if="editingUnit"
+              type="primary" 
+              danger 
+              @click="handleDeleteUnitWrapper"
+              :disabled="!editingUnit"
+              style="margin-left: 10px"
+            >
+              Delete
+            </a-button>
+            <a-button @click="resetEditUnitForm" style="margin-left: 10px">Cancel</a-button>
+            <a-button type="primary" @click="handleSaveUnit" style="margin-left: 10px">Save</a-button>
           </div>
           </div>
 
@@ -469,10 +477,32 @@
               <a-button
                 type="primary"
                 size="small"
-                @click="handleShowAddRoomForm"
+                @click="handleToggleAddRoom"
                 :disabled="!editingUnit"
+                :class="{ 'header-button-active': activeHeaderButton === 'room' }"
+                title="Add Room"
               >
                 Add Room
+              </a-button>
+              <a-button
+                type="primary"
+                size="small"
+                @click="handleToggleAddBed"
+                :disabled="!editingUnit"
+                :class="{ 'header-button-active': activeHeaderButton === 'bed' }"
+                title="Expand all rooms"
+              >
+                Add Bed
+              </a-button>
+              <a-button
+                type="primary"
+                size="small"
+                @click="handleToggleAddDevice"
+                :disabled="!editingUnit"
+                :class="{ 'header-button-active': activeHeaderButton === 'device' }"
+                title="Expand all rooms and show device container"
+              >
+                Add Device
               </a-button>
             </div>
           </div>
@@ -481,15 +511,17 @@
               <p>Please create or select a unit first</p>
             </div>
             <template v-else>
-              <!-- Tree top actions: Add Bed and Dev - Always show when editingUnit exists -->
-              <div class="tree-top-actions">
-                <span class="action-label">Add Bed/Dev to Unit</span>
+              <!-- Tree top actions: Add Bed and Dev - Show based on activeHeaderButton -->
+              <div v-if="activeHeaderButton === 'bed' || activeHeaderButton === 'device'" class="tree-top-actions">
+                <span v-if="activeHeaderButton === 'bed'" class="action-label">Add Bed to Unit</span>
+                <span v-if="activeHeaderButton === 'device'" class="action-label">Add Device to Unit</span>
                 <a-button
+                  v-if="activeHeaderButton === 'bed'"
                   type="primary"
                   size="small"
                   @click="handleAddBedToFirstRoom"
                   :disabled="!editingUnit"
-                  title="Add bed to unit"
+                  title="Add bed to unit's default room (unit_room)"
                   @mouseenter="bedIconHovered = true"
                   @mouseleave="bedIconHovered = false"
                 >
@@ -501,14 +533,15 @@
                   />
                 </a-button>
                 <a-button
+                  v-if="activeHeaderButton === 'device'"
                   type="primary"
                   size="small"
-                  @click="handleAddDev"
+                  @click="handleAddDeviceToUnitWrapper"
                   :disabled="!editingUnit"
-                  :class="{ 'device-mode-active': isDeviceMode }"
-                  :title="isDeviceMode ? 'Exit device mode' : 'Add device'"
+                  title="Add device to unit"
                 >
-                  Dev <AppstoreAddOutlined />
+                  Device
+                  <AppstoreAddOutlined />
                 </a-button>
               </div>
               
@@ -541,58 +574,90 @@
                 :key="room.room_id"
                 class="tree-node room-node"
                 :class="{ 
-                  'drag-over': dragOverTarget?.type === 'room' && dragOverTarget?.id === room.room_id,
                   'dev-container-active': devContainerTarget?.type === 'room' && devContainerTarget?.id === room.room_id
                 }"
-                @dragover.prevent="handleDragOver($event, 'room', room.room_id)"
-                @dragleave="handleDragLeave"
-                @drop="handleDeviceDrop($event, 'room', room.room_id)"
               >
                 <div class="node-content">
-                  <span
-                    class="expand-icon"
-                    @click="toggleRoom(room.room_id)"
-                    v-if="room.beds && room.beds.length > 0"
-                  >
-                    {{ expandedRooms.has(room.room_id) ? '−' : '+' }}
-                  </span>
-                  <span class="expand-placeholder" v-else></span>
-                  <a-input
-                    v-if="editingRoomId === room.room_id"
-                    v-model:value="editingRoomName"
-                    size="small"
-                    style="width: 150px"
-                    @pressEnter="handleSaveRoomName(room.room_id)"
-                    @blur="handleSaveRoomName(room.room_id)"
-                    ref="roomInputRef"
-                  />
-                  <span v-else class="node-label" @dblclick="handleEditRoom(room)">
-                    {{ room.room_name }}
-                  </span>
-                  <EditOutlined
-                    v-if="editingRoomId !== room.room_id"
-                    class="action-icon inline-action"
-                    @click="handleEditRoom(room)"
-                  />
-                  <DeleteOutlined
-                    v-if="editingRoomId !== room.room_id"
-                    class="action-icon delete-icon inline-action"
-                    @click="handleDeleteRoom(room.room_id)"
-                  />
-                  <AppstoreAddOutlined
-                    v-if="editingRoomId !== room.room_id && isDeviceMode"
-                    class="action-icon inline-action add-device-icon"
-                    @click="handleAddDeviceToRoom(room.room_id)"
-                    title="Add device"
-                  />
-                  <div class="node-actions">
-                    <img 
-                      :src="bedIconGreen"
-                      class="action-icon inline-action add-bed-icon-room"
-                      @click="handleAddBedDirectly(room)"
-                      :class="{ 'disabled': getAvailableBedLetters(room).length === 0 }"
-                      title="Add bed"
+                  <div class="node-left">
+                    <span
+                      class="expand-icon"
+                      @click="toggleRoom(room.room_id)"
+                      v-if="room.beds && room.beds.length > 0"
+                    >
+                      {{ expandedRooms.has(room.room_id) ? '−' : '+' }}
+                    </span>
+                    <span class="expand-placeholder" v-else></span>
+                    <a-input
+                      v-if="editingRoomId === room.room_id"
+                      v-model:value="editingRoomName"
+                      size="small"
+                      style="width: 150px"
+                      @pressEnter="handleSaveRoomNameWrapper(room.room_id)"
+                      @blur="handleSaveRoomNameWrapper(room.room_id)"
+                      ref="roomInputRef"
                     />
+                    <span v-else class="node-label" @dblclick="handleEditRoom(room)">
+                      {{ room.room_name }}
+                    </span>
+                    <!-- Edit/Delete icons after room name -->
+                    <EditOutlined
+                      v-if="editingRoomId !== room.room_id"
+                      class="action-icon inline-action"
+                      @click="handleEditRoom(room)"
+                    />
+                    <DeleteOutlined
+                      v-if="editingRoomId !== room.room_id"
+                      class="action-icon delete-icon inline-action"
+                      @click="handleDeleteRoomWrapper(room.room_id)"
+                    />
+                    <!-- Room icons: bed_icon and device_icon thumbnails after Edit/Delete -->
+                    <div v-if="editingRoomId !== room.room_id" class="room-icons">
+                      <!-- Bed icons -->
+                      <div v-if="room.beds && room.beds.length > 0" class="room-icon-group">
+                        <img 
+                          v-for="bed in room.beds.slice(0, 3)"
+                          :key="bed.bed_id"
+                          :src="bedIconSvg"
+                          class="room-icon-thumbnail"
+                          :title="bed.bed_name"
+                        />
+                        <span v-if="room.beds.length > 3" class="room-icon-count">+{{ room.beds.length - 3 }}</span>
+                      </div>
+                      <!-- Device icons -->
+                      <div v-if="getRoomDevices(room.room_id).length > 0" class="room-icon-group">
+                        <div
+                          v-for="device in getRoomDevices(room.room_id).slice(0, 3)"
+                          :key="device.device_id"
+                          class="device-thumbnail-small"
+                          :class="{
+                            'monitoring-enabled': device.monitoring_enabled,
+                            'monitoring-disabled': !device.monitoring_enabled
+                          }"
+                          :title="device.device_name"
+                        >
+                          <img :src="getDeviceTypeIcon(device.device_type)" class="device-icon-svg" />
+                          <div class="device-status-dot" :class="`status-${device.status}`"></div>
+                        </div>
+                        <span v-if="getRoomDevices(room.room_id).length > 3" class="room-icon-count">+{{ getRoomDevices(room.room_id).length - 3 }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="node-right">
+                    <AppstoreAddOutlined
+                      v-if="editingRoomId !== room.room_id && isDeviceMode"
+                      class="action-icon inline-action add-device-icon"
+                      @click="handleAddDeviceToRoom(room.room_id)"
+                      title="Add device"
+                    />
+                    <div v-if="!isDeviceMode" class="node-actions">
+                      <img 
+                        :src="bedIconGreen"
+                        class="action-icon inline-action add-bed-icon-room"
+                        @click="handleAddBedDirectlyWrapper(room)"
+                        :class="{ 'disabled': getAvailableBedLetters(room).length === 0 }"
+                        title="Add bed"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -607,49 +672,78 @@
                     :key="bed.bed_id"
                     class="tree-node bed-node"
                     :class="{ 
-                      'drag-over': dragOverTarget?.type === 'bed' && dragOverTarget?.id === bed.bed_id,
                       'dev-container-active': devContainerTarget?.type === 'bed' && devContainerTarget?.id === bed.bed_id
                     }"
-                    @dragover.prevent="handleDragOver($event, 'bed', bed.bed_id)"
-                    @dragleave="handleDragLeave"
-                    @drop="handleDeviceDrop($event, 'bed', bed.bed_id)"
                   >
                     <div class="node-content">
-                      <span class="expand-placeholder"></span>
-                      <a-input
-                        v-if="editingBedId === bed.bed_id"
-                        v-model:value="editingBedName"
-                        size="small"
-                        style="width: 150px"
-                        @pressEnter="handleSaveBedName(bed.bed_id)"
-                        @blur="handleSaveBedName(bed.bed_id)"
-                        ref="bedInputRef"
-                        placeholder="BedA-BedZ"
-                      />
-                      <span v-else class="node-label" @dblclick="handleEditBed(bed)">
-                        {{ bed.bed_name }}
-                      </span>
-                      <EditOutlined
-                        v-if="editingBedId !== bed.bed_id"
-                        class="action-icon inline-action"
-                        @click="handleEditBed(bed)"
-                      />
-                      <DeleteOutlined
-                        v-if="editingBedId !== bed.bed_id"
-                        class="action-icon delete-icon inline-action"
-                        @click="handleDeleteBed(bed.bed_id)"
-                      />
-                      <AppstoreAddOutlined
-                        v-if="editingBedId !== bed.bed_id && isDeviceMode"
-                        class="action-icon inline-action add-device-icon"
-                        @click="handleAddDeviceToBed(bed.bed_id)"
-                        title="Add device"
-                      />
+                      <div class="node-left">
+                        <span
+                          class="expand-icon"
+                          @click="toggleBedDevices(bed.bed_id)"
+                          v-if="getBedDevices(bed.bed_id).length > 0"
+                        >
+                          {{ expandedBedDevices.has(bed.bed_id) ? '−' : '+' }}
+                        </span>
+                        <span class="expand-placeholder" v-else></span>
+                        <a-input
+                          v-if="editingBedId === bed.bed_id"
+                          v-model:value="editingBedName"
+                          size="small"
+                          style="width: 150px"
+                          @pressEnter="handleSaveBedNameWrapper(bed.bed_id)"
+                          @blur="handleSaveBedNameWrapper(bed.bed_id)"
+                          ref="bedInputRef"
+                          placeholder="BedA-BedZ"
+                        />
+                        <span v-else class="node-label" @dblclick="handleEditBedWrapper(bed)">
+                          {{ bed.bed_name }}
+                        </span>
+                        <!-- Edit/Delete icons after bed name -->
+                        <EditOutlined
+                          v-if="editingBedId !== bed.bed_id"
+                          class="action-icon inline-action"
+                          @click="handleEditBedWrapper(bed)"
+                        />
+                        <DeleteOutlined
+                          v-if="editingBedId !== bed.bed_id"
+                          class="action-icon delete-icon inline-action"
+                          @click="handleDeleteBedWrapper(bed.bed_id)"
+                        />
+                        <!-- Device thumbnails when bed devices are not expanded (room is expanded but device list is collapsed) -->
+                        <!-- Display after edit/del icons -->
+                        <div 
+                          v-if="editingBedId !== bed.bed_id && getBedDevices(bed.bed_id).length > 0 && expandedRooms.has(room.room_id) && !expandedBedDevices.has(bed.bed_id)"
+                          class="bed-device-thumbnails"
+                        >
+                          <div
+                            v-for="device in getBedDevices(bed.bed_id)"
+                            :key="device.device_id"
+                            class="device-thumbnail"
+                            :class="{
+                              'monitoring-enabled': device.monitoring_enabled,
+                              'monitoring-disabled': !device.monitoring_enabled
+                            }"
+                            :title="device.device_name"
+                          >
+                            <img :src="getDeviceTypeIcon(device.device_type)" class="device-icon-svg-small" />
+                            <div class="device-status-dot-small" :class="`status-${device.status}`"></div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="node-right">
+                        <AppstoreAddOutlined
+                          v-if="editingBedId !== bed.bed_id && isDeviceMode"
+                          class="action-icon inline-action add-device-icon"
+                          @click="handleAddDeviceToBed(bed.bed_id)"
+                          title="Add device"
+                        />
+                      </div>
                     </div>
                     
                     <!-- Bed Bound Device Nodes (as Children of Bed) -->
+                    <!-- Only show when bed devices are expanded -->
                     <div
-                      v-if="getBedDevices(bed.bed_id).length > 0"
+                      v-if="expandedBedDevices.has(bed.bed_id) && getBedDevices(bed.bed_id).length > 0"
                       class="tree-children"
                     >
                       <div
@@ -672,7 +766,7 @@
                               }"
                             >
                               <div class="device-icon-circle">
-                                {{ getDeviceTypeIcon(device.device_type) }}
+                                <img :src="getDeviceTypeIcon(device.device_type)" class="device-icon-svg" />
                               </div>
                               <div class="device-status-indicator" :class="`status-${device.status}`">
                                 <CheckCircleOutlined v-if="device.status === 'online'" />
@@ -680,15 +774,38 @@
                                 <CloseCircleOutlined v-else-if="device.status === 'offline'" />
                               </div>
                             </div>
-                            <span class="node-label">{{ device.device_name }}</span>
-                            <EditOutlined 
-                              class="action-icon inline-action"
-                              @click="handleEditDevice(device)"
-                            />
-                            <DeleteOutlined 
-                              class="action-icon delete-icon inline-action"
-                              @click="handleDeleteDevice(device)"
-                            />
+                            <!-- Edit mode: Show input (reuse logic from DeviceList.vue) -->
+                            <template v-if="editingDeviceId === device.device_id && editingField === 'device_name'">
+                              <a-input
+                                v-model:value="editingValue"
+                                @blur="handleSaveEdit(device)"
+                                @pressEnter="handleSaveEdit(device)"
+                                @keydown.esc="handleCancelEdit"
+                                style="width: 150px; margin-right: 8px;"
+                                autofocus
+                              />
+                            </template>
+                            <!-- Display mode: Show name and actions -->
+                            <template v-else>
+                              <span 
+                                class="node-label"
+                                @dblclick="handleStartEdit(device, 'device_name', device.device_name || '')"
+                                style="cursor: pointer;"
+                                title="Double click to edit"
+                              >
+                                {{ device.device_name }}
+                              </span>
+                              <EditOutlined 
+                                class="action-icon inline-action"
+                                @click="handleStartEdit(device, 'device_name', device.device_name || '')"
+                                title="Edit device name"
+                              />
+                              <DeleteOutlined 
+                                class="action-icon delete-icon inline-action"
+                                @click="handleDeleteDevice(device)"
+                                title="Unbind device"
+                              />
+                            </template>
                             <span 
                               class="collapse-icon"
                               @click="toggleDevicesExpand(`device-${device.device_id}`)"
@@ -711,7 +828,7 @@
                               }"
                             >
                               <div class="device-icon-circle">
-                                {{ getDeviceTypeIcon(device.device_type) }}
+                                <img :src="getDeviceTypeIcon(device.device_type)" class="device-icon-svg" />
                               </div>
                               <div class="device-status-indicator" :class="`status-${device.status}`">
                                 <CheckCircleOutlined v-if="device.status === 'online'" />
@@ -733,8 +850,9 @@
                 </div>
                 
                 <!-- Room Bound Device Nodes (as Children of Room, After Bed) -->
+                <!-- Only show when room is expanded -->
                 <div
-                  v-if="getRoomDevices(room.room_id).length > 0"
+                  v-if="expandedRooms.has(room.room_id) && getRoomDevices(room.room_id).length > 0"
                   class="tree-children"
                 >
                   <div
@@ -757,7 +875,7 @@
                           }"
                         >
                           <div class="device-icon-circle">
-                            {{ getDeviceTypeIcon(device.device_type) }}
+                            <img :src="getDeviceTypeIcon(device.device_type)" class="device-icon-svg" />
                           </div>
                           <div class="device-status-indicator" :class="`status-${device.status}`">
                             <CheckCircleOutlined v-if="device.status === 'online'" />
@@ -765,22 +883,45 @@
                             <CloseCircleOutlined v-else-if="device.status === 'offline'" />
                           </div>
                         </div>
-                        <span class="node-label">{{ device.device_name }}</span>
-                        <EditOutlined 
-                          class="action-icon inline-action"
-                          @click="handleEditDevice(device)"
-                        />
-                        <DeleteOutlined 
-                          class="action-icon delete-icon inline-action"
-                          @click="handleDeleteDevice(device)"
-                        />
-                        <span 
-                          class="collapse-icon"
-                          @click="toggleDevicesExpand(`device-${device.device_id}`)"
-                          title="Collapse"
-                        >
-                          −
-                        </span>
+                        <!-- Edit mode: Show input (reuse logic from DeviceList.vue) -->
+                        <template v-if="editingDeviceId === device.device_id && editingField === 'device_name'">
+                          <a-input
+                            v-model:value="editingValue"
+                            @blur="handleSaveEdit(device)"
+                            @pressEnter="handleSaveEdit(device)"
+                            @keydown.esc="handleCancelEdit"
+                            style="width: 150px; margin-right: 8px;"
+                            autofocus
+                          />
+                        </template>
+                        <!-- Display mode: Show name and actions -->
+                        <template v-else>
+                          <span 
+                            class="node-label"
+                            @dblclick="handleStartEdit(device, 'device_name', device.device_name || '')"
+                            style="cursor: pointer;"
+                            title="Double click to edit"
+                          >
+                            {{ device.device_name }}
+                          </span>
+                          <EditOutlined 
+                            class="action-icon inline-action"
+                            @click="handleStartEdit(device, 'device_name', device.device_name || '')"
+                            title="Edit device name"
+                          />
+                          <DeleteOutlined 
+                            class="action-icon delete-icon inline-action"
+                            @click="handleDeleteDevice(device)"
+                            title="Unbind device"
+                          />
+                          <span 
+                            class="collapse-icon"
+                            @click="toggleDevicesExpand(`device-${device.device_id}`)"
+                            title="Collapse"
+                          >
+                            −
+                          </span>
+                        </template>
                       </div>
                       <!-- Collapsed Mode: Show Icon Only -->
                       <div 
@@ -796,7 +937,7 @@
                           }"
                         >
                           <div class="device-icon-circle">
-                            {{ getDeviceTypeIcon(device.device_type) }}
+                            <img :src="getDeviceTypeIcon(device.device_type)" class="device-icon-svg" />
                           </div>
                           <div class="device-status-indicator" :class="`status-${device.status}`">
                             <CheckCircleOutlined v-if="device.status === 'online'" />
@@ -845,34 +986,13 @@
                   {{ record.monitoring_enabled ? 'T' : 'F' }}
                 </template>
                 <template v-else-if="column.key === 'device_name'">
-                  <span
-                    class="device-name-draggable"
-                    draggable="true"
-                    @dragstart="handleDeviceDragStart($event, record)"
-                  >
+                  <span>
                     {{ record.device_name }}
                   </span>
                 </template>
               </template>
             </a-table>
           </div>
-        </div>
-      </div>
-      <div class="modal-actions">
-        <div class="modal-actions-left">
-          <a-button 
-            v-if="editingUnit"
-            type="primary" 
-            danger 
-            @click="handleDeleteUnit"
-            :disabled="!editingUnit"
-          >
-            <DeleteOutlined /> Delete
-          </a-button>
-        </div>
-        <div class="modal-actions-right">
-          <a-button @click="resetEditUnitForm">Cancel</a-button>
-          <a-button type="primary" @click="handleSaveUnit">OK</a-button>
         </div>
       </div>
     </a-modal>
@@ -896,7 +1016,7 @@
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'checkbox'">
             <a-checkbox
-              :checked="isDeviceBoundToTarget(record)"
+              :checked="isDeviceBoundToTargetWrapper(record)"
               @change="handleDeviceSelectChange($event, record)"
             />
           </template>
@@ -912,251 +1032,171 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { message, Modal } from 'ant-design-vue'
+import { message } from 'ant-design-vue'
 import { EditOutlined, DeleteOutlined, PlusOutlined, EyeOutlined, CheckCircleOutlined, CloseCircleOutlined, AppstoreAddOutlined } from '@ant-design/icons-vue'
 import bedIconBlue from '@/assets/svg/Bed-blue.svg'
 import bedIconGreen from '@/assets/svg/Bed-green.svg'
-import type { ColumnsType } from 'ant-design-vue/es/table'
+import bedIconSvg from '@/assets/svg/bed_icon.svg'
+import sleepadSvg from '@/assets/svg/sleepad.svg'
+import radarSvg from '@/assets/svg/radar.svg'
 import type { Building, Unit, RoomWithBeds, Bed } from '@/api/units/model/unitModel'
-import {
-  createBuildingApi,
-  getBuildingsApi,
-  updateBuildingApi,
-  deleteBuildingApi,
-  createUnitApi,
-  getUnitsApi,
-  updateUnitApi,
-  deleteUnitApi,
-  getRoomsApi,
-  createRoomApi,
-  updateRoomApi,
-  deleteRoomApi,
-  createBedApi,
-  updateBedApi,
-  deleteBedApi,
-} from '@/api/units/unit'
-import { createTagApi } from '@/api/admin/tags/tags'
+import { getUnitsApi } from '@/api/units/unit'
 import { useUserStore } from '@/store/modules/user'
 import { useTagsStore } from '@/store/modules/tags'
-import { getDevicesApi, updateDeviceApi } from '@/api/devices/device'
 import type { Device } from '@/api/devices/model/deviceModel'
+import { useBuilding } from './composables/useBuilding'
+import { useUnit } from './composables/useUnit'
+import { useRoom } from './composables/useRoom'
+import { useBed } from './composables/useBed'
+import { useDevice } from './composables/useDevice'
 
 const userStore = useUserStore()
 const tagsStore = useTagsStore()
 const router = useRouter()
+
+// Use composables
+const buildingComposable = useBuilding()
+const unitComposable = useUnit()
+const roomComposable = useRoom()
+const bedComposable = useBed()
+const deviceComposable = useDevice()
+
+// Extract state from composables
+const {
+  buildings,
+  selectedFloor,
+  selectedLocationTag,
+  expandedBuildings,
+  selectedBuilding,
+  currentBuildingForGrid,
+  createBuildingForm,
+  editingBuildingId,
+  editingBuildingForm,
+  fetchBuildings,
+  handleToggleBuildingTag,
+  handleToggleBuildingCard,
+  handleSelectFloor,
+  handleCreateBuilding,
+  handleEditBuilding,
+  handleSaveBuilding,
+  handleDeleteFloor,
+  handleDeleteBuilding,
+} = buildingComposable
+
+// Wrapper for handleDeleteBuilding that clears units
+const handleDeleteBuildingWrapper = async (building: Building) => {
+  await handleDeleteBuilding(building)
+  if (selectedBuilding.value?.building_id === building.building_id) {
+    units.value = []
+  }
+  if (expandedBuildings.value.has(building.building_id || '')) {
+    units.value = []
+  }
+}
+
+const {
+  units,
+  allUnits,
+  showCreateUnitModal,
+  showEditUnitModal,
+  editingUnit,
+  roomsWithBeds,
+  createUnitForm,
+  editUnitForm,
+  fetchAllUnits,
+  fetchRoomsWithBeds,
+  ensureUnitRoom,
+  handleCellClick: handleCellClickBase,
+  handleCreateUnit: handleCreateUnitBase,
+  resetCreateUnitForm,
+  resetEditUnitForm,
+  handleSaveUnit: handleSaveUnitBase,
+  handleDeleteUnit,
+} = unitComposable
+
+const {
+  showAddRoomForm,
+  newRoomName,
+  expandedRooms,
+  editingRoomId,
+  editingRoomName,
+  roomNameInputRef,
+  roomInputRef,
+  toggleRoom,
+  handleToggleAddRoom: handleToggleAddRoomBase,
+  handleCancelAddRoom: handleCancelAddRoomBase,
+  handleAddRoom: handleAddRoomBase,
+  handleEditRoom,
+  handleSaveRoomName,
+  handleDeleteRoom,
+} = roomComposable
+
+const {
+  editingBedId,
+  editingBedName,
+  bedInputRef,
+  getAvailableBedLetters,
+  handleAddBedDirectly,
+  handleAddBedToFirstRoom: handleAddBedToFirstRoomBase,
+  handleToggleAddBed: handleToggleAddBedBase,
+  handleEditBed,
+  handleSaveBedName,
+  handleDeleteBed,
+} = bedComposable
+
+const {
+  isDeviceMode,
+  showDeviceSelectModal,
+  selectedTarget,
+  devicesForSelection,
+  devContainerTarget,
+  expandedDevices,
+  deviceColumns,
+  deviceSelectColumns,
+  devContainerDevices,
+  isDeviceBound,
+  getRoomDevices,
+  getBedDevices,
+  getUnitDevices,
+  toggleDevicesExpand,
+  openDeviceSelection,
+  handleToggleAddDevice: handleToggleAddDeviceBase,
+  handleAddDeviceToRoom: handleAddDeviceToRoomBase,
+  handleAddDeviceToBed: handleAddDeviceToBedBase,
+  handleStartEdit,
+  handleSaveEdit,
+  handleCancelEdit,
+  editingDeviceId,
+  editingField,
+  editingValue,
+  handleDeviceCheckboxChange: handleDeviceCheckboxChangeBase,
+  handleDeleteDevice,
+  isDeviceBoundToTarget,
+  handleDeviceSelectChange: handleDeviceSelectChangeBase,
+  handleConfirmDeviceSelection: handleConfirmDeviceSelectionBase,
+  handleCancelDeviceSelection,
+} = deviceComposable
 
 // Navigate to view mode
 const goToUnitView = () => {
   router.push('/unitview')
 }
 
-// Building list
-const buildings = ref<Building[]>([])
-const selectedFloor = ref<string>('')
-
-// Selected location_tag (for displaying units without building/floor)
-const selectedLocationTag = ref<string>('')
-
-// Headline row: independently manages its own expanded state (independent component instance)
-const expandedBuildings = ref<Set<string>>(new Set())
-
-// Left column: independently manages its own expanded state (independent component instance)
-const selectedBuilding = ref<Building | null>(null)
-
-// Current building used for unitGrid (may be selected from headline or left column)
-const currentBuildingForGrid = ref<Building | null>(null)
-
-// Create Building Form (at page header)
-const createBuildingForm = ref({
-  location_tag: undefined as string | undefined,
-  building_name: '',
-  floors: 1,
-})
-
-// Edit Building Form (inline editing)
-const editingBuildingId = ref<string | null>(null)
-const editingBuildingForm = ref({
-  location_tag: undefined as string | undefined,
-  building_name: '',
-})
-
-// Unit grid
-const units = ref<Unit[]>([])
-// Note: gridSize is no longer used, CSS Grid will handle layout automatically
-
-// Create Unit Modal
-const showCreateUnitModal = ref(false)
-const createUnitForm = ref({
-  unit_number: '',
-  unit_name: '',
-  unit_type: 'Facility' as 'Facility' | 'Home', // Default value is Facility
-  location_tag: undefined as string | undefined,
-  area_tag: undefined as string | undefined,
-  building: '',
-  floor: '',
-  is_multi_person_room: true, // Selected by default
-  is_public_space: false,
-  time_zone: undefined as string | undefined,
-})
-// selectedCellIndex is temporarily unused, reserved for future functionality
-// const selectedCellIndex = ref<number | null>(null)
-
-// Edit Unit Modal (Room-Bed Management)
-const showEditUnitModal = ref(false)
-const editingUnit = ref<Unit | null>(null)
-const roomsWithBeds = ref<RoomWithBeds[]>([])
-const showAddRoomForm = ref(false)
-const newRoomName = ref('')
-const expandedRooms = ref<Set<string>>(new Set())
-const expandedDevices = ref<Set<string>>(new Set()) // Device expanded state (Room/Bed ID)
+// Local state (not in composables)
+const activeHeaderButton = ref<'room' | 'bed' | 'device' | null>(null)
 const bedIconHovered = ref(false)
 const bedIconSrc = computed(() => bedIconHovered.value ? bedIconGreen : bedIconBlue)
-const editingRoomId = ref<string | null>(null)
-// Device selection modal
-const showDeviceSelectModal = ref(false)
-const selectedTarget = ref<{ type: 'unit' | 'room' | 'bed', id: string } | null>(null)
-const devicesForSelection = ref<Device[]>([])
+// Track expanded bed devices (for +/- toggle)
+const expandedBedDevices = ref<Set<string>>(new Set())
 
-// Dev container currently displayed container (for filtering devices)
-const devContainerTarget = ref<{ type: 'unit' | 'room' | 'bed', id: string } | null>(null)
-const editingRoomName = ref('')
-const editingBedId = ref<string | null>(null)
-const editingBedName = ref('')
-const roomNameInputRef = ref<any>()
-const roomInputRef = ref<any>()
-const bedInputRef = ref<any>()
-const isDeviceMode = ref(false)
-
-// Device related state
-const availableDevices = ref<Device[]>([]) // Available devices (unbound)
-const allDevices = ref<Device[]>([]) // All devices (including bound)
-const deviceColumns: ColumnsType<Device> = [
-  {
-    title: '',
-    key: 'checkbox',
-    width: 50,
-    align: 'center',
-    fixed: 'left',
-  },
-  {
-    title: 'Device_Name',
-    dataIndex: 'device_name',
-    key: 'device_name',
-    width: 150,
-    sorter: (a, b) => (a.device_name || '').localeCompare(b.device_name || ''),
-  },
-  {
-    title: 'Device_type',
-    dataIndex: 'device_type',
-    key: 'device_type',
-    width: 100,
-    sorter: (a, b) => (a.device_type || '').localeCompare(b.device_type || ''),
-  },
-  {
-    title: 'Device_mode',
-    dataIndex: 'device_model',
-    key: 'device_model',
-    width: 100,
-    sorter: (a, b) => (a.device_model || '').localeCompare(b.device_model || ''),
-  },
-  {
-    title: 'Device_code',
-    dataIndex: 'device_code',
-    key: 'device_code',
-    width: 140,
-    sorter: (a, b) => (a.device_code || '').localeCompare(b.device_code || ''),
-    ellipsis: true,
-  },
-  {
-    title: 'status',
-    dataIndex: 'status',
-    key: 'status',
-    width: 80,
-    sorter: (a, b) => (a.status || '').localeCompare(b.status || ''),
-  },
-  {
-    title: 'Monitor',
-    dataIndex: 'monitoring_enabled',
-    key: 'monitoring_enabled',
-    width: 70,
-    align: 'center',
-    sorter: (a, b) => {
-      const aVal = a.monitoring_enabled ? 1 : 0
-      const bVal = b.monitoring_enabled ? 1 : 0
-      return aVal - bVal
-    },
-  },
-]
-
-// Device selection modal column definitions
-const deviceSelectColumns: ColumnsType<Device> = [
-  {
-    title: '',
-    key: 'checkbox',
-    width: 50,
-    align: 'center',
-    fixed: 'left',
-  },
-  {
-    title: 'Device_Name',
-    dataIndex: 'device_name',
-    key: 'device_name',
-    width: 150,
-    sorter: (a, b) => (a.device_name || '').localeCompare(b.device_name || ''),
-  },
-  {
-    title: 'Device_type',
-    dataIndex: 'device_type',
-    key: 'device_type',
-    width: 100,
-    sorter: (a, b) => (a.device_type || '').localeCompare(b.device_type || ''),
-  },
-  {
-    title: 'Device_mode',
-    dataIndex: 'device_model',
-    key: 'device_model',
-    width: 100,
-    sorter: (a, b) => (a.device_model || '').localeCompare(b.device_model || ''),
-  },
-  {
-    title: 'Device_code',
-    dataIndex: 'device_code',
-    key: 'device_code',
-    width: 140,
-    sorter: (a, b) => (a.device_code || '').localeCompare(b.device_code || ''),
-    ellipsis: true,
-  },
-  {
-    title: 'status',
-    dataIndex: 'status',
-    key: 'status',
-    width: 80,
-    sorter: (a, b) => (a.status || '').localeCompare(b.status || ''),
-  },
-  {
-    title: 'Monitor',
-    dataIndex: 'monitoring_enabled',
-    key: 'monitoring_enabled',
-    width: 70,
-    align: 'center',
-    sorter: (a, b) => {
-      const aVal = a.monitoring_enabled ? 1 : 0
-      const bVal = b.monitoring_enabled ? 1 : 0
-      return aVal - bVal
-    },
-  },
-]
-
-// Edit Unit Form
-const editUnitForm = ref({
-  area_tag: undefined as string | undefined,
-  unit_name: '',
-  unit_number: '',
-  unit_type: 'Facility' as 'Facility' | 'Home', // Default value is Facility
-  is_multi_person_room: true, // Selected by default
-  is_public_space: false,
-  time_zone: undefined as string | undefined,
-})
+// Toggle bed devices expansion
+const toggleBedDevices = (bedId: string) => {
+  if (expandedBedDevices.value.has(bedId)) {
+    expandedBedDevices.value.delete(bedId)
+  } else {
+    expandedBedDevices.value.add(bedId)
+  }
+}
 
 // Location Tag Options (从 store 获取)
 const locationTagOptions = computed(() => tagsStore.locationTags)
@@ -1165,36 +1205,18 @@ const locationTagOptions = computed(() => tagsStore.locationTags)
 const areaTagOptions = computed(() => tagsStore.areaTags)
 const areaTagSearchValue = ref('')
 
-// US timezone list (IANA format)
+// Simplified timezone list (IANA format)
 const usTimeZones = [
-  { value: 'America/New_York', label: 'Eastern Time (America/New_York)' },
-  { value: 'America/Chicago', label: 'Central Time (America/Chicago)' },
-  { value: 'America/Denver', label: 'Mountain Time (America/Denver)' },
-  { value: 'America/Phoenix', label: 'Mountain Time - Arizona (America/Phoenix)' },
-  { value: 'America/Los_Angeles', label: 'Pacific Time (America/Los_Angeles)' },
-  { value: 'America/Anchorage', label: 'Alaska Time (America/Anchorage)' },
-  { value: 'Pacific/Honolulu', label: 'Hawaii Time (Pacific/Honolulu)' },
-  { value: 'America/Detroit', label: 'Eastern Time - Michigan (America/Detroit)' },
-  { value: 'America/Indiana/Indianapolis', label: 'Eastern Time - Indiana (America/Indiana/Indianapolis)' },
-  { value: 'America/Indiana/Vincennes', label: 'Eastern Time - Indiana (America/Indiana/Vincennes)' },
-  { value: 'America/Indiana/Winamac', label: 'Eastern Time - Indiana (America/Indiana/Winamac)' },
-  { value: 'America/Indiana/Marengo', label: 'Eastern Time - Indiana (America/Indiana/Marengo)' },
-  { value: 'America/Indiana/Petersburg', label: 'Eastern Time - Indiana (America/Indiana/Petersburg)' },
-  { value: 'America/Indiana/Vevay', label: 'Eastern Time - Indiana (America/Indiana/Vevay)' },
-  { value: 'America/Kentucky/Louisville', label: 'Eastern Time - Kentucky (America/Kentucky/Louisville)' },
-  { value: 'America/Kentucky/Monticello', label: 'Eastern Time - Kentucky (America/Kentucky/Monticello)' },
-  { value: 'America/Indiana/Tell_City', label: 'Central Time - Indiana (America/Indiana/Tell_City)' },
-  { value: 'America/Indiana/Knox', label: 'Central Time - Indiana (America/Indiana/Knox)' },
-  { value: 'America/Menominee', label: 'Central Time - Michigan (America/Menominee)' },
-  { value: 'America/North_Dakota/Center', label: 'Central Time - North Dakota (America/North_Dakota/Center)' },
-  { value: 'America/North_Dakota/New_Salem', label: 'Central Time - North Dakota (America/North_Dakota/New_Salem)' },
-  { value: 'America/North_Dakota/Beulah', label: 'Central Time - North Dakota (America/North_Dakota/Beulah)' },
-  { value: 'America/Boise', label: 'Mountain Time - Idaho (America/Boise)' },
-  { value: 'America/Nome', label: 'Alaska Time - Nome (America/Nome)' },
-  { value: 'America/Sitka', label: 'Alaska Time - Sitka (America/Sitka)' },
-  { value: 'America/Juneau', label: 'Alaska Time - Juneau (America/Juneau)' },
-  { value: 'America/Metlakatla', label: 'Alaska Time - Metlakatla (America/Metlakatla)' },
-  { value: 'America/Yakutat', label: 'Alaska Time - Yakutat (America/Yakutat)' },
+  // Asia timezones
+  { value: 'Asia/Shanghai', label: 'China (Shanghai, UTC+8)' },
+  { value: 'Asia/Tokyo', label: 'Japan (Tokyo, UTC+9)' },
+  // US timezones
+  { value: 'America/New_York', label: 'US Eastern Time (UTC-5/-4)' },
+  { value: 'America/Chicago', label: 'US Central Time (UTC-6/-5)' },
+  { value: 'America/Denver', label: 'US Mountain Time (UTC-7/-6)' },
+  { value: 'America/Los_Angeles', label: 'US Pacific Time (UTC-8/-7)' },
+  { value: 'America/Anchorage', label: 'US Alaska Time (UTC-9/-8)' },
+  { value: 'Pacific/Honolulu', label: 'US Hawaii Time (UTC-10/-9)' },
 ]
 
 // Timezone selector filter function
@@ -1205,285 +1227,139 @@ const filterTimeZoneOption = (input: string, option: any) => {
   return value.includes(searchText) || label.includes(searchText)
 }
 
-// Get building and floor for display (DB guarantees non-null, default: building="-", floor="1F")
-const getDisplayBuilding = (unit: Unit): string => {
-  return unit.building || '-' // Fallback for safety, but DB guarantees non-null
-}
-
-const getDisplayFloor = (unit: Unit): string => {
-  return unit.floor || '1F' // Fallback for safety, but DB guarantees non-null
-}
-
 // Unit grid calculation - sort by UnitNumber numerically
 const unitGrid = computed(() => {
-  // Use currentBuildingForGrid instead of selectedBuilding
   const building = currentBuildingForGrid.value
+  
+  if (!building || !selectedFloor.value) {
+    return []
+  }
 
-  // Filter units for current building and floor
-  // Display "-" when building is empty, display "1" when floor is empty
+  // All units have location_tag, building, floor (no null values)
+  // Simple filter: match all three fields
   const filteredUnits = units.value.filter((unit) => {
-    const displayBuilding = getDisplayBuilding(unit)
-    const displayFloor = getDisplayFloor(unit)
-    
-    // If it's a virtual "-" building, use location_tag to match
-    if (building?.building_name === '-' && building.building_id?.startsWith('na-building-')) {
-      const locationTag = building.location_tag || ''
-      // DB guarantees building and floor are non-null, compare directly
-      return (
-        unit.building === '-' &&
-        unit.floor === (selectedFloor.value || '1F') &&
-        unit.location_tag === locationTag
-      )
-    } else {
-      const selectedBuildingName = building?.building_name || '-'
-      const selectedFloorValue = selectedFloor.value || '1F'
-      
-      return (
-        displayBuilding === selectedBuildingName &&
-        displayFloor === selectedFloorValue
-      )
-    }
+    return (
+      unit.building === building.building_name &&
+      unit.floor === selectedFloor.value &&
+      unit.location_tag === building.location_tag
+    )
   })
 
-  // Sort by unit_number numerically (ascending)
+  // Sort by unit_number: try numeric sort first, fallback to string sort
   const sortedUnits = [...filteredUnits].sort((a, b) => {
-    const numA = parseInt(a.unit_number) || 0
-    const numB = parseInt(b.unit_number) || 0
-    return numA - numB
+    const numA = parseInt(a.unit_number)
+    const numB = parseInt(b.unit_number)
+    
+    // If both are valid numbers, sort numerically
+    if (!isNaN(numA) && !isNaN(numB)) {
+      return numA - numB
+    }
+    
+    // Otherwise, sort alphabetically
+    return a.unit_number.localeCompare(b.unit_number, undefined, { numeric: true, sensitivity: 'base' })
   })
 
   // Return sorted array directly, CSS Grid will arrange from left to right, top to bottom automatically
   return sortedUnits
 })
 
-// Get all units (for displaying units without building)
-const allUnits = ref<Unit[]>([])
+// allUnits is now from composable
 
-// Get Building list
-const fetchBuildings = async () => {
-  try {
-    buildings.value = await getBuildingsApi()
-  } catch (error: any) {
-    message.error('Failed to fetch buildings: ' + (error.message || 'Unknown error'))
-  }
-}
-
-// Get all units (for displaying units without building)
-const fetchAllUnits = async () => {
-  try {
-    const userInfo = userStore.getUserInfo
-    const tenantId = userInfo?.tenant_id
-
-    if (!tenantId) {
-      return
-    }
-
-    const result = await getUnitsApi({
-      tenant_id: tenantId,
-      is_active: true,
-    })
-
-    allUnits.value = result.items
-  } catch (error: any) {
-    console.error('Failed to fetch all units:', error)
-    allUnits.value = []
-  }
-}
+// Fetch functions are now in composables, but we need wrapper functions for some cases
 
 // Get Unit list
 const fetchUnits = async () => {
-  const building = currentBuildingForGrid.value
-  
-  // Use "-" when building is empty, use "1F" when floor is empty (consistent with DB default)
-  const displayBuilding = building?.building_name || (selectedLocationTag.value ? '-' : null)
-  const displayFloor = selectedFloor.value || '1F'
-  
-  if (!building && !selectedFloor.value && !selectedLocationTag.value) {
-    units.value = []
-    return
-  }
-
   try {
     const userInfo = userStore.getUserInfo
     const tenantId = userInfo?.tenant_id
 
     if (!tenantId) {
       message.error('Unable to get tenant ID')
+      units.value = []
       return
     }
 
-    // Build query parameters
+    // According to DB schema (05_units.sql):
+    // - building: VARCHAR(50) NOT NULL DEFAULT '-' (always has value)
+    // - floor: VARCHAR(50) NOT NULL DEFAULT '1F' (always has value)
+    // - location_tag: VARCHAR(255) (can be NULL)
+    // - Unique constraint: (tenant_id, location_tag, unit_name) if location_tag IS NOT NULL
+    //                      (tenant_id, unit_name) if location_tag IS NULL
+    
+    // All units have location_tag, building, floor (no null values)
+    const building = currentBuildingForGrid.value
+    
+    if (!building || !selectedFloor.value) {
+      units.value = []
+      return
+    }
+    
+    // Build query parameters - simple and direct
     const queryParams: any = {
       tenant_id: tenantId,
-      is_active: true,
+      building: building.building_name,
+      floor: selectedFloor.value,
+      location_tag: building.location_tag,
     }
-
-    // If building is "-", query units with building = "-" (DB guarantees non-null)
-    if (displayBuilding === '-' || !displayBuilding) {
-      // Query units with building = "-", query by location_tag
-      if (selectedLocationTag.value) {
-        queryParams.location_tag = selectedLocationTag.value
-        queryParams.building = '-'
-      } else {
-        // If no location_tag, query all units then filter
-        const result = await getUnitsApi(queryParams)
-        units.value = result.items.filter((unit) => unit.building === '-')
-        return
-      }
-    } else {
-      // Real building: must match both building_name and location_tag
-      queryParams.building = displayBuilding
-      if (selectedLocationTag.value) {
-        queryParams.location_tag = selectedLocationTag.value
-      }
-    }
-
-    // If floor is "1F", query units with floor = "1F" (DB guarantees non-null)
-    if (displayFloor === '1F') {
-      queryParams.floor = '1F'
-      const result = await getUnitsApi(queryParams)
-      units.value = result.items
-    } else {
-      queryParams.floor = displayFloor
-      const result = await getUnitsApi(queryParams)
-      units.value = result.items
-    }
+    
+    const result = await getUnitsApi(queryParams)
+    units.value = result.items
   } catch (error: any) {
+    console.error('[Fetch Units] Error:', error)
     message.error('Failed to fetch units: ' + (error.message || 'Unknown error'))
+    units.value = []
   }
 }
 
-// Click Building tag in headline row (independent component instance, but will sync close the other location)
-const handleToggleBuildingTag = (building: Building) => {
-  const buildingId = building.building_id || ''
-
-  // Headline row: if clicking an already expanded Building, collapse it
-  if (expandedBuildings.value.has(buildingId)) {
-    expandedBuildings.value = new Set()
-    selectedFloor.value = ''
-    units.value = []
-    currentBuildingForGrid.value = null
-  } else {
-    // Headline row: only expand the clicked Building, immediately close all other Buildings
-    expandedBuildings.value = new Set([buildingId])
-    // Sync: close the same Building in left column (if previously expanded)
-    if (selectedBuilding.value?.building_id === buildingId) {
-      selectedBuilding.value = null
-    }
-    selectedFloor.value = ''
-    units.value = []
-    currentBuildingForGrid.value = null
-  }
+// Wrapper functions for building handlers that need to call fetchUnits
+const handleToggleBuildingTagWrapper = (building: Building) => {
+  handleToggleBuildingTag(building)
+  units.value = []
+  fetchUnits()
 }
 
-// Click Building card in left column (independent component instance, but will sync close the other location)
-const handleToggleBuildingCard = (building: Building) => {
-  const buildingId = building.building_id || ''
-
-  // Left column: if clicking an already selected Building, deselect it (collapse floor list)
-  if (selectedBuilding.value?.building_id === buildingId) {
-    selectedBuilding.value = null
-    selectedFloor.value = ''
-    units.value = []
-    currentBuildingForGrid.value = null
-  } else {
-    // Left column: only expand the clicked Building, immediately close all other Buildings
-    selectedBuilding.value = building
-    // Sync: close the same Building in headline row (if previously expanded)
-    if (expandedBuildings.value.has(buildingId)) {
-      expandedBuildings.value = new Set()
-    }
-    selectedFloor.value = ''
-    units.value = []
-    currentBuildingForGrid.value = null
-  }
+const handleToggleBuildingCardWrapper = (building: Building) => {
+  handleToggleBuildingCard(building)
+  units.value = []
+  fetchUnits()
 }
 
 
 
-// Select floor
-const handleSelectFloor = async (building: Building, floor: string) => {
-  const buildingId = building.building_id || ''
-
-  // Set building for unitGrid
-  // If it's a virtual "-" building, need special handling
-  if (building.building_name === '-' && building.building_id?.startsWith('na-building-')) {
-    // Virtual building: set location_tag for query
-    selectedLocationTag.value = building.location_tag || ''
-    currentBuildingForGrid.value = null
-  } else {
-    // Real building: save building and location_tag (for filtering when querying)
-    currentBuildingForGrid.value = building
-    selectedLocationTag.value = building.location_tag || '' // Save location_tag for query filtering
-  }
-
-  // If called from headline row (expandedBuildings contains this building), don't set selectedBuilding
-  // If called from left column, set selectedBuilding
-  if (!expandedBuildings.value.has(buildingId)) {
-    // Called from left column: set selectedBuilding
-    selectedBuilding.value = building
-    // Sync: close the same Building in headline row (if previously expanded)
-    if (expandedBuildings.value.has(buildingId)) {
-      expandedBuildings.value = new Set()
-    }
-  } else {
-    // Called from headline row: don't set selectedBuilding, avoid left column expansion
-    // But need to close left column (if previously expanded)
-    if (selectedBuilding.value?.building_id === buildingId) {
-      selectedBuilding.value = null
-    }
-  }
-
-  // Default to "1F" when floor is empty (consistent with DB default)
-  selectedFloor.value = floor || '1F'
-
-  // Wait for Vue reactive update
-  await nextTick()
-
-  // Get units
+// Wrapper for handleSelectFloor that calls fetchUnits
+const handleSelectFloorWrapper = async (building: Building, floor: string) => {
+  await handleSelectFloor(building, floor)
   await fetchUnits()
 }
 
-// Get Building display name (tag_name-Building_name) - use computed for caching
-// UI layer maps location_tag to tag_name for display
+// Get Building display name - simple format: location_tag-building_name
+// Both location_tag and building_name default to '-' when empty
 const buildingsWithDisplayName = computed(() => {
   const buildingList = buildings.value.map((building) => {
-    const tagName = building.location_tag || '' // API returns location_tag
-    const buildingName = building.building_name || ''
+    // Default to '-' if empty (consistent with DB defaults)
+    const tagName = building.location_tag || '-'
+    const buildingName = building.building_name || '-'
     
-    // Display name format: location_tag-Building_name
-    // If both exist, display "tag-building"
-    // If building_name is "-", display "tag--" (indicating no building_name)
-    // If only building_name exists, display "building"
-    let displayName = ''
-    if (tagName && buildingName && buildingName !== '-') {
-      displayName = `${tagName}-${buildingName}`
-    } else if (tagName && buildingName === '-') {
-      displayName = `${tagName}--` // building_name is "-", display "tag--"
-    } else if (tagName) {
-      displayName = tagName // Only location_tag, display "tag" (shouldn't occur, as DB guarantees building_name is non-null)
-    } else if (buildingName && buildingName !== '-') {
-      displayName = buildingName
-    } else {
-      displayName = 'Unnamed Building'
-    }
+    // Simple display name: always show location_tag-building_name
+    // If both are '-', it will display '---'
+    const displayName = `${tagName}-${buildingName}`
     
     return {
       ...building,
-      tag_name: tagName, // tag_name for UI display
+      tag_name: tagName,
       displayName,
     }
   })
   
-  // Add virtual "-" building (for displaying units with building = "-")
-  // Check if there are units with building = "-" (DB guarantees non-null)
+  // Add virtual "-" building for units with building = "-"
   const hasUnitsWithoutBuilding = allUnits.value.some((unit) => unit.building === '-')
   if (hasUnitsWithoutBuilding) {
-    // Group by location_tag, create a virtual building for each location_tag
+    // Group by location_tag (default to '-' if empty)
     const locationTags = new Set<string>()
     allUnits.value.forEach((unit) => {
-      if (unit.building === '-' && unit.location_tag) {
-        locationTags.add(unit.location_tag)
+      if (unit.building === '-') {
+        const locationTag = unit.location_tag || '-'
+        locationTags.add(locationTag)
       }
     })
     
@@ -1491,10 +1367,10 @@ const buildingsWithDisplayName = computed(() => {
       buildingList.push({
         building_id: `na-building-${locationTag}`,
         building_name: '-',
-        floors: 1, // Default 1 floor
+        floors: 1,
         tenant_id: 'tenant-1',
         location_tag: locationTag,
-        displayName: `${locationTag}--`,
+        displayName: `${locationTag}--`, // location_tag + '-' + '-' (building_name is always '-')
         tag_name: locationTag,
       } as any)
     })
@@ -1503,323 +1379,172 @@ const buildingsWithDisplayName = computed(() => {
   return buildingList
 })
 
-// Create Building
-const handleCreateBuilding = async () => {
-  try {
-    // At least one of location_tag and building_name is required
-    if (!createBuildingForm.value.location_tag && !createBuildingForm.value.building_name) {
-      message.error('Please provide either location_tag or Building name')
-      return
-    }
-    
-    if (!createBuildingForm.value.floors) {
-      message.error('Please fill in floors')
-      return
-    }
-
-    // If building_name is empty, automatically set to '-' (guarantee non-null)
-    const buildingName = createBuildingForm.value.building_name?.trim() || '-'
-
-    await createBuildingApi({
-      building_name: buildingName,
-      floors: createBuildingForm.value.floors,
-      location_tag: createBuildingForm.value.location_tag || undefined,
-    } as any)
-
-    message.success('Building created successfully')
-    resetCreateBuildingForm()
-    fetchBuildings()
-  } catch (error: any) {
-    message.error('Failed to create building: ' + (error.message || 'Unknown error'))
+// Wrapper for handleDeleteFloor that needs to clear units
+const handleDeleteFloorWrapper = async (building: Building, floorNum: number) => {
+  await handleDeleteFloor(building, floorNum)
+  if (selectedBuilding.value?.building_id === building.building_id && selectedFloor.value === `${floorNum}F`) {
+    units.value = []
   }
 }
 
-// Reset Create Building form
-const resetCreateBuildingForm = () => {
-  createBuildingForm.value = {
-    location_tag: undefined,
-    building_name: '',
-    floors: 1,
-  }
-}
-
-// Edit Building (enter edit mode)
-// Edit Building
-const handleEditBuilding = (building: Building) => {
-  editingBuildingId.value = building.building_id || null
-  editingBuildingForm.value = {
-    location_tag: building.location_tag || undefined,
-    building_name: building.building_name || '',
-  }
-}
-
-// Save Building (exit edit mode and submit)
-const handleSaveBuilding = async (building: Building) => {
-  try {
-    if (!building.building_id) {
-      message.error('Building ID is missing')
-      editingBuildingId.value = null
-      return
-    }
-
-    // If building_name is empty, automatically set to '-' (guarantee non-null)
-    const buildingName = editingBuildingForm.value.building_name?.trim() || '-'
-
-    // Submit update
-    await updateBuildingApi(building.building_id, {
-      building_name: buildingName,
-      location_tag: editingBuildingForm.value.location_tag || undefined,
-    } as any)
-
-    message.success('Building updated successfully')
-
-    // Exit edit mode
-    editingBuildingId.value = null
-
-    // Refresh Building list
-    await fetchBuildings()
-
-    // If the modified Building is currently selected, maintain selected state (selectedBuilding unchanged)
-    // selectedBuilding is computed, will update automatically
-  } catch (error: any) {
-    message.error('Failed to update building: ' + (error.message || 'Unknown error'))
-  }
-}
-
-// Delete floor
-const handleDeleteFloor = async (building: Building, floorNum: number) => {
-  try {
-    // Check if this floor has Location
-    const floorStr = `${floorNum}F`
-    const unitParams = {
-      building: building.building_name,
-      floor: floorStr,
-      is_active: true,
-    }
-    const unitResult = await getUnitsApi(unitParams)
-
-    if (unitResult.items && unitResult.items.length > 0) {
-      message.error('Still include Unit')
-      return
-    }
-
-    // Confirm delete floor
-    if (!building.building_id) {
-      message.error('Building ID is missing')
-      return
-    }
-
-    // If the deleted floor is the currently selected floor, clear selection
-    if (selectedBuilding.value?.building_id === building.building_id && selectedFloor.value === floorStr) {
-      selectedFloor.value = ''
-      units.value = []
-    }
-
-    // Update Building's floors count
-    const newFloors = building.floors - 1
-    if (newFloors < 1) {
-      message.error('Building must have at least one floor')
-      return
-    }
-
-    await updateBuildingApi(building.building_id, { floors: newFloors })
-    message.success('Floor deleted successfully')
-
-    // Refresh Building list
-    await fetchBuildings()
-  } catch (error: any) {
-    message.error('Failed to delete floor: ' + (error.message || 'Unknown error'))
-  }
-}
-
-// Delete Building
-const handleDeleteBuilding = async (building: Building) => {
-  try {
-    // Check if there are Units
-    const userInfo = userStore.getUserInfo
-    const tenantId = userInfo?.tenant_id
-
-    if (!tenantId) {
-      message.error('Unable to get tenant ID')
-      return
-    }
-
-    const unitParams = {
-      tenant_id: tenantId,
-      building: building.building_name,
-      is_active: true,
-    }
-    const unitResult = await getUnitsApi(unitParams)
-
-    if (unitResult.items && unitResult.items.length > 0) {
-      message.error('Still include Unit')
-      return
-    }
-
-    // Confirm delete
-    if (!building.building_id) {
-      message.error('Building ID is missing')
-      return
-    }
-
-    await deleteBuildingApi(building.building_id)
-    message.success('Building deleted successfully')
-
-    // Refresh Building list
-    await fetchBuildings()
-
-    // If the deleted Building is selected in left column, clear selection
-    if (selectedBuilding.value?.building_id === building.building_id) {
-      selectedBuilding.value = null
-      selectedFloor.value = ''
-      units.value = []
-    }
-    // If the deleted Building is expanded in headline row, clear expanded state
-    if (expandedBuildings.value.has(building.building_id || '')) {
-      expandedBuildings.value = new Set()
-    }
-  } catch (error: any) {
-    message.error('Failed to delete building: ' + (error.message || 'Unknown error'))
-  }
-}
+// handleDeleteBuilding is now in composable, using wrapper above
 
 // Click grid cell
+// Wrapper for handleCellClick that uses fetchRoomsWithBedsWrapper
 const handleCellClick = async (unit: Unit | null, _index: number) => {
-  try {
-    // 加载 area tag 和 location tag 选项
-    await fetchAreaTags()
-    await fetchLocationTags()
-
-    if (unit) {
-      // Existing Unit: open edit Unit interface
-      editingUnit.value = unit
-      // Initialize form data
-      editUnitForm.value = {
-        area_tag: unit.area_tag,
-        unit_name: unit.unit_name,
-        unit_number: unit.unit_number,
-        unit_type: (unit as any).unit_type || 'Facility',
-        is_multi_person_room: unit.is_multi_person_room ?? true, // Selected by default
-        is_public_space: unit.is_public_space ?? false,
-        time_zone: unit.time_zone,
-      }
-      await fetchRoomsWithBeds(unit.unit_id)
-      showEditUnitModal.value = true
-      await nextTick()
-    } else {
-      // Empty cell: also open edit Unit interface, but editingUnit is null
-      editingUnit.value = null
-      roomsWithBeds.value = []
-      // Initialize empty form
-      editUnitForm.value = {
-        area_tag: undefined,
-        unit_name: '',
-        unit_number: '',
-        unit_type: 'Facility',
-        is_public_space: false,
-        is_multi_person_room: false,
-        time_zone: undefined,
-      }
-      showEditUnitModal.value = true
-      await nextTick()
-    }
-  } catch (error: any) {
-    message.error('Failed to handle cell click: ' + (error.message || 'Unknown error'))
-  }
+  // Reset header button state and device mode when selecting a different unit
+  activeHeaderButton.value = null
+  isDeviceMode.value = false
+  devContainerTarget.value = null
+  expandedRooms.value.clear()
+  showAddRoomForm.value = false
+  await handleCellClickBase(unit, _index, fetchRoomsWithBedsWrapper)
 }
 
-// Create Unit
+// Wrapper for handleCreateUnit that calls fetchUnits after creation
 const handleCreateUnit = async () => {
   try {
-    if (!createUnitForm.value.unit_number || !createUnitForm.value.unit_name) {
-      message.error('Please fill in all required fields')
-      return
-    }
-
-    // Building and Floor are optional, will use default values if empty
-
-    const userInfo = userStore.getUserInfo
-    const tenantId = userInfo?.tenant_id
-
-    if (!tenantId) {
-      message.error('Unable to get tenant ID')
-      return
-    }
-
-    // Building and Floor handling logic (all types are optional)
-    // If empty, use default values: building is '-', floor is '1F' (consistent with DB default)
-    const buildingValue: string = createUnitForm.value.building || selectedBuilding.value?.building_name || '-'
-    const floorValue: string = createUnitForm.value.floor || selectedFloor.value || '1F'
-
-    await createUnitApi({
-      unit_number: createUnitForm.value.unit_number,
-      unit_name: createUnitForm.value.unit_name,
-      unit_type: createUnitForm.value.unit_type,
-      building: buildingValue,
-      floor: floorValue,
-      location_tag: createUnitForm.value.location_tag,
-      area_tag: createUnitForm.value.area_tag,
-      is_public_space: createUnitForm.value.is_public_space,
-      is_multi_person_room: createUnitForm.value.is_multi_person_room,
-      time_zone: createUnitForm.value.time_zone,
-    })
-
-    message.success('Unit created successfully')
-    showCreateUnitModal.value = false
-    resetCreateUnitForm()
-    fetchUnits()
-  } catch (error: any) {
-    message.error('Failed to create unit: ' + (error.message || 'Unknown error'))
-  }
-}
-
-// Reset Create Unit form
-const resetCreateUnitForm = () => {
-  createUnitForm.value = {
-    unit_number: '',
-    unit_name: '',
-    unit_type: 'Facility',
-    location_tag: undefined,
-    area_tag: undefined,
-    building: '',
-    floor: '',
-    is_public_space: false,
-    is_multi_person_room: false,
-    time_zone: undefined,
-  }
-  // selectedCellIndex.value = null
-}
-
-// Get Room and Bed list
-const fetchRoomsWithBeds = async (unitId: string) => {
-  try {
-    const result = await getRoomsApi({ unit_id: unitId })
-    roomsWithBeds.value = result
+    // Reset header button state and device mode when creating a new unit
+    activeHeaderButton.value = null
+    isDeviceMode.value = false
+    devContainerTarget.value = null
+    expandedRooms.value.clear()
+    showAddRoomForm.value = false
     
-    // Sort: Room with RoomName = UnitName placed first
-    const unitName = editingUnit.value?.unit_name || ''
-    if (unitName) {
-      roomsWithBeds.value.sort((a, b) => {
-        if (a.room_name === unitName && b.room_name !== unitName) return -1
-        if (a.room_name !== unitName && b.room_name === unitName) return 1
-        return 0
+    if (!selectedBuilding.value || !selectedFloor.value) {
+      message.error('Please select a building and floor first')
+      return
+    }
+    
+    // Calculate the values that will be used for creation (same logic as in handleCreateUnitBase)
+    const formBuilding = createUnitForm.value.building?.trim() || ''
+    const formFloor = createUnitForm.value.floor?.trim() || ''
+    // Both location_tag and building_name default to '-' when empty
+    const formLocationTag = createUnitForm.value.location_tag?.trim() || '-'
+    
+    // Final values that will be sent to API (same logic as in handleCreateUnitBase)
+    const finalBuilding = formBuilding || selectedBuilding.value?.building_name || '-'
+    const finalFloor = formFloor || selectedFloor.value || '1F'
+    const finalLocationTag = formLocationTag !== '-' ? formLocationTag : (selectedBuilding.value?.location_tag || '-')
+    
+    // According to DB schema (05_units.sql):
+    // - building: VARCHAR(50) NOT NULL DEFAULT '-' (always has value)
+    // - floor: VARCHAR(50) NOT NULL DEFAULT '1F' (always has value)
+    // - location_tag: VARCHAR(255) (can be NULL)
+    // - Unique constraint: (tenant_id, location_tag, unit_name) if location_tag IS NOT NULL
+    //                      (tenant_id, unit_name) if location_tag IS NULL
+    
+    // Update query parameters to match creation parameters
+    // Both location_tag and building_name default to '-' when empty
+    
+    // 1. Update selectedLocationTag (defaults to '-')
+    selectedLocationTag.value = finalLocationTag || '-'
+    
+    // 2. Update currentBuildingForGrid to match the building that will be used for creation
+    const locationTagForBuilding = finalLocationTag || '-'
+    
+    if (finalBuilding === '-') {
+      // For "-" building, create/find virtual building with location_tag
+      const virtualBuilding = buildings.value.find(b => 
+        b.building_name === '-' && b.location_tag === locationTagForBuilding
+      ) || {
+        building_id: `na-building-${locationTagForBuilding}`,
+        building_name: '-',
+        location_tag: locationTagForBuilding,
+        floors: 0,
+      } as Building
+      
+      currentBuildingForGrid.value = virtualBuilding
+    } else {
+      // For real building, find building with matching building_name and location_tag
+      const matchingBuilding = buildings.value.find(b => 
+        b.building_name === finalBuilding && b.location_tag === locationTagForBuilding
+      )
+      
+      if (matchingBuilding) {
+        currentBuildingForGrid.value = matchingBuilding
+        // Also update selectedBuilding if it doesn't match
+        if (!selectedBuilding.value || selectedBuilding.value.building_id !== matchingBuilding.building_id) {
+          selectedBuilding.value = matchingBuilding
+        }
+      } else if (selectedBuilding.value && 
+                 selectedBuilding.value.building_name === finalBuilding &&
+                 selectedBuilding.value.location_tag === locationTagForBuilding) {
+        // selectedBuilding matches, use it
+        currentBuildingForGrid.value = selectedBuilding.value
+      } else {
+        // Building not found in list - create temporary building object for querying
+        currentBuildingForGrid.value = {
+          building_id: `temp-${finalBuilding}-${locationTagForBuilding}`,
+          building_name: finalBuilding,
+          location_tag: locationTagForBuilding,
+          floors: 0,
+        } as Building
+      }
+    }
+    
+    // 3. Update selectedFloor to match the floor that will be used for creation
+    selectedFloor.value = finalFloor
+    
+    const createdUnit = await handleCreateUnitBase(selectedBuilding.value, selectedFloor.value)
+    
+    if (!createdUnit) {
+      return
+    }
+    
+    // Verify created unit has correct values
+    const createdLocationTag = createdUnit.location_tag || '-'
+    if (createdUnit.building !== finalBuilding || createdUnit.floor !== finalFloor || createdLocationTag !== finalLocationTag) {
+      console.error('[Create Unit] Mismatch!', {
+        created: { building: createdUnit.building, floor: createdUnit.floor, location_tag: createdLocationTag },
+        expected: { building: finalBuilding, floor: finalFloor, location_tag: finalLocationTag },
+        currentBuildingForGrid: currentBuildingForGrid.value,
       })
+      message.warning('Unit created but with different values. Please refresh.')
+    }
+    
+    // Ensure currentBuildingForGrid has correct location_tag before fetching
+    if (currentBuildingForGrid.value) {
+      currentBuildingForGrid.value.location_tag = finalLocationTag
+    }
+    
+    // Wait a bit to ensure backend has processed the creation
+    await new Promise(resolve => setTimeout(resolve, 200))
+    
+    // Refresh units list - now query params should match creation params
+    await fetchUnits()
+    
+    // If unit was created successfully, try to select it
+    if (createdUnit) {
+      // Find the created unit in the refreshed list
+      const foundUnit = units.value.find(u => 
+        u.unit_id === createdUnit.unit_id ||
+        (u.unit_number === createdUnit.unit_number && u.unit_name === createdUnit.unit_name)
+      )
+      if (foundUnit) {
+        await handleCellClick(foundUnit, -1)
+      } else {
+        console.warn('[Create Unit] Created unit not found in list:', createdUnit)
+      }
     }
   } catch (error: any) {
-    message.error('Failed to fetch rooms and beds: ' + (error.message || 'Unknown error'))
-    // Even if error occurs, show empty list so user can add
-    roomsWithBeds.value = []
+    console.error('Create unit wrapper error:', error)
+    // Error message already shown in handleCreateUnitBase
   }
 }
 
-// 获取 Location Tag 选项（从 store 获取，如果未加载则先加载）
-const fetchLocationTags = async () => {
-  await tagsStore.fetchAllTags()
-}
-
-// 获取 Area Tag 选项（从 store 获取，如果未加载则先加载）
-const fetchAreaTags = async () => {
-  await tagsStore.fetchAllTags()
+// Wrapper for fetchRoomsWithBeds with sorting
+const fetchRoomsWithBedsWrapper = async (unitId: string) => {
+  await fetchRoomsWithBeds(unitId)
+  // Sort: Room with RoomName = UnitName placed first
+  const unitName = editingUnit.value?.unit_name || ''
+  if (unitName) {
+    roomsWithBeds.value.sort((a, b) => {
+      if (a.room_name === unitName && b.room_name !== unitName) return -1
+      if (a.room_name !== unitName && b.room_name === unitName) return 1
+      return 0
+    })
+  }
 }
 
 // 处理 Area Tag 搜索
@@ -1860,78 +1585,24 @@ const getEditUnitTitle = () => {
   return 'Edit Unit'
 }
 
-// 重置编辑 Unit 表单
-const resetEditUnitForm = () => {
-  editingUnit.value = null
-  roomsWithBeds.value = []
-  showAddRoomForm.value = false
-  newRoomName.value = ''
-  expandedRooms.value = new Set()
-  editingRoomId.value = null
-  editingRoomName.value = ''
-  editUnitForm.value = {
-    area_tag: undefined,
-    unit_name: '',
-    unit_number: '',
-    unit_type: 'Facility',
-    is_public_space: false,
-    is_multi_person_room: false,
-    time_zone: undefined,
+// resetEditUnitForm is now in composable, no wrapper needed
+
+// Get device type icon (returns SVG path)
+const getDeviceTypeIcon = (deviceType: string | undefined): string => {
+  if (!deviceType) {
+    return radarSvg // Default to radar when device_type is undefined
   }
-  areaTagSearchValue.value = ''
-  isDeviceMode.value = false
-}
-
-// 判断设备是否已绑定
-const isDeviceBound = (device: Device): boolean => {
-  const deviceAny = device as any
-  return !!(deviceAny.bound_room_id || deviceAny.bound_bed_id || deviceAny.location_id)
-}
-
-// 切换设备展开/收起
-const toggleDevicesExpand = (id: string) => {
-  if (expandedDevices.value.has(id)) {
-    expandedDevices.value.delete(id)
-  } else {
-    expandedDevices.value.add(id)
-  }
-}
-
-// 获取设备类型图标文本
-const getDeviceTypeIcon = (deviceType: string): string => {
   const iconMap: Record<string, string> = {
-    'Radar': '📡', // 雷达图标（可以用 SVG 或图标组件替换）
-    'Sleepad': '🛏️', // 板图标
-    'SleepPad': '🛏️',
+    'Radar': radarSvg,
+    'Sleepad': sleepadSvg,
+    'SleepPad': sleepadSvg,
   }
-  return iconMap[deviceType] || '📱'
+  return iconMap[deviceType] || radarSvg
 }
 
-// 获取已绑定到 Room 的设备
-const getRoomDevices = (roomId: string): Device[] => {
-  // 从所有设备中过滤出绑定到该 Room 的设备
-  const boundDevices = allDevices.value.filter((device: any) => {
-    return device.bound_room_id === roomId
-  })
-  return boundDevices
-}
-
-// 获取已绑定到 Bed 的设备
-const getBedDevices = (bedId: string): Device[] => {
-  // 从所有设备中过滤出绑定到该 Bed 的设备
-  const boundDevices = allDevices.value.filter((device: any) => {
-    return device.bound_bed_id === bedId
-  })
-  return boundDevices
-}
-
-// 获取已绑定到 Unit 的设备
-const getUnitDevices = (unitId: string): Device[] => {
-  // 从所有设备中过滤出绑定到该 Unit 的设备（通过 location_id）
-  const boundDevices = allDevices.value.filter((device: any) => {
-    return device.location_id === unitId
-  })
-  return boundDevices
+// Wrapper for getUnitDevices that uses composable function
+const getUnitDevicesWrapper = (unitId: string): Device[] => {
+  return getUnitDevices(unitId, roomsWithBeds.value)
 }
 
 // 获取已绑定到 Unit 的 Caregiver（占位符函数，待 API 实现）
@@ -1955,364 +1626,58 @@ const getUnitResidents = async (_unitId: string): Promise<any[]> => {
 }
 
 // Dev 容器显示的设备列表（显示所有可用设备，包括未绑定的）
-const devContainerDevices = computed(() => {
-  // 显示所有可用设备（包括已绑定和未绑定的）
-  return allDevices.value
-})
+// Functions are now in composables
 
-// 公共函数：打开设备选择弹窗
-const openDeviceSelection = async (targetType: 'unit' | 'room' | 'bed', targetId: string) => {
-  await fetchAllDevices()
-  selectedTarget.value = { type: targetType, id: targetId }
-  devicesForSelection.value = [...allDevices.value]
-  showDeviceSelectModal.value = true
-  devContainerTarget.value = { type: targetType, id: targetId }
-  if (!isDeviceMode.value) {
-    isDeviceMode.value = true
-  }
-}
-
-// 处理添加设备到 Room
-const handleAddDeviceToRoom = async (roomId: string) => {
-  await openDeviceSelection('room', roomId)
-}
-
-// 处理添加设备到 Bed
-const handleAddDeviceToBed = async (bedId: string) => {
-  await openDeviceSelection('bed', bedId)
-}
-
-// 处理设备编辑
-const handleEditDevice = (device: Device) => {
-  // TODO: 实现设备编辑功能
-  console.log('Edit device:', device)
-  message.info('Device edit feature coming soon')
-}
-
-// 公共函数：解绑设备
-const unbindDevice = async (deviceId: string) => {
-  await updateDeviceApi(deviceId, {
-    location_id: null,
-    bound_room_id: null,
-    bound_bed_id: null,
-  })
-}
-
-// 处理设备 checkbox 点击（绑定/解绑）
+// Wrapper functions that use composables
 const handleDeviceCheckboxChange = async (event: any, device: Device) => {
-  const checked = event.target.checked
-  
-  try {
-    if (!device.device_id) {
-      message.error('Device ID is required for binding')
-      return
-    }
-    
-    if (checked) {
-      if (!editingUnit.value?.unit_id) {
-        message.error('Please select a unit first')
-        return
-      }
-      await updateDeviceApi(device.device_id, {
-        location_id: editingUnit.value.unit_id,
-        bound_room_id: null,
-        bound_bed_id: null,
-      })
-      message.success(`Device "${device.device_name}" bound to unit successfully`)
-      expandedDevices.value.add(`device-${device.device_id}`)
-    } else {
-      await unbindDevice(device.device_id)
-      message.success(`Device "${device.device_name}" unbound successfully`)
-    }
-    
-    await fetchAllDevices()
-  } catch (error: any) {
-    message.error((checked ? 'Failed to bind device: ' : 'Failed to unbind device: ') + (error.message || 'Unknown error'))
-    event.target.checked = !checked
-  }
+  await handleDeviceCheckboxChangeBase(event, device, devContainerTarget, roomsWithBeds.value, allUnits.value, ensureUnitRoom)
 }
 
-// 处理设备删除（解绑）
-const handleDeleteDevice = async (device: Device) => {
-  try {
-    if (!device.device_id) {
-      message.error('Device ID is required for unbinding')
-      return
-    }
-    await unbindDevice(device.device_id)
-    message.success(`Device "${device.device_name}" unbound successfully`)
-    await fetchAllDevices()
-  } catch (error: any) {
-    message.error('Failed to unbind device: ' + (error.message || 'Unknown error'))
-  }
-}
-
-// 获取所有设备列表（approved，包括已绑定的）
-const fetchAllDevices = async () => {
-  try {
-    const userInfo = userStore.getUserInfo
-    const tenantId = userInfo?.tenant_id
-
-    if (!tenantId) {
-      message.error('No tenant ID available')
-      return
-    }
-
-    // 获取所有 approved 设备（包括已绑定的）
-    // 通过 include_bound: true 参数来获取所有设备（包括已绑定的）
-    const result = await getDevicesApi({
-      tenant_id: tenantId,
-      business_access: 'approved',
-      include_bound: true, // 自定义参数，用于获取所有设备（包括已绑定的）
-    } as any)
-
-    allDevices.value = result.items
-    
-    // 过滤出未绑定的设备作为可用设备
-    availableDevices.value = result.items.filter((device: any) => {
-      return !device.bound_room_id && !device.bound_bed_id && !device.location_id
-    })
-  } catch (error: any) {
-    message.error('Failed to fetch devices: ' + (error.message || 'Unknown error'))
-    allDevices.value = []
-    availableDevices.value = []
-  }
-}
-
-// 拖拽相关状态
-const draggedDeviceId = ref<string | null>(null)
-const dragOverTarget = ref<{ type: 'unit' | 'room' | 'bed'; id: string } | null>(null)
-
-// 处理设备拖拽开始
-const handleDeviceDragStart = (event: DragEvent, device: Device) => {
-  if (!event.dataTransfer) return
-  
-  draggedDeviceId.value = device.device_id
-  
-  // 创建自定义拖拽预览（只显示 DeviceName）
-  const dragImage = document.createElement('div')
-  dragImage.textContent = device.device_name
-  dragImage.style.cssText = 'position: absolute; top: -1000px; padding: 8px 12px; background: #1890ff; color: white; border-radius: 4px; font-size: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);'
-  document.body.appendChild(dragImage)
-  event.dataTransfer.setDragImage(dragImage, 0, 0)
-  
-  // 传递设备数据
-  event.dataTransfer.setData('application/json', JSON.stringify({
-    device_id: device.device_id,
-    device_name: device.device_name,
-  }))
-  
-  // 设置拖拽效果
-  event.dataTransfer.effectAllowed = 'move'
-  
-  // 清理
-  setTimeout(() => {
-    if (document.body.contains(dragImage)) {
-      document.body.removeChild(dragImage)
-    }
-  }, 0)
-}
-
-// 处理拖拽悬停
-const handleDragOver = (event: DragEvent, type: 'unit' | 'room' | 'bed', id: string) => {
-  event.preventDefault()
-  event.dataTransfer!.dropEffect = 'move'
-  dragOverTarget.value = { type, id }
-}
-
-// 处理拖拽离开
-const handleDragLeave = () => {
-  dragOverTarget.value = null
-}
+// Device drag handlers are now in composables
 
 // 处理设备放置
-const handleDeviceDrop = async (event: DragEvent, type: 'unit' | 'room' | 'bed', id: string) => {
-  event.preventDefault()
-  dragOverTarget.value = null
-  
-  if (!event.dataTransfer) return
-  
-  try {
-    const data = JSON.parse(event.dataTransfer.getData('application/json'))
-    const deviceId = data.device_id
-    
-    if (!deviceId) {
-      message.error('Device ID is required for binding')
-      return
-    }
-    
-    // 调用 API 绑定设备（使用 device_id）
-    await updateDeviceApi(deviceId, {
-      location_id: type === 'unit' ? id : (editingUnit.value?.unit_id || null),
-      bound_room_id: type === 'room' ? id : null,
-      bound_bed_id: type === 'bed' ? id : null,
-    })
-    
-    console.log('Device binding:', { deviceId, type, id, deviceName: data.device_name })
-    const typeName = type === 'unit' ? 'unit' : type === 'room' ? 'room' : 'bed'
-    message.success(`Device "${data.device_name}" bound to ${typeName} successfully`)
-    
-    // 刷新所有设备列表（包括已绑定的）
-    await fetchAllDevices()
-    
-    // 默认展开新绑定的设备
-    expandedDevices.value.add(`device-${deviceId}`)
-    
-    // 更新 Dev 容器目标（如果拖拽到的是当前目标，或者当前没有目标）
-    if (type === 'unit' && editingUnit.value && id === editingUnit.value.unit_id) {
-      devContainerTarget.value = { type: 'unit', id: id }
-    } else if (type === 'room') {
-      devContainerTarget.value = { type: 'room', id: id }
-    } else if (type === 'bed') {
-      devContainerTarget.value = { type: 'bed', id: id }
-    }
-  } catch (error: any) {
-    message.error('Failed to bind device: ' + (error.message || 'Unknown error'))
-  }
+// Note: Device cannot bind directly to Unit, must bind to Room or Bed
+
+// Wrapper functions for toggle handlers
+const handleToggleAddBed = async () => {
+  await handleToggleAddBedBase(editingUnit.value, ensureUnitRoom, roomsWithBeds.value, expandedRooms, activeHeaderButton, showAddRoomForm, isDeviceMode, devContainerTarget)
 }
 
-// 处理 Add Dev 按钮点击（切换展开/收回 Room）
-const handleAddDev = async () => {
-  if (isDeviceMode.value) {
-    // 退出 Device 模式：收回所有 Room
-    isDeviceMode.value = false
-    expandedRooms.value.clear()
-    devContainerTarget.value = null
-  } else {
-    // 进入 Device 模式：展开所有 Room 并获取所有设备（包括已绑定的）
-    isDeviceMode.value = true
-    roomsWithBeds.value.forEach((room) => {
-      if (room.room_id) {
-        expandedRooms.value.add(room.room_id)
-      }
-    })
-    // 获取所有设备列表（包括已绑定的）
-    await fetchAllDevices()
-    // 默认显示 Unit 的设备
-    if (editingUnit.value) {
-      devContainerTarget.value = { type: 'unit', id: editingUnit.value.unit_id }
-    }
-  }
+const handleToggleAddDevice = async () => {
+  await handleToggleAddDeviceBase(editingUnit.value, ensureUnitRoom, roomsWithBeds.value, expandedRooms, activeHeaderButton, showAddRoomForm)
 }
 
-// 保存 Unit 信息
+
+// Wrapper for handleSaveUnit that calls fetchUnits and handleCellClick
 const handleSaveUnit = async () => {
-  try {
-    if (!editUnitForm.value.unit_name || !editUnitForm.value.unit_number) {
-      message.error('Unit name and Unit number are required')
-      return
-    }
-
-    const userInfo = userStore.getUserInfo
-    const tenantId = userInfo?.tenant_id
-
-    if (!tenantId) {
-      message.error('No tenant ID available')
-      return
-    }
-
-    // 公共函数：确保 tag 存在，不存在则创建
-    const ensureTagExists = async (tagName: string | undefined, tagType: 'area_tag' | 'location_tag', options: TagCatalogItem[], fetchFn: () => Promise<void>) => {
-      if (!tagName) return
-      const exists = options.some((tag) => tag.tag_name === tagName)
-      if (!exists) {
-        try {
-          await createTagApi({
-            tenant_id: tenantId,
-            tag_type: 'area_tag',
-            tag_name: editUnitForm.value.area_tag,
-          })
-          // 刷新 area tag 选项（刷新 store 缓存）
-          await tagsStore.refreshTags()
-        } catch (error: any) {
-          message.error(`Failed to create ${tagType}: ${error.message || 'Unknown error'}`)
-          throw error
-        }
-      }
-    }
-
-    // 2. 获取 location_tag（从 currentBuildingForGrid 或 selectedLocationTag 获取）
-    const locationTagValue = currentBuildingForGrid.value?.location_tag || selectedLocationTag.value || undefined
-
-    if (!editingUnit.value) {
-      // 创建新的 Unit
-      // Building 和 Floor 是可选的，如果为空会使用默认值
-      // 如果为空，使用默认值：building 为 '-'，floor 为 '1F'（与 DB 默认值一致）
-      const buildingValue: string = currentBuildingForGrid.value?.building_name || '-'
-      const floorValue: string = selectedFloor.value || '1F'
-
-      const newUnit = await createUnitApi({
-        unit_number: editUnitForm.value.unit_number,
-        unit_name: editUnitForm.value.unit_name,
-        unit_type: editUnitForm.value.unit_type || 'Facility',
-        building: buildingValue,
-        floor: floorValue,
-        location_tag: locationTagValue,
-        area_tag: editUnitForm.value.area_tag,
-        is_public_space: editUnitForm.value.is_public_space,
-        is_multi_person_room: editUnitForm.value.is_multi_person_room,
-        time_zone: editUnitForm.value.time_zone,
-      })
-
-      message.success('Unit created successfully')
-      
-      // 关闭模态框并重置表单
-      resetEditUnitForm()
-      showEditUnitModal.value = false
-      
-      // 刷新 Unit 列表
-      await fetchUnits()
-      
-      // 自动打开新创建的 Unit（复用 handleCellClick 逻辑）
-      await handleCellClick(newUnit, -1)
-    } else {
-      // 更新现有 Unit（unit_number 不能更新）
-      await updateUnitApi(editingUnit.value.unit_id, {
-        unit_name: editUnitForm.value.unit_name,
-        unit_type: editUnitForm.value.unit_type,
-        area_tag: editUnitForm.value.area_tag,
-        is_public_space: editUnitForm.value.is_public_space,
-        is_multi_person_room: editUnitForm.value.is_multi_person_room,
-        time_zone: editUnitForm.value.time_zone,
-      })
-
-      message.success('Unit updated successfully')
-      resetEditUnitForm()
-      showEditUnitModal.value = false
-      await fetchUnits()
-    }
-  } catch (error: any) {
-    message.error('Failed to save unit: ' + (error.message || 'Unknown error'))
+  const newUnit = await handleSaveUnitBase(currentBuildingForGrid.value, selectedLocationTag.value)
+  if (newUnit) {
+    await fetchUnits()
+    await handleCellClick(newUnit, -1)
+  } else {
+    await fetchUnits()
   }
 }
 
-// 删除 Unit
-const handleDeleteUnit = async () => {
+// Wrapper for handleDeleteUnit that checks dependencies and calls fetchUnits
+const handleDeleteUnitWrapper = async () => {
   if (!editingUnit.value) {
     message.error('No unit selected')
     return
   }
 
   try {
-    // 检查 Unit 下是否有任何绑定关系
-    // 1. 检查 Room 和 Bed
+    // Check dependencies
     const hasRooms = roomsWithBeds.value.length > 0
     const bedCount = roomsWithBeds.value.reduce((total, room) => total + (room.beds?.length || 0), 0)
     const hasBeds = bedCount > 0
-    
-    // 2. 检查 Device
-    const unitDevices = getUnitDevices(editingUnit.value.unit_id)
+    const unitDevices = getUnitDevicesWrapper(editingUnit.value.unit_id)
     const hasDevices = unitDevices.length > 0
-    
-    // 3. 检查 Caregiver
     const unitCaregivers = await getUnitCaregivers(editingUnit.value.unit_id)
     const hasCaregivers = unitCaregivers.length > 0
-    
-    // 4. 检查 Residents
     const unitResidents = await getUnitResidents(editingUnit.value.unit_id)
     const hasResidents = unitResidents.length > 0
     
-    // 如果 Unit 下有任何绑定关系，拒绝删除
     if (hasRooms || hasBeds || hasDevices || hasCaregivers || hasResidents) {
       const errors: string[] = []
       if (hasRooms) errors.push(`${roomsWithBeds.value.length} room${roomsWithBeds.value.length > 1 ? 's' : ''}`)
@@ -2325,28 +1690,7 @@ const handleDeleteUnit = async () => {
       return
     }
 
-    // 确认删除
-    await new Promise<void>((resolve, reject) => {
-      Modal.confirm({
-        title: 'Confirm Delete',
-        content: `Are you sure you want to delete unit "${editingUnit.value?.unit_name}" (${editingUnit.value?.unit_number})? This action cannot be undone.`,
-        okText: 'Delete',
-        okType: 'danger',
-        cancelText: 'Cancel',
-        onOk: () => {
-          resolve()
-        },
-        onCancel: () => {
-          reject(new Error('User cancelled'))
-        },
-      })
-    })
-
-    await deleteUnitApi(editingUnit.value.unit_id)
-    
-    message.success('Unit deleted successfully')
-    resetEditUnitForm()
-    showEditUnitModal.value = false
+    await handleDeleteUnit()
     await fetchUnits()
   } catch (error: any) {
     if (error.message !== 'User cancelled') {
@@ -2355,329 +1699,92 @@ const handleDeleteUnit = async () => {
   }
 }
 
-// 展开/收起 Room
-const toggleRoom = (roomId: string) => {
-  if (expandedRooms.value.has(roomId)) {
-    expandedRooms.value.delete(roomId)
-  } else {
-    expandedRooms.value.add(roomId)
-  }
+// Wrapper functions for room handlers
+const handleToggleAddRoom = () => {
+  handleToggleAddRoomBase(activeHeaderButton, isDeviceMode, devContainerTarget, expandedRooms)
 }
 
-// 显示添加 Room 表单
-const handleShowAddRoomForm = () => {
-  showAddRoomForm.value = true
-  newRoomName.value = ''
-  nextTick(() => {
-    if (roomNameInputRef.value && roomNameInputRef.value.$el) {
-      roomNameInputRef.value.$el.querySelector('input')?.focus()
-    } else if (roomNameInputRef.value && roomNameInputRef.value.focus) {
-      roomNameInputRef.value.focus()
-    }
-  })
-}
-
-// 取消添加 Room
 const handleCancelAddRoom = () => {
-  showAddRoomForm.value = false
-  newRoomName.value = ''
+  handleCancelAddRoomBase(activeHeaderButton)
 }
 
-// 添加 Room
 const handleAddRoom = async () => {
-  try {
-    if (!editingUnit.value) {
-      message.error('No unit selected')
-      return
-    }
-
-    if (!newRoomName.value.trim()) {
-      message.error('Please input room name')
-      return
-    }
-
-    await createRoomApi({
-      unit_id: editingUnit.value.unit_id,
-      room_name: newRoomName.value.trim(),
-    })
-
-    // 刷新列表
-    await fetchRoomsWithBeds(editingUnit.value.unit_id)
-
-    message.success('Room added successfully')
-    showAddRoomForm.value = false
-    newRoomName.value = ''
-  } catch (error: any) {
-    message.error('Failed to add room: ' + (error.message || 'Unknown error'))
-  }
+  await handleAddRoomBase(editingUnit.value, fetchRoomsWithBedsWrapper, activeHeaderButton)
 }
 
-// 获取可用的床字母（A-Z）
-const getAvailableBedLetters = (room: RoomWithBeds): string[] => {
-  const allLetters = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i)) // A-Z
-  const usedLetters = room.beds
-    ?.map((bed) => {
-      // 提取床名中的字母，支持 "BedA", "Bed A", "A" 等格式
-      const match = bed.bed_name.match(/Bed\s*([A-Z])/i) || bed.bed_name.match(/^([A-Z])$/i)
-      return match && match[1] ? match[1].toUpperCase() : null
-    })
-    .filter((letter): letter is string => letter !== null) || []
-  
-  return allLetters.filter((letter) => !usedLetters.includes(letter))
+// Functions are now in composables
+
+// Wrapper functions for bed handlers
+const handleAddBedDirectlyWrapper = async (room: RoomWithBeds) => {
+  await handleAddBedDirectly(room, editingUnit.value, expandedRooms, fetchRoomsWithBedsWrapper)
 }
 
-// 验证并格式化 Bed 名称（BedA-BedZ，不区分大小写，自动转换为 Bed[A-Z]）
-const validateAndFormatBedName = (bedName: string): string | null => {
-  if (!bedName || !bedName.trim()) {
-    return null
-  }
-  
-  const trimmed = bedName.trim()
-  // 匹配 BedA-BedZ 格式（不区分大小写），支持 "BedA", "bedA", "BEDA", "Bed A", "A", "bed a" 等
-  const match = trimmed.match(/^Bed\s*([A-Z])$/i) || trimmed.match(/^([A-Z])$/i)
-  
-  if (match && match[1]) {
-    const letter = match[1].toUpperCase()
-    return `Bed${letter}`
-  }
-  
-  return null
+const handleAddBedToFirstRoom = async () => {
+  await handleAddBedToFirstRoomBase(editingUnit.value, ensureUnitRoom, expandedRooms, fetchRoomsWithBedsWrapper)
 }
 
-// Common function to create a bed for a room
-const createBedForRoom = async (room: RoomWithBeds, unitId: string, warningMessage?: string): Promise<boolean> => {
-  try {
-    const availableLetters = getAvailableBedLetters(room)
-    
-    if (availableLetters.length === 0) {
-      message.warning(warningMessage || 'All beds (A-Z) have been added')
-      return false
-    }
-
-    // Use the first available letter
-    const bedLetter = availableLetters[0]
-    const bedName = `Bed${bedLetter}`
-
-    await createBedApi({
-      room_id: room.room_id,
-      bed_name: bedName,
-    })
-
-    // Ensure Room is expanded to show the newly added bed
-    expandedRooms.value.add(room.room_id)
-
-    // Refresh the list
-    await fetchRoomsWithBeds(unitId)
-
-    message.success(`Bed ${bedLetter} added successfully`)
-    return true
-  } catch (error: any) {
-    message.error('Failed to add bed: ' + (error.message || 'Unknown error'))
-    return false
-  }
+// Wrapper functions for device handlers
+const isDeviceBoundToTargetWrapper = (device: Device): boolean => {
+  return isDeviceBoundToTarget(device, selectedTarget.value, allUnits.value, roomsWithBeds.value)
 }
 
-// Directly add Bed (automatically select next available letter)
-const handleAddBedDirectly = async (room: RoomWithBeds) => {
+const handleDeviceSelectChange = async (event: any, device: Device) => {
+  await handleDeviceSelectChangeBase(event, device, selectedTarget.value, roomsWithBeds.value, allUnits.value, ensureUnitRoom)
+}
+
+const handleConfirmDeviceSelection = () => {
+  handleConfirmDeviceSelectionBase(editingUnit.value, fetchRoomsWithBedsWrapper)
+}
+
+// Wrapper functions for device add handlers
+const handleAddDeviceToRoom = async (roomId: string) => {
+  await handleAddDeviceToRoomBase(roomId, roomsWithBeds.value, allUnits.value, ensureUnitRoom, expandedRooms)
+}
+
+const handleAddDeviceToBed = async (bedId: string) => {
+  await handleAddDeviceToBedBase(bedId, roomsWithBeds.value, allUnits.value, ensureUnitRoom, expandedRooms)
+}
+
+// Add device to unit (from "Add Bed/Dev to Unit" button)
+const handleAddDeviceToUnitWrapper = async () => {
   if (!editingUnit.value) {
-    message.error('No unit selected')
+    message.error('Please select a unit first')
     return
   }
-  
-  await createBedForRoom(room, editingUnit.value.unit_id, 'All beds (A-Z) have been added')
-}
-
-// 公共函数：确保 Unit 有默认 Room（room_name === unit_name），不存在则创建
-const ensureDefaultRoom = async (unit: Unit): Promise<RoomWithBeds | null> => {
-  let room = roomsWithBeds.value.find((r) => r.room_name === unit.unit_name)
-  if (!room) {
-    if (roomsWithBeds.value.length === 0) {
-      await createRoomApi({ unit_id: unit.unit_id, room_name: unit.unit_name })
-      await fetchRoomsWithBeds(unit.unit_id)
-      room = roomsWithBeds.value.find((r) => r.room_name === unit.unit_name)
-    } else {
-      room = roomsWithBeds.value[0]
-    }
+  // Ensure unit_room exists before opening device selection
+  const unitRoom = await ensureUnitRoom(editingUnit.value)
+  if (!unitRoom) {
+    message.error('Failed to create unit_room for unit')
+    return
   }
-  return room || null
-}
-
-// Add Bed to the first Room
-const handleAddBedToFirstRoom = async () => {
-  try {
-    if (!editingUnit.value) {
-      message.error('No unit selected')
-      return
-    }
-    const room = await ensureDefaultRoom(editingUnit.value)
-    if (!room) {
-      message.error('No room available')
-      return
-    }
-    await createBedForRoom(room, editingUnit.value.unit_id, 'All beds (A-Z) have been added for this room')
-  } catch (error: any) {
-    message.error('Failed to add bed: ' + (error.message || 'Unknown error'))
+  // Expand the unit_room if not already expanded
+  if (unitRoom.room_id) {
+    expandedRooms.value.add(unitRoom.room_id)
   }
+  // Open device selection for unit (which will highlight the unit_room)
+  await openDeviceSelection('unit', editingUnit.value.unit_id, roomsWithBeds.value, allUnits.value, ensureUnitRoom)
 }
 
-// 处理添加设备到 Unit
-const handleAddDeviceToUnit = async () => {
-  try {
-    if (!editingUnit.value) {
-      message.error('No unit selected')
-      return
-    }
-    const room = await ensureDefaultRoom(editingUnit.value)
-    if (!room) {
-      message.error('Failed to create room for unit')
-      return
-    }
-    await openDeviceSelection('unit', editingUnit.value.unit_id)
-  } catch (error: any) {
-    message.error('Failed to prepare device selection: ' + (error.message || 'Unknown error'))
-  }
+// Wrapper functions for room/bed handlers that use fetchRoomsWithBedsWrapper
+const handleSaveRoomNameWrapper = async (roomId: string) => {
+  await handleSaveRoomName(roomId, editingUnit.value, fetchRoomsWithBedsWrapper)
 }
 
-// 判断设备是否绑定到当前目标
-const isDeviceBoundToTarget = (device: Device): boolean => {
-  if (!selectedTarget.value) return false
-  const deviceAny = device as any
-  if (selectedTarget.value.type === 'unit') {
-    return deviceAny.location_id === selectedTarget.value.id
-  } else if (selectedTarget.value.type === 'room') {
-    return deviceAny.bound_room_id === selectedTarget.value.id
-  } else {
-    return deviceAny.bound_bed_id === selectedTarget.value.id
-  }
+const handleDeleteRoomWrapper = async (roomId: string) => {
+  await handleDeleteRoom(roomId, editingUnit.value, fetchRoomsWithBedsWrapper)
 }
 
-// 处理设备选择弹窗中的 checkbox 变化
-const handleDeviceSelectChange = async (event: any, device: Device) => {
-  const checked = event.target.checked
-  if (!selectedTarget.value || !device.device_id) return
-  
-  try {
-    if (checked) {
-      // 绑定到目标
-      await updateDeviceApi(device.device_id, {
-        location_id: selectedTarget.value.type === 'unit' ? selectedTarget.value.id : null,
-        bound_room_id: selectedTarget.value.type === 'room' ? selectedTarget.value.id : null,
-        bound_bed_id: selectedTarget.value.type === 'bed' ? selectedTarget.value.id : null,
-      })
-      // 默认展开新绑定的设备
-      expandedDevices.value.add(`device-${device.device_id}`)
-    } else {
-      // 解绑
-      await updateDeviceApi(device.device_id, {
-        location_id: null,
-        bound_room_id: null,
-        bound_bed_id: null,
-      })
-    }
-    await fetchAllDevices()
-    
-    // 更新设备列表：确保所有设备都在列表中（已绑定的和未绑定的）
-    // 使用 allDevices 作为基础，然后根据绑定状态分类
-    const allDevicesList = [...allDevices.value]
-    
-    if (selectedTarget.value.type === 'unit') {
-      // 对于 Unit：显示所有设备，已绑定到该 Unit 的显示为已勾选
-      devicesForSelection.value = allDevicesList
-      // 更新 Dev 容器显示该 Unit 的设备
-      devContainerTarget.value = { type: 'unit', id: selectedTarget.value.id }
-    } else if (selectedTarget.value.type === 'room') {
-      // 对于 Room：显示所有设备，已绑定到该 Room 的显示为已勾选
-      devicesForSelection.value = allDevicesList
-      // 更新 Dev 容器显示该 Room 的设备
-      devContainerTarget.value = { type: 'room', id: selectedTarget.value.id }
-    } else {
-      // 对于 Bed：显示所有设备，已绑定到该 Bed 的显示为已勾选
-      devicesForSelection.value = allDevicesList
-      // 更新 Dev 容器显示该 Bed 的设备
-      devContainerTarget.value = { type: 'bed', id: selectedTarget.value.id }
-    }
-  } catch (error: any) {
-    message.error('Failed to update device binding')
-    event.target.checked = !checked
-  }
+const handleSaveBedNameWrapper = async (bedId: string) => {
+  await handleSaveBedName(bedId, editingUnit.value, fetchRoomsWithBedsWrapper)
 }
 
-// 确认设备选择
-const handleConfirmDeviceSelection = () => {
-  showDeviceSelectModal.value = false
-  selectedTarget.value = null
-  // 刷新 Room 列表（如果创建了新 Room）
-  if (editingUnit.value) {
-    fetchRoomsWithBeds(editingUnit.value.unit_id)
-  }
-}
-
-// 取消设备选择
-const handleCancelDeviceSelection = () => {
-  showDeviceSelectModal.value = false
-  selectedTarget.value = null
-}
-
-// 编辑 Room
-const handleEditRoom = (room: RoomWithBeds) => {
-  editingRoomId.value = room.room_id
-  editingRoomName.value = room.room_name
-  nextTick(() => {
-    if (roomInputRef.value && roomInputRef.value.$el) {
-      roomInputRef.value.$el.querySelector('input')?.focus()
-    } else if (roomInputRef.value && roomInputRef.value.focus) {
-      roomInputRef.value.focus()
-    }
-  })
-}
-
-// 保存 Room 名称
-const handleSaveRoomName = async (roomId: string) => {
-  try {
-    if (!editingRoomName.value.trim()) {
-      message.warning('Room name cannot be empty')
-      if (editingUnit.value) {
-        await fetchRoomsWithBeds(editingUnit.value.unit_id)
-      }
-      editingRoomId.value = null
-      return
-    }
-
-    await updateRoomApi(roomId, { room_name: editingRoomName.value.trim() })
-
-    if (editingUnit.value) {
-      await fetchRoomsWithBeds(editingUnit.value.unit_id)
-    }
-
-    message.success('Room name updated successfully')
-    editingRoomId.value = null
-  } catch (error: any) {
-    message.error('Failed to update room name: ' + (error.message || 'Unknown error'))
-    if (editingUnit.value) {
-      await fetchRoomsWithBeds(editingUnit.value.unit_id)
-    }
-    editingRoomId.value = null
-  }
-}
-
-
-// 删除 Room
-const handleDeleteRoom = async (roomId: string) => {
-  try {
-    await deleteRoomApi(roomId)
-    if (editingUnit.value) {
-      await fetchRoomsWithBeds(editingUnit.value.unit_id)
-    }
-    message.success('Room deleted successfully')
-  } catch (error: any) {
-    message.error('Failed to delete room: ' + (error.message || 'Unknown error'))
-  }
+const handleDeleteBedWrapper = async (bedId: string) => {
+  await handleDeleteBed(bedId, editingUnit.value, fetchRoomsWithBedsWrapper)
 }
 
 // 编辑 Bed
-const handleEditBed = (bed: Bed) => {
-  editingBedId.value = bed.bed_id
-  editingBedName.value = bed.bed_name
+const handleEditBedWrapper = (bed: Bed) => {
+  handleEditBed(bed)
   nextTick(() => {
     if (bedInputRef.value && bedInputRef.value.$el) {
       bedInputRef.value.$el.querySelector('input')?.focus()
@@ -2688,48 +1795,7 @@ const handleEditBed = (bed: Bed) => {
 }
 
 // 保存 Bed 名称（验证格式：BedA-BedZ）
-const handleSaveBedName = async (bedId: string) => {
-  try {
-    const formattedName = validateAndFormatBedName(editingBedName.value)
-    
-    if (!formattedName) {
-      message.warning('Bed name must be in format BedA-BedZ (e.g., BedA, bedB, BedZ)')
-      if (editingUnit.value) {
-        await fetchRoomsWithBeds(editingUnit.value.unit_id)
-      }
-      editingBedId.value = null
-      return
-    }
-
-    await updateBedApi(bedId, { bed_name: formattedName })
-
-    if (editingUnit.value) {
-      await fetchRoomsWithBeds(editingUnit.value.unit_id)
-    }
-
-    message.success('Bed name updated successfully')
-    editingBedId.value = null
-  } catch (error: any) {
-    message.error('Failed to update bed name: ' + (error.message || 'Unknown error'))
-    if (editingUnit.value) {
-      await fetchRoomsWithBeds(editingUnit.value.unit_id)
-    }
-    editingBedId.value = null
-  }
-}
-
-// 删除 Bed
-const handleDeleteBed = async (bedId: string) => {
-  try {
-    await deleteBedApi(bedId)
-    if (editingUnit.value) {
-      await fetchRoomsWithBeds(editingUnit.value.unit_id)
-    }
-    message.success('Bed deleted successfully')
-  } catch (error: any) {
-    message.error('Failed to delete bed: ' + (error.message || 'Unknown error'))
-  }
-}
+// Functions are now in composables, using wrapper functions
 
 // 监听 showEditUnitModal 的变化，在打开 Modal 时立即设置位置为 10%
 watch(showEditUnitModal, async (newShowModal) => {
@@ -3316,6 +2382,113 @@ onUnmounted(() => {
   color: #666;
 }
 
+/* SVG/PNG 图标样式 */
+.device-icon-svg {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  display: block;
+}
+
+.device-icon-svg-small {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  display: block;
+}
+
+/* Bed device thumbnails (shown in bed row when room is expanded) */
+.bed-device-thumbnails {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  margin-right: 4px;
+}
+
+.device-thumbnail {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.device-icon-circle-small {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+  overflow: hidden;
+}
+
+/* Status dot for device thumbnails - same position as expanded (top-left), just different size */
+.device-status-dot {
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid white;
+  z-index: 1;
+}
+
+.device-status-dot.status-online {
+  background: #52c41a;
+}
+
+.device-status-dot.status-offline {
+  background: #999;
+}
+
+.device-status-dot.status-error {
+  background: #ff4d4f;
+}
+
+.device-status-dot-small {
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  border: 1px solid white;
+  z-index: 1;
+}
+
+.device-status-dot-small.status-online {
+  background: #52c41a;
+}
+
+.device-status-dot-small.status-offline {
+  background: #999;
+}
+
+.device-status-dot-small.status-error {
+  background: #ff4d4f;
+}
+
+.device-thumbnail.monitoring-enabled .device-icon-circle-small {
+  background: #1890ff;
+  color: white;
+  border-color: #1890ff;
+}
+
+.device-thumbnail.monitoring-disabled .device-icon-circle-small {
+  background: #d9d9d9;
+  color: #666;
+  border-color: #d9d9d9;
+}
+
 /* Status 指示器（左上角） */
 .device-status-indicator {
   position: absolute;
@@ -3657,12 +2830,138 @@ onUnmounted(() => {
 
 .node-content {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.node-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.node-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Room icons display */
+.room-icons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 8px;
+}
+
+.room-icon-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.room-icon-thumbnail {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.room-icon-count {
+  font-size: 12px;
+  color: #999;
+  margin-left: 2px;
+}
+
+.device-thumbnail-small {
+  position: relative;
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.device-thumbnail-small.monitoring-enabled {
+  background: #1890ff;
+}
+
+.device-thumbnail-small.monitoring-disabled {
+  background: #d9d9d9;
+}
+
+.node-content {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
   gap: 8px;
   min-height: 28px;
   width: 100%;
   max-width: 100%;
   overflow: hidden;
+}
+
+.node-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.node-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Room icons display */
+.room-icons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 8px;
+}
+
+.room-icon-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.room-icon-thumbnail {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.room-icon-count {
+  font-size: 12px;
+  color: #999;
+  margin-left: 2px;
+}
+
+.device-thumbnail-small {
+  position: relative;
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.device-thumbnail-small.monitoring-enabled {
+  background: #1890ff;
+}
+
+.device-thumbnail-small.monitoring-disabled {
+  background: #d9d9d9;
 }
 
 .expand-icon {
@@ -3771,7 +3070,7 @@ onUnmounted(() => {
 
 .modal-actions {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   gap: 10px;
   margin-top: 12px;
@@ -3780,6 +3079,24 @@ onUnmounted(() => {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+}
+
+.modal-actions-center {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.unit-action-label {
+  font-weight: 500;
+  margin-right: 0;
+}
+
+.unit-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-top: 8px;
 }
 
 .modal-actions-left {
@@ -3881,6 +3198,18 @@ onUnmounted(() => {
 
 .location-tag-header.active .unit-count {
   color: #1890ff;
+}
+
+/* Header button active state */
+.header-button-active {
+  background: #52c41a !important;
+  border-color: #52c41a !important;
+  color: #fff !important;
+}
+
+.header-button-active:hover {
+  background: #73d13d !important;
+  border-color: #73d13d !important;
 }
 
 /* Edit Unit Modal 位置控制 - 默认位置为 10% */
