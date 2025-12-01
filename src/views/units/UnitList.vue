@@ -579,35 +579,35 @@
               >
                 <div class="node-content">
                   <div class="node-left">
-                    <span
-                      class="expand-icon"
-                      @click="toggleRoom(room.room_id)"
-                      v-if="room.beds && room.beds.length > 0"
-                    >
-                      {{ expandedRooms.has(room.room_id) ? '−' : '+' }}
-                    </span>
-                    <span class="expand-placeholder" v-else></span>
-                    <a-input
-                      v-if="editingRoomId === room.room_id"
-                      v-model:value="editingRoomName"
-                      size="small"
-                      style="width: 150px"
+                  <span
+                    class="expand-icon"
+                    @click="toggleRoom(room.room_id)"
+                      v-if="(room.beds && room.beds.length > 0) || getRoomDevices(room.room_id).length > 0"
+                  >
+                    {{ expandedRooms.has(room.room_id) ? '−' : '+' }}
+                  </span>
+                  <span class="expand-placeholder" v-else></span>
+                  <a-input
+                    v-if="editingRoomId === room.room_id"
+                    v-model:value="editingRoomName"
+                    size="small"
+                    style="width: 150px"
                       @pressEnter="handleSaveRoomNameWrapper(room.room_id)"
                       @blur="handleSaveRoomNameWrapper(room.room_id)"
-                      ref="roomInputRef"
-                    />
-                    <span v-else class="node-label" @dblclick="handleEditRoom(room)">
-                      {{ room.room_name }}
-                    </span>
+                    ref="roomInputRef"
+                  />
+                  <span v-else class="node-label" @dblclick="handleEditRoom(room)">
+                    {{ room.room_name }}
+                  </span>
                     <!-- Edit/Delete icons after room name -->
-                    <EditOutlined
-                      v-if="editingRoomId !== room.room_id"
-                      class="action-icon inline-action"
-                      @click="handleEditRoom(room)"
-                    />
-                    <DeleteOutlined
-                      v-if="editingRoomId !== room.room_id"
-                      class="action-icon delete-icon inline-action"
+                  <EditOutlined
+                    v-if="editingRoomId !== room.room_id"
+                    class="action-icon inline-action"
+                    @click="handleEditRoom(room)"
+                  />
+                  <DeleteOutlined
+                    v-if="editingRoomId !== room.room_id"
+                    class="action-icon delete-icon inline-action"
                       @click="handleDeleteRoomWrapper(room.room_id)"
                     />
                     <!-- Room icons: bed_icon and device_icon thumbnails after Edit/Delete -->
@@ -643,20 +643,20 @@
                     </div>
                   </div>
                   <div class="node-right">
-                    <AppstoreAddOutlined
-                      v-if="editingRoomId !== room.room_id && isDeviceMode"
-                      class="action-icon inline-action add-device-icon"
-                      @click="handleAddDeviceToRoom(room.room_id)"
-                      title="Add device"
-                    />
+                  <AppstoreAddOutlined
+                    v-if="editingRoomId !== room.room_id && isDeviceMode"
+                    class="action-icon inline-action add-device-icon"
+                    @click="handleAddDeviceToRoom(room.room_id)"
+                    title="Add device"
+                  />
                     <div v-if="!isDeviceMode" class="node-actions">
-                      <img 
-                        :src="bedIconGreen"
-                        class="action-icon inline-action add-bed-icon-room"
+                    <img 
+                      :src="bedIconGreen"
+                      class="action-icon inline-action add-bed-icon-room"
                         @click="handleAddBedDirectlyWrapper(room)"
-                        :class="{ 'disabled': getAvailableBedLetters(room).length === 0 }"
-                        title="Add bed"
-                      />
+                      :class="{ 'disabled': getAvailableBedLetters(room).length === 0 }"
+                      title="Add bed"
+                    />
                     </div>
                   </div>
                 </div>
@@ -685,28 +685,28 @@
                           {{ expandedBedDevices.has(bed.bed_id) ? '−' : '+' }}
                         </span>
                         <span class="expand-placeholder" v-else></span>
-                        <a-input
-                          v-if="editingBedId === bed.bed_id"
-                          v-model:value="editingBedName"
-                          size="small"
-                          style="width: 150px"
+                      <a-input
+                        v-if="editingBedId === bed.bed_id"
+                        v-model:value="editingBedName"
+                        size="small"
+                        style="width: 150px"
                           @pressEnter="handleSaveBedNameWrapper(bed.bed_id)"
                           @blur="handleSaveBedNameWrapper(bed.bed_id)"
-                          ref="bedInputRef"
-                          placeholder="BedA-BedZ"
-                        />
+                        ref="bedInputRef"
+                        placeholder="BedA-BedZ"
+                      />
                         <span v-else class="node-label" @dblclick="handleEditBedWrapper(bed)">
-                          {{ bed.bed_name }}
-                        </span>
+                        {{ bed.bed_name }}
+                      </span>
                         <!-- Edit/Delete icons after bed name -->
-                        <EditOutlined
-                          v-if="editingBedId !== bed.bed_id"
-                          class="action-icon inline-action"
+                      <EditOutlined
+                        v-if="editingBedId !== bed.bed_id"
+                        class="action-icon inline-action"
                           @click="handleEditBedWrapper(bed)"
-                        />
-                        <DeleteOutlined
-                          v-if="editingBedId !== bed.bed_id"
-                          class="action-icon delete-icon inline-action"
+                      />
+                      <DeleteOutlined
+                        v-if="editingBedId !== bed.bed_id"
+                        class="action-icon delete-icon inline-action"
                           @click="handleDeleteBedWrapper(bed.bed_id)"
                         />
                         <!-- Device thumbnails when bed devices are not expanded (room is expanded but device list is collapsed) -->
@@ -731,12 +731,12 @@
                         </div>
                       </div>
                       <div class="node-right">
-                        <AppstoreAddOutlined
-                          v-if="editingBedId !== bed.bed_id && isDeviceMode"
-                          class="action-icon inline-action add-device-icon"
-                          @click="handleAddDeviceToBed(bed.bed_id)"
-                          title="Add device"
-                        />
+                      <AppstoreAddOutlined
+                        v-if="editingBedId !== bed.bed_id && isDeviceMode"
+                        class="action-icon inline-action add-device-icon"
+                        @click="handleAddDeviceToBed(bed.bed_id)"
+                        title="Add device"
+                      />
                       </div>
                     </div>
                     
@@ -753,9 +753,8 @@
                       >
                         <div class="node-content">
                           <span class="expand-placeholder"></span>
-                          <!-- Expanded Mode: Show Detailed Information -->
+                          <!-- Always show expanded mode (no collapse functionality) -->
                           <div 
-                            v-if="expandedDevices.has(`device-${device.device_id}`)" 
                             class="device-expanded-content"
                           >
                             <div
@@ -795,55 +794,19 @@
                               >
                                 {{ device.device_name }}
                               </span>
-                              <EditOutlined 
-                                class="action-icon inline-action"
+                            <EditOutlined 
+                              class="action-icon inline-action"
                                 @click="handleStartEdit(device, 'device_name', device.device_name || '')"
                                 title="Edit device name"
-                              />
-                              <DeleteOutlined 
-                                class="action-icon delete-icon inline-action"
-                                @click="handleDeleteDevice(device)"
+                            />
+                            <DeleteOutlined 
+                              class="action-icon delete-icon inline-action"
+                              @click="handleDeleteDevice(device)"
                                 title="Unbind device"
                               />
                             </template>
-                            <span 
-                              class="collapse-icon"
-                              @click="toggleDevicesExpand(`device-${device.device_id}`)"
-                              title="Collapse"
-                            >
-                              −
-                            </span>
                           </div>
-                          <!-- Collapsed Mode: Show Icon Only -->
-                          <div 
-                            v-else 
-                            class="device-collapsed-content"
-                            @click="toggleDevicesExpand(`device-${device.device_id}`)"
-                          >
-                            <div
-                              class="device-icon-wrapper"
-                              :class="{
-                                'monitoring-enabled': device.monitoring_enabled,
-                                'monitoring-disabled': !device.monitoring_enabled
-                              }"
-                            >
-                              <div class="device-icon-circle">
-                                <img :src="getDeviceTypeIcon(device.device_type)" class="device-icon-svg" />
                               </div>
-                              <div class="device-status-indicator" :class="`status-${device.status}`">
-                                <CheckCircleOutlined v-if="device.status === 'online'" />
-                                <span v-else-if="device.status === 'error'" class="error-dot"></span>
-                                <CloseCircleOutlined v-else-if="device.status === 'offline'" />
-                              </div>
-                            </div>
-                            <span 
-                              v-if="getBedDevices(bed.bed_id).length > 1 && getBedDevices(bed.bed_id).findIndex(d => d.device_id === device.device_id) === 0 && !expandedDevices.has(`device-${device.device_id}`)"
-                              class="more-devices-count"
-                            >
-                              +{{ getBedDevices(bed.bed_id).length - 1 }}
-                            </span>
-                          </div>
-                        </div>
                       </div>
                     </div>
                   </div>
@@ -862,9 +825,8 @@
                   >
                     <div class="node-content">
                       <span class="expand-placeholder"></span>
-                      <!-- Expanded Mode: Show Detailed Information -->
+                      <!-- Always show expanded mode (no collapse functionality) -->
                       <div 
-                        v-if="expandedDevices.has(`device-${device.device_id}`)" 
                         class="device-expanded-content"
                       >
                         <div
@@ -904,55 +866,19 @@
                           >
                             {{ device.device_name }}
                           </span>
-                          <EditOutlined 
-                            class="action-icon inline-action"
+                        <EditOutlined 
+                          class="action-icon inline-action"
                             @click="handleStartEdit(device, 'device_name', device.device_name || '')"
                             title="Edit device name"
-                          />
-                          <DeleteOutlined 
-                            class="action-icon delete-icon inline-action"
-                            @click="handleDeleteDevice(device)"
+                        />
+                        <DeleteOutlined 
+                          class="action-icon delete-icon inline-action"
+                          @click="handleDeleteDevice(device)"
                             title="Unbind device"
                           />
-                          <span 
-                            class="collapse-icon"
-                            @click="toggleDevicesExpand(`device-${device.device_id}`)"
-                            title="Collapse"
-                          >
-                            −
-                          </span>
                         </template>
                       </div>
-                      <!-- Collapsed Mode: Show Icon Only -->
-                      <div 
-                        v-else 
-                        class="device-collapsed-content"
-                        @click="toggleDevicesExpand(`device-${device.device_id}`)"
-                      >
-                        <div
-                          class="device-icon-wrapper"
-                          :class="{
-                            'monitoring-enabled': device.monitoring_enabled,
-                            'monitoring-disabled': !device.monitoring_enabled
-                          }"
-                        >
-                          <div class="device-icon-circle">
-                            <img :src="getDeviceTypeIcon(device.device_type)" class="device-icon-svg" />
                           </div>
-                          <div class="device-status-indicator" :class="`status-${device.status}`">
-                            <CheckCircleOutlined v-if="device.status === 'online'" />
-                            <span v-else-if="device.status === 'error'" class="error-dot"></span>
-                            <CloseCircleOutlined v-else-if="device.status === 'offline'" />
-                          </div>
-                        </div>
-                        <span 
-                          v-if="getRoomDevices(room.room_id).length > 1 && getRoomDevices(room.room_id).findIndex(d => d.device_id === device.device_id) === 0 && !expandedDevices.has(`device-${device.device_id}`)"
-                          class="more-devices-count"
-                        >
-                          +{{ getRoomDevices(room.room_id).length - 1 }}
-                        </span>
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -1150,7 +1076,6 @@ const {
   selectedTarget,
   devicesForSelection,
   devContainerTarget,
-  expandedDevices,
   deviceColumns,
   deviceSelectColumns,
   devContainerDevices,
@@ -1158,7 +1083,6 @@ const {
   getRoomDevices,
   getBedDevices,
   getUnitDevices,
-  toggleDevicesExpand,
   openDeviceSelection,
   handleToggleAddDevice: handleToggleAddDeviceBase,
   handleAddDeviceToRoom: handleAddDeviceToRoomBase,
@@ -1230,7 +1154,7 @@ const filterTimeZoneOption = (input: string, option: any) => {
 // Unit grid calculation - sort by UnitNumber numerically
 const unitGrid = computed(() => {
   const building = currentBuildingForGrid.value
-  
+
   if (!building || !selectedFloor.value) {
     return []
   }
@@ -1238,7 +1162,7 @@ const unitGrid = computed(() => {
   // All units have location_tag, building, floor (no null values)
   // Simple filter: match all three fields
   const filteredUnits = units.value.filter((unit) => {
-    return (
+      return (
       unit.building === building.building_name &&
       unit.floor === selectedFloor.value &&
       unit.location_tag === building.location_tag
@@ -1252,7 +1176,7 @@ const unitGrid = computed(() => {
     
     // If both are valid numbers, sort numerically
     if (!isNaN(numA) && !isNaN(numB)) {
-      return numA - numB
+    return numA - numB
     }
     
     // Otherwise, sort alphabetically
@@ -1287,13 +1211,13 @@ const fetchUnits = async () => {
     //                      (tenant_id, unit_name) if location_tag IS NULL
     
     // All units have location_tag, building, floor (no null values)
-    const building = currentBuildingForGrid.value
-    
+  const building = currentBuildingForGrid.value
+  
     if (!building || !selectedFloor.value) {
-      units.value = []
-      return
-    }
-    
+    units.value = []
+    return
+  }
+
     // Build query parameters - simple and direct
     const queryParams: any = {
       tenant_id: tenantId,
@@ -1302,8 +1226,8 @@ const fetchUnits = async () => {
       location_tag: building.location_tag,
     }
     
-    const result = await getUnitsApi(queryParams)
-    units.value = result.items
+      const result = await getUnitsApi(queryParams)
+      units.value = result.items
   } catch (error: any) {
     console.error('[Fetch Units] Error:', error)
     message.error('Failed to fetch units: ' + (error.message || 'Unknown error'))
@@ -1314,13 +1238,13 @@ const fetchUnits = async () => {
 // Wrapper functions for building handlers that need to call fetchUnits
 const handleToggleBuildingTagWrapper = (building: Building) => {
   handleToggleBuildingTag(building)
-  units.value = []
+    units.value = []
   fetchUnits()
 }
 
 const handleToggleBuildingCardWrapper = (building: Building) => {
   handleToggleBuildingCard(building)
-  units.value = []
+    units.value = []
   fetchUnits()
 }
 
@@ -1415,7 +1339,7 @@ const handleCreateUnit = async () => {
       message.error('Please select a building and floor first')
       return
     }
-    
+
     // Calculate the values that will be used for creation (same logic as in handleCreateUnitBase)
     const formBuilding = createUnitForm.value.building?.trim() || ''
     const formFloor = createUnitForm.value.floor?.trim() || ''
@@ -1491,7 +1415,7 @@ const handleCreateUnit = async () => {
     if (!createdUnit) {
       return
     }
-    
+
     // Verify created unit has correct values
     const createdLocationTag = createdUnit.location_tag || '-'
     if (createdUnit.building !== finalBuilding || createdUnit.floor !== finalFloor || createdLocationTag !== finalLocationTag) {
@@ -1523,7 +1447,7 @@ const handleCreateUnit = async () => {
       )
       if (foundUnit) {
         await handleCellClick(foundUnit, -1)
-      } else {
+    } else {
         console.warn('[Create Unit] Created unit not found in list:', createdUnit)
       }
     }
@@ -1537,13 +1461,13 @@ const handleCreateUnit = async () => {
 const fetchRoomsWithBedsWrapper = async (unitId: string) => {
   await fetchRoomsWithBeds(unitId)
   // Sort: Room with RoomName = UnitName placed first
-  const unitName = editingUnit.value?.unit_name || ''
-  if (unitName) {
-    roomsWithBeds.value.sort((a, b) => {
-      if (a.room_name === unitName && b.room_name !== unitName) return -1
-      if (a.room_name !== unitName && b.room_name === unitName) return 1
-      return 0
-    })
+    const unitName = editingUnit.value?.unit_name || ''
+    if (unitName) {
+      roomsWithBeds.value.sort((a, b) => {
+        if (a.room_name === unitName && b.room_name !== unitName) return -1
+        if (a.room_name !== unitName && b.room_name === unitName) return 1
+        return 0
+      })
   }
 }
 
@@ -1652,10 +1576,10 @@ const handleToggleAddDevice = async () => {
 const handleSaveUnit = async () => {
   const newUnit = await handleSaveUnitBase(currentBuildingForGrid.value, selectedLocationTag.value)
   if (newUnit) {
-    await fetchUnits()
-    await handleCellClick(newUnit, -1)
-  } else {
-    await fetchUnits()
+      await fetchUnits()
+      await handleCellClick(newUnit, -1)
+    } else {
+      await fetchUnits()
   }
 }
 
@@ -1755,8 +1679,8 @@ const handleAddDeviceToUnitWrapper = async () => {
   const unitRoom = await ensureUnitRoom(editingUnit.value)
   if (!unitRoom) {
     message.error('Failed to create unit_room for unit')
-    return
-  }
+      return
+    }
   // Expand the unit_room if not already expanded
   if (unitRoom.room_id) {
     expandedRooms.value.add(unitRoom.room_id)

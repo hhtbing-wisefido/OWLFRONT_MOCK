@@ -18,11 +18,22 @@
           </template>
           {{ isAllExpanded ? 'Collapse All' : 'Expand All' }}
         </a-button>
+        <a-button 
+          type="default" 
+          @click="handleRefresh" 
+          style="margin-left: 8px"
+          :loading="loading"
+        >
+          <template #icon>
+            <ReloadOutlined />
+          </template>
+          Refresh
+        </a-button>
+        <a-button type="primary" @click="goToUnitList" style="margin-left: 8px">
+          <EditOutlined />
+          Go to Edit Mode
+        </a-button>
       </div>
-      <a-button type="primary" @click="goToUnitList">
-        <EditOutlined />
-        Go to Edit Mode
-      </a-button>
     </div>
 
     <div class="table-container">
@@ -34,6 +45,7 @@
         size="small"
         bordered
         :loading="loading"
+        :expandIconColumnIndex="-1"
       >
         <template #headerCell="{ column }">
           <template v-if="column.key === 'UnitNumb'">
@@ -57,7 +69,18 @@
         </template>
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'location_tag'">
-            <span v-if="record.location_tag">{{ record.location_tag }}</span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span 
+                v-if="record.hasChildren"
+                @click="toggleExpand(record.key)"
+                style="cursor: pointer; user-select: none; font-size: 16px; color: #1890ff;"
+                :title="expandedKeys.has(record.key) ? 'Collapse' : 'Expand'"
+              >
+                <MinusOutlined v-if="expandedKeys.has(record.key)" />
+                <PlusOutlined v-else />
+              </span>
+              <span v-if="record.location_tag">{{ record.location_tag }}</span>
+            </div>
           </template>
           <template v-else-if="column.key === 'Building'">
             <span v-if="record.Building">{{ record.Building }}</span>
@@ -78,10 +101,10 @@
             <span v-if="record.UnitType">{{ record.UnitType }}</span>
           </template>
           <template v-else-if="column.key === 'room'">
-            <span v-if="record.room">{{ record.room }}</span>
+            <span v-if="record.room" style="white-space: pre-line;">{{ record.room }}</span>
           </template>
           <template v-else-if="column.key === 'bed'">
-            <span v-if="record.bed">{{ record.bed }}</span>
+            <span v-if="record.bed" style="white-space: pre-line;">{{ record.bed }}</span>
           </template>
         </template>
       </a-table>
@@ -90,15 +113,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, nextTick, computed, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { message } from 'ant-design-vue'
-import { EditOutlined, ArrowLeftOutlined, ExpandOutlined, ShrinkOutlined, ArrowUpOutlined, ArrowDownOutlined, SortAscendingOutlined, SortDescendingOutlined } from '@ant-design/icons-vue'
+import { EditOutlined, ArrowLeftOutlined, ExpandOutlined, ShrinkOutlined, SortAscendingOutlined, SortDescendingOutlined, ReloadOutlined, PlusOutlined, MinusOutlined } from '@ant-design/icons-vue'
 import type { Building, Unit, RoomWithBeds } from '@/api/units/model/unitModel'
 import { getBuildingsApi, getUnitsApi, getRoomsApi } from '@/api/units/unit'
+import { getDevicesApi } from '@/api/devices/device'
+import type { Device } from '@/api/devices/model/deviceModel'
 import { useUserStore } from '@/store/modules/user'
 
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
 
 // Loading state
@@ -107,6 +133,7 @@ const loading = ref(false)
 // Table data
 const tableData = ref<any[]>([])
 const rawTableData = ref<any[]>([]) // Store original data with children
+const allDevices = ref<Device[]>([]) // Store all devices for displaying bound devices
 
 // Expand state
 const expandedKeys = ref<Set<string>>(new Set())
@@ -120,20 +147,20 @@ const isAllExpanded = computed(() => {
 
 // Table columns
 const tableColumns = ref([
-  { title: 'location_tag', key: 'location_tag', dataIndex: 'location_tag', width: 80 },
-  { title: 'Building', key: 'Building', dataIndex: 'Building', width: 60 },
-  { title: 'Floor', key: 'Floor', dataIndex: 'Floor', width: 50 },
+  { title: 'location_tag', key: 'location_tag', dataIndex: 'location_tag', width: 100 },
+  { title: 'Building', key: 'Building', dataIndex: 'Building', width: 80 },
+  { title: 'Floor', key: 'Floor', dataIndex: 'Floor', width: 70 },
   { title: 'area_tag', key: 'area_tag', dataIndex: 'area_tag', width: 100 },
   { title: 'UnitName', key: 'UnitName', dataIndex: 'UnitName', width: 100 },
   { 
     title: 'UnitNumb', 
     key: 'UnitNumb', 
     dataIndex: 'UnitNumb', 
-    width: 100,
+    width: 80,
   },
-  { title: 'UnitType', key: 'UnitType', dataIndex: 'UnitType', width: 80 },
-  { title: 'room', key: 'room', dataIndex: 'room', width: 120 },
-  { title: 'bed', key: 'bed', dataIndex: 'bed', width: 100 },
+  { title: 'UnitType', key: 'UnitType', dataIndex: 'UnitType', width: 50 },
+  { title: 'Room:device', key: 'room', dataIndex: 'room', width: 120 },
+  { title: 'Bed:device', key: 'bed', dataIndex: 'bed', width: 120 },
 ])
 
 // Pagination config
@@ -146,6 +173,11 @@ const paginationConfig = {
 // Navigate to edit mode
 const goToUnitList = () => {
   router.push('/units')
+}
+
+// Refresh data
+const handleRefresh = () => {
+  fetchAllData()
 }
 
 // Toggle expand for a single unit
@@ -215,7 +247,7 @@ const updateTableData = () => {
     }
     
     // Sort groups by UnitNumb
-    const sortedGroups = Array.from(unitGroups.entries()).sort(([keyA, groupA], [keyB, groupB]) => {
+    const sortedGroups = Array.from(unitGroups.entries()).sort(([, groupA], [, groupB]) => {
       const unitA = groupA[0]
       const unitB = groupB[0]
       const numA = parseInt(unitA.UnitNumb) || 0
@@ -312,8 +344,16 @@ const fetchAllData = async () => {
       })
     )
 
+    // Fetch all devices (including bound ones)
+    const devicesResult = await getDevicesApi({
+      tenant_id: tenantId,
+      business_access: 'approved',
+      include_bound: true,
+    } as any)
+    allDevices.value = devicesResult.items || []
+
     // Transform data to table format
-    rawTableData.value = transformToTableData(allBuildings, unitsWithRoomsAndBeds)
+    rawTableData.value = transformToTableData(allBuildings, unitsWithRoomsAndBeds, allDevices.value)
     updateTableData()
   } catch (error: any) {
     message.error('Failed to fetch data: ' + (error.message || 'Unknown error'))
@@ -326,7 +366,8 @@ const fetchAllData = async () => {
 // Transform data to table format
 const transformToTableData = (
   buildings: Building[],
-  units: (Unit & { rooms: RoomWithBeds[] })[]
+  units: (Unit & { rooms: RoomWithBeds[] })[],
+  devices: Device[] = []
 ): any[] => {
   const rows: any[] = []
 
@@ -399,32 +440,54 @@ const transformToTableData = (
 
       sortedUnits.forEach((unit) => {
         // Collect all rooms and beds for this unit
-        const roomBedRows: Array<{ room: string; bed?: string }> = []
-        const roomsWithoutBed: string[] = []
+        const roomBedRows: Array<{ room: string; bed?: string; isUnitRoom: boolean }> = []
+        const roomsWithoutBed: Array<{ room: string; isUnitRoom: boolean }> = []
 
         if (unit.rooms && unit.rooms.length > 0) {
-          // Sort rooms by name (alphabetical)
-          const sortedRooms = [...unit.rooms].sort((a, b) => 
-            a.room_name.localeCompare(b.room_name)
-          )
+          // Sort rooms: prioritize unit_room (room_name === unit_name), then alphabetical
+          const sortedRooms = [...unit.rooms].sort((a, b) => {
+            const aIsUnitRoom = a.room_name === unit.unit_name
+            const bIsUnitRoom = b.room_name === unit.unit_name
+            if (aIsUnitRoom && !bIsUnitRoom) return -1
+            if (!aIsUnitRoom && bIsUnitRoom) return 1
+            return a.room_name.localeCompare(b.room_name)
+          })
 
           sortedRooms.forEach((room) => {
+            const isUnitRoom = room.room_name === unit.unit_name
+            // Get devices bound to this room
+            const roomDevices = devices.filter((d: any) => d.bound_room_id === room.room_id)
+            const roomDeviceNames = roomDevices.map((d: Device) => d.device_name).filter(Boolean)
+            
+            // Format room display with devices
+            let roomDisplayName = isUnitRoom ? unit.unit_name : room.room_name
+            if (roomDeviceNames.length > 0) {
+              const formattedDevices = roomDeviceNames.map(name => `  --  ${name}`).join('\n')
+              roomDisplayName = `${roomDisplayName}\n${formattedDevices}`
+            }
+
             if (room.beds && room.beds.length > 0) {
               // Sort beds by name (alphabetical: BedA, BedB...)
               const sortedBeds = [...room.beds].sort((a, b) => 
                 a.bed_name.localeCompare(b.bed_name)
               )
               sortedBeds.forEach((bed) => {
-                // If room_name equals unit_name, display unit_name in room column
-                // This indicates the bed is directly under the unit
-                const roomDisplayName = room.room_name === unit.unit_name 
-                  ? unit.unit_name 
-                  : room.room_name
-                roomBedRows.push({ room: roomDisplayName, bed: bed.bed_name })
+                // Get devices bound to this bed
+                const bedDevices = devices.filter((d: any) => d.bound_bed_id === bed.bed_id)
+                const bedDeviceNames = bedDevices.map((d: Device) => d.device_name).filter(Boolean)
+                
+                // Format bed display with devices
+                let bedDisplayName = bed.bed_name
+                if (bedDeviceNames.length > 0) {
+                  const formattedDevices = bedDeviceNames.map(name => `  --  ${name}`).join('\n')
+                  bedDisplayName = `${bedDisplayName}\n${formattedDevices}`
+                }
+                
+                roomBedRows.push({ room: roomDisplayName, bed: bedDisplayName, isUnitRoom })
               })
             } else {
               // Room without beds
-              roomsWithoutBed.push(room.room_name)
+              roomsWithoutBed.push({ room: roomDisplayName, isUnitRoom })
             }
           })
         }
@@ -434,8 +497,24 @@ const transformToTableData = (
           const unitKey = `row-${rowIndex++}`
           const children: any[] = []
           
-          // Add rooms with beds as children
-          roomBedRows.forEach(({ room, bed }) => {
+          // Combine and sort: unit_room first, then others
+          const allChildren: Array<{ room: string; bed?: string; isUnitRoom: boolean }> = []
+          
+          // Add rooms with beds (already have isUnitRoom flag)
+          allChildren.push(...roomBedRows)
+          
+          // Add rooms without beds (already have isUnitRoom flag)
+          allChildren.push(...roomsWithoutBed.map(({ room, isUnitRoom }) => ({ room, isUnitRoom })))
+          
+          // Sort: unit_room first, then others
+          allChildren.sort((a, b) => {
+            if (a.isUnitRoom && !b.isUnitRoom) return -1
+            if (!a.isUnitRoom && b.isUnitRoom) return 1
+            return 0
+          })
+          
+          // Add sorted children
+          allChildren.forEach(({ room, bed }) => {
             children.push({
               key: `row-${rowIndex++}`,
               location_tag: '',
@@ -447,22 +526,6 @@ const transformToTableData = (
               UnitType: '',
               room: room,
               bed: bed,
-              isChild: true,
-            })
-          })
-
-          // Add rooms without beds as children
-          roomsWithoutBed.forEach((roomName) => {
-            children.push({
-              key: `row-${rowIndex++}`,
-              location_tag: '',
-              Building: '',
-              Floor: '',
-              area_tag: '',
-              UnitName: '',
-              UnitNumb: '',
-              UnitType: '',
-              room: roomName,
               isChild: true,
             })
           })
@@ -622,6 +685,14 @@ const initColumnResize = () => {
   })
 }
 
+// Watch route changes to refresh data when returning from UnitList
+watch(() => route.path, (newPath, oldPath) => {
+  // If navigating to UnitView from UnitList, refresh data
+  if (newPath === '/units/view' && oldPath === '/units') {
+    fetchAllData()
+  }
+}, { immediate: false })
+
 // Initialize
 onMounted(() => {
   fetchAllData().then(() => {
@@ -688,6 +759,27 @@ onMounted(() => {
 :deep(.column-resize-handle:hover) {
   background: #1890ff;
   opacity: 0.3;
+}
+
+/* Hide default expand column from Ant Design Table */
+:deep(.ant-table-expand-icon-col),
+:deep(.ant-table-row-expand-icon-cell),
+:deep(.ant-table-expand-icon-th),
+:deep(thead .ant-table-expand-icon-th),
+:deep(tbody .ant-table-expand-icon-th),
+:deep(.ant-table-thead .ant-table-expand-icon-th),
+:deep(.ant-table-tbody .ant-table-expand-icon-th) {
+  display: none !important;
+  width: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  visibility: hidden !important;
+}
+
+:deep(.ant-table-row-expand-icon),
+:deep(.ant-table-expand-icon) {
+  display: none !important;
+  visibility: hidden !important;
 }
 </style>
 
