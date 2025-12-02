@@ -11,46 +11,54 @@
 
       <!-- Contact Slots A, B, C, D -->
       <div v-for="slot in ['A', 'B', 'C', 'D']" :key="slot" class="contact-slot" style="margin-bottom: 24px; padding: 16px; border: 1px solid #e8e8e8; border-radius: 4px;">
-        <div class="slot-header" style="margin-bottom: 12px; font-weight: 600;">
-          <a-checkbox
-            v-model:checked="getContactBySlot(slot).is_enabled"
-            :disabled="readonly"
-            @change="handleContactChange(slot)"
-          >
-            {{ slot }} Enable
-          </a-checkbox>
+        <div class="slot-header" style="margin-bottom: 12px; font-weight: 600; cursor: pointer;" @click="toggleSlot(slot)">
+          <a-space>
+            <span>{{ expandedSlots[slot] ? '▼' : '▶' }}</span>
+            <a-checkbox
+              v-model:checked="getContactBySlot(slot).is_enabled"
+              :disabled="readonly"
+              @click.stop
+              @change="handleContactChange(slot)"
+            >
+              {{ slot }} Enable
+            </a-checkbox>
+          </a-space>
         </div>
 
-        <a-row :gutter="24" v-if="getContactBySlot(slot).is_enabled">
+        <div v-show="expandedSlots[slot]">
+        <a-row :gutter="24">
           <!-- First Name, Last Name, Relationship -->
           <a-col :span="8">
-            <a-form-item label="First Name：">
+            <a-form-item :label-col="{ span: 0 }" :wrapper-col="{ span: 24 }">
+              <span>First Name:  </span>
               <a-input
                 v-model:value="getContactBySlot(slot).contact_first_name"
                 :disabled="readonly"
                 :maxlength="100"
-                style="width: 100px"
+                style="width: 150px"
                 @blur="handleContactChange(slot)"
               />
             </a-form-item>
           </a-col>
           <a-col :span="8">
-            <a-form-item label="Last Name">
+            <a-form-item :label-col="{ span: 0 }" :wrapper-col="{ span: 24 }">
+              <span>Last Name:  </span>
               <a-input
                 v-model:value="getContactBySlot(slot).contact_last_name"
                 :disabled="readonly"
                 :maxlength="100"
-                style="width: 100px"
+                style="width: 150px"
                 @blur="handleContactChange(slot)"
               />
             </a-form-item>
           </a-col>
           <a-col :span="8">
-            <a-form-item label="Relationship">
+            <a-form-item :label-col="{ span: 0 }" :wrapper-col="{ span: 24 }">
+              <span>Relationship: </span>
               <a-select
                 v-model:value="getContactBySlot(slot).relationship"
                 :disabled="readonly"
-                style="width: 100%"
+                style="width: 150px"
                 @change="handleContactChange(slot)"
               >
                 <a-select-option value="Child">Child</a-select-option>
@@ -64,77 +72,68 @@
         </a-row>
 
         <!-- Email and Phone with Save checkboxes -->
-        <a-row :gutter="24" v-if="getContactBySlot(slot).is_enabled">
+        <a-row :gutter="24">
           <a-col :span="12">
-            <a-form-item label="Email">
-              <a-space>
-                <a-input
-                  v-model:value="getContactBySlot(slot).contact_email"
-                  :disabled="readonly"
-                  :maxlength="255"
-                  style="width: 150px"
-                  @blur="handleContactChange(slot)"
-                />
-                <a-checkbox
-                  v-model:checked="getContactBySlot(slot).save_email"
-                  :disabled="readonly"
-                  @change="handleContactChange(slot)"
-                >
-                  Save
-                </a-checkbox>
-              </a-space>
+            <a-form-item :label-col="{ span: 0 }" :wrapper-col="{ span: 24 }">
+              <span>Email:  </span>
+              <a-input
+                v-model:value="getContactBySlot(slot).contact_email"
+                :disabled="readonly"
+                :maxlength="255"
+                style="width: 180px"
+                @blur="handleContactChange(slot)"
+              />
+              <a-checkbox
+                v-model:checked="getContactBySlot(slot).save_email"
+                :disabled="readonly"
+                @change="handleContactChange(slot)"
+                style="margin-left: 20px"
+              >
+                Save
+              </a-checkbox>
+              <a-checkbox
+                v-model:checked="getContactBySlot(slot).receive_email"
+                :disabled="readonly"
+                @change="handleContactChange(slot)"
+              >
+                Receive Email
+              </a-checkbox>
             </a-form-item>
           </a-col>
           <a-col :span="12">
-            <a-form-item label="Phone">
-              <a-space>
-                <a-input
-                  v-model:value="getContactBySlot(slot).contact_phone"
-                  :disabled="readonly"
-                  :maxlength="25"
-                  style="width: 150px"
-                  @blur="handleContactChange(slot)"
-                />
-                <a-checkbox
-                  v-model:checked="getContactBySlot(slot).save_phone"
-                  :disabled="readonly"
-                  @change="handleContactChange(slot)"
-                >
-                  Save
-                </a-checkbox>
-              </a-space>
+            <a-form-item :label-col="{ span: 0 }" :wrapper-col="{ span: 24 }">
+              <span>Phone:  </span>
+              <a-input
+                v-model:value="getContactBySlot(slot).contact_phone"
+                :disabled="readonly"
+                :maxlength="25"
+                style="width: 150px"
+                @blur="handleContactChange(slot)"
+              />
+              <a-checkbox
+                v-model:checked="getContactBySlot(slot).save_phone"
+                :disabled="readonly"
+                @change="handleContactChange(slot)"
+                style="margin-left: 20px"
+              >
+                Save
+              </a-checkbox>
+              <a-checkbox
+                v-model:checked="getContactBySlot(slot).receive_sms"
+                :disabled="readonly"
+                @change="handleContactChange(slot)"
+              >
+                Receive SMS
+              </a-checkbox>
             </a-form-item>
           </a-col>
         </a-row>
 
         <!-- Save hint -->
-        <div v-if="getContactBySlot(slot).is_enabled" style="font-size: 12px; color: #999; margin-bottom: 8px;">
+        <div style="font-size: 12px; color: #999; margin-bottom: 8px;">
           Use to reset password. Don't save by default. If save, please check [Save].
         </div>
-
-        <!-- Receive alarm checkboxes -->
-        <a-row v-if="getContactBySlot(slot).is_enabled">
-          <a-col :span="24">
-            <a-form-item label="Receive Alarm">
-              <a-space>
-                <a-checkbox
-                  v-model:checked="alertChannels[slot].SMS"
-                  :disabled="readonly"
-                  @change="handleAlertChannelChange(slot)"
-                >
-                  SMS
-                </a-checkbox>
-                <a-checkbox
-                  v-model:checked="alertChannels[slot].Email"
-                  :disabled="readonly"
-                  @change="handleAlertChannelChange(slot)"
-                >
-                  Email
-                </a-checkbox>
-              </a-space>
-            </a-form-item>
-          </a-col>
-        </a-row>
+        </div>
       </div>
     </a-form>
   </div>
@@ -188,8 +187,8 @@ const initializeContacts = () => {
         contact_email: '',
         save_phone: false,
         save_email: false,
-        can_receive_alert: false,
-        alert_channels: [],
+        receive_sms: false,
+        receive_email: false,
       })
     }
   })
@@ -199,24 +198,17 @@ const initializeContacts = () => {
 
 const contactsMap = ref<Map<string, ResidentContact>>(initializeContacts())
 
-// Alert channels for each slot
-const alertChannels = ref<Record<string, { SMS: boolean; Email: boolean }>>({
-  A: { SMS: false, Email: false },
-  B: { SMS: false, Email: false },
-  C: { SMS: false, Email: false },
-  D: { SMS: false, Email: false },
+// Expanded state for each slot - default A expanded, B/C/D collapsed
+const expandedSlots = ref<Record<string, boolean>>({
+  A: true,
+  B: false,
+  C: false,
+  D: false,
 })
 
-// Initialize alert channels from contacts
-const initializeAlertChannels = () => {
-  contactsMap.value.forEach((contact, slot) => {
-    if (contact.alert_channels) {
-      alertChannels.value[slot] = {
-        SMS: contact.alert_channels.includes('SMS'),
-        Email: contact.alert_channels.includes('Email'),
-      }
-    }
-  })
+// Toggle slot expand/collapse
+const toggleSlot = (slot: string) => {
+  expandedSlots.value[slot] = !expandedSlots.value[slot]
 }
 
 // Get contact by slot
@@ -233,8 +225,8 @@ const getContactBySlot = (slot: string): ResidentContact => {
       contact_email: '',
       save_phone: false,
       save_email: false,
-      can_receive_alert: false,
-      alert_channels: [],
+      receive_sms: false,
+      receive_email: false,
     })
   }
   return contactsMap.value.get(slot)!
@@ -261,12 +253,9 @@ const handleContactChange = async (slot: string) => {
     contactToSave.contact_email = contact.contact_email
   }
   
-  // Update alert channels
-  const channels: string[] = []
-  if (alertChannels.value[slot].SMS) channels.push('SMS')
-  if (alertChannels.value[slot].Email) channels.push('Email')
-  contactToSave.alert_channels = channels
-  contactToSave.can_receive_alert = channels.length > 0
+  // 保存接收告警设置
+  contactToSave.receive_sms = contact.receive_sms || false
+  contactToSave.receive_email = contact.receive_email || false
   
   // Emit update
   const allContacts = Array.from(contactsMap.value.values())
@@ -278,8 +267,7 @@ const handleContactChange = async (slot: string) => {
       // 使用 slot 来更新联系人
       const params: UpdateResidentContactParams = {
         ...contactToSave,
-        slot: slot,
-      }
+      } as UpdateResidentContactParams
       if (contact.contact_id) {
         params.contact_id = contact.contact_id
       }
@@ -291,17 +279,11 @@ const handleContactChange = async (slot: string) => {
   }
 }
 
-// Handle alert channel change
-const handleAlertChannelChange = (slot: string) => {
-  handleContactChange(slot)
-}
-
 // Watch props changes
 watch(
   () => props.contacts,
-  (newContacts) => {
+  () => {
     contactsMap.value = initializeContacts()
-    initializeAlertChannels()
   },
   { deep: true }
 )
@@ -315,9 +297,6 @@ watch(
     })
   }
 )
-
-// Initialize on mount
-initializeAlertChannels()
 </script>
 
 <style scoped>

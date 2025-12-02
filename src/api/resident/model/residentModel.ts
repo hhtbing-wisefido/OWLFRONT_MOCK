@@ -110,8 +110,8 @@ export interface ResidentContact {
   phone_hash?: string // 手机号哈希，用于登录和找回密码
   email_hash?: string // 邮箱哈希，用于登录和找回密码
   contact_family_tag?: string // Family identifier for contact (if empty, can only view the resident corresponding to resident_id)
-  can_receive_alert?: boolean // 是否接收告警
-  alert_channels?: string[] // 告警接收渠道：['SMS', 'Email']
+  receive_sms?: boolean // 是否接收短信
+  receive_email?: boolean // 是否接收邮件
   // 前端使用的临时字段
   save_phone?: boolean // 是否保存手机号（用于重置密码）
   save_email?: boolean // 是否保存邮箱（用于重置密码）
@@ -246,11 +246,22 @@ export interface UpdateResidentPHIParams {
 
 /**
  * Update resident contact request parameters
+ * Corresponds to resident_contacts table structure
  */
 export interface UpdateResidentContactParams {
   contact_id?: string
-  contact_name: string
-  relationship?: string
+  slot?: string // 'A', 'B', 'C', 'D', 'E'
+  is_enabled?: boolean
+  contact_first_name?: string
+  contact_last_name?: string
+  relationship?: string // Child/Spouse/Friend/Caregiver/Other
+  contact_phone?: string
+  contact_email?: string
+  contact_family_tag?: string
+  receive_sms?: boolean // 是否接收短信
+  receive_email?: boolean // 是否接收邮件
+  // Legacy fields for backward compatibility
+  contact_name?: string
   phone?: string
   email?: string
   is_primary?: boolean

@@ -91,24 +91,13 @@
         </a-col>
         <a-col v-if="canViewField('family_tag')">
           <a-form-item label="Family Tag" style="margin-bottom: 0;">
-            <a-select
+            <a-input
               v-model:value="localResidentData.family_tag"
               :disabled="!canEditField('family_tag')"
-              :allowClear="true"
-              :showSearch="true"
-              mode="tags"
-              :filterOption="false"
-              @search="handleFamilyTagSearch"
+              :maxlength="100"
               style="width: 100px"
-            >
-              <a-select-option
-                v-for="tag in availableFamilyTags"
-                :key="tag"
-                :value="tag"
-              >
-                {{ tag }}
-              </a-select-option>
-            </a-select>
+              placeholder="e.g., F0001"
+            />
           </a-form-item>
         </a-col>
         <a-col v-if="canViewField('is_access_enabled')">
@@ -197,13 +186,11 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   readonly: false,
   mode: 'view',
-  availableFamilyTags: () => [],
 })
 
 const emit = defineEmits<{
   'update:resident-data': [data: Partial<Resident>]
   'update:phi-data': [data: Partial<ResidentPHI>]
-  'family-tag-search': [searchText: string]
 }>()
 
 const userStore = useUserStore()
@@ -269,14 +256,6 @@ const fetchServiceLevels = async () => {
   }
 }
 
-// Family Tag 相关（从父组件获取）
-const availableFamilyTags = computed(() => {
-  return props.availableFamilyTags || []
-})
-
-const handleFamilyTagSearch = (searchText: string) => {
-  emit('family-tag-search', searchText)
-}
 
 // 字段权限配置
 const fieldPermissions = {

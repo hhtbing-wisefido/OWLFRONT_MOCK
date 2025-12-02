@@ -32,10 +32,8 @@
             :resident-data="residentData"
             :mode="mode"
             :readonly="!canEditProfile"
-            :available-family-tags="availableFamilyTags"
             @update:resident-data="handleResidentDataUpdate"
             @update:phi-data="handlePHIDataUpdate"
-            @family-tag-search="handleFamilyTagSearch"
           />
         </a-tab-pane>
 
@@ -184,21 +182,6 @@ const handleContactsUpdate = (contacts: any[]) => {
   residentData.value.contacts = contacts
 }
 
-// Get available family tags from existing residents
-// 注意：这里暂时返回空数组，实际应该从 API 或 store 获取所有住户的 family_tag
-// 由于可能数据量较大，建议通过 API 搜索获取
-const availableFamilyTags = computed(() => {
-  const tags = new Set<string>()
-  // TODO: 从 API 或 store 获取所有住户的 family_tag
-  // 可以调用 getResidentsApi 获取，或者从 entitiesStore 获取
-  return Array.from(tags).sort()
-})
-
-// Handle family tag search
-const handleFamilyTagSearch = (searchText: string) => {
-  // 可以在这里实现搜索逻辑
-  console.log('Family tag search:', searchText)
-}
 
 // Fetch resident data
 const fetchResident = async (params?: { include_phi?: boolean; include_contacts?: boolean }) => {
