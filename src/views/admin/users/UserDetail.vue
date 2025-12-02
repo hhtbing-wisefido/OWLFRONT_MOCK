@@ -343,7 +343,15 @@ const resetPasswordRules: Record<string, Rule[]> = {
 const fetchRoles = async () => {
   try {
     const data = await getRolesApi()
-    availableRoles.value = data.items.filter((role) => role.is_active)
+    // Filter out SystemAdmin (no permission to manage tenant users)
+    // Filter out Resident and Family (not for users table, they are for residents table)
+    availableRoles.value = data.items.filter(
+      (role) =>
+        role.is_active &&
+        role.role_code !== 'SystemAdmin' &&
+        role.role_code !== 'Resident' &&
+        role.role_code !== 'Family'
+    )
   } catch (error: any) {
     console.error('Failed to fetch roles:', error)
   }
@@ -404,11 +412,11 @@ const initializeTagsList = async () => {
       return
     }
     
-    // Get tags from API (only get enabled tags)
+    // Get tags from API (only get user_tag type tags)
     const result = await getTagsApi({
       tenant_id: tenantId,
-      is_active: true,
-      include_system_tags: true,
+      tag_type: 'user_tag',
+      include_system_tag_types: true,
     })
     
     // Extract tag_name list

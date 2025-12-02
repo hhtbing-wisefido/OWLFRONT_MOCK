@@ -13,9 +13,9 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Device } from '@/api/devices/model/deviceModel'
 import type { Unit, RoomWithBeds } from '@/api/units/model/unitModel'
+import type { Resident } from '@/api/resident/model/residentModel'
 // TODO: Add other entity types as needed
 // import type { User } from '@/api/users/model/userModel'
-// import type { Resident } from '@/api/residents/model/residentModel'
 
 export const useEntitiesStore = defineStore('entities', () => {
   // Devices
@@ -31,6 +31,15 @@ export const useEntitiesStore = defineStore('entities', () => {
   // Rooms with beds (cached per unit)
   const roomsWithBedsCache = ref<Map<string, { data: RoomWithBeds[], timestamp: Date }>>(new Map())
   const roomsCacheTimeout = 5 * 60 * 1000 // 5 minutes
+
+  // Residents
+  const residents = ref<Resident[]>([])
+  const residentsLastFetched = ref<Date | null>(null)
+  const residentsCacheTimeout = 5 * 60 * 1000 // 5 minutes
+  
+  // Resident details cache (cached per resident ID)
+  const residentDetailsCache = ref<Map<string, { data: Resident, timestamp: Date }>>(new Map())
+  const residentDetailsCacheTimeout = 5 * 60 * 1000 // 5 minutes
 
   // Computed: Available devices (not bound)
   const availableDevices = computed(() => {
@@ -128,6 +137,65 @@ export const useEntitiesStore = defineStore('entities', () => {
     return now.getTime() - cached.timestamp.getTime() > roomsCacheTimeout
   }
 
+  // Actions: Residents
+  const setResidents = (newResidents: Resident[]) => {
+    residents.value = newResidents
+    residentsLastFetched.value = new Date()
+  }
+
+  const updateResident = (residentId: string, updates: Partial<Resident>) => {
+    const index = residents.value.findIndex((r) => r.resident_id === residentId)
+    if (index !== -1) {
+      residents.value[index] = { ...residents.value[index], ...updates }
+    }
+    
+    // Also update in details cache if exists
+    const cached = residentDetailsCache.value.get(residentId)
+    if (cached) {
+      cached.data = { ...cached.data, ...updates }
+    }
+  }
+
+  const removeResident = (residentId: string) => {
+    residents.value = residents.value.filter((r) => r.resident_id !== residentId)
+    residentDetailsCache.value.delete(residentId)
+  }
+
+  const shouldRefreshResidents = computed(() => {
+    if (!residentsLastFetched.value) return true
+    const now = new Date()
+    return now.getTime() - residentsLastFetched.value.getTime() > residentsCacheTimeout
+  })
+
+  // Actions: Resident details cache
+  const setResidentDetail = (residentId: string, resident: Resident) => {
+    residentDetailsCache.value.set(residentId, {
+      data: resident,
+      timestamp: new Date(),
+    })
+  }
+
+  const getResidentDetail = (residentId: string): Resident | null => {
+    const cached = residentDetailsCache.value.get(residentId)
+    if (!cached) return null
+    
+    const now = new Date()
+    if (now.getTime() - cached.timestamp.getTime() > residentDetailsCacheTimeout) {
+      residentDetailsCache.value.delete(residentId)
+      return null
+    }
+    
+    return cached.data
+  }
+
+  const shouldRefreshResidentDetail = (residentId: string): boolean => {
+    const cached = residentDetailsCache.value.get(residentId)
+    if (!cached) return true
+    
+    const now = new Date()
+    return now.getTime() - cached.timestamp.getTime() > residentDetailsCacheTimeout
+  }
+
   // Clear all caches
   const clearCache = () => {
     devices.value = []
@@ -135,6 +203,9 @@ export const useEntitiesStore = defineStore('entities', () => {
     units.value = []
     unitsLastFetched.value = null
     roomsWithBedsCache.value.clear()
+    residents.value = []
+    residentsLastFetched.value = null
+    residentDetailsCache.value.clear()
   }
 
   return {
@@ -142,6 +213,8 @@ export const useEntitiesStore = defineStore('entities', () => {
     devices,
     units,
     roomsWithBedsCache,
+    residents,
+    residentDetailsCache,
     
     // Computed
     availableDevices,
@@ -149,6 +222,7 @@ export const useEntitiesStore = defineStore('entities', () => {
     getDevicesByBed,
     shouldRefreshDevices,
     shouldRefreshUnits,
+    shouldRefreshResidents,
     
     // Actions: Devices
     setDevices,
@@ -164,6 +238,14 @@ export const useEntitiesStore = defineStore('entities', () => {
     setRoomsWithBeds,
     getRoomsWithBeds,
     shouldRefreshRooms,
+    
+    // Actions: Residents
+    setResidents,
+    updateResident,
+    removeResident,
+    setResidentDetail,
+    getResidentDetail,
+    shouldRefreshResidentDetail,
     
     // Utilities
     clearCache,

@@ -95,6 +95,34 @@ const routes: RouteRecordRaw[] = [
           requiresAuth: true,
         },
       },
+      {
+        path: '/residents',
+        name: 'ResidentList',
+        component: () => import('@/views/residents/ResidentList.vue'),
+        meta: {
+          title: 'Resident Management',
+          requiresAuth: true,
+        },
+      },
+      {
+        path: '/residents/create',
+        name: 'CreateResident',
+        component: () => import('@/views/residents/ResidentProfile.vue'),
+        meta: {
+          title: 'Create Resident',
+          requiresAuth: true,
+          roles: ['Manager', 'Admin'], // 只有 Manager/Admin 可以创建
+        },
+      },
+      {
+        path: '/resident/:id/:tab?',
+        name: 'ResidentProfile',
+        component: () => import('@/views/residents/ResidentProfile.vue'),
+        meta: {
+          title: 'Resident Detail',
+          requiresAuth: true,
+        },
+      },
       // System settings area
       {
         path: '/admin/users',

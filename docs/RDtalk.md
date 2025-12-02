@@ -9,3 +9,52 @@
 怎么设计较好。
 
 
+profile/PHI/contact
+
+Gap hight 10px
+Basic Information
+nickname[input 150px]  account[100px]  *First Name[input 150px] []=nickname  lastName[input 150px]  
+status [100px] service_level[150px]  family_tag[input 100px] resident_access: enable/disable  滑动选项，默认disable
+Admission Date     Discharge Date
+Note:
+[         ]
+
+PHI table
+Gender：male/femaale 单选项   Gender[]
+Email [input 150px] []save phone [input 150px] []save
+label: use to reset passwd,Don't save, if save,please check []save
+
+Chronic Conditions
+Hypertension 。。。
+分2行，每行3个，不要中文备注
+Medical History
+[   ]
+
+
+Emergency Contact
+label: family account= resident'account+A/B/C/D  family'account+A/B/C/D
+for example: resident'account='R001',   login_account= 'R001A'
+             family'account ='F001',  login_account= 'F001A'
+A[]enable  firstName[100px] lastName[100px] relationship [下拉框]
+   Email [input 150px] []save phone [input 150px] []save
+   label: use to reset passwd,Don't save, if save,please check []save
+   receive alarm SMS []  email[]  复选框
+B[]enable  firstName[100px] lastName[100px] relationship [下拉框]
+   Email [input 150px] []save phone [input 150px] []save
+   label: use to reset passwd,Don't save, if save,please check []save
+   receive alarm SMS []  email[]  复选框   
+C[]enable  firstName[100px] lastName[100px] relationship [下拉框]
+   Email [input 150px] []save phone [input 150px] []save
+   label: use to reset passwd,Don't save, if save,please check []save
+   receive alarm SMS []  email[]  复选框
+D[]enable  firstName[100px] lastName[100px] relationship [下拉框]
+   Email [input 150px] []save phone [input 150px] []save
+   label: use to reset passwd,Don't save, if save,please check []save
+   receive alarm SMS []  email[]  复选框
+
+
+
+
+
+
+   

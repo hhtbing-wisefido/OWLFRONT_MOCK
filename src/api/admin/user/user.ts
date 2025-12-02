@@ -14,6 +14,8 @@ import type {
   UpdateUserParams,
   ResetPasswordParams,
   ResetPasswordResult,
+  ResetPinParams,
+  ResetPinResult,
 } from './model/userModel'
 
 // Export User type for use by other modules
@@ -26,6 +28,7 @@ export enum Api {
   Update = '/admin/api/v1/users/:id',
   Delete = '/admin/api/v1/users/:id',
   ResetPassword = '/admin/api/v1/users/:id/reset-password',
+  ResetPin = '/admin/api/v1/users/:id/reset-pin',
 }
 
 // Mock mode: In development, use mock data instead of real API calls
@@ -190,6 +193,37 @@ export function resetPasswordApi(userId: string, params: Omit<ResetPasswordParam
   return defHttp.post<ResetPasswordResult>(
     {
       url: Api.ResetPassword.replace(':id', userId),
+      data: params,
+    },
+    { errorMessageMode: mode },
+  )
+}
+
+/**
+ * @description: Reset PIN
+ * @param userId - User ID
+ * @param params - Reset PIN parameters
+ * @param mode - Error message mode
+ */
+export function resetPinApi(userId: string, params: Omit<ResetPinParams, 'user_id'>, mode: ErrorMessageMode = 'modal') {
+  // In development with mock enabled, return mock data directly
+  if (useMock) {
+    return import('@test/index').then(({ users }) => {
+      console.log('%c[Mock] Reset PIN API Request', 'color: #1890ff; font-weight: bold', { userId, params })
+      return users.mockResetPin(userId, params).then((result) => {
+        console.log('%c[Mock] Reset PIN API - Success', 'color: #52c41a; font-weight: bold', { result })
+        return result
+      }).catch((error: any) => {
+        console.log('%c[Mock] Reset PIN API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
+        throw error
+      })
+    })
+  }
+
+  // Production: Call real backend API
+  return defHttp.post<ResetPinResult>(
+    {
+      url: Api.ResetPin.replace(':id', userId),
       data: params,
     },
     { errorMessageMode: mode },

@@ -17,9 +17,11 @@ export * as staff from './staff'
 export * as roles from './admin/roles'
 export * as rolePermissions from './admin/role-permissions'
 export * as users from './admin/users'
+export * as residents from './admin/residents'
 export * as tags from './admin/tags'
 export * as devices from './admin/devices'
 export * as unit from './admin/unit'
+export * as serviceLevels from './service-levels'
 
 // 工具函数
 export * from './utils/generator'

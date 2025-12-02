@@ -96,3 +96,19 @@ export interface ResetPasswordResult {
   message: string
 }
 
+/**
+ * Reset PIN request parameters
+ */
+export interface ResetPinParams {
+  user_id: string
+  new_pin: string // 4-digit PIN code
+}
+
+/**
+ * Reset PIN response
+ */
+export interface ResetPinResult {
+  success: boolean
+  message: string
+}
+

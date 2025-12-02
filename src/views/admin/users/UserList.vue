@@ -23,6 +23,16 @@
           <a-form-item>
             <a-button type="primary" @click="addUser">Create User</a-button>
           </a-form-item>
+
+          <!-- Refresh Button -->
+          <a-form-item>
+            <a-button @click="refreshData">
+              <template #icon>
+                <ReloadOutlined />
+              </template>
+              Refresh
+            </a-button>
+          </a-form-item>
         </a-form>
       </div>
     </div>
@@ -35,6 +45,33 @@
       :scroll="{ x: 'max-content' }"
       class="user-table"
     >
+      <template #headerCell="{ column }">
+        <!-- Status column: with filter -->
+        <template v-if="column.dataIndex === 'status'">
+          <div class="status-header-cell">
+            <span>{{ column.title }}</span>
+            <a-dropdown :trigger="['click']" v-model:open="statusFilterOpen">
+              <template #overlay>
+                <a-menu class="status-filter-menu">
+                  <a-menu-item v-for="statusOption in statusOptions" :key="statusOption.value">
+                    <a-checkbox
+                      :checked="statusFilter.includes(statusOption.value as 'active' | 'disabled' | 'left')"
+                      @change="handleStatusFilterChange(statusOption.value as 'active' | 'disabled' | 'left', $event)"
+                    >
+                      {{ statusOption.label }}
+                    </a-checkbox>
+                  </a-menu-item>
+                </a-menu>
+              </template>
+              <FilterOutlined class="filter-icon" />
+            </a-dropdown>
+          </div>
+        </template>
+        <!-- Other columns: display title -->
+        <template v-else>
+          {{ column.title }}
+        </template>
+      </template>
       <template #bodyCell="{ column, record }">
         <template v-if="column.dataIndex === 'user_account'">
           <span @dblclick="handleRowDoubleClick(record)" style="cursor: pointer; color: #1890ff;">
@@ -90,14 +127,6 @@
             </div>
             <div class="operation-row">
               <a-button
-                v-if="record.status === 'disabled' || record.status === 'left'"
-                size="small"
-                danger
-                @click="deleteUser(record)"
-              >
-                Del
-              </a-button>
-              <a-button
                 v-if="record.status === 'active'"
                 size="small"
                 @click="disableUser(record)"
@@ -110,6 +139,12 @@
                 @click="enableUser(record)"
               >
                 Enable
+              </a-button>
+              <a-button
+                size="small"
+                @click="resetPin(record)"
+              >
+                Reset PIN
               </a-button>
             </div>
           </div>
@@ -295,13 +330,57 @@
         </a-form-item>
       </a-form>
     </a-modal>
+
+    <!-- Reset PIN Modal -->
+    <a-modal
+      v-model:visible="isResetPinModalVisible"
+      title="Reset PIN"
+      width="500px"
+      @ok="handleResetPin"
+      @cancel="handleCancelResetPin"
+    >
+      <template #footer>
+        <div style="padding: 10px 16px">
+          <a-button key="back" @click="handleCancelResetPin" style="margin-right: 30px">Cancel</a-button>
+          <a-button key="submit" type="primary" @click="handleResetPin" style="margin-right: 20px">
+            Confirm
+          </a-button>
+        </div>
+      </template>
+      <a-form
+        layout="horizontal"
+        :model="resetPinData"
+        ref="resetPinFormRef"
+        :rules="resetPinRules"
+        :labelCol="{ span: 6 }"
+        :wrapperCol="{ span: 18 }"
+        style="padding: 20px"
+      >
+        <a-form-item label="New PIN" name="new_pin">
+          <a-input
+            placeholder="Please enter 4-digit PIN"
+            v-model:value="resetPinData.new_pin"
+            maxlength="4"
+            :inputmode="'numeric'"
+          />
+        </a-form-item>
+        <a-form-item label="Confirm PIN" name="confirm_pin">
+          <a-input
+            placeholder="Please confirm 4-digit PIN"
+            v-model:value="resetPinData.confirm_pin"
+            maxlength="4"
+            :inputmode="'numeric'"
+          />
+        </a-form-item>
+      </a-form>
+    </a-modal>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ExclamationCircleOutlined } from '@ant-design/icons-vue'
+import { ExclamationCircleOutlined, FilterOutlined, ReloadOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import type { Rule } from 'ant-design-vue/lib/form'
 
@@ -309,8 +388,8 @@ import {
   getUsersApi,
   createUserApi,
   updateUserApi,
-  deleteUserApi,
   resetPasswordApi,
+  resetPinApi,
 } from '@/api/admin/user/user'
 import type {
   User,
@@ -318,6 +397,7 @@ import type {
   CreateUserParams,
   UpdateUserParams,
   ResetPasswordParams,
+  ResetPinParams,
 } from '@/api/admin/user/model/userModel'
 import { getRolesApi } from '@/api/admin/role/role'
 import type { Role } from '@/api/admin/role/model/roleModel'
@@ -327,21 +407,32 @@ const router = useRouter()
 const userStore = useUserStore()
 
 const searchText = ref('')
+// Status filter: default show active and disabled, hide left
+const statusFilterOpen = ref(false)
+const statusFilter = ref<('active' | 'disabled' | 'left')[]>(['active', 'disabled'])
+const statusOptions = [
+  { value: 'active', label: 'Active' },
+  { value: 'disabled', label: 'Disabled' },
+  { value: 'left', label: 'Left' },
+]
 const loading = ref(false)
 const dataSource = ref<User[]>([])
 const filteredDataSource = ref<User[]>([])
 const isEditModalVisible = ref(false)
 const isConfirmModalVisible = ref(false)
 const isResetPasswordModalVisible = ref(false)
+const isResetPinModalVisible = ref(false)
 const editModel = ref(false)
 const formEditRef = ref()
 const resetPasswordFormRef = ref()
+const resetPinFormRef = ref()
 const action = ref('')
 const affectedUserId = ref('')
 const confirmTitle = ref('')
 const confirmMessage = ref('')
 const availableRoles = ref<Role[]>([])
 const resetPasswordUserId = ref('')
+const resetPinUserId = ref('')
 
 // Role mapping (role_code -> display_name)
 const roleMap = computed(() => {
@@ -371,6 +462,11 @@ const editData = ref<Partial<User & { password?: string }>>({ ...emptyUser })
 const resetPasswordData = ref({
   new_password: '',
   confirm_password: '',
+})
+
+const resetPinData = ref({
+  new_pin: '',
+  confirm_pin: '',
 })
 
 // Check if user has management permission
@@ -498,6 +594,30 @@ const resetPasswordRules: Record<string, Rule[]> = {
   ],
 }
 
+const resetPinRules: Record<string, Rule[]> = {
+  new_pin: [
+    { required: true, message: 'Please enter 4-digit PIN', trigger: 'blur' },
+    { len: 4, message: 'PIN must be exactly 4 digits', trigger: 'blur' },
+    {
+      pattern: /^\d{4}$/,
+      message: 'PIN must be 4 digits',
+      trigger: 'blur',
+    },
+  ],
+  confirm_pin: [
+    { required: true, message: 'Please confirm PIN', trigger: 'blur' },
+    {
+      validator: (_rule: any, value: string) => {
+        if (value && value !== resetPinData.value.new_pin) {
+          return Promise.reject('PINs do not match')
+        }
+        return Promise.resolve()
+      },
+      trigger: 'blur',
+    },
+  ],
+}
+
 const getStatusClass = (status: string) => {
   switch (status) {
     case 'active':
@@ -552,11 +672,11 @@ const getAlarmLevelColor = (level: string | number): string => {
 
 const onSearch = () => {
   if (!searchText.value || searchText.value.trim() === '') {
-    filteredDataSource.value = dataSource.value
+    applyFilters()
     return
   }
   const searchLower = searchText.value.toLowerCase().trim()
-  filteredDataSource.value = dataSource.value.filter((user) => {
+  let filtered = dataSource.value.filter((user) => {
     return (
       user.user_account.toLowerCase().includes(searchLower) ||
       (user.nickname && user.nickname.toLowerCase().includes(searchLower)) ||
@@ -564,6 +684,13 @@ const onSearch = () => {
       (user.phone && user.phone.toLowerCase().includes(searchLower))
     )
   })
+  
+  // Apply status filter
+  if (statusFilter.value.length > 0) {
+    filtered = filtered.filter((user) => statusFilter.value.includes(user.status))
+  }
+  
+  filteredDataSource.value = filtered
 }
 
 const addUser = () => {
@@ -598,12 +725,17 @@ const enableUser = (record: User) => {
   isConfirmModalVisible.value = true
 }
 
-const deleteUser = (record: User) => {
-  action.value = 'delete'
-  affectedUserId.value = record.user_id
-  confirmTitle.value = 'Delete User'
-  confirmMessage.value = `Are you sure you want to delete user "${record.nickname || record.user_account}"? This action cannot be undone.`
-  isConfirmModalVisible.value = true
+// Handle Status filter changes
+const handleStatusFilterChange = (value: 'active' | 'disabled' | 'left', event: any) => {
+  if (event.target.checked) {
+    if (!statusFilter.value.includes(value)) {
+      statusFilter.value.push(value)
+    }
+  } else {
+    statusFilter.value = statusFilter.value.filter((v) => v !== value)
+  }
+  // Apply filter
+  applyFilters()
 }
 
 const resetPassword = (record: User) => {
@@ -613,6 +745,15 @@ const resetPassword = (record: User) => {
     confirm_password: '',
   }
   isResetPasswordModalVisible.value = true
+}
+
+const resetPin = (record: User) => {
+  resetPinUserId.value = record.user_id
+  resetPinData.value = {
+    new_pin: '',
+    confirm_pin: '',
+  }
+  isResetPinModalVisible.value = true
 }
 
 const handleSave = async () => {
@@ -654,14 +795,13 @@ const handleSave = async () => {
 
 const handleConfirm = async () => {
   try {
-    if (action.value === 'delete') {
-      await deleteUserApi(affectedUserId.value)
-      message.success('User deleted successfully')
-    } else if (action.value === 'disable') {
-      await updateUserApi(affectedUserId.value, { status: 'disabled' })
+    if (action.value === 'disable') {
+      const params: UpdateUserParams = { status: 'disabled' }
+      await updateUserApi(affectedUserId.value, params)
       message.success('User disabled successfully')
     } else if (action.value === 'enable') {
-      await updateUserApi(affectedUserId.value, { status: 'active' })
+      const params: UpdateUserParams = { status: 'active' }
+      await updateUserApi(affectedUserId.value, params)
       message.success('User enabled successfully')
     }
     handleCancelConfirm()
@@ -677,9 +817,10 @@ const handleResetPassword = async () => {
     .validate()
     .then(async () => {
       try {
-        await resetPasswordApi(resetPasswordUserId.value, {
+        const params: Omit<ResetPasswordParams, 'user_id'> = {
           new_password: resetPasswordData.value.new_password,
-        })
+        }
+        await resetPasswordApi(resetPasswordUserId.value, params)
         message.success('Password reset successfully')
         handleCancelResetPassword()
       } catch (error: any) {
@@ -709,10 +850,45 @@ const handleCancelResetPassword = () => {
   resetPasswordFormRef.value?.resetFields()
 }
 
+const handleResetPin = async () => {
+  resetPinFormRef.value
+    .validate()
+    .then(async () => {
+      try {
+        const params: Omit<ResetPinParams, 'user_id'> = {
+          new_pin: resetPinData.value.new_pin,
+        }
+        await resetPinApi(resetPinUserId.value, params)
+        message.success('PIN reset successfully')
+        handleCancelResetPin()
+      } catch (error: any) {
+        console.error('Failed to reset PIN:', error)
+        message.error(error?.message || 'Failed to reset PIN')
+      }
+    })
+    .catch((error: any) => {
+      console.error('Validation failed:', error)
+    })
+}
+
+const handleCancelResetPin = () => {
+  isResetPinModalVisible.value = false
+  resetPinUserId.value = ''
+  resetPinFormRef.value?.resetFields()
+}
+
 const fetchRoles = async () => {
   try {
     const data = await getRolesApi()
-    availableRoles.value = data.items.filter((role) => role.is_active)
+    // Filter out SystemAdmin (no permission to manage tenant users)
+    // Filter out Resident and Family (not for users table, they are for residents table)
+    availableRoles.value = data.items.filter(
+      (role) =>
+        role.is_active &&
+        role.role_code !== 'SystemAdmin' &&
+        role.role_code !== 'Resident' &&
+        role.role_code !== 'Family'
+    )
   } catch (error: any) {
     console.error('Failed to fetch roles:', error)
   }
@@ -726,13 +902,26 @@ const fetchData = async () => {
       : undefined
     const data = await getUsersApi(params)
     dataSource.value = data.items
-    filteredDataSource.value = data.items
+    // Apply filters
+    applyFilters()
   } catch (error: any) {
     console.error('Failed to fetch users:', error)
     message.error(error?.message || 'Failed to fetch users')
   } finally {
     loading.value = false
   }
+}
+
+// Apply filters to dataSource
+const applyFilters = () => {
+  let filtered = [...dataSource.value]
+  
+  // Filter by status
+  if (statusFilter.value.length > 0) {
+    filtered = filtered.filter((user) => statusFilter.value.includes(user.status))
+  }
+  
+  filteredDataSource.value = filtered
 }
 
 const refreshData = () => {
@@ -799,6 +988,26 @@ onMounted(() => {
 
 .status-left {
   color: #8c8c8c;
+}
+
+.status-header-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-icon {
+  cursor: pointer;
+  color: #1890ff;
+  font-size: 14px;
+}
+
+.filter-icon:hover {
+  color: #40a9ff;
+}
+
+.status-filter-menu {
+  min-width: 150px;
 }
 
 /* Force table to use auto layout, allow columns to adjust automatically based on content */
