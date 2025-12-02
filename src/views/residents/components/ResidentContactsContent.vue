@@ -26,7 +26,7 @@
         </div>
 
         <div v-show="expandedSlots[slot]">
-        <a-row :gutter="24">
+        <a-row :gutter="16">
           <!-- First Name, Last Name, Relationship -->
           <a-col :span="8">
             <a-form-item :label-col="{ span: 0 }" :wrapper-col="{ span: 24 }">
@@ -72,7 +72,7 @@
         </a-row>
 
         <!-- Email and Phone with Save checkboxes -->
-        <a-row :gutter="24">
+        <a-row :gutter="16">
           <a-col :span="12">
             <a-form-item :label-col="{ span: 0 }" :wrapper-col="{ span: 24 }">
               <span>Email:  </span>
@@ -96,7 +96,7 @@
                 :disabled="readonly"
                 @change="handleContactChange(slot)"
               >
-                Receive Email
+                RecAlarm
               </a-checkbox>
             </a-form-item>
           </a-col>
@@ -123,7 +123,7 @@
                 :disabled="readonly"
                 @change="handleContactChange(slot)"
               >
-                Receive SMS
+                RecAlarm
               </a-checkbox>
             </a-form-item>
           </a-col>

@@ -384,7 +384,7 @@ onMounted(async () => {
 }
 
 .form-container {
-  max-width: 1200px;
+  max-width: 920px;
   background: white;
   padding: 24px;
   border-radius: 8px;

@@ -10,6 +10,12 @@
       <a-menu-item v-else :key="element.item.key" :disabled="!hasPermission(element.item)">
         <template #icon>
           <component v-if="getIcon(element.item.icon)" :is="getIcon(element.item.icon)" />
+          <img 
+            v-else-if="element.item.icon === 'svg:nurseSation'" 
+            :src="nurseSationIcon"
+            class="menu-svg-icon"
+            alt=""
+          />
         </template>
         {{ element.item.label }}
       </a-menu-item>
@@ -23,6 +29,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/store/modules/user'
 import { menuItems, type MenuItem } from '@/types/menu'
 import * as Icons from '@ant-design/icons-vue'
+import nurseSationIcon from '@/assets/svg/nurseSation.svg'
 
 defineProps<{
   collapsed: boolean
@@ -72,7 +79,7 @@ const hasPermission = (item: MenuItem): boolean => {
 
 // Get icon component by name
 const getIcon = (iconName?: string) => {
-  if (!iconName) return null
+  if (!iconName || iconName.startsWith('svg:')) return null
   const IconComponent = Icons[iconName as keyof typeof Icons]
   return IconComponent || null
 }
@@ -174,6 +181,14 @@ onMounted(() => {
   font-size: 14px;
   width: 14px;
   height: 14px;
+}
+
+/* SVG icon size and color */
+.menu-svg-icon {
+  width: 24px;
+  height: 24px;
+  filter: brightness(0) invert(1); /* Convert to white */
+  margin-left: -4px;
 }
 </style>
 

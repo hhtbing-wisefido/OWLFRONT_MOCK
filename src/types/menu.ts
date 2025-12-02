@@ -42,7 +42,7 @@ export const menuItems: MenuItem[] = [
   {
     key: 'care-assignments',
     label: 'Care Assignments',
-    icon: 'TeamOutlined',
+    icon: 'svg:nurseSation',
     path: '/care-coordination/assignments',
     permission: ['SystemAdmin', 'Admin', 'Manager'],
   },

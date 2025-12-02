@@ -216,6 +216,16 @@
             </a-space>
           </a-form-item>
         </a-col>
+        <a-col>
+          <a-form-item label="Google Plus Code" style="margin-bottom: 0;">
+            <a-input
+              v-model:value="localPHIData.plus_code"
+              :disabled="readonly"
+              :maxlength="32"
+              style="width: 140px"
+            />
+          </a-form-item>
+        </a-col>
       </a-row>
 
       <!-- Home Address Fields -->
@@ -258,16 +268,6 @@
               :disabled="readonly"
               :maxlength="20"
               style="width: 100px"
-            />
-          </a-form-item>
-        </a-col>
-        <a-col>
-          <a-form-item label="Plus Code" style="margin-bottom: 0;">
-            <a-input
-              v-model:value="localPHIData.plus_code"
-              :disabled="readonly"
-              :maxlength="32"
-              style="width: 140px"
             />
           </a-form-item>
         </a-col>
