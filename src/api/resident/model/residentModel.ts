@@ -27,7 +27,9 @@ export interface Resident {
   area_tag?: string // Area tag (from units table)
   unit_number?: string // Unit number (from units table)
   is_multi_person_room?: boolean // Is multi-person room (from units table)
+  room_id?: string // Room ID (from rooms table)
   room_name?: string // Room name (from rooms table, via beds)
+  bed_id?: string // Bed ID (from beds table)
   bed_name?: string // Bed name (from beds table)
   is_access_enabled?: boolean // Whether resident and family access is enabled
   family_tag?: string // Family identifier (VARCHAR(100), same family_tag for family members, e.g., 'F0001', 'F0002')

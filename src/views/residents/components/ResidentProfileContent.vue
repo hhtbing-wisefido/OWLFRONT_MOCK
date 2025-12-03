@@ -165,17 +165,255 @@
           </a-form-item>
         </a-col>
       </a-row>
+
+      <!-- Bind Unit -->
+      <a-divider orientation="left" class="bind-unit-divider">Bind Unit</a-divider>
+      <a-row v-if="canViewField('unit_id')">
+        <a-col :span="24">
+          <a-form-item style="margin-bottom: 0;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-left: 0px;">
+              <a-button
+                type="primary"
+                size="small"
+                :disabled="!canEditField('unit_id')"
+                @click="handleUnitSelect"
+              >
+                Select Unit
+              </a-button>
+              <a-input
+                v-model:value="selectedUnitDisplay"
+                :disabled="true"
+                style="width: 300px"
+                placeholder="Select Unit"
+              />
+              <a-select
+                v-model:value="localResidentData.room_id"
+                :disabled="!canEditField('unit_id') || !localResidentData.unit_id"
+                :allowClear="true"
+                style="width: 150px"
+                placeholder="Room"
+                @change="handleRoomChange"
+              >
+                <a-select-option
+                  v-for="room in availableRooms"
+                  :key="room.room_id"
+                  :value="room.room_id"
+                >
+                  {{ room.room_name }}
+                </a-select-option>
+              </a-select>
+              <a-select
+                v-model:value="localResidentData.bed_id"
+                :disabled="!canEditField('unit_id') || !localResidentData.room_id"
+                :allowClear="true"
+                style="width: 100px"
+                placeholder="Bed"
+              >
+                <a-select-option
+                  v-for="bed in availableBeds"
+                  :key="bed.bed_id"
+                  :value="bed.bed_id"
+                >
+                  {{ bed.bed_name }}
+                </a-select-option>
+              </a-select>
+              <span v-if="selectedUnit" style="color: #1890ff; font-weight: 500; margin-left: 6px;">
+                {{ selectedUnit.is_multi_person_room ? 'Share' : 'Private' }}
+              </span>
+              <span v-if="selectedUnit" style="color: #1890ff; font-weight: 500;">
+                &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+              </span>
+              <span v-if="selectedUnit" style="color: #1890ff; font-weight: 500;">
+                {{ selectedUnit.unit_type === 'Home' ? 'HomeCare' : (selectedUnit.unit_type === 'Facility' ? 'Facility' : '-') }}
+              </span>
+            </div>
+          </a-form-item>
+        </a-col>
+      </a-row>
     </a-form>
+
+    <!-- Unit Select Modal -->
+    <a-modal
+      v-model:visible="showUnitSelectModal"
+      title="Select Unit"
+      :footer="null"
+      width="900px"
+      @ok="handleUnitSelectConfirm"
+      @cancel="handleUnitSelectCancel"
+    >
+      <a-table
+        :columns="unitTableColumns"
+        :data-source="sortedAndFilteredUnits"
+        :pagination="{ pageSize: 10 }"
+        :scroll="{ y: 400 }"
+        size="small"
+        :row-selection="{
+          type: 'radio',
+          selectedRowKeys: tempSelectedUnitId ? [tempSelectedUnitId] : [],
+          onSelect: handleUnitRowSelect,
+        }"
+        :row-key="(record: Unit) => record.unit_id"
+      >
+        <template #headerCell="{ column }">
+          <!-- Shared Room column: with filter -->
+          <template v-if="column.key === 'is_multi_person_room'">
+            <div class="shared-room-header-cell">
+              <span>{{ column.title }}</span>
+              <a-dropdown :trigger="['click']" v-model:open="sharedRoomFilterOpen">
+                <template #overlay>
+                  <a-menu class="shared-room-filter-menu">
+                    <a-menu-item v-for="option in sharedRoomOptions" :key="option.value">
+                      <a-checkbox
+                        :checked="sharedRoomFilter.includes(option.value as 'private'   |   'shared')"
+                        @change="handleSharedRoomFilterChange(option.value as 'private'   |   'shared', $event)"
+                      >
+                        {{ option.label }}
+                      </a-checkbox>
+                    </a-menu-item>
+                  </a-menu>
+                </template>
+                <FilterOutlined class="filter-icon" />
+              </a-dropdown>
+            </div>
+          </template>
+          <!-- Sortable columns -->
+          <template v-else-if="column.key === 'location_tag'">
+            <div 
+              style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;" 
+              @click="toggleSort('location_tag')"
+              :style="{ color: sortConfig.key === 'location_tag' && sortConfig.order ? '#1890ff' : 'inherit' }"
+            >
+              <span>Unit_tag</span>
+              <SortAscendingOutlined 
+                v-if="sortConfig.key === 'location_tag' && sortConfig.order === 'asc'" 
+                style="font-size: 14px; color: #1890ff;"
+              />
+              <SortDescendingOutlined 
+                v-else-if="sortConfig.key === 'location_tag' && sortConfig.order === 'desc'" 
+                style="font-size: 14px; color: #1890ff;"
+              />
+              <span v-else style="color: #d9d9d9; font-size: 12px;">⇅</span>
+            </div>
+          </template>
+          <template v-else-if="column.key === 'building'">
+            <div 
+              style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;" 
+              @click="toggleSort('building')"
+              :style="{ color: sortConfig.key === 'building' && sortConfig.order ? '#1890ff' : 'inherit' }"
+            >
+              <span>Building</span>
+              <SortAscendingOutlined 
+                v-if="sortConfig.key === 'building' && sortConfig.order === 'asc'" 
+                style="font-size: 14px; color: #1890ff;"
+              />
+              <SortDescendingOutlined 
+                v-else-if="sortConfig.key === 'building' && sortConfig.order === 'desc'" 
+                style="font-size: 14px; color: #1890ff;"
+              />
+              <span v-else style="color: #d9d9d9; font-size: 12px;">⇅</span>
+            </div>
+          </template>
+          <template v-else-if="column.key === 'floor'">
+            <div 
+              style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;" 
+              @click="toggleSort('floor')"
+              :style="{ color: sortConfig.key === 'floor' && sortConfig.order ? '#1890ff' : 'inherit' }"
+            >
+              <span>Floor</span>
+              <SortAscendingOutlined 
+                v-if="sortConfig.key === 'floor' && sortConfig.order === 'asc'" 
+                style="font-size: 14px; color: #1890ff;"
+              />
+              <SortDescendingOutlined 
+                v-else-if="sortConfig.key === 'floor' && sortConfig.order === 'desc'" 
+                style="font-size: 14px; color: #1890ff;"
+              />
+              <span v-else style="color: #d9d9d9; font-size: 12px;">⇅</span>
+            </div>
+          </template>
+          <template v-else-if="column.key === 'area_tag'">
+            <div 
+              style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;" 
+              @click="toggleSort('area_tag')"
+              :style="{ color: sortConfig.key === 'area_tag' && sortConfig.order ? '#1890ff' : 'inherit' }"
+            >
+              <span>Area_tag</span>
+              <SortAscendingOutlined 
+                v-if="sortConfig.key === 'area_tag' && sortConfig.order === 'asc'" 
+                style="font-size: 14px; color: #1890ff;"
+              />
+              <SortDescendingOutlined 
+                v-else-if="sortConfig.key === 'area_tag' && sortConfig.order === 'desc'" 
+                style="font-size: 14px; color: #1890ff;"
+              />
+              <span v-else style="color: #d9d9d9; font-size: 12px;">⇅</span>
+            </div>
+          </template>
+          <template v-else-if="column.key === 'unit_name'">
+            <div 
+              style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;" 
+              @click="toggleSort('unit_name')"
+              :style="{ color: sortConfig.key === 'unit_name' && sortConfig.order ? '#1890ff' : 'inherit' }"
+            >
+              <span>UnitName</span>
+              <SortAscendingOutlined 
+                v-if="sortConfig.key === 'unit_name' && sortConfig.order === 'asc'" 
+                style="font-size: 14px; color: #1890ff;"
+              />
+              <SortDescendingOutlined 
+                v-else-if="sortConfig.key === 'unit_name' && sortConfig.order === 'desc'" 
+                style="font-size: 14px; color: #1890ff;"
+              />
+              <span v-else style="color: #d9d9d9; font-size: 12px;">⇅</span>
+            </div>
+          </template>
+          <!-- Other columns: display title -->
+          <template v-else>
+            {{ column.title }}
+          </template>
+        </template>
+        <template #bodyCell="{ column, record }">
+          <template v-if="column.key === 'location_tag'">
+            {{ record.location_tag || '-' }}
+          </template>
+          <template v-else-if="column.key === 'building'">
+            {{ record.building || '-' }}
+          </template>
+          <template v-else-if="column.key === 'floor'">
+            {{ record.floor || '-' }}
+          </template>
+          <template v-else-if="column.key === 'area_tag'">
+            {{ record.area_tag || '-' }}
+          </template>
+          <template v-else-if="column.key === 'unit_name'">
+            {{ record.unit_name || '-' }}
+          </template>
+          <template v-else-if="column.key === 'unit_type'">
+            {{ record.unit_type || '-' }}
+          </template>
+          <template v-else-if="column.key === 'is_multi_person_room'">
+            {{ record.is_multi_person_room ? 'Shared' : 'Private' }}
+          </template>
+        </template>
+      </a-table>
+      <div style="margin-top: 16px; text-align: right;">
+        <a-button @click="handleUnitSelectCancel" style="margin-right: 8px;">Cancel</a-button>
+        <a-button type="primary" @click="handleUnitSelectConfirm">OK</a-button>
+      </div>
+    </a-modal>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { ref, computed, watch, onMounted } from 'vue'
+import { SortAscendingOutlined, SortDescendingOutlined, FilterOutlined } from '@ant-design/icons-vue'
 import { useUserStore } from '@/store/modules/user'
 import { usePermission } from '@/hooks/usePermission'
 import { getServiceLevelsApi } from '@/api/service-level/serviceLevel'
 import type { ServiceLevel } from '@/api/service-level/model/serviceLevelModel'
 import type { Resident, ResidentPHI } from '@/api/resident/model/residentModel'
+import { getUnitsApi, getRoomsApi } from '@/api/units/unit'
+import type { Unit, RoomWithBeds } from '@/api/units/model/unitModel'
 
 interface Props {
   residentData: Resident
@@ -205,7 +443,6 @@ const currentUserId = computed(() => userInfo.value?.userId || '')
 // 角色判断
 const isManager = computed(() => hasManagePermission.value || hasRole(['Manager']))
 const isNurse = computed(() => hasRole(['Nurse']))
-const isCaregiver = computed(() => hasRole(['Caregiver']))
 const isResident = computed(() => userType.value === 'resident' && userRole.value === 'Resident')
 const isFamily = computed(() => userRole.value === 'Family')
 
@@ -254,6 +491,294 @@ const fetchServiceLevels = async () => {
     console.error('Failed to fetch service levels:', error)
     availableServiceLevels.value = []
   }
+}
+
+// Unit Select Modal
+const showUnitSelectModal = ref(false)
+const tempSelectedUnitId = ref<string | undefined>(undefined)
+const sharedRoomFilterOpen = ref(false)
+const sharedRoomFilter = ref<('private' | 'shared')[]>(['private', 'shared']) // Default: all selected
+const sharedRoomOptions = [
+  { value: 'private', label: 'Private' },
+  { value: 'shared', label: 'Shared' },
+]
+
+// Sort configuration
+const sortConfig = ref<{ key: string | null; order: 'asc' | 'desc' | null }>({
+  key: null,
+  order: null,
+})
+
+// Unit table columns
+const unitTableColumns = [
+  { title: 'Unit_tag', key: 'location_tag', dataIndex: 'location_tag', width: 120 },
+  { title: 'Building', key: 'building', dataIndex: 'building', width: 100 },
+  { title: 'Floor', key: 'floor', dataIndex: 'floor', width: 80 },
+  { title: 'Area_tag', key: 'area_tag', dataIndex: 'area_tag', width: 100 },
+  { title: 'UnitName', key: 'unit_name', dataIndex: 'unit_name', width: 120 },
+  { title: 'unit_type', key: 'unit_type', dataIndex: 'unit_type', width: 100 },
+  { title: 'Shared Room', key: 'is_multi_person_room', dataIndex: 'is_multi_person_room', width: 120 },
+]
+
+// Unit/Room/Bed 相关
+const availableUnits = ref<Unit[]>([])
+const availableRooms = ref<RoomWithBeds[]>([])
+const availableBeds = ref<any[]>([])
+const selectedUnit = ref<Unit | null>(null)
+
+// 排序和过滤后的 units
+const sortedAndFilteredUnits = computed(() => {
+  let units = [...availableUnits.value]
+  
+  // 过滤 is_public_space（已经在 fetchUnits 中处理）
+  // 过滤 shared room（根据 sharedRoomFilter 数组）
+  if (sharedRoomFilter.value.length === 0) {
+    // 如果没有任何选中，返回空数组
+    units = []
+  } else if (sharedRoomFilter.value.length === 1) {
+    // 如果只选中一个，进行过滤
+    if (sharedRoomFilter.value.includes('private')) {
+      units = units.filter(unit => !unit.is_multi_person_room)
+    } else if (sharedRoomFilter.value.includes('shared')) {
+      units = units.filter(unit => unit.is_multi_person_room === true)
+    }
+  }
+  // 如果两个都选中（默认情况），不进行过滤
+  
+  // 排序：根据 sortConfig 或默认排序
+  if (sortConfig.value.key && sortConfig.value.order) {
+    units.sort((a, b) => {
+      const key = sortConfig.value.key!
+      const order = sortConfig.value.order!
+      
+      let valueA: any = ''
+      let valueB: any = ''
+      
+      switch (key) {
+        case 'location_tag':
+          valueA = (a.location_tag || '').toLowerCase()
+          valueB = (b.location_tag || '').toLowerCase()
+          break
+        case 'building':
+          valueA = (a.building || '').toLowerCase()
+          valueB = (b.building || '').toLowerCase()
+          break
+        case 'floor':
+          valueA = (a.floor || '').toLowerCase()
+          valueB = (b.floor || '').toLowerCase()
+          break
+        case 'area_tag':
+          valueA = (a.area_tag || '').toLowerCase()
+          valueB = (b.area_tag || '').toLowerCase()
+          break
+        case 'unit_name':
+          valueA = (a.unit_name || '').toLowerCase()
+          valueB = (b.unit_name || '').toLowerCase()
+          break
+        default:
+          return 0
+      }
+      
+      const comparison = valueA.localeCompare(valueB)
+      return order === 'asc' ? comparison : -comparison
+    })
+  } else {
+    // 默认排序：Unit_tag > building > floor > Area_tag > unitName
+    units.sort((a, b) => {
+      // 1. Unit_tag (location_tag)
+      const tagA = (a.location_tag || '').toLowerCase()
+      const tagB = (b.location_tag || '').toLowerCase()
+      if (tagA !== tagB) {
+        return tagA.localeCompare(tagB)
+      }
+      
+      // 2. building
+      const buildingA = (a.building || '').toLowerCase()
+      const buildingB = (b.building || '').toLowerCase()
+      if (buildingA !== buildingB) {
+        return buildingA.localeCompare(buildingB)
+      }
+      
+      // 3. floor
+      const floorA = (a.floor || '').toLowerCase()
+      const floorB = (b.floor || '').toLowerCase()
+      if (floorA !== floorB) {
+        return floorA.localeCompare(floorB)
+      }
+      
+      // 4. Area_tag
+      const areaTagA = (a.area_tag || '').toLowerCase()
+      const areaTagB = (b.area_tag || '').toLowerCase()
+      if (areaTagA !== areaTagB) {
+        return areaTagA.localeCompare(areaTagB)
+      }
+      
+      // 5. unitName
+      const nameA = (a.unit_name || '').toLowerCase()
+      const nameB = (b.unit_name || '').toLowerCase()
+      return nameA.localeCompare(nameB)
+    })
+  }
+  
+  return units
+})
+
+// 获取选中的 unit 显示文本：unit_tag-building-unit_name
+const selectedUnitDisplay = computed(() => {
+  if (!selectedUnit.value) return ''
+  const parts = []
+  if (selectedUnit.value.location_tag) {
+    parts.push(selectedUnit.value.location_tag)
+  }
+  if (selectedUnit.value.building) {
+    parts.push(selectedUnit.value.building)
+  }
+  if (selectedUnit.value.unit_name) {
+    parts.push(selectedUnit.value.unit_name)
+  }
+  return parts.join('-')
+})
+
+// Handle unit select button click
+const handleUnitSelect = () => {
+  tempSelectedUnitId.value = localResidentData.value.unit_id
+  showUnitSelectModal.value = true
+}
+
+// Handle shared room filter change
+const handleSharedRoomFilterChange = (value: 'private' | 'shared', event: any) => {
+  if (event.target.checked) {
+    if (!sharedRoomFilter.value.includes(value)) {
+      sharedRoomFilter.value.push(value)
+    }
+  } else {
+    sharedRoomFilter.value = sharedRoomFilter.value.filter((v) => v !== value)
+  }
+  // Filter change will trigger computed property update
+}
+
+// Toggle sort for a column
+const toggleSort = (key: string) => {
+  if (sortConfig.value.key === key) {
+    // Same column: toggle order
+    if (sortConfig.value.order === 'asc') {
+      sortConfig.value.order = 'desc'
+    } else if (sortConfig.value.order === 'desc') {
+      sortConfig.value.key = null
+      sortConfig.value.order = null
+    }
+  } else {
+    // Different column: set new sort
+    sortConfig.value.key = key
+    sortConfig.value.order = 'asc'
+  }
+}
+
+// Handle unit row select
+const handleUnitRowSelect = (record: Unit, _selected: boolean) => {
+  tempSelectedUnitId.value = record.unit_id
+}
+
+// Handle unit select confirm
+const handleUnitSelectConfirm = () => {
+  if (tempSelectedUnitId.value) {
+    const unit = availableUnits.value.find(u => u.unit_id === tempSelectedUnitId.value)
+    if (unit) {
+      selectedUnit.value = unit
+      localResidentData.value.unit_id = unit.unit_id
+      // Clear room and bed when unit changes
+      localResidentData.value.room_id = undefined
+      localResidentData.value.bed_id = undefined
+      availableRooms.value = []
+      availableBeds.value = []
+      // Fetch rooms for the selected unit
+      fetchRooms(unit.unit_id)
+      emit('update:resident-data', {
+        ...localResidentData.value,
+        unit_id: unit.unit_id,
+        room_id: undefined,
+        bed_id: undefined,
+      })
+    }
+  }
+  showUnitSelectModal.value = false
+}
+
+// Handle unit select cancel
+const handleUnitSelectCancel = () => {
+  tempSelectedUnitId.value = localResidentData.value.unit_id
+  showUnitSelectModal.value = false
+}
+
+// Fetch units (filter out is_public_space)
+const fetchUnits = async () => {
+  try {
+    const tenantId = userStore.getUserInfo?.tenant_id
+    if (!tenantId) return
+    
+    const result = await getUnitsApi({
+      tenant_id: tenantId,
+      is_public_space: false, // Filter out public spaces
+    })
+    availableUnits.value = result.items || []
+    console.log('Units loaded:', availableUnits.value)
+    
+    // 如果已有 unit_id，设置选中的 unit
+    if (localResidentData.value.unit_id) {
+      const unit = availableUnits.value.find(u => u.unit_id === localResidentData.value.unit_id)
+      if (unit) {
+        selectedUnit.value = unit
+        fetchRooms(unit.unit_id)
+      }
+    }
+  } catch (error: any) {
+    console.error('Failed to fetch units:', error)
+    availableUnits.value = []
+  }
+}
+
+// Fetch rooms for selected unit
+const fetchRooms = async (unitId: string) => {
+  try {
+    const rooms = await getRoomsApi({ unit_id: unitId })
+    availableRooms.value = rooms || []
+    console.log('Rooms loaded:', availableRooms.value)
+    
+    // If room is selected, fetch beds
+    if (localResidentData.value.room_id) {
+      const room = availableRooms.value.find(r => r.room_id === localResidentData.value.room_id)
+      if (room) {
+        availableBeds.value = room.beds || []
+      }
+    }
+  } catch (error: any) {
+    console.error('Failed to fetch rooms:', error)
+    availableRooms.value = []
+  }
+}
+
+// Handle room change
+const handleRoomChange = (roomId: string | undefined) => {
+  if (!roomId) {
+    localResidentData.value.bed_id = undefined
+    availableBeds.value = []
+    emit('update:resident-data', {
+      ...localResidentData.value,
+      room_id: undefined,
+      bed_id: undefined,
+    })
+    return
+  }
+  
+  const room = availableRooms.value.find(r => r.room_id === roomId)
+  if (room) {
+    availableBeds.value = room.beds || []
+  }
+  
+  emit('update:resident-data', {
+    ...localResidentData.value,
+    room_id: roomId,
+  })
 }
 
 
@@ -327,6 +852,9 @@ const localPHIData = ref<Partial<ResidentPHI>>({ ...(props.residentData.phi || {
 const autoFillNickname = ref(false)
 const mode = computed(() => props.mode)
 
+// Flag to prevent circular updates when props change
+const isUpdatingFromProps = ref(false)
+
 // Handle nickname change
 const handleNicknameChange = () => {
   if (autoFillNickname.value && mode.value === 'create') {
@@ -368,11 +896,13 @@ const handleAutoFillNicknameChange = () => {
   }
 }
 
-// Watch for changes and emit updates
+// Watch for changes and emit updates (only when not updating from props)
 watch(
   () => localResidentData.value,
   (newData) => {
-    emit('update:resident-data', newData)
+    if (!isUpdatingFromProps.value) {
+      emit('update:resident-data', newData)
+    }
   },
   { deep: true }
 )
@@ -381,32 +911,71 @@ watch(
 watch(
   () => props.residentData,
   (newData) => {
+    isUpdatingFromProps.value = true
     localResidentData.value = { ...newData }
     localPHIData.value = { ...(newData.phi || {}) }
     // 初始化 is_access_enabled 为 false（默认 disable）
     if (localResidentData.value.is_access_enabled === undefined) {
       localResidentData.value.is_access_enabled = false
     }
+    // 如果已有 unit_id，设置选中的 unit 并加载 rooms
+    if (localResidentData.value.unit_id) {
+      const unit = availableUnits.value.find(u => u.unit_id === localResidentData.value.unit_id)
+      if (unit) {
+        selectedUnit.value = unit
+        fetchRooms(unit.unit_id)
+      }
+    } else {
+      selectedUnit.value = null
+      availableRooms.value = []
+      availableBeds.value = []
+    }
+    // Reset flag after a microtask to allow the watch to complete
+    Promise.resolve().then(() => {
+      isUpdatingFromProps.value = false
+    })
   },
   { deep: true }
 )
 
+
 onMounted(() => {
   fetchServiceLevels()
+  fetchUnits()
+  
   // 初始化 is_access_enabled 为 false（默认 disable）
   if (localResidentData.value.is_access_enabled === undefined) {
     localResidentData.value.is_access_enabled = false
+  }
+  
+  // 如果已有 unit_id，设置选中的 unit 并加载 rooms
+  if (localResidentData.value.unit_id && availableUnits.value.length > 0) {
+    const unit = availableUnits.value.find(u => u.unit_id === localResidentData.value.unit_id)
+    if (unit) {
+      selectedUnit.value = unit
+      fetchRooms(unit.unit_id)
+      if (localResidentData.value.room_id) {
+        const room = availableRooms.value.find(r => r.room_id === localResidentData.value.room_id)
+        if (room) {
+          availableBeds.value = room.beds || []
+        }
+      }
+    }
   }
 })
 </script>
 
 <style scoped>
 .profile-content {
-  padding: 16px 0;
+  padding: 0px 0 6px 0;
 }
 
 :deep(.ant-divider) {
-  margin: 10px 0 8px 0;
+  margin: 8px 0 8px 0;
+}
+
+:deep(.bind-unit-divider) {
+  margin: 12px 0 12px 0;
 }
 
 :deep(.ant-form-item) {
@@ -422,5 +991,26 @@ onMounted(() => {
 
 :deep(.ant-form-item-label > label) {
   white-space: nowrap;
+}
+
+/* Shared Room filter styles */
+.shared-room-header-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-icon {
+  cursor: pointer;
+  color: #1890ff;
+  font-size: 14px;
+}
+
+.filter-icon:hover {
+  color: #40a9ff;
+}
+
+.shared-room-filter-menu {
+  min-width: 150px;
 }
 </style>
