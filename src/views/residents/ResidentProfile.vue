@@ -98,7 +98,7 @@ const residentId = computed(() => {
   return route.params.id as string
 })
 
-const activeTab = ref<string>((route.params.tab as string) || 'profile')
+const activeTab = ref<string>((route.params.tab as string) || (route.query.tab as string) || 'profile')
 const residentData = ref<Resident>({} as Resident)
 const saving = ref(false)
 
@@ -154,10 +154,19 @@ const canEditNote = computed(() => {
 const handleTabChange = (key: string) => {
   activeTab.value = key
   // 更新 URL（可选，用于支持直接访问特定 Tab）
-  router.replace({
-    name: 'ResidentProfile',
-    params: { id: residentId.value, tab: key },
-  })
+  if (mode.value === 'create') {
+    // Create 模式下，使用 query 参数而不是 params
+    router.replace({
+      name: 'CreateResident',
+      query: { tab: key },
+    })
+  } else {
+    // Edit/View 模式下，使用 params
+    router.replace({
+      name: 'ResidentProfile',
+      params: { id: residentId.value, tab: key },
+    })
+  }
   
   // 按需加载 Tab 内容
   if (key === 'phi' && !residentData.value.phi) {
@@ -337,8 +346,8 @@ const goBack = () => {
   router.push('/residents')
 }
 
-// Watch route params for tab changes
-watch(() => route.params.tab, (newTab) => {
+// Watch route params/query for tab changes
+watch(() => route.params.tab || route.query.tab, (newTab) => {
   if (newTab && newTab !== activeTab.value) {
     activeTab.value = newTab as string
   }
@@ -355,9 +364,10 @@ onMounted(async () => {
   await fetchResident()
   
   // If URL has tab parameter, load corresponding data
-  if (route.params.tab === 'phi') {
+  const tab = (route.params.tab || route.query.tab) as string
+  if (tab === 'phi') {
     await fetchResident({ include_phi: true })
-  } else if (route.params.tab === 'contacts') {
+  } else if (tab === 'contacts') {
     await fetchResident({ include_contacts: true })
   }
 })
