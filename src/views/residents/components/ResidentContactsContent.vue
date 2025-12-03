@@ -2,7 +2,7 @@
   <div class="contacts-content">
     <a-form layout="horizontal" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
       <!-- Header: Family account explanation -->
-      <div style="margin-bottom: 16px; font-size: 12px; color: #666;">
+      <div style="margin-bottom: 16px; font-size: 14px; color: #666;">
         <div>Family account = resident'account + A/B/C/D or family'account + A/B/C/D</div>
         <div style="margin-top: 4px;">
           For example: resident'account='R001', login_account='R001A'; family'account='F001', login_account='F001A'
@@ -130,7 +130,7 @@
         </a-row>
 
         <!-- Save hint -->
-        <div style="font-size: 12px; color: #999; margin-bottom: 8px;">
+        <div style="font-size: 14px; color: #999; margin-bottom: 8px;">
           Use to reset password. Don't save by default. If save, please check [Save].
         </div>
         </div>

@@ -138,7 +138,6 @@
                 v-model:value="userData.alarm_channels"
                 :disabled="!hasManagePermission"
               >
-                <a-checkbox value="APP">APP</a-checkbox>
                 <a-checkbox value="EMAIL">EMAIL</a-checkbox>
                 <a-checkbox value="SMS">SMS</a-checkbox>
               </a-checkbox-group>

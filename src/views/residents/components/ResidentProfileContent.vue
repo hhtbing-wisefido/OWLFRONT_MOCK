@@ -167,7 +167,7 @@
       </a-row>
 
       <!-- Bind Unit -->
-      <a-divider orientation="left" class="bind-unit-divider">Bind Unit</a-divider>
+      <a-divider orientation="left" class="bind-unit-divider">Allocation Unit</a-divider>
       <a-row v-if="canViewField('unit_id')">
         <a-col :span="24">
           <a-form-item style="margin-bottom: 0;">
@@ -184,7 +184,7 @@
                 v-model:value="selectedUnitDisplay"
                 :disabled="true"
                 style="width: 300px"
-                placeholder="Select Unit"
+                placeholder="location_tag-Building-Floor-Unit_name"
               />
               <a-select
                 v-model:value="localResidentData.room_id"
@@ -226,6 +226,57 @@
               <span v-if="selectedUnit" style="color: #1890ff; font-weight: 500;">
                 {{ selectedUnit.unit_type === 'Home' ? 'HomeCare' : (selectedUnit.unit_type === 'Facility' ? 'Facility' : '-') }}
               </span>
+            </div>
+            <div style="margin-top: 8px; color: #faad14; font-size: 14px;">
+              Note: For shared rooms, the specific bed for each guest should be specified.
+            </div>
+          </a-form-item>
+        </a-col>
+      </a-row>
+      <a-divider orientation="left" class="bind-unit-divider">Special designation Caregiver</a-divider>
+      <a-row v-if="canViewField('unit_id')" style="margin-bottom: 16px;">
+        <a-col :span="24">
+          <a-form-item style="margin-bottom: 0;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-left: 0px;">
+              <a-button
+                type="primary"
+                size="small"
+                :disabled="!canEditField('unit_id')"
+                @click="handleSelectCaregivers"
+              >
+                Select Caregivers
+              </a-button>
+              <a-input
+                v-model:value="selectedCaregiversDisplay"
+                :disabled="true"
+                style="width: 600px"
+                placeholder="Select up to 5 caregiver"
+              />
+            </div>
+          </a-form-item>
+        </a-col>
+      </a-row>
+      <a-row v-if="canViewField('unit_id')">
+        <a-col :span="24">
+          <a-form-item style="margin-bottom: 0;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-left: 0px;">
+              <a-button
+                type="primary"
+                size="small"
+                :disabled="!canEditField('unit_id')"
+                @click="handleSelectCaregiverGroup"
+              >
+                Select Caregiver_group
+              </a-button>
+              <a-input
+                v-model:value="selectedCaregiverGroupDisplay"
+                :disabled="true"
+                style="width: 560px"
+                placeholder="Select up to 3 Caregiver_group"
+              />
+            </div>
+            <div style="margin-top: 8px; color: #faad14; font-size: 14px;">
+              By default, no specification is required; the assigned caregiver for the unit will be responsible.
             </div>
           </a-form-item>
         </a-col>
@@ -401,6 +452,69 @@
         <a-button type="primary" @click="handleUnitSelectConfirm">OK</a-button>
       </div>
     </a-modal>
+
+    <!-- Caregivers Select Modal -->
+    <a-modal
+      v-model:visible="showCaregiversModal"
+      title="Select Caregivers"
+      :footer="null"
+      width="800px"
+      @cancel="handleCaregiversModalCancel"
+    >
+      <a-table
+        :columns="caregiversTableColumns"
+        :data-source="availableCaregivers"
+        :pagination="{ pageSize: 10 }"
+        :scroll="{ y: 400 }"
+        size="small"
+        :row-selection="{
+          type: 'checkbox',
+          selectedRowKeys: tempSelectedCaregiverIds,
+          onSelect: handleCaregiverRowSelect,
+          onSelectAll: handleCaregiverSelectAll,
+        }"
+        :row-key="(record: any) => record.user_id"
+      >
+      </a-table>
+      <div style="margin-top: 16px; text-align: right;">
+        <a-button @click="handleCaregiversModalCancel" style="margin-right: 8px;">Cancel</a-button>
+        <a-button type="primary" @click="handleCaregiversModalConfirm">OK</a-button>
+      </div>
+    </a-modal>
+
+    <!-- Caregiver Group Select Modal -->
+    <a-modal
+      v-model:visible="showCaregiverGroupModal"
+      title="Select Caregiver Group"
+      :footer="null"
+      width="800px"
+      @cancel="handleCaregiverGroupModalCancel"
+    >
+      <a-table
+        :columns="caregiverGroupTableColumns"
+        :data-source="availableCaregiverTags"
+        :pagination="{ pageSize: 10 }"
+        :scroll="{ y: 400 }"
+        size="small"
+        :row-selection="{
+          type: 'checkbox',
+          selectedRowKeys: tempSelectedCaregiverTagIds,
+          onSelect: handleCaregiverTagRowSelect,
+          onSelectAll: handleCaregiverTagSelectAll,
+        }"
+        :row-key="(record: any) => record.tag_id"
+      >
+        <template #bodyCell="{ column, record }">
+          <template v-if="column.key === 'member'">
+            {{ getTagMemberNicknames(record) }}
+          </template>
+        </template>
+      </a-table>
+      <div style="margin-top: 16px; text-align: right;">
+        <a-button @click="handleCaregiverGroupModalCancel" style="margin-right: 8px;">Cancel</a-button>
+        <a-button type="primary" @click="handleCaregiverGroupModalConfirm">OK</a-button>
+      </div>
+    </a-modal>
   </div>
 </template>
 
@@ -414,6 +528,10 @@ import type { ServiceLevel } from '@/api/service-level/model/serviceLevelModel'
 import type { Resident, ResidentPHI } from '@/api/resident/model/residentModel'
 import { getUnitsApi, getRoomsApi } from '@/api/units/unit'
 import type { Unit, RoomWithBeds } from '@/api/units/model/unitModel'
+import { getUsersApi } from '@/api/admin/user/user'
+import type { User } from '@/api/admin/user/model/userModel'
+import { getTagsApi } from '@/api/admin/tags/tags'
+import type { TagCatalogItem } from '@/api/admin/tags/model/tagsModel'
 
 interface Props {
   residentData: Resident
@@ -526,6 +644,34 @@ const availableRooms = ref<RoomWithBeds[]>([])
 const availableBeds = ref<any[]>([])
 const selectedUnit = ref<Unit | null>(null)
 
+// Caregivers 相关
+const showCaregiversModal = ref(false)
+const availableCaregivers = ref<User[]>([])
+const selectedCaregiverIds = ref<string[]>([])
+const tempSelectedCaregiverIds = ref<string[]>([])
+const selectedCaregiversDisplay = ref('')
+
+// Caregiver Group 相关
+const showCaregiverGroupModal = ref(false)
+const availableCaregiverTags = ref<TagCatalogItem[]>([])
+const selectedCaregiverTagIds = ref<string[]>([])
+const tempSelectedCaregiverTagIds = ref<string[]>([])
+const selectedCaregiverGroupDisplay = ref('')
+
+// Caregivers table columns
+const caregiversTableColumns = [
+  { title: 'NickName', key: 'nickname', dataIndex: 'nickname', width: 150 },
+  { title: 'Email', key: 'email', dataIndex: 'email', width: 200 },
+  { title: 'Phone', key: 'phone', dataIndex: 'phone', width: 150 },
+  { title: 'Role', key: 'role', dataIndex: 'role', width: 100 },
+]
+
+// Caregiver Group table columns
+const caregiverGroupTableColumns = [
+  { title: 'Tag Name', key: 'tag_name', dataIndex: 'tag_name', width: 150 },
+  { title: 'Member', key: 'member', dataIndex: 'member', width: 200 },
+]
+
 // 排序和过滤后的 units
 const sortedAndFilteredUnits = computed(() => {
   let units = [...availableUnits.value]
@@ -623,7 +769,7 @@ const sortedAndFilteredUnits = computed(() => {
   return units
 })
 
-// 获取选中的 unit 显示文本：unit_tag-building-unit_name
+// 获取选中的 unit 显示文本：location_tag-Building-Floor-Area_tag-Unit_name
 const selectedUnitDisplay = computed(() => {
   if (!selectedUnit.value) return ''
   const parts = []
@@ -632,6 +778,12 @@ const selectedUnitDisplay = computed(() => {
   }
   if (selectedUnit.value.building) {
     parts.push(selectedUnit.value.building)
+  }
+  if (selectedUnit.value.floor) {
+    parts.push(selectedUnit.value.floor)
+  }
+  if (selectedUnit.value.area_tag) {
+    parts.push(selectedUnit.value.area_tag)
   }
   if (selectedUnit.value.unit_name) {
     parts.push(selectedUnit.value.unit_name)
@@ -781,6 +933,181 @@ const handleRoomChange = (roomId: string | undefined) => {
   })
 }
 
+// Fetch caregivers (Nurse or Caregiver role, active status)
+const fetchCaregivers = async () => {
+  try {
+    const tenantId = userStore.getUserInfo?.tenant_id
+    if (!tenantId) return
+    
+    const result = await getUsersApi()
+    // Filter: role='Nurse' or 'Caregiver' and status='active'
+    availableCaregivers.value = (result.items || []).filter(
+      (user: User) => 
+        (user.role === 'Nurse' || user.role === 'Caregiver') && 
+        user.status === 'active'
+    )
+    console.log('Caregivers loaded:', availableCaregivers.value)
+    // Update display after loading caregivers
+    updateCaregiversDisplay()
+  } catch (error: any) {
+    console.error('Failed to fetch caregivers:', error)
+    availableCaregivers.value = []
+  }
+}
+
+// Update caregivers display text
+const updateCaregiversDisplay = () => {
+  if (selectedCaregiverIds.value.length === 0) {
+    selectedCaregiversDisplay.value = ''
+    return
+  }
+  const selectedCaregivers = availableCaregivers.value.filter(
+    user => selectedCaregiverIds.value.includes(user.user_id)
+  )
+  selectedCaregiversDisplay.value = selectedCaregivers
+    .map(user => user.nickname || user.user_account)
+    .join(', ')
+}
+
+// Fetch caregiver tags (tag_type='user_tag')
+const fetchCaregiverTags = async () => {
+  try {
+    const tenantId = userStore.getUserInfo?.tenant_id
+    if (!tenantId) return
+    
+    const result = await getTagsApi({
+      tenant_id: tenantId,
+      tag_type: 'user_tag',
+    })
+    availableCaregiverTags.value = result.items || []
+    console.log('Caregiver tags loaded:', availableCaregiverTags.value)
+  } catch (error: any) {
+    console.error('Failed to fetch caregiver tags:', error)
+    availableCaregiverTags.value = []
+  }
+}
+
+// Get tag member nicknames (for user_tag type)
+const getTagMemberNicknames = (tag: TagCatalogItem): string => {
+  if (!tag.tag_objects) return '-'
+  // For user_tag, tag_objects should have "user" key with user_id -> nickname mapping
+  const userObjects = tag.tag_objects['user']
+  if (!userObjects) return '-'
+  // Return comma-separated list of nicknames
+  const nicknames = Object.values(userObjects)
+  return nicknames.length > 0 ? nicknames.join(', ') : '-'
+}
+
+// Handle select caregivers button click
+const handleSelectCaregivers = () => {
+  tempSelectedCaregiverIds.value = [...selectedCaregiverIds.value]
+  showCaregiversModal.value = true
+}
+
+// Handle caregiver row select
+const handleCaregiverRowSelect = (record: User, selected: boolean) => {
+  if (selected) {
+    if (tempSelectedCaregiverIds.value.length < 5) {
+      if (!tempSelectedCaregiverIds.value.includes(record.user_id)) {
+        tempSelectedCaregiverIds.value.push(record.user_id)
+      }
+    }
+  } else {
+    tempSelectedCaregiverIds.value = tempSelectedCaregiverIds.value.filter(id => id !== record.user_id)
+  }
+}
+
+// Handle caregiver select all
+const handleCaregiverSelectAll = (selected: boolean, _selectedRows: User[], changeRows: User[]) => {
+  if (selected) {
+    // Add only if total doesn't exceed 5
+    const newIds = changeRows
+      .map(row => row.user_id)
+      .filter(id => !tempSelectedCaregiverIds.value.includes(id))
+    const remaining = 5 - tempSelectedCaregiverIds.value.length
+    tempSelectedCaregiverIds.value = [
+      ...tempSelectedCaregiverIds.value,
+      ...newIds.slice(0, remaining)
+    ]
+  } else {
+    // Remove all changeRows
+    const changeIds = changeRows.map(row => row.user_id)
+    tempSelectedCaregiverIds.value = tempSelectedCaregiverIds.value.filter(id => !changeIds.includes(id))
+  }
+}
+
+// Handle caregivers modal confirm
+const handleCaregiversModalConfirm = () => {
+  selectedCaregiverIds.value = [...tempSelectedCaregiverIds.value]
+  // Update display text
+  updateCaregiversDisplay()
+  showCaregiversModal.value = false
+  // TODO: Emit update to parent or save to backend
+}
+
+// Handle caregivers modal cancel
+const handleCaregiversModalCancel = () => {
+  tempSelectedCaregiverIds.value = [...selectedCaregiverIds.value]
+  showCaregiversModal.value = false
+}
+
+// Handle select caregiver group button click
+const handleSelectCaregiverGroup = () => {
+  tempSelectedCaregiverTagIds.value = [...selectedCaregiverTagIds.value]
+  showCaregiverGroupModal.value = true
+}
+
+// Handle caregiver tag row select
+const handleCaregiverTagRowSelect = (record: TagCatalogItem, selected: boolean) => {
+  if (selected) {
+    if (tempSelectedCaregiverTagIds.value.length < 3) {
+      if (!tempSelectedCaregiverTagIds.value.includes(record.tag_id)) {
+        tempSelectedCaregiverTagIds.value.push(record.tag_id)
+      }
+    }
+  } else {
+    tempSelectedCaregiverTagIds.value = tempSelectedCaregiverTagIds.value.filter(id => id !== record.tag_id)
+  }
+}
+
+// Handle caregiver tag select all
+const handleCaregiverTagSelectAll = (selected: boolean, _selectedRows: TagCatalogItem[], changeRows: TagCatalogItem[]) => {
+  if (selected) {
+    // Add only if total doesn't exceed 3
+    const newIds = changeRows
+      .map(row => row.tag_id)
+      .filter(id => !tempSelectedCaregiverTagIds.value.includes(id))
+    const remaining = 3 - tempSelectedCaregiverTagIds.value.length
+    tempSelectedCaregiverTagIds.value = [
+      ...tempSelectedCaregiverTagIds.value,
+      ...newIds.slice(0, remaining)
+    ]
+  } else {
+    // Remove all changeRows
+    const changeIds = changeRows.map(row => row.tag_id)
+    tempSelectedCaregiverTagIds.value = tempSelectedCaregiverTagIds.value.filter(id => !changeIds.includes(id))
+  }
+}
+
+// Handle caregiver group modal confirm
+const handleCaregiverGroupModalConfirm = () => {
+  selectedCaregiverTagIds.value = [...tempSelectedCaregiverTagIds.value]
+  // Update display text
+  const selectedTags = availableCaregiverTags.value.filter(
+    tag => selectedCaregiverTagIds.value.includes(tag.tag_id)
+  )
+  selectedCaregiverGroupDisplay.value = selectedTags
+    .map(tag => tag.tag_name)
+    .join(', ')
+  showCaregiverGroupModal.value = false
+  // TODO: Emit update to parent or save to backend
+}
+
+// Handle caregiver group modal cancel
+const handleCaregiverGroupModalCancel = () => {
+  tempSelectedCaregiverTagIds.value = [...selectedCaregiverTagIds.value]
+  showCaregiverGroupModal.value = false
+}
 
 // 字段权限配置
 const fieldPermissions = {
@@ -942,6 +1269,8 @@ watch(
 onMounted(() => {
   fetchServiceLevels()
   fetchUnits()
+  fetchCaregivers()
+  fetchCaregiverTags()
   
   // 初始化 is_access_enabled 为 false（默认 disable）
   if (localResidentData.value.is_access_enabled === undefined) {
@@ -975,7 +1304,7 @@ onMounted(() => {
 }
 
 :deep(.bind-unit-divider) {
-  margin: 12px 0 12px 0;
+  margin: 16px 0 16px 0;
 }
 
 :deep(.ant-form-item) {

@@ -239,7 +239,6 @@
             placeholder="Please select alarm channels"
             :disabled="!hasManagePermission"
           >
-            <a-select-option value="APP">APP</a-select-option>
             <a-select-option value="EMAIL">EMAIL</a-select-option>
             <a-select-option value="SMS">SMS</a-select-option>
           </a-select>

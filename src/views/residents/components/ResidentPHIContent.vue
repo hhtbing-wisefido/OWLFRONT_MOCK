@@ -184,7 +184,7 @@
 
       <!-- Row 5: Home Address (仅 Home 场景) -->
       <a-divider orientation="left">Home Address</a-divider>
-      <div style="font-size: 12px; color: #999; margin-bottom: 12px;">
+      <div style="font-size: 14px; color: #999; margin-bottom: 12px;">
         Note: default Email/phone only use to find passwd, if need save, please check. Home address fields are only required for Home scenario (not for Facility).
       </div>
       
@@ -214,6 +214,16 @@
               />
               <a-checkbox v-model:checked="savePhone" :disabled="readonly">Save</a-checkbox>
             </a-space>
+          </a-form-item>
+        </a-col>
+        <a-col>
+          <a-form-item label="Plus Code" style="margin-bottom: 0;">
+            <a-input
+              v-model:value="localPHIData.plus_code"
+              :disabled="readonly"
+              :maxlength="32"
+              style="width: 140px"
+            />
           </a-form-item>
         </a-col>
       </a-row>
@@ -258,16 +268,6 @@
               :disabled="readonly"
               :maxlength="20"
               style="width: 100px"
-            />
-          </a-form-item>
-        </a-col>
-        <a-col>
-          <a-form-item label="Plus Code" style="margin-bottom: 0;">
-            <a-input
-              v-model:value="localPHIData.plus_code"
-              :disabled="readonly"
-              :maxlength="32"
-              style="width: 140px"
             />
           </a-form-item>
         </a-col>

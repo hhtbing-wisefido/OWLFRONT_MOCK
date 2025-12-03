@@ -111,6 +111,15 @@
           </a-tag>
         </template>
 
+        <!-- Monitor column: switch -->
+        <template v-else-if="column.dataIndex === 'monitoring_enabled'">
+          <a-switch
+            v-model:checked="record.monitoring_enabled"
+            @change="handleMonitoringChange(record, $event)"
+            :checked="record.monitoring_enabled || false"
+          />
+        </template>
+
         <!-- Delete column: delete button -->
         <template v-else-if="column.dataIndex === 'delete'">
           <a-tooltip title="Device can only be deleted when not in use, otherwise it will be disabled" :mouseEnterDelay="0.1">
@@ -138,7 +147,7 @@
 import { ref, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import { FilterOutlined } from '@ant-design/icons-vue'
-import { getDevicesApi, deleteDeviceApi } from '@/api/devices/device'
+import { getDevicesApi, deleteDeviceApi, updateDeviceApi } from '@/api/devices/device'
 import type { Device, GetDevicesParams } from '@/api/devices/model/deviceModel'
 import { useUserStore } from '@/store/modules/user'
 import type { TableProps } from 'ant-design-vue'
@@ -226,7 +235,7 @@ const columns = [
     title: 'IMEI',
     dataIndex: 'imei',
     key: 'imei',
-    width: 150,
+    width: 120,
     sorter: true,
   },
   {
@@ -240,7 +249,7 @@ const columns = [
     title: 'Firmware Version',
     dataIndex: 'firmware_version',
     key: 'firmware_version',
-    width: 150,
+    width: 120,
     sorter: true,
   },
   {
@@ -258,10 +267,17 @@ const columns = [
     sorter: true,
   },
   {
+    title: 'Monitor',
+    dataIndex: 'monitoring_enabled',
+    key: 'monitoring_enabled',
+    width: 80,
+    sorter: true,
+  },
+  {
     title: 'Business Access',
     dataIndex: 'business_access',
     key: 'business_access',
-    width: 150,
+    width: 120,
     sorter: true,
   },
   {
@@ -434,17 +450,34 @@ const handleBusinessAccessChange = async (record: Device, value: 'pending' | 'ap
   }
 }
 
-// Handle delete
+// Handle delete (change status to disabled)
 const handleDelete = async (record: Device) => {
   try {
     deletingDeviceId.value = record.device_id
-    await deleteDeviceApi(record.device_id)
-    message.success('Device deleted successfully')
+    await updateDeviceApi(record.device_id, {
+      status: 'disabled',
+    })
+    message.success('Device disabled successfully')
     await fetchDevices()
   } catch (error: any) {
-    message.error(error?.message || 'Failed to delete device')
+    message.error(error?.message || 'Failed to disable device')
   } finally {
     deletingDeviceId.value = null
+  }
+}
+
+// Handle monitoring change
+const handleMonitoringChange = async (record: Device, checked: boolean) => {
+  try {
+    await updateDeviceApi(record.device_id, {
+      monitoring_enabled: checked,
+    })
+    message.success('Monitoring status updated successfully')
+    await fetchDevices()
+  } catch (error: any) {
+    // Restore original value
+    await fetchDevices()
+    message.error(error?.message || 'Failed to update monitoring status')
   }
 }
 

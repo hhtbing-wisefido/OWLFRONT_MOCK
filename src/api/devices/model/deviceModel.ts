@@ -67,6 +67,8 @@ export interface GetDevicesResult {
 export interface UpdateDeviceParams {
   device_name?: string
   business_access?: 'pending' | 'approved' | 'rejected'
+  status?: 'online' | 'offline' | 'error' | 'disabled' // Update device status
+  monitoring_enabled?: boolean // Update monitoring enabled status
   // Device binding fields (mutually exclusive: device must bind to Room OR Bed, not both)
   // Note: When binding to unit, application layer should create unit_room (room_name === unit_name) and set bound_room_id
   bound_room_id?: string | null // Bind to Room (mutually exclusive with bound_bed_id)
