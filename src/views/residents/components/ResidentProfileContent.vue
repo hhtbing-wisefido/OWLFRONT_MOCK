@@ -1228,7 +1228,7 @@ watch(
   () => localResidentData.value,
   (newData) => {
     if (!isUpdatingFromProps.value) {
-      emit('update:resident-data', newData)
+    emit('update:resident-data', newData)
     }
   },
   { deep: true }

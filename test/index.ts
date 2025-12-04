@@ -22,6 +22,7 @@ export * as tags from './admin/tags'
 export * as devices from './admin/devices'
 export * as unit from './admin/unit'
 export * as serviceLevels from './service-levels'
+export * as alarmCloud from './alarm-cloud'
 
 // 工具函数
 export * from './utils/generator'

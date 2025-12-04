@@ -76,21 +76,21 @@
           <a-col :span="12">
             <a-form-item :label-col="{ span: 0 }" :wrapper-col="{ span: 24 }">
               <span>Email:  </span>
-              <a-input
-                v-model:value="getContactBySlot(slot).contact_email"
-                :disabled="readonly"
-                :maxlength="255"
+                <a-input
+                  v-model:value="getContactBySlot(slot).contact_email"
+                  :disabled="readonly"
+                  :maxlength="255"
                 style="width: 180px"
-                @blur="handleContactChange(slot)"
-              />
-              <a-checkbox
-                v-model:checked="getContactBySlot(slot).save_email"
-                :disabled="readonly"
-                @change="handleContactChange(slot)"
+                  @blur="handleContactChange(slot)"
+                />
+                <a-checkbox
+                  v-model:checked="getContactBySlot(slot).save_email"
+                  :disabled="readonly"
+                  @change="handleContactChange(slot)"
                 style="margin-left: 20px"
-              >
-                Save
-              </a-checkbox>
+                >
+                  Save
+                </a-checkbox>
               <a-checkbox
                 v-model:checked="getContactBySlot(slot).receive_email"
                 :disabled="readonly"
@@ -103,21 +103,21 @@
           <a-col :span="12">
             <a-form-item :label-col="{ span: 0 }" :wrapper-col="{ span: 24 }">
               <span>Phone:  </span>
-              <a-input
-                v-model:value="getContactBySlot(slot).contact_phone"
-                :disabled="readonly"
-                :maxlength="25"
-                style="width: 150px"
-                @blur="handleContactChange(slot)"
-              />
-              <a-checkbox
-                v-model:checked="getContactBySlot(slot).save_phone"
-                :disabled="readonly"
-                @change="handleContactChange(slot)"
+                <a-input
+                  v-model:value="getContactBySlot(slot).contact_phone"
+                  :disabled="readonly"
+                  :maxlength="25"
+                  style="width: 150px"
+                  @blur="handleContactChange(slot)"
+                />
+                <a-checkbox
+                  v-model:checked="getContactBySlot(slot).save_phone"
+                  :disabled="readonly"
+                  @change="handleContactChange(slot)"
                 style="margin-left: 20px"
-              >
-                Save
-              </a-checkbox>
+                >
+                  Save
+                </a-checkbox>
               <a-checkbox
                 v-model:checked="getContactBySlot(slot).receive_sms"
                 :disabled="readonly"

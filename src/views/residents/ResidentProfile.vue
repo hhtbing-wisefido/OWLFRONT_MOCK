@@ -162,10 +162,10 @@ const handleTabChange = (key: string) => {
     })
   } else {
     // Edit/View 模式下，使用 params
-    router.replace({
-      name: 'ResidentProfile',
-      params: { id: residentId.value, tab: key },
-    })
+  router.replace({
+    name: 'ResidentProfile',
+    params: { id: residentId.value, tab: key },
+  })
   }
   
   // 按需加载 Tab 内容
