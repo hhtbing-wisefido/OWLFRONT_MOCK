@@ -40,10 +40,10 @@ export const menuItems: MenuItem[] = [
     divider: true,
   },
   {
-    key: 'resident-dashboard',
-    label: 'Assignment Overview',
+    key: 'card-overview',
+    label: 'Card Overview',
     icon: 'TableOutlined',
-    path: '/care-coordination/resident-dashboard',
+    path: '/care-coordination/card-overview',
     permission: ['SystemAdmin', 'Admin', 'Manager'],
   },
   // System Settings Area (with divider)

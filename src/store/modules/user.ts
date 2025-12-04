@@ -281,7 +281,7 @@ export const useUserStore = defineStore('user', {
         '/resident/:id/phi': ['SystemAdmin', 'Admin', 'Manager', 'IT', 'Nurse', 'Caregiver'], // PHI sensitive information
         '/resident/:id/contacts': ['SystemAdmin', 'Admin', 'Manager', 'IT', 'Nurse', 'Caregiver', 'Resident', 'Family'],
         '/care-coordination/assignments': ['SystemAdmin', 'Admin', 'Manager', 'IT', 'Nurse'],
-        '/care-coordination/resident-dashboard': ['SystemAdmin', 'Admin', 'Manager', 'IT', 'Nurse'],
+        '/care-coordination/card-overview': ['SystemAdmin', 'Admin', 'Manager', 'IT', 'Nurse'],
 
         // System settings area
         '/devices': ['SystemAdmin', 'Admin', 'IT'],

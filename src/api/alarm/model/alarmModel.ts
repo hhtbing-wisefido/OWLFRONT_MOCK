@@ -133,12 +133,17 @@ export interface AlarmEvent {
   resident_age?: number  // calculated from residents.phi.birth_date
   resident_network?: string  // from residents table or related data
   
-  // Address information (from cards → units → locations)
-  location_tag?: string  // from locations table
-  building?: string     // from locations table
+  // Address information (from device → unit/room/bed → locations)
+  // Device can be bound to room (bound_room_id) or bed (bound_bed_id)
+  // Backend should JOIN with related tables to return complete address
+  location_tag?: string  // from locations table (via unit/room/bed)
+  building?: string     // from locations table (via unit/room/bed)
   floor?: string        // from locations table (e.g., "2F")
-  unit_name?: string     // from units table
-  // Formatted address display: "location_tag-Building-UnitName"
+  area_tag?: string     // from units table (via device binding)
+  unit_name?: string    // from units table (via device binding)
+  room_name?: string    // from rooms table (via device.bound_room_id)
+  bed_name?: string     // from beds table (via device.bound_bed_id)
+  // Formatted address display: "location_tag-Building-UnitName" (for list view)
   address_display?: string
 }
 

@@ -475,17 +475,33 @@ const formatResidentInfo = (record: AlarmEvent): string => {
 }
 
 const formatAddressForModal = (record: AlarmEvent): string => {
+  // Full address format for modal: location_tag-building-floor-area_tag-unit_name-room-bed
+  // Device alarm should show complete device location information
   const parts: string[] = []
+  
+  if (record.location_tag) {
+    parts.push(record.location_tag)
+  }
   if (record.building) {
     parts.push(record.building)
   }
   if (record.floor) {
     parts.push(record.floor)
   }
+  if (record.area_tag) {
+    parts.push(record.area_tag)
+  }
   if (record.unit_name) {
     parts.push(record.unit_name)
   }
-  return parts.length > 0 ? parts.join(',') : '-'
+  if (record.room_name) {
+    parts.push(record.room_name)
+  }
+  if (record.bed_name) {
+    parts.push(record.bed_name)
+  }
+  
+  return parts.length > 0 ? parts.join('-') : '-'
 }
 
 const formatDeviceInfo = (record: AlarmEvent): string => {

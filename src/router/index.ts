@@ -192,6 +192,15 @@ const routes: RouteRecordRaw[] = [
           requiresAuth: true,
         },
       },
+      {
+        path: '/care-coordination/card-overview',
+        name: 'CardOverview',
+        component: () => import('@/views/care-coordination/card-overview/CardOverview.vue'),
+        meta: {
+          title: 'Card Overview',
+          requiresAuth: true,
+        },
+      },
     ],
   },
 ]
