@@ -95,10 +95,16 @@
           <span v-if="!record.alarm_levels || record.alarm_levels.length === 0">-</span>
         </template>
         <template v-else-if="column.dataIndex === 'alarm_channels'">
-          <a-tag v-for="channel in record.alarm_channels" :key="channel" style="margin: 2px">
+          <!-- Filter out APP and WEB (they are mandatory, not user-selectable) -->
+          <a-tag 
+            v-for="channel in (record.alarm_channels || []).filter(c => c !== 'APP' && c !== 'WEB')" 
+            :key="channel" 
+            class="alarm-channel-tag"
+            style="margin: 2px"
+          >
             {{ channel }}
           </a-tag>
-          <span v-if="!record.alarm_channels || record.alarm_channels.length === 0">-</span>
+          <span v-if="!record.alarm_channels || record.alarm_channels.filter(c => c !== 'APP' && c !== 'WEB').length === 0">-</span>
         </template>
         <template v-else-if="column.dataIndex === 'alarm_scope'">
           <span>{{ record.alarm_scope || '-' }}</span>
@@ -1121,6 +1127,13 @@ onMounted(() => {
   overflow-wrap: break-word !important;
   min-width: 150px;
   max-width: none !important;
+}
+
+/* Alarm Channel tags: no border */
+.alarm-channel-tag {
+  border: none !important;
+  background: transparent !important;
+  padding: 0 !important;
 }
 </style>
 

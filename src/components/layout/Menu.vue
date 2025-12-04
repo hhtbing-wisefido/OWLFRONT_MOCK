@@ -16,6 +16,18 @@
             class="menu-svg-icon"
             alt=""
           />
+          <img 
+            v-else-if="element.item.icon === 'svg:resident'" 
+            :src="residentIcon"
+            class="menu-svg-icon"
+            alt=""
+          />
+          <img 
+            v-else-if="element.item.icon === 'svg:device'" 
+            :src="deviceIcon"
+            class="menu-svg-icon"
+            alt=""
+          />
         </template>
         {{ element.item.label }}
       </a-menu-item>
@@ -30,6 +42,8 @@ import { useUserStore } from '@/store/modules/user'
 import { menuItems, type MenuItem } from '@/types/menu'
 import * as Icons from '@ant-design/icons-vue'
 import nurseSationIcon from '@/assets/svg/nurseSation.svg'
+import residentIcon from '@/assets/svg/resident.svg'
+import deviceIcon from '@/assets/svg/device.svg'
 
 defineProps<{
   collapsed: boolean
@@ -185,10 +199,10 @@ onMounted(() => {
 
 /* SVG icon size and color */
 .menu-svg-icon {
-  width: 24px;
-  height: 24px;
+  width: 14px;
+  height: 14px;
   filter: brightness(0) invert(1); /* Convert to white */
-  margin-left: -4px;
+  margin-left: 0;
 }
 </style>
 

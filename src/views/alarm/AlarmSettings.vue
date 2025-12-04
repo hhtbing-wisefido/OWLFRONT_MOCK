@@ -83,33 +83,6 @@
           </div>
         </div>
 
-        <!-- Alarm Notification Rules Section -->
-        <div class="section-row">
-          <div class="section">
-            <span class="section-title">Alarm Notification Rules (Default)</span>
-            <div class="section-item">
-              <span class="item-title">EMERGENCY / ALERT</span>
-              <div style="display: flex; align-items: center; gap: 16px;">
-                <a-checkbox-group v-model:value="emergencyChannelsForUI">
-                  <a-checkbox value="WEB">Web</a-checkbox>
-                  <a-checkbox value="APP">APP</a-checkbox>
-                </a-checkbox-group>
-                <a-checkbox :checked="true" disabled style="color: #888">EMAIL (future support)</a-checkbox>
-                <a-checkbox :checked="true" disabled style="color: #888">SMS (future support)</a-checkbox>
-              </div>
-            </div>
-            <div class="section-item">
-              <span class="item-title">CRITICAL / ERROR / WARNING</span>
-              <a-checkbox-group v-model:value="notificationChannels.CRITICAL">
-                <a-checkbox value="WEB">Web</a-checkbox>
-                <a-checkbox value="APP">APP</a-checkbox>
-                <a-checkbox value="EMAIL" disabled style="color: #888">EMAIL (future support)</a-checkbox>
-                <a-checkbox value="SMS" disabled style="color: #888">SMS (future support)</a-checkbox>
-              </a-checkbox-group>
-            </div>
-          </div>
-        </div>
-
         <!-- Cloud Vital Alarm Threshold Section -->
         <div class="section-row">
           <div class="section" style="width: 100%; align-items: flex-start !important;">
@@ -397,24 +370,6 @@ const formData = reactive<AlarmCloud>({
 const originalData = ref<AlarmCloud | null>(null)
 
 // Notification channels
-const notificationChannels = reactive<{
-  EMERGENCY: ('WEB' | 'APP' | 'EMAIL' | 'SMS')[]
-  CRITICAL: ('WEB' | 'APP' | 'EMAIL' | 'SMS')[]
-}>({
-  EMERGENCY: ['WEB', 'APP', 'EMAIL', 'SMS'], // EMAIL and SMS are always selected (disabled)
-  CRITICAL: ['WEB', 'APP'],
-})
-
-// Computed property for EMERGENCY UI (only WEB and APP are selectable, EMAIL/SMS are always selected but disabled)
-const emergencyChannelsForUI = computed({
-  get: () => {
-    return notificationChannels.EMERGENCY.filter(ch => ch !== 'EMAIL' && ch !== 'SMS')
-  },
-  set: (value: ('WEB' | 'APP')[]) => {
-    // Always include EMAIL and SMS
-    notificationChannels.EMERGENCY = [...value, 'EMAIL', 'SMS']
-  },
-})
 
 // Danger level options
 const dangerLevelOptions = [
@@ -531,36 +486,6 @@ watch(
   { deep: true },
 )
 
-// Watch notification channels
-watch(
-  () => notificationChannels.EMERGENCY,
-  (newVal) => {
-    if (formData.notification_rules) {
-      // EMAIL and SMS are always included for EMERGENCY/ALERT
-      formData.notification_rules.channels = {
-        ...formData.notification_rules.channels,
-        EMERGENCY: newVal, // Already includes EMAIL and SMS
-        ALERT: newVal,
-      }
-    }
-  },
-  { deep: true },
-)
-
-watch(
-  () => notificationChannels.CRITICAL,
-  (newVal) => {
-    if (formData.notification_rules) {
-      formData.notification_rules.channels = {
-        ...formData.notification_rules.channels,
-        CRITICAL: newVal,
-        ERROR: newVal,
-        WARNING: newVal,
-      }
-    }
-  },
-  { deep: true },
-)
 
 // Format alarm name for display
 const formatAlarmName = (alarmType: string): string => {
@@ -677,35 +602,6 @@ const loadConfiguration = async () => {
     }
 
     // Update notification channels
-    if (formData.notification_rules?.channels?.EMERGENCY) {
-      const emergencyChannels = formData.notification_rules.channels.EMERGENCY as ('WEB' | 'APP' | 'EMAIL' | 'SMS')[]
-      // Filter out EMAIL and SMS for UI (they are always selected but disabled)
-      notificationChannels.EMERGENCY = emergencyChannels.filter(ch => ch !== 'EMAIL' && ch !== 'SMS')
-      // Ensure EMAIL and SMS are in the array (they should always be selected)
-      if (!emergencyChannels.includes('EMAIL')) {
-        emergencyChannels.push('EMAIL')
-      }
-      if (!emergencyChannels.includes('SMS')) {
-        emergencyChannels.push('SMS')
-      }
-      // Update formData to ensure EMAIL and SMS are always included
-      if (formData.notification_rules.channels) {
-        formData.notification_rules.channels.EMERGENCY = emergencyChannels
-        formData.notification_rules.channels.ALERT = emergencyChannels
-      }
-    } else {
-      // Set default: always include EMAIL and SMS for EMERGENCY/ALERT
-      if (formData.notification_rules?.channels) {
-        formData.notification_rules.channels.EMERGENCY = ['WEB', 'APP', 'EMAIL', 'SMS']
-        formData.notification_rules.channels.ALERT = ['WEB', 'APP', 'EMAIL', 'SMS']
-      }
-    }
-    if (formData.notification_rules?.channels?.CRITICAL) {
-      notificationChannels.CRITICAL = formData.notification_rules.channels.CRITICAL as ('WEB' | 'APP' | 'EMAIL' | 'SMS')[]
-    } else if (formData.notification_rules?.channels?.WARNING) {
-      // Fallback to WARNING if CRITICAL not set
-      notificationChannels.CRITICAL = formData.notification_rules.channels.WARNING as ('WEB' | 'APP' | 'EMAIL' | 'SMS')[]
-    }
 
     originalData.value = JSON.parse(JSON.stringify(formData))
   } catch (error) {
@@ -772,7 +668,7 @@ onMounted(() => {
   flex-direction: row;
   flex-wrap: nowrap;
   gap: 50px;
-  margin-bottom: 30px;
+  margin-bottom: 0px;
   align-items: flex-start;
 }
 
@@ -826,5 +722,6 @@ onMounted(() => {
   line-height: 1.5;
   padding: 10px 50px 10px 50px;
 }
+
 </style>
 

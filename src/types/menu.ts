@@ -18,9 +18,9 @@ export const menuItems: MenuItem[] = [
   },
   {
     key: 'alarm-history',
-    label: 'Alarm History',
+    label: 'Alarm Records',
     icon: 'AlertOutlined',
-    path: '/alarm/history',
+    path: '/alarm/records',
     permission: ['SystemAdmin', 'Admin', 'Manager', 'Nurse', 'Caregiver'],
   },
   {
@@ -34,17 +34,10 @@ export const menuItems: MenuItem[] = [
   {
     key: 'residents',
     label: 'Resident Management',
-    icon: 'UserOutlined',
+    icon: 'svg:resident',
     path: '/residents',
     permission: ['SystemAdmin', 'Admin', 'Manager', 'Nurse', 'Caregiver'],
     divider: true,
-  },
-  {
-    key: 'care-assignments',
-    label: 'Care Assignments',
-    icon: 'svg:nurseSation',
-    path: '/care-coordination/assignments',
-    permission: ['SystemAdmin', 'Admin', 'Manager'],
   },
   {
     key: 'resident-dashboard',
@@ -57,7 +50,7 @@ export const menuItems: MenuItem[] = [
   {
     key: 'devices',
     label: 'Device Management',
-    icon: 'MobileOutlined',
+    icon: 'svg:device',
     path: '/devices',
     permission: ['SystemAdmin', 'Admin', 'Manager', 'IT'],
     divider: true,

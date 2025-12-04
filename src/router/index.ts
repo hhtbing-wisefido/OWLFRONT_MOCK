@@ -183,6 +183,15 @@ const routes: RouteRecordRaw[] = [
           requiresAuth: true,
         },
       },
+      {
+        path: '/alarm/records',
+        name: 'AlarmRecords',
+        component: () => import('@/views/alarm/AlarmRecord.vue'),
+        meta: {
+          title: 'Alarm Records',
+          requiresAuth: true,
+        },
+      },
     ],
   },
 ]
