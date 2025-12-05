@@ -10,21 +10,28 @@
             v-for="resident in card.residents"
             :key="resident.resident_id"
           >
-            <!-- Row 1: card_name | resident' sex/old | card_address -->
+            <!-- Row 1: card_name | card_address | all residents (with links) -->
             <div class="info-row row-1">
               <span class="card-name">{{ card.card_name }}</span>
               <span class="separator">|</span>
-              <span class="resident-info">
-                <span v-if="resident.phi?.gender">{{ resident.phi.gender }}</span>
-                <span v-if="resident.phi?.date_of_birth">
-                  {{ calculateAge(resident.phi.date_of_birth) }} years old
-                </span>
-              </span>
-              <span class="separator">|</span>
               <span class="card-address">{{ card.card_address }}</span>
+              <span v-if="card.residents && card.residents.length > 0" class="separator">|</span>
+              <span
+                v-for="(resident, index) in card.residents"
+                :key="resident.resident_id"
+                class="resident-name-item"
+              >
+                <span v-if="index > 0" class="separator">,</span>
+                <a 
+                  class="resident-name-link"
+                  @click="goToResidentDetail(resident.resident_id)"
+                >
+                  {{ getResidentNickname(resident) }}
+                </a>
+              </span>
             </div>
             
-            <!-- Row 2: Care Team: Group-A   Special Caregivers: xxx -->
+            <!-- Row 2: Care Team: group1 group2 group3 (with links) | Designated Caregivers: xxx xxx (max 5) -->
             <div class="info-row row-2">
               <!-- Care Team (Caregiver Groups) -->
               <span v-if="card.caregiver_groups && card.caregiver_groups.length > 0">
@@ -34,7 +41,7 @@
                   :key="group.group_id"
                   class="caregiver-group-item"
                 >
-                  <span v-if="index > 0" class="separator">,</span>
+                  <span v-if="index > 0" class="separator">  </span>
                   <span
                     v-if="canAccessTagManagement"
                     class="group-name-link"
@@ -47,39 +54,20 @@
                 <span v-if="card.caregivers && card.caregivers.length > 0" class="separator">  </span>
               </span>
               
-              <!-- Special Caregivers -->
+              <!-- Designated Caregivers (max 5, only show nickname) -->
               <span v-if="card.caregivers && card.caregivers.length > 0">
-                <span class="label">Special Caregivers:</span>
+                <span class="label">Designated Caregivers:</span>
                 <span
-                  v-for="(caregiver, index) in card.caregivers"
+                  v-for="(caregiver, index) in getFirstFiveCaregivers(card.caregivers)"
                   :key="caregiver.caregiver_id"
                   class="caregiver-item"
                 >
-                  <span v-if="index > 0" class="separator">,</span>
+                  <span v-if="index > 0" class="separator">  </span>
                   <span class="caregiver-name">{{ caregiver.caregiver_name }}</span>
-                  <span v-if="caregiver.phone || caregiver.email" class="caregiver-contact">
-                    ({{ caregiver.phone || caregiver.email }})
-                  </span>
                 </span>
               </span>
             </div>
             
-            <!-- Row 3: Emergency'nickname/Relationship/mobile -->
-            <div class="info-row row-3" v-if="hasEmergencyContacts(resident)">
-              <span class="label">Emergency:</span>
-              <span
-                v-for="(contact, index) in getEmergencyContacts(resident)"
-                :key="getContactKey(contact)"
-                class="contact-item"
-              >
-                <span v-if="index > 0" class="separator">|</span>
-                <span class="contact-nickname">{{ formatContactName(contact) }}</span>
-                <span class="separator">/</span>
-                <span class="contact-relationship">{{ contact.relationship || '-' }}</span>
-                <span class="separator">/</span>
-                <span class="contact-mobile">{{ contact.contact_phone || '-' }}</span>
-              </span>
-            </div>
           </div>
         </a-card>
 
@@ -99,7 +87,6 @@
               :key="device.device_id"
               style="display: flex; flex-direction: row; align-items: center"
             >
-              <!-- Device Icon -->
               <div>
                 <img
                   v-if="device.device_type === 1 && device.status === 'online'"
@@ -122,36 +109,30 @@
                   style="margin-right: 10px; height: 50px; width: 50px"
                 />
               </div>
-              
-              <!-- Device Name and Code -->
-              <div style="display: flex; flex-direction: column">
+              <div style="display: flex; flex-direction: column; width: 150px; margin-left: 6px; margin-right: 2px">
                 <span style="font-size: 16px">{{ device.device_name }}</span>
                 <span style="font-size: 14px; padding-right: 8px">
                   {{ device.serial_number || device.uid || '-' }}
                 </span>
               </div>
-              
-              <!-- Online Status -->
               <div style="padding-left: 8px">
                 <span v-if="device.status === 'online'" style="font-size: 14px; color: #21c376">
                   Online
                 </span>
                 <span v-else style="font-size: 14px; color: #f56c6c">Offline</span>
               </div>
-              
-              <!-- Device Actions -->
               <div style="display: flex; flex-direction: row; padding: 0 12px 0 12px; gap: 16px">
-                <!-- Sleepace: Sleep Report -->
-                <div v-if="device.device_type === 1" class="settings" @click="goSleepReport(device)">
-                  <span style="font-size: 14px; color: #21c376; cursor: pointer">
-                    Sleep Report >
-                  </span>
-                </div>
-                
-                <!-- Monitor Settings -->
+                <!-- Monitor Settings (all devices, position 1) -->
                 <div class="settings" @click="goMonitorSetting(device)">
                   <span style="font-size: 14px; color: #f56c6c; cursor: pointer">
                     Monitor Settings >
+                  </span>
+                </div>
+                
+                <!-- Sleepace: Sleep Report (position 2) -->
+                <div v-if="device.device_type === 1" class="settings" @click="goSleepReport(device)">
+                  <span style="font-size: 14px; color: #21c376; cursor: pointer">
+                    Sleep Report >
                   </span>
                 </div>
                 
@@ -230,6 +211,7 @@ const card = ref<CardOverviewItem | null>(null)
 const canAccessTagManagement = computed(() => {
   return userStore.hasPagePermission('/admin/tags')
 })
+
 
 // Alarm tabs
 const activeKey = ref('pending')
@@ -389,6 +371,39 @@ const getEmergencyContacts = (resident: CardOverviewItem['residents'][0]) => {
 }
 
 /**
+ * Get first five caregivers (max 5)
+ */
+const getFirstFiveCaregivers = (caregivers: CardOverviewItem['caregivers']) => {
+  return caregivers.slice(0, 5)
+}
+
+/**
+ * Get resident nickname (prefer nickname, fallback to first_name + last_name)
+ */
+const getResidentNickname = (resident: CardOverviewItem['residents'][0]): string => {
+  if (resident.nickname) {
+    return resident.nickname
+  }
+  // Fallback to first_name + last_name if no nickname
+  if (resident.first_name && resident.last_name) {
+    return `${resident.first_name} ${resident.last_name}`
+  }
+  return resident.last_name || resident.first_name || '-'
+}
+
+/**
+ * Navigate to resident detail page
+ */
+const goToResidentDetail = (residentId: string) => {
+  router.push({
+    name: 'ResidentProfile',
+    params: {
+      id: residentId,
+    },
+  })
+}
+
+/**
  * Format contact name
  */
 const formatContactName = (contact: NonNullable<CardOverviewItem['residents'][0]['contacts']>[0]): string => {
@@ -434,13 +449,13 @@ const loadCardDetail = async () => {
 }
 
 /**
- * Navigate to sleep report
+ * Navigate to sleep report (only for Sleepace devices)
  */
 const goSleepReport = (device: CardOverviewDevice) => {
-  const url = device.device_type === 1
-    ? `/reports/daily-report-sleepace/${device.device_id}`
-    : `/reports/daily-report-radar/${device.device_id}`
-  router.push(url)
+  if (device.device_type !== 1) {
+    return // Only Sleepace devices have sleep report
+  }
+  router.push(`/reports/daily-report-sleepace/${device.device_id}`)
 }
 
 /**
@@ -511,6 +526,12 @@ onMounted(() => {
   padding: 16px;
 }
 
+.detail-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .custom-card {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   border-radius: 5px;
@@ -546,7 +567,7 @@ onMounted(() => {
   color: #d9d9d9;
 }
 
-/* Row 1: card_name | resident' sex/old | card_address */
+/* Row 1: card_name | card_address | all residents (with links) */
 .row-1 {
   font-size: 16px;
   font-weight: 500;
@@ -557,12 +578,25 @@ onMounted(() => {
   font-weight: 600;
 }
 
-.row-1 .resident-info {
-  color: #666;
-}
-
 .row-1 .card-address {
   color: #333;
+}
+
+.row-1 .resident-name-item {
+  display: inline-flex;
+  align-items: center;
+}
+
+.row-1 .resident-name-link {
+  color: #1890ff;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.row-1 .resident-name-link:hover {
+  color: #40a9ff;
+  text-decoration: underline;
 }
 
 /* Row 2: caregivers_tags:member   caregivers: */
@@ -609,45 +643,13 @@ onMounted(() => {
   margin: 0 4px;
 }
 
-/* Row 3: Emergency'nickname/Relationship/mobile */
-.row-3 {
-  color: #333;
-}
-
-.row-3 .label {
-  color: #666;
-  font-weight: 500;
-  margin-right: 4px;
-}
-
-.row-3 .contact-item {
-  display: inline-flex;
-  align-items: center;
-}
-
-.row-3 .contact-nickname,
-.row-3 .contact-relationship,
-.row-3 .contact-mobile {
-  color: #333;
-}
-
-.row-3 .separator {
-  margin: 0 4px;
-}
-
 /* Device Settings */
 .settings {
   cursor: pointer;
   display: flex;
   flex-direction: row;
   align-items: center;
-  padding: 8px 12px;
-  border-radius: 4px;
-  transition: background-color 0.2s;
-}
-
-.settings:hover {
-  background-color: #f5f5f5;
+  padding: 10px;
 }
 </style>
 

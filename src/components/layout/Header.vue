@@ -142,7 +142,7 @@ const goBack = () => {
 
 // Go to home page
 const goHome = () => {
-  const homePath = userInfo.value?.homePath || '/monitoring/wellness-monitor'
+  const homePath = userInfo.value?.homePath || '/monitoring/overview'
   router.push(homePath)
 }
 </script>

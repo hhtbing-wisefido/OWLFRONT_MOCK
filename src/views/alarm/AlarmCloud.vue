@@ -77,7 +77,7 @@
           <div class="section">
             <span class="section-title">Radar Monitor</span>
             <div
-              v-for="(level, alarmType) in formData.device_alarms?.Radar || {}"
+              v-for="(level, alarmType) in filteredRadarAlarms"
               :key="String(alarmType)"
               class="section-item"
             >
@@ -461,12 +461,23 @@ watch(
   { deep: true },
 )
 
+// Filter out Radar Apnea alarm type
+const filteredRadarAlarms = computed(() => {
+  const radarAlarms = formData.device_alarms?.Radar || {}
+  const filtered: Record<string, any> = {}
+  for (const [key, value] of Object.entries(radarAlarms)) {
+    if (key !== 'Radar_ApneaHypopnea') {
+      filtered[key] = value
+    }
+  }
+  return filtered
+})
 
 // Format alarm name for display
 const formatAlarmName = (alarmType: string): string => {
   const nameMap: Record<string, string> = {
     Fall: 'Fall alarm',
-    Radar_ApneaHypopnea: 'Apnea/Hypopnea alarm',
+    Radar_ApneaHypopnea: 'Apnea/Hypopnea alarm', // Keep for backward compatibility, but filtered out in UI
     Radar_AbnormalHeartRate: 'Abnormal heart rate alarm',
     Radar_AbnormalRespiratoryRate: 'Abnormal breathing alarm',
     Radar_LeftBed: 'Left bed alarm',
@@ -508,11 +519,18 @@ const loadConfiguration = async () => {
     // If config doesn't exist, backend should return empty object or null
     // User can then create new config by editing and saving
     if (config) {
-    Object.assign(formData, {
+      // Filter out Radar_ApneaHypopnea from device_alarms
+      const deviceAlarms = config.device_alarms || {}
+      if (deviceAlarms.Radar && deviceAlarms.Radar.Radar_ApneaHypopnea) {
+        const { Radar_ApneaHypopnea, ...filteredRadar } = deviceAlarms.Radar
+        deviceAlarms.Radar = filteredRadar
+      }
+      
+      Object.assign(formData, {
         OfflineAlarm: config.OfflineAlarm,
         LowBattery: config.LowBattery,
         DeviceFailure: config.DeviceFailure,
-        device_alarms: config.device_alarms || {},
+        device_alarms: deviceAlarms,
         conditions: config.conditions,
         notification_rules: config.notification_rules,
       })
@@ -608,12 +626,20 @@ const saveSettings = async () => {
   saving.value = true
   try {
     const tenantId = userStore.getUserInfo?.tenant_id || null
+    
+    // Filter out Radar_ApneaHypopnea from device_alarms before saving
+    const deviceAlarms = { ...formData.device_alarms }
+    if (deviceAlarms.Radar && deviceAlarms.Radar.Radar_ApneaHypopnea) {
+      const { Radar_ApneaHypopnea, ...filteredRadar } = deviceAlarms.Radar
+      deviceAlarms.Radar = filteredRadar
+    }
+    
     const updateParams = {
       tenant_id: tenantId,
       OfflineAlarm: formData.OfflineAlarm,
       LowBattery: formData.LowBattery,
       DeviceFailure: formData.DeviceFailure,
-      device_alarms: formData.device_alarms,
+      device_alarms: deviceAlarms,
       conditions: formData.conditions,
       notification_rules: formData.notification_rules,
     }

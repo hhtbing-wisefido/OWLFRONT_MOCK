@@ -216,30 +216,27 @@ const routes: RouteRecordRaw[] = [
       
       // ==================== 其他功能路由 ====================
       {
-        path: '/monitoring/vital-focus/:cardId',
-        name: 'VitalFocusDetail',
-        component: () => import('@/views/monitoring/vital-focus/VitalFocusDetail.vue'),
+        path: '/monitoring/detail/:cardId',
+        name: 'CardDetail',
+        component: () => import('@/views/monitoring/detail/Detail.vue'),
         meta: {
-          title: 'Vital Focus Detail',
+          title: 'Card Detail',
           requiresAuth: true,
         },
       },
+      // Legacy routes - redirect to new routes
       {
-        path: '/monitoring/wellness-monitor',
-        name: 'WellnessMonitor',
-        component: () => import('@/views/monitoring/wellness-monitor/WellnessMonitor.vue'),
-        meta: {
-          title: 'Wellness Monitor',
-          requiresAuth: true,
+        path: '/monitoring/vital-focus/:cardId',
+        name: 'VitalFocusDetailLegacy',
+        redirect: (to) => {
+          return `/monitoring/detail/${to.params.cardId}`
         },
       },
       {
         path: '/monitoring/wellness-monitor/:cardId',
-        name: 'WellnessMonitorDetail',
-        component: () => import('@/views/monitoring/vital-focus/VitalFocusDetail.vue'),
-        meta: {
-          title: 'Wellness Monitor Detail',
-          requiresAuth: true,
+        name: 'WellnessMonitorDetailLegacy',
+        redirect: (to) => {
+          return `/monitoring/detail/${to.params.cardId}`
         },
       },
       
@@ -250,6 +247,26 @@ const routes: RouteRecordRaw[] = [
         redirect: (to) => {
           const tab = to.params.tab || 'profile'
           return `/resident/${to.params.id}/${tab}`
+        },
+      },
+      
+      // ==================== Device Monitor Settings ====================
+      {
+        path: '/settings/monitor/sleepace/:deviceId',
+        name: 'SleepaceMonitorSettings',
+        component: () => import('@/views/settings/sleepace-monitor-settings.vue'),
+        meta: {
+          title: 'Sleepace Monitor Settings',
+          requiresAuth: true,
+        },
+      },
+      {
+        path: '/settings/monitor/radar/:deviceId',
+        name: 'RadarMonitorSettings',
+        component: () => import('@/views/settings/radar-monitor-settings.vue'),
+        meta: {
+          title: 'Radar Monitor Settings',
+          requiresAuth: true,
         },
       },
     ],

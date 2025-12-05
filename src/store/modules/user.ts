@@ -392,8 +392,12 @@ export const useUserStore = defineStore('user', {
         '/admin/tags': ['SystemAdmin', 'Admin', 'Manager', 'IT', 'Nurse', 'Caregiver'],
 
         // ==================== 其他功能路由 ====================
+        '/monitoring/detail/:cardId': ['Admin', 'Manager', 'IT', 'Nurse', 'Caregiver', 'Resident', 'Family'],
+        // Legacy routes - redirect to /monitoring/detail/:cardId
+        // Device Monitor Settings
+        '/settings/monitor/sleepace/:deviceId': ['Admin', 'Manager', 'IT', 'Nurse'],
+        '/settings/monitor/radar/:deviceId': ['Admin', 'Manager', 'IT', 'Nurse'],
         '/monitoring/vital-focus/:cardId': ['Admin', 'Manager', 'IT', 'Nurse', 'Caregiver', 'Resident', 'Family'],
-        '/monitoring/wellness-monitor': ['Admin', 'Manager', 'IT', 'Nurse', 'Caregiver', 'Resident', 'Family'],
         '/monitoring/wellness-monitor/:cardId': ['Admin', 'Manager', 'IT', 'Nurse', 'Caregiver', 'Resident', 'Family'],
       }
       this.setPagePermissions(defaultPermissions)

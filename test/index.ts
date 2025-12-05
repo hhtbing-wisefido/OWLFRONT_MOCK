@@ -25,6 +25,7 @@ export * as serviceLevels from './service-levels'
 export * as alarmCloud from './alarm-cloud'
 export * as alarmEvents from './alarm-events'
 export * as cardOverview from './card-overview'
+export * as settings from './settings'
 
 // 工具函数
 export * from './utils/generator'

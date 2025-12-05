@@ -1001,14 +1001,12 @@ const handleAmbientRounds = () => {
  * - Test navigation functionality
  */
 const goDetail = (card: VitalFocusCard) => {
-  // Current implementation (placeholder, need to confirm if route exists)
   router.push({
-    name: 'WellnessMonitorDetail',
+    name: 'CardDetail',
     params: {
       cardId: card.card_id,
     },
   }).catch((err) => {
-    // If route doesn't exist, show prompt
     console.error('Route not found:', err)
     message.warning('Detail page will be implemented soon')
   })
