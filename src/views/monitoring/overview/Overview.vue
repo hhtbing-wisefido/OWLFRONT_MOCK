@@ -143,7 +143,27 @@
       </div>
     </a-modal>
     
-    <div style="display: flex; flex-wrap: wrap; justify-content: flex-start; align-items: center">
+    <!-- Empty state for SystemAdmin (no card permissions) -->
+    <div v-if="filteredCards.length === 0 && isSystemAdmin" style="padding: 40px; text-align: center; background-color: #fff; border-radius: 4px; margin: 15px;">
+      <div style="font-size: 18px; color: #666; margin-bottom: 10px;">
+        No cards available
+      </div>
+      <div style="font-size: 14px; color: #999;">
+        SystemAdmin role does not have card permissions. Please contact your administrator if you need access to card data.
+      </div>
+    </div>
+    
+    <!-- Empty state for other roles (no cards found) -->
+    <div v-else-if="filteredCards.length === 0" style="padding: 40px; text-align: center; background-color: #fff; border-radius: 4px; margin: 15px;">
+      <div style="font-size: 18px; color: #666; margin-bottom: 10px;">
+        No cards found
+      </div>
+      <div style="font-size: 14px; color: #999;">
+        Try adjusting your filters or contact support if you believe this is an error.
+      </div>
+    </div>
+    
+    <div v-else style="display: flex; flex-wrap: wrap; justify-content: flex-start; align-items: center">
       <div class="itemFrom" @click="goDetail(item)" v-for="item in filteredCards" :key="item.card_id">
         <!-- Section 1: Head - Name, Address, Alarm Status -->
         <div
@@ -445,6 +465,7 @@ import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { AlertFilled } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
+import { useUserStore } from '@/store/modules/user'
 import type { GetVitalFocusCardsModel, VitalFocusCard } from '@/api/monitors/model/monitorModel'
 import { getVitalFocusCardsApi, saveVitalFocusSelectionApi } from '@/api/monitors/monitor'
 // Note: API functions still use 'vitalFocus' naming for backend compatibility
@@ -466,10 +487,17 @@ import breathGreen from '@/assets/images/breathe-green.png'
 import breathGray from '@/assets/images/breathe-gray.png'
 
 const router = useRouter()
+const userStore = useUserStore()
 const dataSource = ref<GetVitalFocusCardsModel>()
 const intervalTime = 3 * 1000 // 3 seconds
 let timer: ReturnType<typeof setInterval> | null = null
 const isTimerRunning = ref(false)
+
+// Check if current user is SystemAdmin
+const isSystemAdmin = computed(() => {
+  const userInfo = userStore.getUserInfo
+  return userInfo?.role === 'SystemAdmin'
+})
 
 // Filter state
 const activeFilter = ref<string | null>(null) // 'unhandled' | 'outofroom' | 'leftbed' | 'visitor' | 'awake' | 'sleep' | null

@@ -218,13 +218,20 @@
         <!-- Operation -->
         <template v-else-if="column.key === 'operation'">
           <a-button 
-            v-if="status === 'active'"
+            v-if="status === 'active' && canHandleAlarm(record)"
             size="small" 
             type="primary"
             @click="openHandleModal(record)"
           >
             Handle
           </a-button>
+          <span 
+            v-else-if="status === 'active' && !canHandleAlarm(record)" 
+            style="color: #999; font-size: 12px;"
+            :title="getPermissionDeniedReason(record)"
+          >
+            No permission
+          </span>
         </template>
       </template>
     </a-table>
@@ -326,6 +333,9 @@ import { message } from 'ant-design-vue'
 import dayjs, { type Dayjs } from 'dayjs'
 import { getAlarmEventsApi, handleAlarmEventApi } from '@/api/alarm/alarm'
 import type { AlarmEvent, GetAlarmEventsParams } from '@/api/alarm/model/alarmModel'
+import { useUserStore } from '@/store/modules/user'
+import { useCardStore } from '@/store/modules/card'
+import { canHandleAlarm as checkCanHandleAlarm, getPermissionDeniedReason as getDeniedReason } from '@/utils/alarmPermission'
 
 interface Props {
   status: 'active' | 'resolved'
@@ -335,9 +345,14 @@ interface Props {
     categories: Array<{ value: string; label: string }>
     alarmLevels: Array<{ value: string; label: string }>
   }
+  cardId?: string  // Optional: Filter alarms by card_id (via device_ids)
 }
 
 const props = defineProps<Props>()
+
+// Stores
+const userStore = useUserStore()
+const cardStore = useCardStore()
 
 // Data
 const loading = ref(false)
@@ -560,6 +575,20 @@ const getSeverityColor = (level: string | number): string => {
   return map[levelStr] || '#000000'
 }
 
+/**
+ * Check if user can handle alarm (using utility function)
+ */
+const canHandleAlarm = (record: AlarmEvent): boolean => {
+  return checkCanHandleAlarm(record, cardStore, userStore)
+}
+
+/**
+ * Get permission denied reason (using utility function)
+ */
+const getPermissionDeniedReason = (record: AlarmEvent): string => {
+  return getDeniedReason(record, cardStore, userStore)
+}
+
 // Handlers
 const handleDateRangeChange = () => {
   handleSearch()
@@ -677,6 +706,11 @@ const fetchData = async () => {
       page_size: pagination.value.pageSize,
     }
 
+    // If cardId is provided, filter by card_id (backend will filter by device_ids from the card)
+    if (props.cardId) {
+      params.card_id = props.cardId
+    }
+
     // Add search parameters
     if (searchParams.value.resident) {
       params.resident = searchParams.value.resident
@@ -729,6 +763,39 @@ const fetchData = async () => {
     const result = await getAlarmEventsApi(params)
     dataSource.value = result.items || []
     pagination.value.total = result.pagination?.total || result.pagination?.count || 0
+
+    // Preload card data for devices in alarm events (for permission checking)
+    // Extract unique device_ids from alarm events
+    const deviceIds = new Set<string>()
+    result.items?.forEach(item => {
+      if (item.device_id) {
+        deviceIds.add(item.device_id)
+      }
+    })
+
+    // Load cards for these devices (if not already in cache)
+    // Note: This is a background operation, doesn't block UI
+    if (deviceIds.size > 0) {
+      // Get unique card_ids from devices (if cards are already in cache)
+      const cardIdsToLoad = new Set<string>()
+      deviceIds.forEach(deviceId => {
+        const card = cardStore.getCardByDeviceId(deviceId)
+        if (!card) {
+          // Card not in cache, need to load
+          // We'll load all cards list which will populate the cache
+          // In a real scenario, you might want a batch API to load cards by device_ids
+        }
+      })
+
+      // If many cards are missing, load cards list to populate cache
+      // This is a best-effort optimization, permission check will still work with fallback
+      if (cardIdsToLoad.size === 0 && cardStore.shouldRefreshList.value) {
+        // Silently load cards list in background (don't await, don't show loading)
+        cardStore.loadCardsList().catch(err => {
+          console.warn('Failed to preload cards for permission check:', err)
+        })
+      }
+    }
   } catch (error: any) {
     console.error('Failed to fetch alarm events:', error)
     message.error(error?.message || 'Failed to fetch alarm events')

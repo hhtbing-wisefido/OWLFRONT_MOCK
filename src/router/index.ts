@@ -4,6 +4,7 @@ import { useUserStoreWithOut } from '@/store/modules/user'
 import BasicLayout from '@/layouts/BasicLayout.vue'
 
 const routes: RouteRecordRaw[] = [
+  // ==================== 基础路由（无需认证） ====================
   {
     path: '/login',
     name: 'Login',
@@ -11,17 +12,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       title: 'Login',
       requiresAuth: false,
-      layout: false, // Do not use layout
-    },
-  },
-  {
-    path: '/test-data',
-    name: 'TestDataViewer',
-    component: () => import('@/views/test/TestDataViewer.vue'),
-    meta: {
-      title: 'Test Data Viewer',
-      requiresAuth: false,
-      layout: false, // Do not use layout
+      layout: false,
     },
   },
   {
@@ -31,24 +22,27 @@ const routes: RouteRecordRaw[] = [
     meta: {
       title: 'Forgot Password',
       requiresAuth: false,
-      layout: false, // Do not use layout
+      layout: false,
     },
   },
-  // Pages that require layout
+  {
+    path: '/test-data',
+    name: 'TestDataViewer',
+    component: () => import('@/views/test/TestDataViewer.vue'),
+    meta: {
+      title: 'Test Data Viewer',
+      requiresAuth: false,
+      layout: false,
+    },
+  },
+  
+  // ==================== 需要布局和认证的路由 ====================
   {
     path: '/',
     component: BasicLayout,
-    redirect: () => {
-      const userStore = useUserStoreWithOut()
-      // If logged in, redirect to home page (monitoring overview)
-      if (userStore.getToken) {
-        return userStore.getUserHomePath
-      }
-      // If not logged in, redirect to login page
-      return '/login'
-    },
+    redirect: '/monitoring/overview',
     children: [
-      // Core operations area
+      // ==================== 【核心操作区域】 ====================
       {
         path: '/monitoring/overview',
         name: 'MonitoringOverview',
@@ -59,21 +53,96 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
-        path: '/monitoring/wellness-monitor',
-        name: 'WellnessMonitor',
-        component: () => import('@/views/monitoring/wellness-monitor/WellnessMonitor.vue'),
+        path: '/alarm/records',
+        name: 'AlarmRecords',
+        component: () => import('@/views/alarm/AlarmRecord.vue'),
         meta: {
-          title: 'Wellness Monitor',
+          title: 'Alarm Records',
           requiresAuth: true,
         },
       },
-      // Data management area
+      {
+        path: '/alarm/cloud',
+        name: 'AlarmCloud',
+        component: () => import('@/views/alarm/AlarmCloud.vue'),
+        meta: {
+          title: 'Alarm Cloud',
+          requiresAuth: true,
+        },
+      },
+      
+      // ==================== 【数据管理区域】 ====================
+      {
+        path: '/residents',
+        name: 'ResidentList',
+        component: () => import('@/views/residents/ResidentList.vue'),
+        meta: {
+          title: 'Resident Management',
+          requiresAuth: true,
+        },
+      },
+      {
+        path: '/residents/create',
+        name: 'CreateResident',
+        component: () => import('@/views/residents/ResidentProfile.vue'),
+        meta: {
+          title: 'Create Resident',
+          requiresAuth: true,
+        },
+      },
+      {
+        path: '/resident/:id/profile',
+        name: 'ResidentProfile',
+        component: () => import('@/views/residents/ResidentProfile.vue'),
+        meta: {
+          title: 'Resident Profile',
+          requiresAuth: true,
+        },
+      },
+      {
+        path: '/resident/:id/phi',
+        name: 'ResidentPHI',
+        component: () => import('@/views/residents/ResidentProfile.vue'),
+        meta: {
+          title: 'Resident PHI',
+          requiresAuth: true,
+        },
+      },
+      {
+        path: '/resident/:id/contacts',
+        name: 'ResidentContacts',
+        component: () => import('@/views/residents/ResidentProfile.vue'),
+        meta: {
+          title: 'Resident Contacts',
+          requiresAuth: true,
+        },
+      },
+      {
+        path: '/care-coordination/card-overview',
+        name: 'CardOverview',
+        component: () => import('@/views/care-coordination/card-overview/CardOverview.vue'),
+        meta: {
+          title: 'Card Overview',
+          requiresAuth: true,
+        },
+      },
+      
+      // ==================== 【系统设置区域】 ====================
       {
         path: '/devices',
         name: 'DeviceList',
         component: () => import('@/views/devices/DeviceList.vue'),
         meta: {
           title: 'Device Management',
+          requiresAuth: true,
+        },
+      },
+      {
+        path: '/admin/device-store',
+        name: 'DeviceStore',
+        component: () => import('@/views/admin/device-store/DeviceStore.vue'),
+        meta: {
+          title: 'Device Store',
           requiresAuth: true,
         },
       },
@@ -95,35 +164,6 @@ const routes: RouteRecordRaw[] = [
           requiresAuth: true,
         },
       },
-      {
-        path: '/residents',
-        name: 'ResidentList',
-        component: () => import('@/views/residents/ResidentList.vue'),
-        meta: {
-          title: 'Resident Management',
-          requiresAuth: true,
-        },
-      },
-      {
-        path: '/residents/create',
-        name: 'CreateResident',
-        component: () => import('@/views/residents/ResidentProfile.vue'),
-        meta: {
-          title: 'Create Resident',
-          requiresAuth: true,
-          roles: ['Manager', 'Admin'], // 只有 Manager/Admin 可以创建
-        },
-      },
-      {
-        path: '/resident/:id/:tab?',
-        name: 'ResidentProfile',
-        component: () => import('@/views/residents/ResidentProfile.vue'),
-        meta: {
-          title: 'Resident Detail',
-          requiresAuth: true,
-        },
-      },
-      // System settings area
       {
         path: '/admin/users',
         name: 'UserList',
@@ -160,7 +200,6 @@ const routes: RouteRecordRaw[] = [
           requiresAuth: true,
         },
       },
-      // Compatibility with old routes
       {
         path: '/admin/role-permissions',
         redirect: '/admin/permissions',
@@ -174,31 +213,43 @@ const routes: RouteRecordRaw[] = [
           requiresAuth: true,
         },
       },
+      
+      // ==================== 其他功能路由 ====================
       {
-        path: '/alarm/settings',
-        name: 'AlarmSettings',
-        component: () => import('@/views/alarm/AlarmSettings.vue'),
+        path: '/monitoring/vital-focus/:cardId',
+        name: 'VitalFocusDetail',
+        component: () => import('@/views/monitoring/vital-focus/VitalFocusDetail.vue'),
         meta: {
-          title: 'Alarm Settings',
+          title: 'Vital Focus Detail',
           requiresAuth: true,
         },
       },
       {
-        path: '/alarm/records',
-        name: 'AlarmRecords',
-        component: () => import('@/views/alarm/AlarmRecord.vue'),
+        path: '/monitoring/wellness-monitor',
+        name: 'WellnessMonitor',
+        component: () => import('@/views/monitoring/wellness-monitor/WellnessMonitor.vue'),
         meta: {
-          title: 'Alarm Records',
+          title: 'Wellness Monitor',
           requiresAuth: true,
         },
       },
       {
-        path: '/care-coordination/card-overview',
-        name: 'CardOverview',
-        component: () => import('@/views/care-coordination/card-overview/CardOverview.vue'),
+        path: '/monitoring/wellness-monitor/:cardId',
+        name: 'WellnessMonitorDetail',
+        component: () => import('@/views/monitoring/vital-focus/VitalFocusDetail.vue'),
         meta: {
-          title: 'Card Overview',
+          title: 'Wellness Monitor Detail',
           requiresAuth: true,
+        },
+      },
+      
+      // ==================== 兼容旧路由 ====================
+      {
+        path: '/resident/:id/:tab?',
+        name: 'ResidentProfileLegacy',
+        redirect: (to) => {
+          const tab = to.params.tab || 'profile'
+          return `/resident/${to.params.id}/${tab}`
         },
       },
     ],
@@ -210,7 +261,7 @@ const router = createRouter({
   routes,
 })
 
-// Route guard: Check page access permissions
+// Route guard: Check authentication and permissions
 router.beforeEach((to, _from, next) => {
   const userStore = useUserStoreWithOut()
   
@@ -225,11 +276,15 @@ router.beforeEach((to, _from, next) => {
       return
     }
     
-    // Check page access permissions
-    // Ensure to.path is a string type
+    // Initialize permissions if not already initialized
+    if (Object.keys(userStore.pagePermissions).length === 0) {
+      userStore.initPagePermissions()
+    }
+    
+    // Check page access permissions for all routes that require auth
     const routePath = to.path || ''
     if (!userStore.hasPagePermission(routePath)) {
-      // No permission to access, redirect to user home page (homePath) or default home page
+      // No permission to access, redirect to user home page
       const userInfo = userStore.getUserInfo
       console.warn('[Router] Permission denied:', {
         path: routePath,
@@ -249,4 +304,5 @@ router.beforeEach((to, _from, next) => {
 })
 
 export default router
+
 

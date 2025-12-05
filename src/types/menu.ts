@@ -14,21 +14,21 @@ export const menuItems: MenuItem[] = [
     label: 'Monitoring Overview',
     icon: 'MonitorOutlined',
     path: '/monitoring/overview',
-    permission: ['SystemAdmin', 'Admin', 'Manager', 'Nurse', 'Caregiver'],
+    permission: ['SystemAdmin', 'Admin', 'Manager', 'IT', 'Nurse', 'Caregiver', 'Resident', 'Family'],
   },
   {
     key: 'alarm-history',
     label: 'Alarm Records',
     icon: 'AlertOutlined',
     path: '/alarm/records',
-    permission: ['SystemAdmin', 'Admin', 'Manager', 'Nurse', 'Caregiver'],
+    permission: ['Admin', 'Manager', 'IT', 'Nurse', 'Caregiver', 'Resident', 'Family'],
   },
   {
-    key: 'alarm-settings',
-    label: 'Alarm Settings',
-    icon: 'SettingOutlined',
-    path: '/alarm/settings',
-    permission: ['SystemAdmin', 'Admin', 'Manager'],
+    key: 'alarm-cloud',
+    label: 'Alarm Cloud',
+    icon: 'CloudOutlined',
+    path: '/alarm/cloud',
+    permission: ['SystemAdmin', 'Admin', 'Manager', 'IT', 'Nurse', 'Caregiver', 'Resident', 'Family'],
   },
   // Data Management Area (with divider)
   {
@@ -36,7 +36,7 @@ export const menuItems: MenuItem[] = [
     label: 'Resident Management',
     icon: 'svg:resident',
     path: '/residents',
-    permission: ['SystemAdmin', 'Admin', 'Manager', 'Nurse', 'Caregiver'],
+    permission: ['Admin', 'Manager', 'Nurse', 'Caregiver', 'Resident', 'Family'],
     divider: true,
   },
   {
@@ -44,7 +44,7 @@ export const menuItems: MenuItem[] = [
     label: 'Card Overview',
     icon: 'TableOutlined',
     path: '/care-coordination/card-overview',
-    permission: ['SystemAdmin', 'Admin', 'Manager'],
+    permission: ['Admin', 'Manager', 'IT', 'Nurse'],
   },
   // System Settings Area (with divider)
   {
@@ -52,22 +52,29 @@ export const menuItems: MenuItem[] = [
     label: 'Device Management',
     icon: 'svg:device',
     path: '/devices',
-    permission: ['SystemAdmin', 'Admin', 'Manager', 'IT'],
+    permission: ['Admin', 'Manager', 'IT'],
     divider: true,
+  },
+  {
+    key: 'device-store',
+    label: 'Device Store',
+    icon: 'DatabaseOutlined',
+    path: '/admin/device-store',
+    permission: ['SystemAdmin'],
   },
   {
     key: 'units',
     label: 'Unit Management',
     icon: 'HomeOutlined',
     path: '/units',
-    permission: ['SystemAdmin', 'Admin', 'Manager', 'IT'],
+    permission: ['Admin', 'Manager', 'IT'],
   },
   {
     key: 'admin-users',
     label: 'User Management',
     icon: 'UserOutlined',
     path: '/admin/users',
-    permission: ['SystemAdmin', 'Admin', 'IT'],
+    permission: ['Admin', 'Manager', 'IT'],
   },
   {
     key: 'admin-roles',
@@ -88,7 +95,7 @@ export const menuItems: MenuItem[] = [
     label: 'Tag Management',
     icon: 'TagOutlined',
     path: '/admin/tags',
-    permission: ['SystemAdmin', 'Admin', 'IT'],
+    permission: ['SystemAdmin', 'Admin', 'Manager', 'IT', 'Nurse', 'Caregiver'],
   },
 ]
 

@@ -7,9 +7,9 @@
   >
     <template v-for="element in menuElements" :key="element.key">
       <a-menu-divider v-if="element.type === 'divider'" class="custom-menu-divider" />
-      <a-menu-item v-else :key="element.item.key" :disabled="!hasPermission(element.item)">
+      <a-menu-item v-else-if="element.item" :key="element.item.key">
         <template #icon>
-          <component v-if="getIcon(element.item.icon)" :is="getIcon(element.item.icon)" />
+          <component v-if="getIcon(element.item.icon)" :is="getIcon(element.item.icon) as any" />
           <img 
             v-else-if="element.item.icon === 'svg:nurseSation'" 
             :src="nurseSationIcon"
@@ -55,10 +55,50 @@ const userStore = useUserStore()
 
 const selectedKeys = ref<string[]>([])
 
-// Filter menu items by permission
+// Filter menu items by route permission
 const filteredMenuItems = computed(() => {
-  const userRole = userStore.getUserInfo?.role || ''
-  return filterMenuByPermission(menuItems, userRole)
+  const userInfo = userStore.getUserInfo
+  
+  // If user is not logged in, show all menu items (or handle as needed)
+  // Note: In practice, menu should only be visible when user is logged in
+  if (!userInfo) {
+    // User not logged in - return empty menu or all items based on requirements
+    // For now, return empty to avoid showing menu when not logged in
+    return []
+  }
+  
+  // Initialize permissions if not already initialized
+  if (Object.keys(userStore.pagePermissions).length === 0) {
+    userStore.initPagePermissions()
+  }
+  
+  // Filter menu items based on permissions
+  const filtered = menuItems.filter((item) => {
+    if (item.path) {
+      const hasPermission = userStore.hasPagePermission(item.path)
+      if (import.meta.env.DEV) {
+        console.log('[Menu] Filtering menu item', {
+          label: item.label,
+          path: item.path,
+          hasPermission,
+          userRole: userInfo?.role,
+        })
+      }
+      return hasPermission
+    }
+    return true
+  })
+  
+  if (import.meta.env.DEV) {
+    console.log('[Menu] Filtered menu items', {
+      total: menuItems.length,
+      filtered: filtered.length,
+      userRole: userInfo?.role,
+      items: filtered.map(item => ({ label: item.label, path: item.path })),
+    })
+  }
+  
+  return filtered
 })
 
 // Convert menu items to flat array with dividers
@@ -72,24 +112,6 @@ const menuElements = computed(() => {
   })
   return elements
 })
-
-// Filter menu items by permission (flat structure, no recursion needed)
-const filterMenuByPermission = (items: MenuItem[], userRole: string): MenuItem[] => {
-  return items.filter((item) => {
-    // Check permission
-    if (item.permission && !item.permission.includes(userRole)) {
-      return false
-    }
-    return true
-  })
-}
-
-// Check if user has permission for menu item
-const hasPermission = (item: MenuItem): boolean => {
-  if (!item.permission) return true
-  const userRole = userStore.getUserInfo?.role || ''
-  return item.permission.includes(userRole)
-}
 
 // Get icon component by name
 const getIcon = (iconName?: string) => {

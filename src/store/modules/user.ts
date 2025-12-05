@@ -25,6 +25,17 @@ import {
 import { loginApi } from '@/api/auth/auth'
 import { store } from '../index'
 
+// Helper function to match route patterns (e.g., /admin/users/:id matches /admin/users/123)
+function matchRoutePattern(actualPath: string, pattern: string): boolean {
+  // Convert pattern to regex
+  // /admin/users/:id -> /admin/users/[^/]+
+  const regexPattern = pattern
+    .replace(/:[^/]+/g, '[^/]+')  // :id -> [^/]+
+    .replace(/:\?[^/]+/g, '[^/]*') // :tab? -> [^/]*
+  const regex = new RegExp(`^${regexPattern}$`)
+  return regex.test(actualPath)
+}
+
 /**
  * UserInfo interface definition
  * Contains only non-sensitive information, compliant with HIPAA requirements
@@ -37,6 +48,9 @@ export interface UserInfo {
   userId: string                    // User ID (non-sensitive)
   user_account: string              // User account (non-sensitive)
   userType: 'staff' | 'resident'   // User type (required, non-sensitive) - saved on login success
+                                     // Note: userType is the value selected in login form (staff/resident)
+                                     // Backend uses it to determine which table to query (user table for staff, Resident/Resident_contact for resident)
+                                     // NOT used for permission control - permissions are based on role only
   residentType?: 'home' | 'institution'  // Resident subtype - corresponds to residents.is_institutional
   locationType?: 'home' | 'institution'  // Location type - corresponds to locations.location_type
   role?: string                     // Role code (e.g., 'Admin', 'Nurse', 'Caregiver') - saved on login success
@@ -138,7 +152,7 @@ export const useUserStore = defineStore('user', {
       if (userInfo?.homePath) {
         return userInfo.homePath
       }
-      // Default home page: all users use /monitoring/overview
+      // Default home page for all roles: Monitoring Overview
       return '/monitoring/overview'
     },
   },
@@ -162,27 +176,95 @@ export const useUserStore = defineStore('user', {
         return false
       }
       
-      // Admin module only allows staff users to access
+      // Check admin paths - use permission config (based on role) to determine access
+      // Note: userType is NOT used for permission checks - it's only used for business logic
+      // userType tells backend which table to query (user table for staff, Resident/Resident_contact for resident)
+      // Permissions are determined by role (from LoginResult.role), not userType
       if (path.startsWith('/admin')) {
-        if (userInfo.userType !== 'staff') {
+        // For admin paths, must have permission config
+        // Don't allow access by default for admin paths
+        // Try exact match first, then try pattern matching for dynamic routes
+        let allowedRoles = this.pagePermissions[path]
+        
+        // If exact match failed, try pattern matching for dynamic routes (e.g., /admin/users/:id)
+        if (!allowedRoles || allowedRoles.length === 0) {
+          for (const [pattern, roles] of Object.entries(this.pagePermissions)) {
+            if (pattern.includes(':') && matchRoutePattern(path, pattern)) {
+              allowedRoles = roles
+              if (import.meta.env.DEV) {
+                console.log('[UserStore] hasPagePermission: Matched admin pattern', { path, pattern, roles })
+              }
+              break
+            }
+          }
+        }
+        
+        if (!allowedRoles || allowedRoles.length === 0) {
           if (import.meta.env.DEV) {
-            console.warn('[UserStore] hasPagePermission: Admin path requires staff userType', {
+            console.warn('[UserStore] hasPagePermission: Admin path has no permission config, denying access', { 
               path,
-              userType: userInfo.userType,
+              availablePatterns: Object.keys(this.pagePermissions).filter(p => p.startsWith('/admin')),
+              allPatterns: Object.keys(this.pagePermissions)
             })
           }
           return false
         }
+        // Check role for admin paths
+        const userRole = userInfo.role
+        if (!userRole) {
+          if (import.meta.env.DEV) {
+            console.warn('[UserStore] hasPagePermission: No user role for admin path', {
+              path,
+              allowedRoles,
+              userInfo: { userType: userInfo.userType, userId: userInfo.userId },
+            })
+          }
+          return false
+        }
+        const hasPermission = allowedRoles.includes(userRole)
+        if (import.meta.env.DEV) {
+          if (hasPermission) {
+            console.log('[UserStore] hasPagePermission: Admin path - GRANTED', {
+              path,
+              userRole,
+              allowedRoles,
+            })
+          } else {
+            console.warn('[UserStore] hasPagePermission: Admin path - DENIED', {
+              path,
+              userRole,
+              allowedRoles,
+            })
+          }
+        }
+        return hasPermission
       }
       
-      const allowedRoles = this.pagePermissions[path]
+      // For non-admin paths, check permission config
+      // Try exact match first, then try pattern matching for dynamic routes
+      let allowedRoles = this.pagePermissions[path]
+      
+      // If exact match failed, try pattern matching for dynamic routes (e.g., /resident/:id/profile)
       if (!allowedRoles || allowedRoles.length === 0) {
-        // If no permission config, allow access by default
+        for (const [pattern, roles] of Object.entries(this.pagePermissions)) {
+          if (pattern.includes(':') && matchRoutePattern(path, pattern)) {
+            allowedRoles = roles
+            if (import.meta.env.DEV) {
+              console.log('[UserStore] hasPagePermission: Matched pattern', { path, pattern, roles })
+            }
+            break
+          }
+        }
+      }
+      
+      if (!allowedRoles || allowedRoles.length === 0) {
+        // If no permission config, allow access by default (only for non-admin paths)
         if (import.meta.env.DEV) {
           console.log('[UserStore] hasPagePermission: No permission config, allowing access', { path })
         }
         return true
       }
+      // Get user role (with test role override in dev environment via getUserInfo getter)
       const userRole = userInfo.role
       if (!userRole) {
         if (import.meta.env.DEV) {
@@ -195,12 +277,21 @@ export const useUserStore = defineStore('user', {
         return false
       }
       const hasPermission = allowedRoles.includes(userRole)
-      if (!hasPermission && import.meta.env.DEV) {
-        console.warn('[UserStore] hasPagePermission: Role not in allowed list', {
-          path,
-          userRole,
-          allowedRoles,
-        })
+      if (import.meta.env.DEV) {
+        if (!hasPermission) {
+          console.warn('[UserStore] hasPagePermission: Role not in allowed list - DENIED', {
+            path,
+            userRole,
+            allowedRoles,
+            userInfo: { userType: userInfo.userType, userId: userInfo.userId },
+          })
+        } else {
+          console.log('[UserStore] hasPagePermission: Role in allowed list - GRANTED', {
+            path,
+            userRole,
+            allowedRoles,
+          })
+        }
       }
       return hasPermission
     },
@@ -267,31 +358,51 @@ export const useUserStore = defineStore('user', {
     // Tenants (Admin and others) cannot modify system roles, can only view or manage tenant custom roles
     initPagePermissions() {
       // Default page permission configuration
-      // Note: Admin module only allows staff users to access (checked in hasPagePermission by userType)
+      // Note: All permission checks are based on role (from LoginResult.role), NOT userType
+      // userType ('staff' | 'resident') is the value selected in login form:
+      //   - 'staff' → backend queries user table
+      //   - 'resident' → backend queries Resident/Resident_contact table
+      // Backend returns LoginResult with both userType (from form) and role (from database)
+      // userType is only used for business logic (e.g., isHomeResident, isInstitutionResident), not permission control
+      // Based on route.md permission table (lines 11-33)
       const defaultPermissions: Record<string, string[]> = {
-        // Core operations area
+        // ==================== 【核心操作区域】 ====================
         '/monitoring/overview': ['SystemAdmin', 'Admin', 'Manager', 'IT', 'Nurse', 'Caregiver', 'Resident', 'Family'],
-        '/alarm/history': ['SystemAdmin', 'Admin', 'Manager', 'IT', 'Nurse'],
-        '/alarm/settings': ['SystemAdmin', 'Admin', 'IT'],
+        '/alarm/records': ['Admin', 'Manager', 'IT', 'Nurse', 'Caregiver', 'Resident', 'Family'],
+        '/alarm/cloud': ['SystemAdmin', 'Admin', 'Manager', 'IT', 'Nurse', 'Caregiver', 'Resident', 'Family'],
 
-        // Data management area
-        '/residents': ['SystemAdmin', 'Admin', 'Manager', 'IT', 'Nurse', 'Caregiver'], // List page
-        '/resident/:id': ['SystemAdmin', 'Admin', 'Manager', 'IT', 'Nurse', 'Caregiver', 'Resident', 'Family'], // Detail page (general)
-        '/resident/:id/profile': ['SystemAdmin', 'Admin', 'Manager', 'IT', 'Nurse', 'Caregiver', 'Resident', 'Family'],
-        '/resident/:id/phi': ['SystemAdmin', 'Admin', 'Manager', 'IT', 'Nurse', 'Caregiver'], // PHI sensitive information
-        '/resident/:id/contacts': ['SystemAdmin', 'Admin', 'Manager', 'IT', 'Nurse', 'Caregiver', 'Resident', 'Family'],
-        '/care-coordination/assignments': ['SystemAdmin', 'Admin', 'Manager', 'IT', 'Nurse'],
-        '/care-coordination/card-overview': ['SystemAdmin', 'Admin', 'Manager', 'IT', 'Nurse'],
+        // ==================== 【数据管理区域】 ====================
+        '/residents': ['Admin', 'Manager', 'Nurse', 'Caregiver', 'Resident', 'Family'],
+        '/residents/create': ['Admin', 'Manager', 'Nurse', 'Caregiver'], // Same as /residents
+        '/resident/:id/profile': ['Admin', 'Manager', 'IT', 'Nurse', 'Caregiver', 'Resident', 'Family'],
+        '/resident/:id/phi': ['Admin', 'Manager', 'Nurse', 'Caregiver'],
+        '/resident/:id/contacts': ['Admin', 'Manager', 'Nurse', 'Caregiver', 'Resident', 'Family'],
+        '/care-coordination/card-overview': ['Admin', 'Manager', 'IT', 'Nurse'],
 
-        // System settings area
-        '/devices': ['SystemAdmin', 'Admin', 'IT'],
-        '/units': ['SystemAdmin', 'Admin', 'IT'],
-        '/admin/users': ['SystemAdmin', 'Admin', 'IT'],
+        // ==================== 【系统设置区域】 ====================
+        '/devices': ['Admin', 'Manager', 'IT'],
+        '/admin/device-store': ['SystemAdmin'],
+        '/units': ['Admin', 'Manager', 'IT'],
+        '/unitview': ['Admin', 'Manager', 'IT'], // Same as /units
+        '/admin/users': ['Admin', 'Manager', 'IT'],
+        '/admin/users/:id': ['Admin', 'Manager', 'IT'],
         '/admin/roles': ['SystemAdmin', 'Admin', 'Manager', 'IT'],
-        '/admin/permissions': ['SystemAdmin'], // Only SystemAdmin can access Permission Management
-        '/admin/tags': ['SystemAdmin', 'Admin', 'IT'],
+        '/admin/permissions': ['SystemAdmin'],
+        '/admin/role-permissions': ['SystemAdmin'], // Redirect to /admin/permissions
+        '/admin/tags': ['SystemAdmin', 'Admin', 'Manager', 'IT', 'Nurse', 'Caregiver'],
+
+        // ==================== 其他功能路由 ====================
+        '/monitoring/vital-focus/:cardId': ['Admin', 'Manager', 'IT', 'Nurse', 'Caregiver', 'Resident', 'Family'],
+        '/monitoring/wellness-monitor': ['Admin', 'Manager', 'IT', 'Nurse', 'Caregiver', 'Resident', 'Family'],
+        '/monitoring/wellness-monitor/:cardId': ['Admin', 'Manager', 'IT', 'Nurse', 'Caregiver', 'Resident', 'Family'],
       }
       this.setPagePermissions(defaultPermissions)
+      if (import.meta.env.DEV) {
+        console.log('[UserStore] initPagePermissions: Initialized', {
+          totalPaths: Object.keys(defaultPermissions).length,
+          adminPaths: Object.keys(defaultPermissions).filter(p => p.startsWith('/admin')),
+        })
+      }
     },
 
     // Login

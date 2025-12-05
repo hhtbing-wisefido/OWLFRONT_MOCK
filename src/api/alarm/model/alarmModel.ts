@@ -85,6 +85,7 @@ export interface GetAlarmCloudParams {
  * Update Alarm Cloud Configuration Params
  */
 export interface UpdateAlarmCloudParams {
+  tenant_id?: string | null // null = system default
   OfflineAlarm?: DangerLevel
   LowBattery?: DangerLevel
   DeviceFailure?: DangerLevel
@@ -163,6 +164,8 @@ export interface GetAlarmEventsParams {
   event_types?: string[]     // Multiple selection (event_type filter)
   categories?: string[]       // Multiple selection (category filter)
   alarm_levels?: string[]     // Multiple selection (alarm_level filter)
+  card_id?: string           // Filter by card_id (backend will filter by device_ids from the card)
+  device_ids?: string[]       // Filter by device IDs (alternative to card_id)
   // Pagination
   page?: number
   page_size?: number

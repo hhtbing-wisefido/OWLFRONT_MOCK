@@ -3,6 +3,11 @@
     <!-- Create Tag Area -->
     <div class="form-container">
       <div class="form-row">
+        <a-button type="text" @click="goHome" style="padding: 0; border: none; box-shadow: none; margin-right: 12px;">
+          <template #icon>
+            <HomeOutlined />
+          </template>
+        </a-button>
         <span class="label">Select type:</span>
         <div class="tag-type-selector">
           <div
@@ -146,8 +151,9 @@
 
 <script lang="ts" setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
-import { SortAscendingOutlined, SortDescendingOutlined } from '@ant-design/icons-vue'
+import { SortAscendingOutlined, SortDescendingOutlined, HomeOutlined } from '@ant-design/icons-vue'
 import type { Rule } from 'ant-design-vue/lib/form'
 import {
   getTagsApi,
@@ -165,9 +171,15 @@ import type {
 } from '@/api/admin/tags/model/tagsModel'
 import { useUserStore } from '@/store/modules/user'
 
+const router = useRouter()
 const userStore = useUserStore()
 const currentUserRole = computed(() => userStore.getUserInfo?.role || '')
 const isSystemAdmin = computed(() => currentUserRole.value === 'SystemAdmin')
+
+// Navigate to home page
+const goHome = () => {
+  router.push('/monitoring/overview')
+}
 
 // Data
 const loading = ref(false)

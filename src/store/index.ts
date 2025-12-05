@@ -12,6 +12,7 @@ export { store }
 // Export all stores for use outside setup
 export * from './modules/user'
 export * from './modules/tags'
+export * from './modules/card'
 // export * from './modules/app'
 // export * from './modules/permission'
 

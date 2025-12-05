@@ -1,10 +1,16 @@
 <template>
   <div style="padding: 15px">
     <div class="form-container">
-      <h3 class="tips-title">
-        Tips: This page sets the alarm mode template for all devices. 
-        Individual device configurations can be adjusted in Device Settings.
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+        <a-button type="text" @click="goHome" style="padding: 0; border: none; box-shadow: none;">
+          <template #icon>
+            <HomeOutlined />
+          </template>
+        </a-button>
+        <h3 class="tips-title" style="margin: 0;">
+          Alarm Cloud
       </h3>
+      </div>
       
       <div class="section-column">
         <!-- Common, SleepPad, Radar Sections - 3 columns side by side -->
@@ -20,6 +26,7 @@
                 v-model:value="formData.OfflineAlarm"
                 style="width: 120px"
                 :options="dangerLevelOptions"
+                :disabled="!canEdit"
               />
             </div>
             <div class="section-item">
@@ -30,6 +37,7 @@
                 v-model:value="formData.LowBattery"
                 style="width: 120px"
                 :options="dangerLevelOptions"
+                :disabled="!canEdit"
               />
             </div>
             <div class="section-item">
@@ -40,6 +48,7 @@
                 v-model:value="formData.DeviceFailure"
                 style="width: 120px"
                 :options="dangerLevelOptions"
+                :disabled="!canEdit"
               />
             </div>
           </div>
@@ -59,6 +68,7 @@
                 v-model:value="formData.device_alarms.SleepPad![String(alarmType)]"
                 style="width: 120px"
                 :options="dangerLevelOptions"
+                :disabled="!canEdit"
               />
             </div>
           </div>
@@ -78,6 +88,7 @@
                 v-model:value="formData.device_alarms.Radar![String(alarmType)]"
                 style="width: 120px"
                 :options="dangerLevelOptions"
+                :disabled="!canEdit"
               />
             </div>
           </div>
@@ -100,6 +111,7 @@
                   :min="0"
                   :max="200"
                   style="width: 60px; margin: 0 4px"
+                  :disabled="!canEdit"
                 />
                 <span>-</span>
                 <a-input-number
@@ -107,6 +119,7 @@
                   :min="0"
                   :max="200"
                   style="width: 60px; margin: 0 4px"
+                  :disabled="!canEdit"
                 />
                 <span style="margin: 0 8px">High:</span>
                 <a-input-number
@@ -114,6 +127,7 @@
                   :min="0"
                   :max="200"
                   style="width: 60px; margin: 0 4px"
+                  :disabled="!canEdit"
                 />
                 <span>+</span>
                 <span style="margin-left: 8px">Duration: {{ hrEmergencyDuration }}s</span>
@@ -126,6 +140,7 @@
                   :min="0"
                   :max="200"
                   style="width: 60px; margin: 0 4px"
+                  :disabled="!canEdit"
                 />
                 <span>-</span>
                 <a-input-number
@@ -133,6 +148,7 @@
                   :min="0"
                   :max="200"
                   style="width: 60px; margin: 0 4px"
+                  :disabled="!canEdit"
                 />
                 <span style="margin: 0 8px">High:</span>
                 <a-input-number
@@ -140,6 +156,7 @@
                   :min="0"
                   :max="200"
                   style="width: 60px; margin: 0 4px"
+                  :disabled="!canEdit"
                 />
                 <span>-</span>
                 <a-input-number
@@ -147,6 +164,7 @@
                   :min="0"
                   :max="200"
                   style="width: 60px; margin: 0 4px"
+                  :disabled="!canEdit"
                 />
                 <span style="margin-left: 8px">Duration: {{ hrWarningDuration }}s</span>
               </div>
@@ -157,6 +175,7 @@
                   :min="0"
                   :max="200"
                   style="width: 60px; margin: 0 4px"
+                  :disabled="!canEdit"
                 />
                 <span>-</span>
                 <a-input-number
@@ -164,6 +183,7 @@
                   :min="0"
                   :max="200"
                   style="width: 60px; margin: 0 4px"
+                  :disabled="!canEdit"
                 />
               </div>
               </div>
@@ -179,6 +199,7 @@
                   :min="0"
                   :max="60"
                   style="width: 60px; margin: 0 4px"
+                  :disabled="!canEdit"
                 />
                 <span>-</span>
                 <a-input-number
@@ -186,6 +207,7 @@
                   :min="0"
                   :max="60"
                   style="width: 60px; margin: 0 4px"
+                  :disabled="!canEdit"
                 />
                 <span style="margin: 0 8px">High:</span>
                 <a-input-number
@@ -193,6 +215,7 @@
                   :min="0"
                   :max="60"
                   style="width: 60px; margin: 0 4px"
+                  :disabled="!canEdit"
                 />
                 <span>+</span>
                 <span style="margin-left: 8px">Duration: {{ rrEmergencyDuration }}s</span>
@@ -205,6 +228,7 @@
                   :min="0"
                   :max="60"
                   style="width: 60px; margin: 0 4px"
+                  :disabled="!canEdit"
                 />
                 <span>-</span>
                 <a-input-number
@@ -212,6 +236,7 @@
                   :min="0"
                   :max="60"
                   style="width: 60px; margin: 0 4px"
+                  :disabled="!canEdit"
                 />
                 <span style="margin: 0 8px">High:</span>
                 <a-input-number
@@ -219,6 +244,7 @@
                   :min="0"
                   :max="60"
                   style="width: 60px; margin: 0 4px"
+                  :disabled="!canEdit"
                 />
                 <span>-</span>
                 <a-input-number
@@ -226,6 +252,7 @@
                   :min="0"
                   :max="60"
                   style="width: 60px; margin: 0 4px"
+                  :disabled="!canEdit"
                 />
                 <span style="margin-left: 8px">Duration: {{ rrWarningDuration }}s</span>
               </div>
@@ -236,6 +263,7 @@
                   :min="0"
                   :max="60"
                   style="width: 60px; margin: 0 4px"
+                  :disabled="!canEdit"
                 />
                 <span>-</span>
                 <a-input-number
@@ -243,6 +271,7 @@
                   :min="0"
                   :max="60"
                   style="width: 60px; margin: 0 4px"
+                  :disabled="!canEdit"
                 />
               </div>
               </div>
@@ -282,89 +311,35 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
+import { HomeOutlined } from '@ant-design/icons-vue'
 import { getAlarmCloudApi, updateAlarmCloudApi } from '@/api/alarm/alarm'
 import type { AlarmCloud, DangerLevel } from '@/api/alarm/model/alarmModel'
 import { useUserStore } from '@/store/modules/user'
-import { usePermission } from '@/hooks/usePermission'
 
 const router = useRouter()
 const userStore = useUserStore()
-const { hasRole } = usePermission()
 
-// Permission check
-const canEdit = computed(() => hasRole(['SystemAdmin', 'Admin', 'Manager']))
+// Navigate to home page
+const goHome = () => {
+  router.push('/monitoring/overview')
+}
+
+// Permission check: Default permit all, no frontend restriction
+const canEdit = computed(() => true)
 
 // Loading state
 const saving = ref(false)
 
-// Form data
+// Form data - initialized as empty, will be populated from backend API response
+// Note: Default values come from database (via backend API), not from frontend hardcoding
 const formData = reactive<AlarmCloud>({
   tenant_id: null,
-  OfflineAlarm: 'ERROR',
-  LowBattery: 'WARNING',
-  DeviceFailure: 'ERROR',
-  device_alarms: {
-    Radar: {
-      Fall: 'EMERGENCY',
-      Radar_ApneaHypopnea: 'EMERGENCY',
-      Radar_AbnormalHeartRate: 'EMERGENCY',
-      Radar_AbnormalRespiratoryRate: 'EMERGENCY',
-      Radar_LeftBed: 'WARNING',
-      SuspectedFall: 'WARNING',
-      VitalsWeak: 'WARNING',
-      Stay: 'WARNING',
-      NoActivity24h: 'EMERGENCY',
-      AngleException: 'WARNING',
-    },
-    SleepPad: {
-      SleepPad_LeftBed: 'WARNING',
-      SleepPad_SitUp: 'WARNING',
-      SleepPad_ApneaHypopnea: 'EMERGENCY',
-      SleepPad_AbnormalHeartRate: 'EMERGENCY',
-      SleepPad_AbnormalRespiratoryRate: 'EMERGENCY',
-      SleepPad_AbnormalBodyMovement: 'WARNING',
-      SleepPad_InBed: 'DISABLE',
-    },
-  },
-  conditions: {
-    heart_rate: {
-      EMERGENCY: {
-        ranges: [{ min: 0, max: 44 }, { min: 116, max: null }],
-        duration_sec: 60,
-      },
-      WARNING: {
-        ranges: [{ min: 45, max: 54 }, { min: 96, max: 115 }],
-        duration_sec: 300,
-      },
-      Normal: {
-        ranges: [{ min: 55, max: 95 }],
-        duration_sec: 0,
-      },
-    },
-    respiratory_rate: {
-      EMERGENCY: {
-        ranges: [{ min: 0, max: 7 }, { min: 27, max: null }],
-        duration_sec: 60,
-      },
-      WARNING: {
-        ranges: [{ min: 8, max: 9 }, { min: 24, max: 26 }],
-        duration_sec: 300,
-      },
-      Normal: {
-        ranges: [{ min: 10, max: 23 }],
-        duration_sec: 0,
-      },
-    },
-  },
-  notification_rules: {
-    channels: {
-      EMERGENCY: ['WEB', 'APP', 'EMAIL', 'SMS'],
-      ALERT: ['WEB', 'APP', 'EMAIL', 'SMS'],
-      CRITICAL: ['WEB', 'APP'],
-      ERROR: ['WEB', 'APP'],
-      WARNING: ['WEB', 'APP'],
-    },
-  },
+  OfflineAlarm: undefined,
+  LowBattery: undefined,
+  DeviceFailure: undefined,
+  device_alarms: {},
+  conditions: undefined,
+  notification_rules: undefined,
 })
 
 const originalData = ref<AlarmCloud | null>(null)
@@ -522,31 +497,44 @@ const getColor = (level?: DangerLevel): string => {
 }
 
 // Load configuration
+// Note: Alarm Settings is tenant-specific configuration
 const loadConfiguration = async () => {
   try {
     const tenantId = userStore.getUserInfo?.tenant_id || null
     const config = await getAlarmCloudApi({ tenant_id: tenantId })
     
-    // Merge with default values
+    // Use backend returned config directly, don't use frontend hardcoded defaults
+    // Mock data in test/alarm-cloud/data.ts simulates database values, but frontend should not hardcode them
+    // If config doesn't exist, backend should return empty object or null
+    // User can then create new config by editing and saving
+    if (config) {
     Object.assign(formData, {
-      OfflineAlarm: config.OfflineAlarm || 'ERROR',
-      LowBattery: config.LowBattery || 'WARNING',
-      DeviceFailure: config.DeviceFailure || 'ERROR',
-      device_alarms: {
-        Radar: {
-          ...formData.device_alarms.Radar,
-          ...(config.device_alarms?.Radar || {}),
-        },
-        SleepPad: {
-          ...formData.device_alarms.SleepPad,
-          ...(config.device_alarms?.SleepPad || {}),
-        },
-      },
-      conditions: config.conditions || formData.conditions,
-      notification_rules: config.notification_rules || formData.notification_rules,
-    })
+        OfflineAlarm: config.OfflineAlarm,
+        LowBattery: config.LowBattery,
+        DeviceFailure: config.DeviceFailure,
+        device_alarms: config.device_alarms || {},
+        conditions: config.conditions,
+        notification_rules: config.notification_rules,
+      })
+      
+      // Initialize conditions if not present (needed for watch to work)
+      if (!formData.conditions) {
+        formData.conditions = {
+          heart_rate: {
+            EMERGENCY: { ranges: [], duration_sec: 0 },
+            WARNING: { ranges: [], duration_sec: 0 },
+            Normal: { ranges: [], duration_sec: 0 },
+          },
+          respiratory_rate: {
+            EMERGENCY: { ranges: [], duration_sec: 0 },
+            WARNING: { ranges: [], duration_sec: 0 },
+            Normal: { ranges: [], duration_sec: 0 },
+          },
+        }
+      }
+    }
 
-    // Update threshold values from conditions
+    // Update threshold values from conditions (only if conditions exist)
     if (formData.conditions?.heart_rate) {
       const hrEmergency = formData.conditions.heart_rate.EMERGENCY
       if (hrEmergency?.ranges?.[0]) {
@@ -619,7 +607,9 @@ const saveSettings = async () => {
 
   saving.value = true
   try {
+    const tenantId = userStore.getUserInfo?.tenant_id || null
     const updateParams = {
+      tenant_id: tenantId,
       OfflineAlarm: formData.OfflineAlarm,
       LowBattery: formData.LowBattery,
       DeviceFailure: formData.DeviceFailure,

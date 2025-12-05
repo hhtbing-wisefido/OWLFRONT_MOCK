@@ -3,6 +3,14 @@
     <!-- Search bar -->
     <div class="search-container">
       <a-form layout="inline" class="search-form">
+        <!-- Home Icon -->
+        <a-form-item>
+          <a-button type="text" @click="goHome" style="padding: 0; border: none; box-shadow: none;">
+            <template #icon>
+              <HomeOutlined />
+            </template>
+          </a-button>
+        </a-form-item>
         <a-form-item>
           <a-radio-group v-model:value="searchType" button-style="solid">
             <a-radio-button value="device_name">Name</a-radio-button>
@@ -145,15 +153,22 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
-import { FilterOutlined } from '@ant-design/icons-vue'
+import { FilterOutlined, HomeOutlined } from '@ant-design/icons-vue'
 import { getDevicesApi, deleteDeviceApi, updateDeviceApi } from '@/api/devices/device'
 import type { Device, GetDevicesParams } from '@/api/devices/model/deviceModel'
 import { useUserStore } from '@/store/modules/user'
 import type { TableProps } from 'ant-design-vue'
 import { useDeviceEdit } from './composables/useDeviceEdit'
 
+const router = useRouter()
 const userStore = useUserStore()
+
+// Navigate to home page
+const goHome = () => {
+  router.push('/monitoring/overview')
+}
 
 // Data
 const dataSource = ref<Device[]>([])

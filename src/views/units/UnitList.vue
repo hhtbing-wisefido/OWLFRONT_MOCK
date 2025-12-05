@@ -3,6 +3,11 @@
     <!-- Page Header: Create Form -->
     <div class="page-header">
       <div class="create-building-form">
+        <a-button type="text" @click="goHome" style="padding: 0; border: none; box-shadow: none; margin-right: 12px;">
+          <template #icon>
+            <HomeOutlined />
+          </template>
+        </a-button>
         <a-button type="default" @click="goToUnitView" class="view-button">
           <EyeOutlined />
           View
@@ -959,7 +964,7 @@
 import { ref, onMounted, onUnmounted, computed, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
-import { EditOutlined, DeleteOutlined, PlusOutlined, EyeOutlined, CheckCircleOutlined, CloseCircleOutlined, AppstoreAddOutlined } from '@ant-design/icons-vue'
+import { EditOutlined, DeleteOutlined, PlusOutlined, EyeOutlined, CheckCircleOutlined, CloseCircleOutlined, AppstoreAddOutlined, HomeOutlined } from '@ant-design/icons-vue'
 import bedIconBlue from '@/assets/svg/Bed-blue.svg'
 import bedIconGreen from '@/assets/svg/Bed-green.svg'
 import bedIconSvg from '@/assets/svg/bed_icon.svg'
@@ -979,6 +984,11 @@ import { useDevice } from './composables/useDevice'
 const userStore = useUserStore()
 const tagsStore = useTagsStore()
 const router = useRouter()
+
+// Navigate to home page
+const goHome = () => {
+  router.push('/monitoring/overview')
+}
 
 // Use composables
 const buildingComposable = useBuilding()

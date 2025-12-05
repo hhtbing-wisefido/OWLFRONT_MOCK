@@ -3,6 +3,14 @@
     <div class="form-container">
       <div class="form-left">
         <a-form layout="inline" class="flex-form">
+          <!-- Home Icon -->
+          <a-form-item>
+            <a-button type="text" @click="goHome" style="padding: 0; border: none; box-shadow: none;">
+              <template #icon>
+                <HomeOutlined />
+              </template>
+            </a-button>
+          </a-form-item>
           <!-- Search Input -->
           <a-form-item class="flex-grow">
             <a-input
@@ -162,7 +170,8 @@
 
 <script lang="ts" setup>
 import { ref, onMounted, computed } from 'vue'
-import { ExclamationCircleOutlined } from '@ant-design/icons-vue'
+import { useRouter } from 'vue-router'
+import { ExclamationCircleOutlined, HomeOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import type { Rule } from 'ant-design-vue/lib/form'
 import { useUserStore } from '@/store/modules/user'
@@ -178,10 +187,16 @@ import type {
   UpdateRoleParams,
 } from '@/api/admin/role/model/roleModel'
 
+const router = useRouter()
 const userStore = useUserStore()
 const currentUserRole = computed(() => userStore.getUserInfo?.role || '')
 const isSystemAdmin = computed(() => currentUserRole.value === 'SystemAdmin')
 const isAdminOrManager = computed(() => currentUserRole.value === 'Admin' || currentUserRole.value === 'Manager')
+
+// Navigate to home page
+const goHome = () => {
+  router.push('/monitoring/overview')
+}
 
 // Format description to convert \n to <br> for proper line breaks
 const formatDescription = (description: string | undefined): string => {

@@ -3,6 +3,14 @@
     <div class="form-container">
       <div class="form-left">
         <a-form layout="inline" class="flex-form">
+          <!-- Home Icon -->
+          <a-form-item>
+            <a-button type="text" @click="goHome" style="padding: 0; border: none; box-shadow: none;">
+              <template #icon>
+                <HomeOutlined />
+              </template>
+            </a-button>
+          </a-form-item>
           <!-- Search Input -->
           <a-form-item>
             <a-input
@@ -105,7 +113,7 @@
 <script lang="ts" setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { FilterOutlined } from '@ant-design/icons-vue'
+import { FilterOutlined, HomeOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import {
   getResidentsApi,
@@ -122,6 +130,11 @@ import { usePermission } from '@/hooks/usePermission'
 const router = useRouter()
 const entitiesStore = useEntitiesStore()
 const { hasManagePermission, hasRole } = usePermission()
+
+// Navigate to home page
+const goHome = () => {
+  router.push('/monitoring/overview')
+}
 
 // 权限控制：只有 Manager/Admin 可以创建住户
 const canCreateResident = computed(() => {

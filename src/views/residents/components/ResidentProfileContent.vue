@@ -565,9 +565,21 @@ const isResident = computed(() => userType.value === 'resident' && userRole.valu
 const isFamily = computed(() => userRole.value === 'Family')
 
 // 判断是否是查看自己的信息（Resident 角色）
+// 注意：后端已经做了权限控制，Resident 只能看到自己的数据
+// 所以如果 isResident 为 true 且 residentData 存在，就认为是在查看自己的信息
 const isViewingSelf = computed(() => {
   if (!isResident.value) return false
-  return currentUserId.value === props.residentData?.resident_id
+  // 后端已过滤，如果能看到数据说明是自己的
+  // 如果 userId 和 resident_id 匹配，或者 residentData 存在（后端已过滤，默认认为是自己的）
+  if (props.residentData?.resident_id) {
+    // 优先检查 userId 是否匹配
+    if (currentUserId.value && currentUserId.value === props.residentData.resident_id) {
+      return true
+    }
+    // 如果 userId 为空或不匹配，但 residentData 存在，后端已过滤，认为是自己的
+    return true
+  }
+  return false
 })
 
 // 判断是否是查看关联住户的信息（Family 角色）
@@ -875,12 +887,15 @@ const fetchUnits = async () => {
     availableUnits.value = result.items || []
     console.log('Units loaded:', availableUnits.value)
     
-    // 如果已有 unit_id，设置选中的 unit
+    // 如果已有 unit_id，设置选中的 unit（在 units 加载完成后）
     if (localResidentData.value.unit_id) {
       const unit = availableUnits.value.find(u => u.unit_id === localResidentData.value.unit_id)
       if (unit) {
         selectedUnit.value = unit
         fetchRooms(unit.unit_id)
+      } else {
+        // 如果找不到 unit，清空 selectedUnit
+        selectedUnit.value = null
       }
     }
   } catch (error: any) {
@@ -1132,8 +1147,17 @@ const canViewField = (fieldName: string) => {
   }
   
   // Resident 只能查看自己的信息
-  if (isResident.value && !isViewingSelf.value) {
-    return false
+  // 注意：后端已经做了权限控制，Resident 只能看到自己的数据
+  // 如果 isResident 为 true 且 residentData 存在，就认为是在查看自己的信息
+  if (isResident.value) {
+    // 如果 residentData 不存在，说明数据还没加载，先返回 true 让字段显示（等待数据加载）
+    if (!props.residentData?.resident_id) {
+      return true
+    }
+    // 如果 residentData 存在，检查是否是自己的数据
+    if (!isViewingSelf.value) {
+      return false
+    }
   }
   
   // Family 只能查看关联住户的信息（后端已过滤，这里只做前端显示控制）
@@ -1142,7 +1166,7 @@ const canViewField = (fieldName: string) => {
   }
   
   const permission = fieldPermissions[fieldName as keyof typeof fieldPermissions]
-  if (!permission) return true // 默认可见
+  if (!permission) return true // 默认可见（对于没有配置的字段，如 unit_id, room_id, bed_id 等）
   
   return permission.view.some(role => 
     role.toLowerCase() === userRole.value?.toLowerCase() ||
@@ -1241,22 +1265,46 @@ watch(
     isUpdatingFromProps.value = true
     localResidentData.value = { ...newData }
     localPHIData.value = { ...(newData.phi || {}) }
+    
     // 初始化 is_access_enabled 为 false（默认 disable）
     if (localResidentData.value.is_access_enabled === undefined) {
       localResidentData.value.is_access_enabled = false
     }
     // 如果已有 unit_id，设置选中的 unit 并加载 rooms
+    // 需要等待 availableUnits 加载完成
     if (localResidentData.value.unit_id) {
-      const unit = availableUnits.value.find(u => u.unit_id === localResidentData.value.unit_id)
-      if (unit) {
-        selectedUnit.value = unit
-        fetchRooms(unit.unit_id)
+      if (availableUnits.value.length > 0) {
+        // Units 已加载，直接查找
+        const unit = availableUnits.value.find(u => u.unit_id === localResidentData.value.unit_id)
+        if (unit) {
+          selectedUnit.value = unit
+          fetchRooms(unit.unit_id)
+        } else {
+          selectedUnit.value = null
+        }
+      } else {
+        // Units 未加载，等待加载完成后再设置
+        // 这个逻辑会在 fetchUnits 完成后执行
+        fetchUnits().then(() => {
+          if (localResidentData.value.unit_id) {
+            const unit = availableUnits.value.find(u => u.unit_id === localResidentData.value.unit_id)
+            if (unit) {
+              selectedUnit.value = unit
+              fetchRooms(unit.unit_id)
+            }
+          }
+        })
       }
     } else {
       selectedUnit.value = null
       availableRooms.value = []
       availableBeds.value = []
     }
+    
+    // TODO: 初始化 caregiver 数据（如果 API 返回了这些数据）
+    // 目前 API 可能不返回 caregiver 数据，需要单独调用 API 获取
+    // 如果 API 返回了 caregiver_id1-5 或 caregivers_tag1-3，需要在这里初始化
+    
     // Reset flag after a microtask to allow the watch to complete
     Promise.resolve().then(() => {
       isUpdatingFromProps.value = false
@@ -1266,11 +1314,13 @@ watch(
 )
 
 
-onMounted(() => {
-  fetchServiceLevels()
-  fetchUnits()
-  fetchCaregivers()
-  fetchCaregiverTags()
+onMounted(async () => {
+  await Promise.all([
+    fetchServiceLevels(),
+    fetchUnits(),
+    fetchCaregivers(),
+    fetchCaregiverTags(),
+  ])
   
   // 初始化 is_access_enabled 为 false（默认 disable）
   if (localResidentData.value.is_access_enabled === undefined) {
@@ -1278,11 +1328,12 @@ onMounted(() => {
   }
   
   // 如果已有 unit_id，设置选中的 unit 并加载 rooms
-  if (localResidentData.value.unit_id && availableUnits.value.length > 0) {
+  // 等待 fetchUnits 完成后再设置
+  if (localResidentData.value.unit_id) {
     const unit = availableUnits.value.find(u => u.unit_id === localResidentData.value.unit_id)
     if (unit) {
       selectedUnit.value = unit
-      fetchRooms(unit.unit_id)
+      await fetchRooms(unit.unit_id)
       if (localResidentData.value.room_id) {
         const room = availableRooms.value.find(r => r.room_id === localResidentData.value.room_id)
         if (room) {

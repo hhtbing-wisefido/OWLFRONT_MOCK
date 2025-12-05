@@ -5,16 +5,26 @@
 
 /**
  * Device Info (for card overview display)
+ * Extended with detailed information for card detail page
  */
 export interface CardOverviewDevice {
   device_id: string
   device_name: string
   device_type?: number  // 1=sleepace, 2=radar, etc.
   device_model?: string
+  // Extended fields for detail page
+  serial_number?: string  // Device serial number
+  uid?: string  // Device UID
+  status?: 'online' | 'offline' | 'error' | 'disabled'  // Device online status
+  business_access?: 'pending' | 'approved' | 'rejected'  // Business access permission
+  monitoring_enabled?: boolean  // Monitoring enabled status
+  bound_room_id?: string | null  // Bound to room
+  bound_bed_id?: string | null  // Bound to bed
 }
 
 /**
  * Resident Info (for card overview display)
+ * Extended with detailed information for card detail page
  */
 export interface CardOverviewResident {
   resident_id: string
@@ -22,6 +32,21 @@ export interface CardOverviewResident {
   first_name?: string
   nickname?: string
   service_level?: string  // e.g., 'L1', 'L2'
+  // Extended fields for detail page
+  phi?: {
+    gender?: string  // 'Male' | 'Female' | 'Other' | 'Unknown'
+    date_of_birth?: string  // ISO 8601 format, for calculating age
+    // ... other PHI fields as needed
+  }
+  contacts?: Array<{
+    contact_id?: string
+    contact_first_name?: string
+    contact_last_name?: string
+    relationship?: string  // 'Child' | 'Spouse' | 'Friend' | 'Caregiver' | ...
+    contact_phone?: string
+    contact_email?: string
+    is_primary?: boolean
+  }>
 }
 
 /**
@@ -34,11 +59,15 @@ export interface CardOverviewCaregiverGroup {
 
 /**
  * Caregiver Info (for card overview display)
+ * Extended with detailed information for card detail page
  */
 export interface CardOverviewCaregiver {
   caregiver_id: string
   caregiver_name: string  // nickname or user_account
   role?: string
+  // Extended fields for detail page
+  phone?: string  // Phone number
+  email?: string  // Email address
 }
 
 /**
@@ -76,8 +105,10 @@ export interface CardOverviewItem {
 
 /**
  * Get Card Overview Parameters
+ * Supports both list query and single card query
  */
 export interface GetCardOverviewParams {
+  card_id?: string  // Query single card by ID (when provided, returns single card or empty array)
   tenant_id?: string
   search?: string  // Search by card_name or card_address
   unit_type?: 'Facility' | 'Home'

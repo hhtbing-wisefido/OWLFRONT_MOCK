@@ -3,6 +3,14 @@
     <div class="form-container">
       <div class="form-left">
         <a-form layout="inline" class="flex-form">
+          <!-- Home Icon -->
+          <a-form-item>
+            <a-button type="text" @click="goHome" style="padding: 0; border: none; box-shadow: none;">
+              <template #icon>
+                <HomeOutlined />
+              </template>
+            </a-button>
+          </a-form-item>
           <!-- Search Input -->
           <a-form-item>
             <a-input
@@ -148,12 +156,20 @@
 
 <script lang="ts" setup>
 import { ref, computed, onMounted } from 'vue'
-import { GlobalOutlined } from '@ant-design/icons-vue'
+import { useRouter } from 'vue-router'
+import { GlobalOutlined, HomeOutlined } from '@ant-design/icons-vue'
 import { getCardOverviewApi } from '@/api/card-overview/cardOverview'
 import type {
   CardOverviewItem,
   GetCardOverviewParams,
 } from '@/api/card-overview/model/cardOverviewModel'
+
+const router = useRouter()
+
+// Navigate to home page
+const goHome = () => {
+  router.push('/monitoring/overview')
+}
 
 const searchText = ref('')
 const loading = ref(false)

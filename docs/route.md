@@ -1,144 +1,266 @@
-# 路由管理功能设计文档
+# 完整权限对照表
 
-## 功能概述
-
-路由管理负责页面导航、权限控制、路由守卫等功能，确保用户只能访问有权限的页面。
-
-## 核心规则
-
-1. **默认首页**：所有用户（staff 和 residents）登录成功后，默认跳转到 `/monitoring/vital-focus`
-2. **Admin 模块访问控制**：
-   - 整个 `/admin` 路径下的所有页面仅对 `staff` 用户开放
-   - **`residents` 用户无法访问 admin 模块**
-3. **特定页面权限**：
-   - `/admin/roles` 和 `/admin/role-permissions` 仅允许 Admin、Director、CO、IT 角色访问
-   - 其他 staff 用户（如 Nurse、Caregiver）也无法访问这两个页面
+## 说明
+- ✅ 表示该角色可以访问该页面
+- ❌ 表示该角色不能访问该页面
+- **RCDU 权限**：Read/Create/Delete/Update 权限在页面内部控制，与路由访问权限无关
+- 权限配置位置：`src/store/modules/user.ts` → `defaultPermissions`
 
 ---
 
-## 路由配置
+## 完整权限对照表
 
-### 路由列表
-
-- `/` - 根路径，重定向到登录页
-- `/login` - 登录页（不需要认证）
-- `/forgot-password` - 忘记密码页（不需要认证）
-- `/test-data` - 测试数据查看器（不需要认证）
-- `/admin/roles` - 角色管理页（需要认证，仅 staff，仅特定角色）
-- `/admin/role-permissions` - 角色权限管理页（需要认证，仅 staff，仅特定角色）
-- `/monitoring/vital-focus` - 生命体征监控页（需要认证，所有用户）
-
-### 路由元信息（Meta）
-
-每个路由可以配置以下元信息：
-
-- `title` - 页面标题
-- `requiresAuth` - 是否需要登录（默认 true）
-- `ignoreAuth` - 是否忽略权限检查（可选）
-
-**注意**：页面访问权限统一在 store 的 `pagePermissions` 中配置，不在路由 meta 中配置。
-
----
-
-## 路由守卫
-
-### 功能说明
-
-路由守卫在每次路由跳转时检查：
-1. **登录状态**：检查是否有 token
-2. **用户类型**：Admin 模块仅允许 `staff` 用户访问
-3. **角色权限**：检查用户角色是否在允许访问的角色列表中
-
-### 实现位置
-
-- **路由守卫**：`src/router/index.ts` 的 `beforeEach` 守卫
-- **权限检查**：`src/store/modules/user.ts` 的 `hasPagePermission()` getter
-- **权限配置**：`src/store/modules/user.ts` 的 `initPagePermissions()` action
-- **首页路径获取**：`src/store/modules/user.ts` 的 `getUserHomePath()` getter（用于无权限时重定向）
-
-### 权限控制规则
-
-1. **Admin 模块访问控制**：
-   - 整个 `/admin` 路径下的所有页面仅对 `staff` 用户开放
-   - **`residents` 用户无法访问 admin 模块**（在 `hasPagePermission()` 中检查 `userType !== 'staff'`）
-   - 在 staff 用户中，还需要检查角色权限（如 admin/Director/CO/IT）
-
-2. **特定页面权限配置**：
-   - `/admin/roles` 和 `/admin/role-permissions` 仅允许 Admin、Director、CO、IT 角色访问
-   - 其他 staff 用户（如 Nurse、Caregiver）也无法访问这两个页面
-
-3. **无权限处理**：
-   - 如果用户无权限访问，重定向到用户的 `homePath`（通过 `getUserHomePath()` getter 获取）
-   - 如果用户没有 `homePath`，则重定向到 `/monitoring/vital-focus`（所有用户的默认首页）
-
-### 工作流程
-
-1. 登录时：后端返回 `userType` 和 `role` 字段
-2. Store 保存：保存用户类型和角色信息
-3. 初始化权限：调用 `initPagePermissions()` 设置页面权限配置
-4. 路由守卫：每次路由跳转时检查用户类型和角色权限
-5. 无权限处理：重定向到用户的 `homePath`（通过 `getUserHomePath()` getter 获取），如果没有 `homePath` 则使用默认首页 `/monitoring/vital-focus`
+| 菜单项                  | 路径                              | SystemAdmin | Admin | Manager | IT | Nurse  | Caregiver | Resident | Family |
+|-------------------------|-----------------------------------|-------------|-------|---------|----|------|-----------|----------|--------|
+| **【核心操作区域】**     |                                     |             |       |         |    |      |           |          |        |
+| Monitoring Overview     | `/monitoring/overview`            | ✅          | ✅    | ✅      | ✅ | ✅   | ✅        | ✅       | ✅     |
+| Alarm Records           | `/alarm/records`                  | ❌          | ✅    | ✅      | ✅ | ✅   | ✅        | ✅       | ✅     |
+| Alarm Cloud             | `/alarm/cloud`                    | ✅          | ✅    | ✅      | ✅ | ✅   | ✅        | ✅       | ✅     |
+| **【数据管理区域】**     |                                     |             |       |         |    |      |           |          |        |
+| Resident Management     | `/residents`                      | ❌          | ✅    | ✅      | ❌ | ✅   | ✅        | ✅       | ✅     |
+| Resident Profile Tab    | `/resident/:id/profile`           | ❌          | ✅    | ✅      | ❌ | ✅   | ✅        | ✅       | ✅     |
+| Resident PHI Tab        | `/resident/:id/phi`               | ❌          | ✅    | ✅      | ❌ | ✅   | ✅        | ❌       | ❌     |
+| Resident Contacts Tab   | `/resident/:id/contacts`          | ❌          | ✅    | ✅      | ❌ | ✅   | ✅        | ✅       | ✅     |
+| Card Overview           | `/care-coordination/card-overview`| ❌          | ✅    | ✅      | ✅ | ✅   | ❌        | ❌       | ❌     |
+| **【系统设置区域】**     |                                     |             |       |         |    |      |           |          |        |
+| Device Management       | `/devices`                        | ❌          | ✅    | ✅      | ✅ | ❌   | ❌        | ❌       | ❌     |
+| Device Store            | `/admin/device-store`             | ✅          | ❌    | ❌      | ❌ | ❌   | ❌        | ❌       | ❌     |
+| Unit Management         | `/units`                          | ❌          | ✅    | ✅      | ✅ | ❌   | ❌        | ❌       | ❌     |
+| User Management         | `/admin/users`                    | ❌          | ✅    | ✅      | ✅ | ❌   | ❌        | ❌       | ❌     |
+| Role Management        | `/admin/roles`                     | ✅          | ✅    | ✅      | ✅ | ❌   | ❌        | ❌       | ❌     |
+| Permission Management   | `/admin/permissions`              | ✅          | ❌    | ❌      | ❌ | ❌   | ❌        | ❌       | ❌     |
+| Tag Management          | `/admin/tags`                     | ✅          | ✅    | ✅      | ✅ | ✅   | ✅        | ❌       | ❌     |
 
 ---
 
-## 登录后跳转逻辑
+## 各角色可访问页面统计
 
-### 功能说明
+### SystemAdmin（系统管理员）
+**可访问页面数**: 5 个
 
-登录成功后，根据 redirect 参数或默认跳转到 `/monitoring/vital-focus`（所有用户的默认首页）。
-
-### 跳转规则
-
-1. 如果 URL 中有 `redirect` 参数，优先跳转到目标页面
-2. 如果没有 `redirect` 参数，优先使用后端返回的 `homePath`（通过 `getUserHomePath()` getter 获取）
-3. 如果用户没有 `homePath`，默认跳转到 `/monitoring/vital-focus`（所有用户的默认首页）
-
-### 实现位置
-
-- `src/views/login/LoginForm.vue` 的 `handleLogin` 函数
-- `src/store/modules/user.ts` 的 `afterLoginAction()` 方法（使用 `getUserHomePath()` getter）
-- `src/store/modules/user.ts` 的 `getUserHomePath()` getter（获取用户首页路径）
+| # | 页面 | 路径 |
+|---|------|------|
+| 1 | Alarm Cloud | `/alarm/cloud` |
+| 2 | Device Store | `/admin/device-store` |
+| 3 | Role Management | `/admin/roles` |
+| 4 | Permission Management | `/admin/permissions` |
+| 5 | Tag Management | `/admin/tags` |
 
 ---
 
-## 404 错误处理
+### Admin（租户管理员）
+**可访问页面数**: 11 个（除了 Device Store 之外的所有页面）
 
-### 功能说明
+| # | 页面 | 路径 |
+|---|------|------|
+| 1 | Monitoring Overview | `/monitoring/overview` |
+| 2 | Alarm Records | `/alarm/records` |
+| 3 | Alarm Settings | `/alarm/settings` |
+| 4 | Alarm Cloud | `/admin/alarm-cloud` |
+| 5 | Resident Management | `/residents` |
+| 6 | Resident Profile Tab | `/resident/:id/profile` |
+| 7 | Resident PHI Tab | `/resident/:id/phi` |
+| 8 | Resident Contacts Tab | `/resident/:id/contacts` |
+| 9 | Card Overview | `/care-coordination/card-overview` |
+| 10 | Device Management | `/devices` |
+| 11 | Unit Management | `/units` |
+| 12 | User Management | `/admin/users` |
+| 13 | Role Management | `/admin/roles` |
+| 14 | Tag Management | `/admin/tags` |
 
-当用户访问不存在的路由时，应该显示 404 错误页面。
-
-### 实现要求
-
-- 使用 `/:pathMatch(.*)*` 匹配所有未匹配的路由
-- 404 路由应该放在路由配置的最后
-- 404 页面不需要认证
-
----
-
-## 注意事项
-
-1. **路由守卫顺序**
-   - 权限守卫应该在状态守卫之前执行
-   - 确保在检查权限前先检查登录状态
-
-2. **白名单路由**
-   - 登录页、忘记密码页等不需要登录的页面应该加入白名单
-   - 避免登录页的重定向循环
-
-3. **Redirect 参数**
-   - 保存完整路径（包括查询参数）
-   - 登录成功后跳转到目标页面
-
-4. **动态路由**
-   - 如果需要根据用户角色动态加载路由，可以在权限守卫中实现
-
-5. **404 路由**
-   - 使用 `/:pathMatch(.*)*` 匹配所有未匹配的路由
-   - 放在路由配置的最后
+**不可访问**: Device Store
 
 ---
 
-## 相关文档
+### Manager（经理）
+**可访问页面数**: 11 个（与 Admin 完全相同）
 
-- **状态管理**：`docs/store.md` - 用户状态管理和页面权限配置
-- **角色权限管理**：`docs/role-permissions-api.md` - 角色权限 API 设计
+| # | 页面 | 路径 |
+|---|------|------|
+| 1 | Monitoring Overview | `/monitoring/overview` |
+| 2 | Alarm Records | `/alarm/records` |
+| 3 | Alarm Settings | `/alarm/settings` |
+| 4 | Alarm Cloud | `/admin/alarm-cloud` |
+| 5 | Resident Management | `/residents` |
+| 6 | Resident Profile Tab | `/resident/:id/profile` |
+| 7 | Resident PHI Tab | `/resident/:id/phi` |
+| 8 | Resident Contacts Tab | `/resident/:id/contacts` |
+| 9 | Card Overview | `/care-coordination/card-overview` |
+| 10 | Device Management | `/devices` |
+| 11 | Unit Management | `/units` |
+| 12 | User Management | `/admin/users` |
+| 13 | Role Management | `/admin/roles` |
+| 14 | Tag Management | `/admin/tags` |
+
+**不可访问**: Device Store
+
+**说明**: Manager 与 Admin 拥有完全相同的访问权限
+
+---
+
+### IT（技术管理员）
+**可访问页面数**: 11 个（比 Admin 少 Resident 相关敏感信息）
+
+| # | 页面 | 路径 |
+|---|------|------|
+| 1 | Monitoring Overview | `/monitoring/overview` |
+| 2 | Alarm Records | `/alarm/records` |
+| 3 | Alarm Settings | `/alarm/settings` |
+| 4 | Alarm Cloud | `/admin/alarm-cloud` |
+| 5 | Resident Profile Tab | `/resident/:id/profile` |
+| 6 | Card Overview | `/care-coordination/card-overview` |
+| 7 | Device Management | `/devices` |
+| 8 | Unit Management | `/units` |
+| 9 | User Management | `/admin/users` |
+| 10 | Role Management | `/admin/roles` |
+| 11 | Tag Management | `/admin/tags` |
+
+**不可访问**:
+- Resident Management（列表页）
+- Resident PHI Tab
+- Resident Contacts Tab
+- Round 页面（暂未实现）
+- Device Store
+
+---
+
+### Nurse（护士）
+**可访问页面数**: 7 个
+
+| # | 页面 | 路径 |
+|---|------|------|
+| 1 | Monitoring Overview | `/monitoring/overview` |
+| 2 | Alarm Records | `/alarm/records` |
+| 3 | Alarm Settings | `/alarm/settings` |
+| 4 | Alarm Cloud | `/admin/alarm-cloud` |
+| 5 | Resident Management | `/residents` |
+| 6 | Resident Profile Tab | `/resident/:id/profile` |
+| 7 | Resident PHI Tab | `/resident/:id/phi` |
+| 8 | Resident Contacts Tab | `/resident/:id/contacts` |
+| 9 | Card Overview | `/care-coordination/card-overview` |
+| 10 | Tag Management | `/admin/tags` |
+
+**不可访问**:
+- Device Management
+- Unit Management
+- User Management
+- Role Management
+- Permission Management
+- Device Store
+
+---
+
+### Caregiver（护理员）
+**可访问页面数**: 6 个
+
+| # | 页面 | 路径 |
+|---|------|------|
+| 1 | Monitoring Overview | `/monitoring/overview` |
+| 2 | Alarm Records | `/alarm/records` |
+| 3 | Alarm Settings | `/alarm/settings` |
+| 4 | Alarm Cloud | `/admin/alarm-cloud` |
+| 5 | Resident Management | `/residents` |
+| 6 | Resident Profile Tab | `/resident/:id/profile` |
+| 7 | Resident PHI Tab | `/resident/:id/phi` |
+| 8 | Resident Contacts Tab | `/resident/:id/contacts` |
+| 9 | Tag Management | `/admin/tags` |
+
+**不可访问**:
+- Card Overview
+- Device Management
+- Unit Management
+- User Management
+- Role Management
+- Permission Management
+- Device Store
+
+---
+
+### Resident（住户）
+**可访问页面数**: 5 个
+
+| # | 页面 | 路径 |
+|---|------|------|
+| 1 | Monitoring Overview | `/monitoring/overview` |
+| 2 | Alarm Records | `/alarm/records` |
+| 3 | Alarm Settings | `/alarm/settings` |
+| 4 | Alarm Cloud | `/admin/alarm-cloud` |
+| 5 | Resident Detail（自己的） | `/resident/:id/profile` |
+| 6 | Resident Contacts Tab（自己的） | `/resident/:id/contacts` |
+
+**不可访问**:
+- 所有其他页面
+- Resident PHI Tab（自己的 PHI 信息）
+
+---
+
+### Family（家属）
+**可访问页面数**: 5 个
+
+| # | 页面 | 路径 |
+|---|------|------|
+| 1 | Monitoring Overview | `/monitoring/overview` |
+| 2 | Alarm Records | `/alarm/records` |
+| 3 | Alarm Settings | `/alarm/settings` |
+| 4 | Alarm Cloud | `/admin/alarm-cloud` |
+| 5 | Resident Detail（关联住户的） | `/resident/:id/profile` |
+| 6 | Resident Contacts Tab（关联住户的） | `/resident/:id/contacts` |
+
+**不可访问**:
+- 所有其他页面
+- Resident PHI Tab（关联住户的 PHI 信息）
+
+---
+
+## 权限差异总结
+
+### Manager vs Admin
+- **差异**: 无，Manager 与 Admin 完全相同
+
+### IT vs Admin
+- **IT 不能访问**:
+  - Resident Management（列表页）
+  - Resident PHI Tab
+  - Resident Contacts Tab
+  - Round 页面（暂未实现）
+
+### Nurse vs Admin
+- **Nurse 不能访问**:
+  - Device Management
+  - Unit Management
+  - User Management
+  - Role Management
+  - Permission Management
+
+### Caregiver vs Admin
+- **Caregiver 不能访问**:
+  - Card Overview
+  - Device Management
+  - Unit Management
+  - User Management
+  - Role Management
+  - Permission Management
+
+---
+
+## 资源权限映射
+
+| 资源 | 权限 | 对应页面 | SystemAdmin | Admin | Manager | IT |
+|------|------|----------|-------------|-------|---------|-----|
+| 13_device_store | RCDU | Device Store | ✅ | ❌ | ❌ | ❌ |
+| 17_alarm_cloud | R | Alarm Cloud | ✅ | ✅ | ✅ | ✅ |
+| 22_tags_catalog | RCDU | Tag Management | ✅ | ✅ | ✅ | ✅ |
+| 01_tenants | RCDU | - | ✅ (系统级，无前端页面) | - | - | - |
+| 02_roles | RCDU | Role Management | ✅ | ✅ | ✅ | ✅ |
+| 03_role_permissions | RCDU | Permission Management | ✅ | ❌ | ❌ | ❌ |
+
+**注意**: RCDU 权限（Read/Create/Delete/Update）在页面内部根据资源权限表控制，路由访问权限只控制能否进入页面。
+
+---
+
+## 配置位置
+
+- **权限定义**: `src/store/modules/user.ts` → `defaultPermissions`
+- **菜单配置**: `src/types/menu.ts` → `menuItems`
+- **路由配置**: `src/router/index.ts` → `routes`
+- **菜单过滤**: `src/components/layout/Menu.vue` → `filteredMenuItems`

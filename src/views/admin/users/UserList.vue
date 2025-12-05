@@ -3,6 +3,14 @@
     <div class="form-container">
       <div class="form-left">
         <a-form layout="inline" class="flex-form">
+          <!-- Home Icon -->
+          <a-form-item>
+            <a-button type="text" @click="goHome" style="padding: 0; border: none; box-shadow: none;">
+              <template #icon>
+                <HomeOutlined />
+              </template>
+            </a-button>
+          </a-form-item>
           <!-- Search Input -->
           <a-form-item class="flex-grow">
             <a-input
@@ -385,7 +393,7 @@
 <script lang="ts" setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ExclamationCircleOutlined, FilterOutlined, ReloadOutlined } from '@ant-design/icons-vue'
+import { ExclamationCircleOutlined, FilterOutlined, ReloadOutlined, HomeOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import type { Rule } from 'ant-design-vue/lib/form'
 
@@ -410,6 +418,11 @@ import { useUserStore } from '@/store/modules/user'
 
 const router = useRouter()
 const userStore = useUserStore()
+
+// Navigate to home page
+const goHome = () => {
+  router.push('/monitoring/overview')
+}
 
 const searchText = ref('')
 // Status filter: default show active and disabled, hide left
