@@ -12,7 +12,21 @@
         class="form-container"
       >
         <!-- Basic Information Section -->
-        <h3 class="section-title">Sleep Monitoring Configuration (Multiple Options Available)</h3>
+        <h3 class="section-title">
+          <div class="title-icons">
+            <a-button type="text" @click="goBackToCard" style="padding: 0; border: none; box-shadow: none; margin-right: 8px;">
+              <template #icon>
+                <ArrowLeftOutlined />
+              </template>
+            </a-button>
+            <a-button type="text" @click="goHome" style="padding: 0; border: none; box-shadow: none; margin-right: 12px;">
+              <template #icon>
+                <HomeOutlined />
+              </template>
+            </a-button>
+          </div>
+          Sleep Monitoring Configuration (Multiple Options Available)
+        </h3>
         <div class="information-container">
           <div class="information-row">
             <span>Device: {{ deviceInfo.device_name }} / {{ deviceInfo.serial_number || deviceInfo.uid || '-' }}</span>
@@ -449,7 +463,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
-import { QuestionCircleOutlined } from '@ant-design/icons-vue'
+import { QuestionCircleOutlined, ArrowLeftOutlined, HomeOutlined } from '@ant-design/icons-vue'
 import dayjs, { type Dayjs } from 'dayjs'
 import {
   getSleepaceDeviceMonitorSettingsApi,
@@ -833,6 +847,20 @@ const handleSubmit = () => {
 const handleCancel = () => {
   router.go(-1)
 }
+
+// Navigate back to card detail page
+const goBackToCard = () => {
+  if (cardInfo.value?.card_id) {
+    router.push(`/monitoring/detail/${cardInfo.value.card_id}`)
+  } else {
+    router.go(-1)
+  }
+}
+
+// Navigate to home page
+const goHome = () => {
+  router.push('/monitoring/overview')
+}
 </script>
 
 <style scoped>
@@ -886,6 +914,15 @@ const handleCancel = () => {
   font-size: 18px;
   color: #333;
   margin-bottom: 30px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.title-icons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .form-button {

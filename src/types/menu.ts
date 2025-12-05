@@ -59,7 +59,7 @@ export const menuItems: MenuItem[] = [
     key: 'device-store',
     label: 'Device Store',
     icon: 'DatabaseOutlined',
-    path: '/admin/device-store',
+    path: '/admin/devicestore',
     permission: ['SystemAdmin'],
   },
   {

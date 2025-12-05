@@ -138,9 +138,9 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
-        path: '/admin/device-store',
+        path: '/admin/devicestore',
         name: 'DeviceStore',
-        component: () => import('@/views/admin/device-store/DeviceStore.vue'),
+        component: () => import('@/views/admin/devicestore.vue'),
         meta: {
           title: 'Device Store',
           requiresAuth: true,

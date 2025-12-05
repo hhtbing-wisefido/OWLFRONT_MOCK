@@ -381,7 +381,7 @@ export const useUserStore = defineStore('user', {
 
         // ==================== 【系统设置区域】 ====================
         '/devices': ['Admin', 'Manager', 'IT'],
-        '/admin/device-store': ['SystemAdmin'],
+        '/admin/devicestore': ['SystemAdmin'],
         '/units': ['Admin', 'Manager', 'IT'],
         '/unitview': ['Admin', 'Manager', 'IT'], // Same as /units
         '/admin/users': ['Admin', 'Manager', 'IT'],
