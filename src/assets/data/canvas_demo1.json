@@ -1,41 +1,50 @@
 {
-  "canvasId": "canvas_export",
+  "canvasId": "canvas_100e8400-e29b-41d4-a716-446655440001_device-001",
   "canvasName": "Unnamed Canvas",
-  "params": null,
+  "params": {
+    "canvasId": "canvas_100e8400-e29b-41d4-a716-446655440001_device-001",
+    "devices": [
+      {
+        "deviceId": "device-001",
+        "deviceName": "Radar Device"
+      }
+    ],
+    "currentDeviceId": "device-001"
+  },
   "objects": [
     {
       "id": "obj_1762147284763",
-      "typeName": "Bed",
+      "typeName": "MonitorBed",
       "name": "Bed",
       "geometry": {
         "type": "rectangle",
         "data": {
           "vertices": [
             {
-              "x": 120,
-              "y": 10
+              "x": 70,
+              "y": 0
             },
             {
-              "x": 230,
-              "y": 10
+              "x": 180,
+              "y": 0
             },
             {
-              "x": 120,
-              "y": 210
+              "x": 70,
+              "y": 200
             },
             {
-              "x": 230,
-              "y": 210
+              "x": 180,
+              "y": 200
             }
           ],
           "center": {
-            "x": 171,
-            "y": 109
+            "x": 128,
+            "y": 103
           }
         }
       },
       "visual": {
-        "color": "#a8c5a8",
+        "color": "#F0E68C",
         "transparent": false,
         "reflectivity": 30
       },
@@ -90,35 +99,35 @@
             "showSignal": false,
             "areas": [
               {
-                "areaId": 1,
-                "areaType": 2,
+                "areaId": 0,
+                "areaType": 5,
                 "objectId": "obj_1762147284763",
-                "objectType": "Bed",
+                "objectType": "MonitorBed",
                 "vertices": [
                   {
-                    "h": -140,
-                    "v": -140,
+                    "h": -90,
+                    "v": -150,
                     "z": 0
                   },
                   {
-                    "h": -30,
-                    "v": -140,
+                    "h": 20,
+                    "v": -150,
                     "z": 0
                   },
                   {
-                    "h": -140,
-                    "v": 60,
+                    "h": -90,
+                    "v": 50,
                     "z": 0
                   },
                   {
-                    "h": -30,
-                    "v": 60,
+                    "h": 20,
+                    "v": 50,
                     "z": 0
                   }
                 ]
               },
               {
-                "areaId": 3,
+                "areaId": 2,
                 "areaType": 4,
                 "objectId": "obj_1762147319841",
                 "objectType": "Enter",
@@ -202,5 +211,5 @@
       "angle": 0
     }
   ],
-  "timestamp": "2025-11-03T06:11:31.455Z"
+  "timestamp": "2025-12-06T04:40:43.886Z"
 }

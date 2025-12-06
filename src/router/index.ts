@@ -269,6 +269,46 @@ const routes: RouteRecordRaw[] = [
           requiresAuth: true,
         },
       },
+      
+      // ==================== Radar Trajectory ====================
+      {
+        path: '/monitoring/radar-trajectory/:cardId/:deviceId',
+        name: 'RadarTrajectory',
+        component: () => import('@/views/monitoring/radar-trajectory/RadarTrajectory.vue'),
+        meta: {
+          title: 'Radar Trajectory',
+          requiresAuth: true,
+        },
+      },
+      {
+        path: '/test-radar-layout',
+        name: 'RadarLayoutTest',
+        component: () => import('@/views/test/RadarLayoutTest.vue'),
+        meta: {
+          title: 'Radar Layout Test',
+          requiresAuth: true,
+        },
+      },
+      
+      // ==================== Sleep Report ====================
+      {
+        path: '/report/sleepace/:deviceId',
+        name: 'SleepaceReport',
+        component: () => import('@/views/report/daily-report-sleepace.vue'),
+        meta: {
+          title: 'Sleep Report',
+          requiresAuth: true,
+        },
+      },
+      {
+        path: '/report/sleepace/:deviceId/detail/:date',
+        name: 'SleepaceReportDetail',
+        component: () => import('@/views/report/report-detail.vue'),
+        meta: {
+          title: 'Sleep Report Detail',
+          requiresAuth: true,
+        },
+      },
     ],
   },
 ]

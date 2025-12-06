@@ -12,12 +12,30 @@ import type {
   UpdateDeviceParams,
 } from './model/deviceModel'
 
+// Import DeviceRelations type (will be defined in deviceModel.ts)
+export interface DeviceRelations {
+  deviceId: string
+  deviceName: string
+  deviceInternalCode: string
+  deviceType: number
+  addressId: string
+  addressName: string
+  addressType: number
+  residents: Array<{
+    id: string
+    name: string
+    gender: string
+    birthday: string
+  }>
+}
+
 // Define API path enum
 export enum Api {
   GetList = '/admin/api/v1/devices',
   GetDetail = '/admin/api/v1/devices/:id',
   Update = '/admin/api/v1/devices/:id',
   Delete = '/admin/api/v1/devices/:id',
+  GetDeviceRelations = '/device/api/v1/device/:id/relations',
 }
 
 // Mock mode: In development, use mock data instead of real API calls
@@ -143,6 +161,34 @@ export function deleteDeviceApi(deviceId: string, mode: ErrorMessageMode = 'moda
   return defHttp.delete<{ success: boolean }>(
     {
       url: Api.Delete.replace(':id', deviceId),
+    },
+    { errorMessageMode: mode },
+  )
+}
+
+/**
+ * @description: Get device relations (device info with address and residents)
+ * @param deviceId - Device ID
+ * @param mode - Error message mode
+ */
+export function getDeviceRelationsApi(deviceId: string, mode: ErrorMessageMode = 'modal') {
+  if (useMock) {
+    // TODO: Implement mock when available
+    return Promise.resolve({
+      deviceId,
+      deviceName: 'Mock Device',
+      deviceInternalCode: 'MOCK001',
+      deviceType: 0,
+      addressId: '',
+      addressName: 'Mock Address',
+      addressType: 0,
+      residents: [],
+    } as DeviceRelations)
+  }
+
+  return defHttp.get<DeviceRelations>(
+    {
+      url: Api.GetDeviceRelations.replace(':id', deviceId),
     },
     { errorMessageMode: mode },
   )

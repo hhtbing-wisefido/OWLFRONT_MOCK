@@ -22,10 +22,12 @@
     "ant-design-vue": "^3.2.20",
     "axios": "^1.13.2",
     "dayjs": "^1.11.19",
+    "echarts": "^6.0.0",
     "lodash-es": "^4.17.21",
     "pinia": "^3.0.4",
     "qs": "^6.14.0",
     "vue": "^3.5.24",
+    "vue-echarts": "^8.0.1",
     "vue-router": "^4.6.3"
   },
   "devDependencies": {
@@ -36,6 +38,7 @@
     "@vue/tsconfig": "^0.8.1",
     "happy-dom": "^20.0.10",
     "jsdom": "^27.0.1",
+    "sass": "^1.94.2",
     "typescript": "~5.9.3",
     "vite": "^7.2.4",
     "vitest": "^3.2.4",

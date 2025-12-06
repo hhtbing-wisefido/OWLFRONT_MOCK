@@ -104,3 +104,16 @@ console.log('/monitoring/overview:', store.pagePermissions['/monitoring/overview
 2. 检查菜单是否仍然显示不应该显示的项
 3. 如果问题仍然存在，请提供控制台日志输出
 
+
+
+
+
+
+
+
+
+
+
+
+
+

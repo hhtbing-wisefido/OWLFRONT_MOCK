@@ -399,6 +399,8 @@ export const useUserStore = defineStore('user', {
         '/settings/monitor/radar/:deviceId': ['Admin', 'Manager', 'IT', 'Nurse'],
         '/monitoring/vital-focus/:cardId': ['Admin', 'Manager', 'IT', 'Nurse', 'Caregiver', 'Resident', 'Family'],
         '/monitoring/wellness-monitor/:cardId': ['Admin', 'Manager', 'IT', 'Nurse', 'Caregiver', 'Resident', 'Family'],
+        '/report/sleepace/:deviceId': ['Admin', 'Manager', 'IT', 'Nurse', 'Caregiver', 'Resident', 'Family'],
+        '/report/sleepace/:deviceId/detail/:date': ['Admin', 'Manager', 'IT', 'Nurse', 'Caregiver', 'Resident', 'Family'],
       }
       this.setPagePermissions(defaultPermissions)
       if (import.meta.env.DEV) {

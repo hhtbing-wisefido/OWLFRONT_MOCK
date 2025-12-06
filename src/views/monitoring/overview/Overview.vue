@@ -463,7 +463,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { AlertFilled } from '@ant-design/icons-vue'
+import { AlertFilled, ArrowLeftOutlined, HomeOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import { useUserStore } from '@/store/modules/user'
 import type { GetVitalFocusCardsModel, VitalFocusCard } from '@/api/monitors/model/monitorModel'
@@ -1000,6 +1000,17 @@ const handleAmbientRounds = () => {
  * - Confirm parameter passing method (params vs query)
  * - Test navigation functionality
  */
+// Navigate back to previous page
+const goBack = () => {
+  router.go(-1)
+}
+
+// Navigate to home page
+const goHome = () => {
+  const homePath = userStore.getUserHomePath()
+  router.push(homePath)
+}
+
 const goDetail = (card: VitalFocusCard) => {
   router.push({
     name: 'CardDetail',

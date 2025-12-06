@@ -198,3 +198,16 @@ export interface UpdateRadarMonitorSettingsParams {
   inactivity_alarm_level: AlarmLevel
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+

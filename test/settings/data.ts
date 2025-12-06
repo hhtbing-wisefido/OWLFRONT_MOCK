@@ -124,3 +124,16 @@ export const defaultRadarSettings: RadarMonitorSettings = {
   inactivity_alarm_level: 'disabled',
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -10,8 +10,15 @@
             v-for="resident in card.residents"
             :key="resident.resident_id"
           >
-            <!-- Row 1: card_name | card_address | all residents (with links) -->
+            <!-- Row 1: back icon + card_name | card_address | all residents (with links) -->
             <div class="info-row row-1">
+              <div class="title-icons">
+                <a-button type="text" @click="goBack" style="padding: 0; border: none; box-shadow: none; margin-right: 8px;">
+                  <template #icon>
+                    <ArrowLeftOutlined />
+                  </template>
+                </a-button>
+              </div>
               <span class="card-name">{{ card.card_name }}</span>
               <span class="separator">|</span>
               <span class="card-address">{{ card.card_address }}</span>
@@ -193,6 +200,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import dayjs, { type Dayjs } from 'dayjs'
+import { ArrowLeftOutlined } from '@ant-design/icons-vue'
 import type { CardOverviewItem, CardOverviewDevice } from '@/api/card-overview/model/cardOverviewModel'
 import { useCardStore } from '@/store/modules/card'
 import { useUserStore } from '@/store/modules/user'
@@ -455,7 +463,12 @@ const goSleepReport = (device: CardOverviewDevice) => {
   if (device.device_type !== 1) {
     return // Only Sleepace devices have sleep report
   }
-  router.push(`/reports/daily-report-sleepace/${device.device_id}`)
+  router.push({
+    name: 'SleepaceReport',
+    params: {
+      deviceId: device.device_id,
+    },
+  })
 }
 
 /**
@@ -512,6 +525,14 @@ const resolvedSearch = () => {
   // AlarmRecordList component will handle the search
 }
 
+/**
+ * Navigate back to previous page
+ */
+const goBack = () => {
+  router.go(-1)
+}
+
+
 // Initialize
 onMounted(() => {
   loadCardDetail()
@@ -567,10 +588,16 @@ onMounted(() => {
   color: #d9d9d9;
 }
 
-/* Row 1: card_name | card_address | all residents (with links) */
+/* Row 1: back icon + card_name | card_address | all residents (with links) */
 .row-1 {
   font-size: 16px;
   font-weight: 500;
+}
+
+.row-1 .title-icons {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 8px;
 }
 
 .row-1 .card-name {

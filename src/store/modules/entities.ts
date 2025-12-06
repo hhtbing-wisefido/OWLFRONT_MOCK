@@ -71,7 +71,7 @@ export const useEntitiesStore = defineStore('entities', () => {
   const updateDevice = (deviceId: string, updates: Partial<Device>) => {
     const index = devices.value.findIndex((d) => d.device_id === deviceId)
     if (index !== -1) {
-      devices.value[index] = { ...devices.value[index], ...updates }
+      devices.value[index] = { ...devices.value[index], ...updates } as Device
     }
   }
 
@@ -94,7 +94,7 @@ export const useEntitiesStore = defineStore('entities', () => {
   const updateUnit = (unitId: string, updates: Partial<Unit>) => {
     const index = units.value.findIndex((u) => u.unit_id === unitId)
     if (index !== -1) {
-      units.value[index] = { ...units.value[index], ...updates }
+      units.value[index] = { ...units.value[index], ...updates } as Unit
     }
   }
 
@@ -146,13 +146,13 @@ export const useEntitiesStore = defineStore('entities', () => {
   const updateResident = (residentId: string, updates: Partial<Resident>) => {
     const index = residents.value.findIndex((r) => r.resident_id === residentId)
     if (index !== -1) {
-      residents.value[index] = { ...residents.value[index], ...updates }
+      residents.value[index] = { ...residents.value[index], ...updates } as Resident
     }
     
     // Also update in details cache if exists
     const cached = residentDetailsCache.value.get(residentId)
     if (cached) {
-      cached.data = { ...cached.data, ...updates }
+      cached.data = { ...cached.data, ...updates } as Resident
     }
   }
 
