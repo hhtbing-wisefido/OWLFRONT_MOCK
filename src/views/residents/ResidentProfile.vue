@@ -3,7 +3,16 @@
     <div class="page-header">
       <div class="header-left">
         <a-space>
-          <a-button @click="goBack">← Back</a-button>
+          <a-button type="text" @click="goBack" :title="'Back'">
+            <template #icon>
+              <ArrowLeftOutlined />
+            </template>
+          </a-button>
+          <a-button type="text" @click="goHome" :title="'Home'">
+            <template #icon>
+              <HomeOutlined />
+            </template>
+          </a-button>
           <a-button 
             v-if="canEdit && (mode === 'create' || mode === 'edit')" 
             type="primary" 
@@ -71,6 +80,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
+import { ArrowLeftOutlined, HomeOutlined } from '@ant-design/icons-vue'
 import ResidentProfileContent from './components/ResidentProfileContent.vue'
 import ResidentPHIContent from './components/ResidentPHIContent.vue'
 import ResidentContactsContent from './components/ResidentContactsContent.vue'
@@ -344,6 +354,13 @@ const handleSave = async () => {
 // Go back
 const goBack = () => {
   router.push('/residents')
+}
+
+// Go home
+const goHome = () => {
+  router.push({
+    name: 'MonitoringOverview',
+  })
 }
 
 // Watch route params/query for tab changes

@@ -3,13 +3,20 @@
     <div class="form-container">
       <div class="form-left">
         <a-form layout="inline" class="flex-form">
-          <!-- Home Icon -->
+          <!-- Back and Home Icons -->
           <a-form-item>
-            <a-button type="text" @click="goHome" style="padding: 0; border: none; box-shadow: none;">
-              <template #icon>
-                <HomeOutlined />
-              </template>
-            </a-button>
+            <a-space>
+              <a-button type="text" @click="goBack" :title="'Back'">
+                <template #icon>
+                  <ArrowLeftOutlined />
+                </template>
+              </a-button>
+              <a-button type="text" @click="goHome" :title="'Home'">
+                <template #icon>
+                  <HomeOutlined />
+                </template>
+              </a-button>
+            </a-space>
           </a-form-item>
           <!-- Search Input -->
           <a-form-item>
@@ -157,7 +164,7 @@
 <script lang="ts" setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { GlobalOutlined, HomeOutlined } from '@ant-design/icons-vue'
+import { GlobalOutlined, HomeOutlined, ArrowLeftOutlined } from '@ant-design/icons-vue'
 import { getCardOverviewApi } from '@/api/card-overview/cardOverview'
 import type {
   CardOverviewItem,
@@ -165,6 +172,11 @@ import type {
 } from '@/api/card-overview/model/cardOverviewModel'
 
 const router = useRouter()
+
+// Go back
+const goBack = () => {
+  router.go(-1)
+}
 
 // Navigate to home page
 const goHome = () => {

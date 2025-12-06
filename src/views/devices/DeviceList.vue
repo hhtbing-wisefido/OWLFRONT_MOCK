@@ -3,13 +3,20 @@
     <!-- Search bar -->
     <div class="search-container">
       <a-form layout="inline" class="search-form">
-        <!-- Home Icon -->
+        <!-- Back and Home Icons -->
         <a-form-item>
-          <a-button type="text" @click="goHome" style="padding: 0; border: none; box-shadow: none;">
-            <template #icon>
-              <HomeOutlined />
-            </template>
-          </a-button>
+          <a-space>
+            <a-button type="text" @click="goBack" :title="'Back'">
+              <template #icon>
+                <ArrowLeftOutlined />
+              </template>
+            </a-button>
+            <a-button type="text" @click="goHome" :title="'Home'">
+              <template #icon>
+                <HomeOutlined />
+              </template>
+            </a-button>
+          </a-space>
         </a-form-item>
         <a-form-item>
           <a-radio-group v-model:value="searchType" button-style="solid">
@@ -155,7 +162,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
-import { FilterOutlined, HomeOutlined } from '@ant-design/icons-vue'
+import { FilterOutlined, HomeOutlined, ArrowLeftOutlined } from '@ant-design/icons-vue'
 import { getDevicesApi, deleteDeviceApi, updateDeviceApi } from '@/api/devices/device'
 import type { Device, GetDevicesParams } from '@/api/devices/model/deviceModel'
 import { useUserStore } from '@/store/modules/user'
@@ -166,6 +173,11 @@ const router = useRouter()
 const userStore = useUserStore()
 
 // Navigate to home page
+// Go back
+const goBack = () => {
+  router.go(-1)
+}
+
 const goHome = () => {
   router.push('/monitoring/overview')
 }

@@ -2,11 +2,18 @@
   <div style="padding: 15px">
     <div class="form-container">
       <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
-        <a-button type="text" @click="goHome" style="padding: 0; border: none; box-shadow: none;">
-          <template #icon>
-            <HomeOutlined />
-          </template>
-        </a-button>
+        <a-space>
+          <a-button type="text" @click="goBack" :title="'Back'">
+            <template #icon>
+              <ArrowLeftOutlined />
+            </template>
+          </a-button>
+          <a-button type="text" @click="goHome" :title="'Home'">
+            <template #icon>
+              <HomeOutlined />
+            </template>
+          </a-button>
+        </a-space>
         <h3 class="tips-title" style="margin: 0;">
           Alarm Cloud
       </h3>
@@ -311,7 +318,7 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
-import { HomeOutlined } from '@ant-design/icons-vue'
+import { HomeOutlined, ArrowLeftOutlined } from '@ant-design/icons-vue'
 import { getAlarmCloudApi, updateAlarmCloudApi } from '@/api/alarm/alarm'
 import type { AlarmCloud, DangerLevel } from '@/api/alarm/model/alarmModel'
 import { useUserStore } from '@/store/modules/user'
@@ -320,6 +327,11 @@ const router = useRouter()
 const userStore = useUserStore()
 
 // Navigate to home page
+// Go back
+const goBack = () => {
+  router.go(-1)
+}
+
 const goHome = () => {
   router.push('/monitoring/overview')
 }

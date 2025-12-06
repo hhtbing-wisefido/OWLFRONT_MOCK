@@ -487,13 +487,18 @@ const goMonitorSetting = (device: CardOverviewDevice) => {
 const goRadarTrajectory = (device: CardOverviewDevice) => {
   if (!card.value) return
   
-  // Store card data for trajectory page
-  // Note: You may need to create a trajectory store or pass data via route state
+  // 传递 cardName 和设备信息到 Radar Trajectory 页面
   router.push({
     name: 'RadarTrajectory',
     params: {
       cardId: cardId.value,
       deviceId: device.device_id,
+    },
+    query: {
+      cardName: card.value.card_name || '',
+      deviceName: device.device_name || '',
+      deviceSn: device.serial_number || device.uid || '',
+      deviceStatus: device.status || 'offline',
     },
   })
 }

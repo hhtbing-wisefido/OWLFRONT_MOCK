@@ -3,11 +3,18 @@
     <!-- Page Header: Create Form -->
     <div class="page-header">
       <div class="create-building-form">
-        <a-button type="text" @click="goHome" style="padding: 0; border: none; box-shadow: none; margin-right: 12px;">
-          <template #icon>
-            <HomeOutlined />
-          </template>
-        </a-button>
+        <a-space style="margin-right: 12px;">
+          <a-button type="text" @click="goBack" :title="'Back'">
+            <template #icon>
+              <ArrowLeftOutlined />
+            </template>
+          </a-button>
+          <a-button type="text" @click="goHome" :title="'Home'">
+            <template #icon>
+              <HomeOutlined />
+            </template>
+          </a-button>
+        </a-space>
         <a-button type="default" @click="goToUnitView" class="view-button">
           <EyeOutlined />
           View
@@ -964,7 +971,7 @@
 import { ref, onMounted, onUnmounted, computed, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
-import { EditOutlined, DeleteOutlined, PlusOutlined, EyeOutlined, CheckCircleOutlined, CloseCircleOutlined, AppstoreAddOutlined, HomeOutlined } from '@ant-design/icons-vue'
+import { EditOutlined, DeleteOutlined, PlusOutlined, EyeOutlined, CheckCircleOutlined, CloseCircleOutlined, AppstoreAddOutlined, HomeOutlined, ArrowLeftOutlined } from '@ant-design/icons-vue'
 import bedIconBlue from '@/assets/svg/Bed-blue.svg'
 import bedIconGreen from '@/assets/svg/Bed-green.svg'
 import bedIconSvg from '@/assets/svg/bed_icon.svg'
@@ -986,6 +993,11 @@ const tagsStore = useTagsStore()
 const router = useRouter()
 
 // Navigate to home page
+// Go back
+const goBack = () => {
+  router.go(-1)
+}
+
 const goHome = () => {
   router.push('/monitoring/overview')
 }

@@ -3,13 +3,20 @@
     <div class="form-container">
       <div class="form-left">
         <a-form layout="inline" class="flex-form">
-          <!-- Home Icon -->
+          <!-- Back and Home Icons -->
           <a-form-item>
-            <a-button type="text" @click="goHome" style="padding: 0; border: none; box-shadow: none;">
-              <template #icon>
-                <HomeOutlined />
-              </template>
-            </a-button>
+            <a-space>
+              <a-button type="text" @click="goBack" :title="'Back'">
+                <template #icon>
+                  <ArrowLeftOutlined />
+                </template>
+              </a-button>
+              <a-button type="text" @click="goHome" :title="'Home'">
+                <template #icon>
+                  <HomeOutlined />
+                </template>
+              </a-button>
+            </a-space>
           </a-form-item>
           <!-- Search Input -->
           <a-form-item>
@@ -113,7 +120,7 @@
 <script lang="ts" setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { FilterOutlined, HomeOutlined } from '@ant-design/icons-vue'
+import { FilterOutlined, HomeOutlined, ArrowLeftOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import {
   getResidentsApi,
@@ -132,6 +139,11 @@ const entitiesStore = useEntitiesStore()
 const { hasManagePermission, hasRole } = usePermission()
 
 // Navigate to home page
+// Go back
+const goBack = () => {
+  router.go(-1)
+}
+
 const goHome = () => {
   router.push('/monitoring/overview')
 }

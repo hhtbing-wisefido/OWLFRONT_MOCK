@@ -170,7 +170,7 @@ function setupCanvasParams() {
   /* 关键：移除 padding，因为 .radar-container 已经处理了 padding */
   padding: 0;
   background-color: transparent;
-  min-height: 100vh;
+  /* 移除 min-height: 100vh，让容器高度由内容决定，避免不必要的垂直滚动条 */
   display: flex;
   justify-content: flex-start;
   align-items: flex-start;

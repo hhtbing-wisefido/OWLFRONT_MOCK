@@ -3,13 +3,20 @@
     <div class="form-container">
       <div class="form-left">
         <a-form layout="inline" class="flex-form">
-          <!-- Home Icon -->
+          <!-- Back and Home Icons -->
           <a-form-item>
-            <a-button type="text" @click="goHome" style="padding: 0; border: none; box-shadow: none;">
-              <template #icon>
-                <HomeOutlined />
-              </template>
-            </a-button>
+            <a-space>
+              <a-button type="text" @click="goBack" :title="'Back'">
+                <template #icon>
+                  <ArrowLeftOutlined />
+                </template>
+              </a-button>
+              <a-button type="text" @click="goHome" :title="'Home'">
+                <template #icon>
+                  <HomeOutlined />
+                </template>
+              </a-button>
+            </a-space>
           </a-form-item>
           <!-- Search Input -->
           <a-form-item class="flex-grow">
@@ -171,7 +178,7 @@
 <script lang="ts" setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { ExclamationCircleOutlined, HomeOutlined } from '@ant-design/icons-vue'
+import { ExclamationCircleOutlined, HomeOutlined, ArrowLeftOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import type { Rule } from 'ant-design-vue/lib/form'
 import { useUserStore } from '@/store/modules/user'
@@ -194,6 +201,11 @@ const isSystemAdmin = computed(() => currentUserRole.value === 'SystemAdmin')
 const isAdminOrManager = computed(() => currentUserRole.value === 'Admin' || currentUserRole.value === 'Manager')
 
 // Navigate to home page
+// Go back
+const goBack = () => {
+  router.go(-1)
+}
+
 const goHome = () => {
   router.push('/monitoring/overview')
 }

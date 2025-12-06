@@ -3,11 +3,18 @@
     <!-- Create Tag Area -->
     <div class="form-container">
       <div class="form-row">
-        <a-button type="text" @click="goHome" style="padding: 0; border: none; box-shadow: none; margin-right: 12px;">
-          <template #icon>
-            <HomeOutlined />
-          </template>
-        </a-button>
+        <a-space style="margin-right: 12px;">
+          <a-button type="text" @click="goBack" :title="'Back'">
+            <template #icon>
+              <ArrowLeftOutlined />
+            </template>
+          </a-button>
+          <a-button type="text" @click="goHome" :title="'Home'">
+            <template #icon>
+              <HomeOutlined />
+            </template>
+          </a-button>
+        </a-space>
         <span class="label">Select type:</span>
         <div class="tag-type-selector">
           <div
@@ -153,7 +160,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
-import { SortAscendingOutlined, SortDescendingOutlined, HomeOutlined } from '@ant-design/icons-vue'
+import { SortAscendingOutlined, SortDescendingOutlined, HomeOutlined, ArrowLeftOutlined } from '@ant-design/icons-vue'
 import type { Rule } from 'ant-design-vue/lib/form'
 import {
   getTagsApi,
@@ -177,6 +184,11 @@ const currentUserRole = computed(() => userStore.getUserInfo?.role || '')
 const isSystemAdmin = computed(() => currentUserRole.value === 'SystemAdmin')
 
 // Navigate to home page
+// Go back
+const goBack = () => {
+  router.go(-1)
+}
+
 const goHome = () => {
   router.push('/monitoring/overview')
 }
