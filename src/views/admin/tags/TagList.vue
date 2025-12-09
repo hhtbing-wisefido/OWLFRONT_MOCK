@@ -134,28 +134,58 @@
           </div>
         </template>
 
-        <!-- Objects column: display object list (with checkboxes) -->
+        <!-- Objects column: display object list (with checkboxes for User/Family, delete buttons for Branch/Area) -->
         <template v-else-if="column.dataIndex === 'objects'">
           <div class="objects-cell">
-            <div v-if="record.tag_objects" class="objects-checkbox-list">
-              <a-checkbox-group
-                v-model:value="selectedObjects[record.tag_id]"
-                @change="(checkedValues: string[]) => handleObjectCheckChange(record, checkedValues)"
-              >
-                <template
-                  v-for="(objects, objectType) in record.tag_objects"
-                  :key="objectType"
-                >
-                  <a-checkbox
-                    v-for="(objectName, objectId) in objects"
-                    :key="`${objectType}:${objectId}`"
-                    :value="`${objectType}:${objectId}`"
-                    class="object-checkbox"
+            <div v-if="record.tag_objects">
+              <!-- Branch and Area: display with delete buttons only (no checkbox) -->
+              <template v-if="record.tag_type === 'location_tag' || record.tag_type === 'area_tag'">
+                <div class="objects-list-simple">
+                  <template
+                    v-for="(objects, objectType) in record.tag_objects"
+                    :key="objectType"
                   >
-                    {{ objectName }}
-                  </a-checkbox>
-                </template>
-              </a-checkbox-group>
+                    <div
+                      v-for="(objectName, objectId) in objects"
+                      :key="`${objectType}:${objectId}`"
+                      class="object-item-wrapper has-delete-btn"
+                    >
+                      <span class="object-name">{{ objectName }}</span>
+                      <a-tooltip title="删除" :mouseEnterDelay="0.1">
+                        <span
+                          class="delete-object-icon"
+                          @click="deleteObjectFromTag(record, String(objectType), String(objectId))"
+                        >
+                          ×
+                        </span>
+                      </a-tooltip>
+                    </div>
+                  </template>
+                </div>
+              </template>
+              <!-- User and Family: display with checkboxes (no delete button) -->
+              <template v-else>
+                <div class="objects-checkbox-list">
+                  <a-checkbox-group
+                    v-model:value="selectedObjects[record.tag_id]"
+                    @change="(checkedValues: string[]) => handleObjectCheckChange(record, checkedValues)"
+                  >
+                    <template
+                      v-for="(objects, objectType) in record.tag_objects"
+                      :key="objectType"
+                    >
+                      <a-checkbox
+                        v-for="(objectName, objectId) in objects"
+                        :key="`${objectType}:${objectId}`"
+                        :value="`${objectType}:${objectId}`"
+                        class="object-checkbox"
+                      >
+                        {{ objectName }}
+                      </a-checkbox>
+                    </template>
+                  </a-checkbox-group>
+                </div>
+              </template>
             </div>
             <span v-else class="no-objects">-</span>
           </div>
@@ -502,7 +532,7 @@ const getTagsByType = (tagType: string | null): TagCatalogItem[] => {
 
 
 // Create Branch (location_tag)
-// For location_tag, tag_name is empty, actual branch names are stored as members in tag_objects
+// For location_tag, tag_name is "Branch", actual branch names are stored as members in tag_objects
 const handleCreateBranch = async () => {
   try {
     if (!createBranchData.value.trim()) {
@@ -519,28 +549,47 @@ const handleCreateBranch = async () => {
     }
 
     // For location_tag, we need to:
-    // 1. Ensure "Branch" tag exists (tag_name = "", tag_type = "location_tag")
+    // 1. Ensure "Branch" tag exists (tag_name = "Branch", tag_type = "location_tag")
     // 2. Add the branch name as a member in tag_objects
-    // Note: This requires backend support to add objects to tag_objects
     
-    // Check if location_tag exists (tag_name should be empty or "Branch")
-    const branchTag = dataSource.value.find(
-      (tag) => tag.tag_type === 'location_tag'
+    // Check if location_tag with tag_name = "Branch" exists
+    let branchTag = dataSource.value.find(
+      (tag) => tag.tag_type === 'location_tag' && tag.tag_name === 'Branch'
     )
 
     if (!branchTag) {
-      // Create location_tag with empty tag_name
+      // Create location_tag with tag_name = "Branch"
       const createParams: CreateTagParams = {
         tenant_id: tenantId,
         tag_type: 'location_tag',
-        tag_name: '', // Empty tag_name for location_tag
+        tag_name: 'Branch', // Fixed tag_name for location_tag
       }
       await createTagApi(createParams)
       await fetchTags() // Refresh to get the new tag
+      // Find the newly created tag
+      branchTag = dataSource.value.find(
+        (tag) => tag.tag_type === 'location_tag' && tag.tag_name === 'Branch'
+      )
     }
 
-    // TODO: Add API call to add branch name to tag_objects
-    message.info('Branch member creation requires backend API support. Please implement addTagObjects API.')
+    if (!branchTag) {
+      message.error('Failed to create or find branch tag')
+      return
+    }
+
+    // Generate a UUID for the branch name
+    const branchId = crypto.randomUUID()
+    const branchName = createBranchData.value.trim()
+
+    // Add branch name to tag_objects JSONB
+    const addParams: AddTagObjectsParams = {
+      tag_id: branchTag.tag_id,
+      object_type: 'branch',
+      objects: [{ object_id: branchId, object_name: branchName }],
+    }
+
+    await addTagObjectsApi(addParams)
+    message.success('Branch created successfully')
     
     // Reset form
     createBranchData.value = ''
@@ -694,7 +743,14 @@ const handleCreateUserTag = async () => {
 // Check if tag has objects
 const hasObjects = (record: TagCatalogItem): boolean => {
   if (!record.tag_objects) return false
-  return Object.keys(record.tag_objects).length > 0
+  // Check if any object type has at least one object
+  for (const objectType in record.tag_objects) {
+    const objects = record.tag_objects[objectType]
+    if (objects && Object.keys(objects).length > 0) {
+      return true
+    }
+  }
+  return false
 }
 
 // Delete Tag Name
@@ -843,6 +899,26 @@ const handleSaveAll = async () => {
     }
   } catch (error: any) {
     message.error(error?.message || 'Failed to save changes')
+  }
+}
+
+// Delete single object from Tag (used by delete button in Member column)
+const deleteObjectFromTag = async (
+  record: TagCatalogItem,
+  objectType: string,
+  objectId: string
+) => {
+  try {
+    const params: RemoveTagObjectsParams = {
+      tag_id: record.tag_id,
+      object_type: objectType,
+      object_ids: [objectId],
+    }
+    await removeTagObjectsApi(params)
+    message.success('Member deleted successfully')
+    await fetchTags()
+  } catch (error: any) {
+    message.error(error?.message || 'Failed to delete member')
   }
 }
 
@@ -1131,9 +1207,58 @@ onMounted(() => {
   gap: 8px;
 }
 
+.objects-list-simple {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.object-item-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 20px 2px 6px;
+  background: #f0f0f0;
+  border-radius: 4px;
+  margin-right: 8px;
+  margin-bottom: 4px;
+}
+
+.object-name {
+  font-size: 14px;
+  color: #333;
+}
+
 .object-checkbox {
   margin-right: 0;
   white-space: nowrap;
+}
+
+.delete-object-icon {
+  position: absolute;
+  top: -6px;
+  right: 2px;
+  cursor: pointer;
+  color: #ff4d4f;
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 1;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s;
+}
+
+.delete-object-icon:hover {
+  color: #cf1322;
+  background: #fff1f0;
+  transform: scale(1.1);
 }
 
 .objects-list {

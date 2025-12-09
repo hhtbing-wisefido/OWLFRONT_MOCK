@@ -112,14 +112,14 @@
         <template v-else-if="column.dataIndex === 'alarm_channels'">
           <!-- Filter out APP and WEB (they are mandatory, not user-selectable) -->
           <a-tag 
-            v-for="channel in (record.alarm_channels || []).filter(c => c !== 'APP' && c !== 'WEB')" 
+            v-for="channel in Array.isArray(record.alarm_channels) ? record.alarm_channels.filter((c: string) => c !== 'APP' && c !== 'WEB') : []" 
             :key="channel" 
             class="alarm-channel-tag"
             style="margin: 2px"
           >
             {{ channel }}
           </a-tag>
-          <span v-if="!record.alarm_channels || record.alarm_channels.filter(c => c !== 'APP' && c !== 'WEB').length === 0">-</span>
+          <span v-if="!record.alarm_channels || record.alarm_channels.filter((c: string) => c !== 'APP' && c !== 'WEB').length === 0">-</span>
         </template>
         <template v-else-if="column.dataIndex === 'alarm_scope'">
           <span>{{ record.alarm_scope || '-' }}</span>
