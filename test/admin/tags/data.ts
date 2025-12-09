@@ -48,21 +48,6 @@ export const mockTagsData: TagCatalogItem[] = [
     },
   },
   {
-    tag_id: '4',
-    tenant_id: '550e8400-e29b-41d4-a716-446655440000',
-    tag_type: 'alarm_tag',
-    tag_name: 'DeviceManagement',
-    tag_objects: {
-      location: {
-        'loc-002': 'Device Room',
-        'loc-003': 'Storage Room',
-      },
-      card: {
-        'card-001': 'Device Card 1',
-      },
-    },
-  },
-  {
     tag_id: '5',
     tenant_id: '550e8400-e29b-41d4-a716-446655440000',
     tag_type: 'user_tag',
@@ -135,7 +120,7 @@ export const mockTagsData: TagCatalogItem[] = [
   {
     tag_id: '9',
     tenant_id: '550e8400-e29b-41d4-a716-446655440000',
-    tag_type: 'custom_tag', // 用户自定义标签（默认类型）
+    tag_type: 'user_tag', // 用户标签（默认类型）
     tag_name: 'Custom-Tag-1',
     tag_objects: {},
   },

@@ -2,8 +2,10 @@
   <div style="padding: 15px; background-color: #f4f7f9; min-height: 100vh;">
     <!-- Filter Buttons Row -->
     <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 15px; padding: 10px; background-color: #fff; border-radius: 4px;">
+      <!-- Privacy-sensitive status filters: Only visible to staff login (not resident) -->
       <!-- unhandled: display count of unhandled level 0-1 alarms (orange Badge when > 0, gray when = 0) -->
       <a-button
+        v-if="shouldShowStatusFilters"
         :type="activeFilter === 'unhandled' ? 'primary' : 'default'"
         @click="toggleFilter('unhandled')"
       >
@@ -17,91 +19,103 @@
         />
       </a-button>
       
-      <!-- OutofRoom: display count of out of room -->
+      <!-- OutofRoom: display count of out of room (lazy calculation, gray when not calculated) -->
       <a-button
+        v-if="shouldShowStatusFilters"
         :type="activeFilter === 'outofroom' ? 'primary' : 'default'"
+        :style="{ backgroundColor: outofRoomCount === null ? '#f5f5f5' : undefined, color: outofRoomCount === null ? '#999' : undefined }"
         @click="toggleFilter('outofroom')"
       >
         OutofRoom
         <a-badge
           v-if="!activeFilter || activeFilter === 'outofroom'"
-          :count="outofRoomCount"
+          :count="outofRoomCount === null ? '?' : outofRoomCount"
           :show-zero="true"
           :number-style="{ backgroundColor: '#a9a9a9' }"
           style="margin-left: 8px"
         />
       </a-button>
       
-      <!-- LeftBed: display count of left bed -->
+      <!-- LeftBed: display count of left bed (lazy calculation, gray when not calculated) -->
       <a-button
+        v-if="shouldShowStatusFilters"
         :type="activeFilter === 'leftbed' ? 'primary' : 'default'"
+        :style="{ backgroundColor: leftBedCount === null ? '#f5f5f5' : undefined, color: leftBedCount === null ? '#999' : undefined }"
         @click="toggleFilter('leftbed')"
       >
         LeftBed
         <a-badge
           v-if="!activeFilter || activeFilter === 'leftbed'"
-          :count="leftBedCount"
+          :count="leftBedCount === null ? '?' : leftBedCount"
           :show-zero="true"
           :number-style="{ backgroundColor: '#a9a9a9' }"
           style="margin-left: 8px"
         />
       </a-button>
       
-      <!-- Visitor: display count of visitors -->
+      <!-- Visitor: display count of visitors (lazy calculation, gray when not calculated) -->
       <a-button
+        v-if="shouldShowStatusFilters"
         :type="activeFilter === 'visitor' ? 'primary' : 'default'"
+        :style="{ backgroundColor: visitorCount === null ? '#f5f5f5' : undefined, color: visitorCount === null ? '#999' : undefined }"
         @click="toggleFilter('visitor')"
       >
         Visitor
         <a-badge
           v-if="!activeFilter || activeFilter === 'visitor'"
-          :count="visitorCount"
+          :count="visitorCount === null ? '?' : visitorCount"
           :show-zero="true"
           :number-style="{ backgroundColor: '#a9a9a9' }"
           style="margin-left: 8px"
         />
       </a-button>
       
-      <!-- Awake: display count of awake in bed -->
+      <!-- Awake: display count of awake in bed (lazy calculation, gray when not calculated) -->
       <a-button
+        v-if="shouldShowStatusFilters"
         :type="activeFilter === 'awake' ? 'primary' : 'default'"
+        :style="{ backgroundColor: awakeCount === null ? '#f5f5f5' : undefined, color: awakeCount === null ? '#999' : undefined }"
         @click="toggleFilter('awake')"
       >
         Awake
         <a-badge
           v-if="!activeFilter || activeFilter === 'awake'"
-          :count="awakeCount"
+          :count="awakeCount === null ? '?' : awakeCount"
           :show-zero="true"
           :number-style="{ backgroundColor: '#a9a9a9' }"
           style="margin-left: 8px"
         />
       </a-button>
       
-      <!-- Sleep: display count of sleeping -->
+      <!-- Sleep: display count of sleeping (lazy calculation, gray when not calculated) -->
       <a-button
+        v-if="shouldShowStatusFilters"
         :type="activeFilter === 'sleep' ? 'primary' : 'default'"
+        :style="{ backgroundColor: sleepCount === null ? '#f5f5f5' : undefined, color: sleepCount === null ? '#999' : undefined }"
         @click="toggleFilter('sleep')"
       >
         Sleep
         <a-badge
           v-if="!activeFilter || activeFilter === 'sleep'"
-          :count="sleepCount"
+          :count="sleepCount === null ? '?' : sleepCount"
           :show-zero="true"
           :number-style="{ backgroundColor: '#a9a9a9' }"
           style="margin-left: 8px"
         />
       </a-button>
       
-      <!-- Focus: select monitoring cards -->
+      <!-- Focus: select monitoring cards (only for staff) -->
       <a-button
+        v-if="shouldShowStatusFilters"
         type="default"
         @click="showSelectCardModal = true"
       >
         Focus
       </a-button>
       
-      <!-- Ambient Rounds: ambient rounds -->
+      <!-- Ambient Rounds: ambient rounds (only for staff) -->
       <a-button
+        v-if="shouldShowStatusFilters"
         type="default"
         @click="handleAmbientRounds"
       >
@@ -499,9 +513,25 @@ const isSystemAdmin = computed(() => {
   return userInfo?.role === 'SystemAdmin'
 })
 
+// Check if should show status filter buttons (only for staff roles, not Resident/Family)
+// Privacy-sensitive status filters should only be visible to facility staff
+const shouldShowStatusFilters = computed(() => {
+  const userInfo = userStore.getUserInfo
+  if (!userInfo || !userInfo.role) return false
+  // Hide for Resident and Family roles (privacy protection)
+  return userInfo.role !== 'Resident' && userInfo.role !== 'Family'
+})
+
 // Filter state
 const activeFilter = ref<string | null>(null) // 'unhandled' | 'outofroom' | 'leftbed' | 'visitor' | 'awake' | 'sleep' | null
 const showSelectCardModal = ref(false)
+
+// Lazy calculation state for status counts (null means not calculated yet)
+const outofRoomCount = ref<number | null>(null)
+const leftBedCount = ref<number | null>(null)
+const visitorCount = ref<number | null>(null)
+const awakeCount = ref<number | null>(null)
+const sleepCount = ref<number | null>(null)
 
 // Selected card IDs (all cards selected by default)
 const selectedCardIds = ref<string[]>([]) // Saved selection (loaded from localStorage)
@@ -959,12 +989,12 @@ const stopTimer = () => {
 
 /**
  * Handle Ambient Rounds button click
- * 
- * @todo Implement ambient rounds functionality
+ * Refresh all status counts when clicked
  */
 const handleAmbientRounds = () => {
-  // TODO: Implement ambient rounds functionality
-  console.log('Ambient Rounds clicked')
+  // Refresh all status counts when Ambient Rounds is clicked
+  refreshAllStatusCounts()
+  console.log('Ambient Rounds clicked - all status counts refreshed')
 }
 
 /**
@@ -1148,14 +1178,106 @@ const saveFocusSelection = async () => {
 }
 
 /**
+ * Calculate outofRoom count
+ */
+const calculateOutofRoomCount = (): number => {
+  const cards = dataSource.value?.items || []
+  return cards.filter((card) => {
+    return card.card_type === 'Location' && (card.person_count ?? 0) === 0
+  }).length
+}
+
+/**
+ * Calculate leftBed count
+ */
+const calculateLeftBedCount = (): number => {
+  const cards = dataSource.value?.items || []
+  return cards.filter((card) => {
+    return card.bed_status === 1
+  }).length
+}
+
+/**
+ * Calculate visitor count
+ */
+const calculateVisitorCount = (): number => {
+  const cards = dataSource.value?.items || []
+  // TODO: Implement visitor statistics logic
+  // Placeholder implementation: return 0
+  void cards // Avoid unused variable warning
+  return 0
+}
+
+/**
+ * Calculate awake count
+ */
+const calculateAwakeCount = (): number => {
+  const cards = dataSource.value?.items || []
+  return cards.filter((card) => {
+    return card.bed_status === 0 && card.sleep_stage === 1
+  }).length
+}
+
+/**
+ * Calculate sleep count
+ */
+const calculateSleepCount = (): number => {
+  const cards = dataSource.value?.items || []
+  return cards.filter((card) => {
+    return card.bed_status === 0 && (card.sleep_stage === 2 || card.sleep_stage === 4)
+  }).length
+}
+
+/**
+ * Refresh all status counts (called when Ambient Rounds is clicked)
+ */
+const refreshAllStatusCounts = () => {
+  outofRoomCount.value = calculateOutofRoomCount()
+  leftBedCount.value = calculateLeftBedCount()
+  visitorCount.value = calculateVisitorCount()
+  awakeCount.value = calculateAwakeCount()
+  sleepCount.value = calculateSleepCount()
+}
+
+/**
  * Toggle filter
  * Only one can be selected, clicking the selected one will deselect it
+ * Calculate count when filter is clicked (lazy calculation)
  */
 const toggleFilter = (filterType: string) => {
   if (activeFilter.value === filterType) {
     activeFilter.value = null // Deselect
   } else {
     activeFilter.value = filterType // Select
+    
+    // Calculate count when filter is clicked (lazy calculation)
+    switch (filterType) {
+      case 'outofroom':
+        if (outofRoomCount.value === null) {
+          outofRoomCount.value = calculateOutofRoomCount()
+        }
+        break
+      case 'leftbed':
+        if (leftBedCount.value === null) {
+          leftBedCount.value = calculateLeftBedCount()
+        }
+        break
+      case 'visitor':
+        if (visitorCount.value === null) {
+          visitorCount.value = calculateVisitorCount()
+        }
+        break
+      case 'awake':
+        if (awakeCount.value === null) {
+          awakeCount.value = calculateAwakeCount()
+        }
+        break
+      case 'sleep':
+        if (sleepCount.value === null) {
+          sleepCount.value = calculateSleepCount()
+        }
+        break
+    }
   }
 }
 
@@ -1253,67 +1375,9 @@ const unhandledCount = computed(() => {
   }).length
 })
 
-const outofRoomCount = computed(() => {
-  const cards = dataSource.value?.items || []
-  return cards.filter((card) => {
-    return card.card_type === 'Location' && (card.person_count ?? 0) === 0
-  }).length
-})
-
-const leftBedCount = computed(() => {
-  const cards = dataSource.value?.items || []
-  return cards.filter((card) => {
-    return card.bed_status === 1
-  }).length
-})
-
-/**
- * Count cards with visitors
- * 
- * @description
- * Logic to implement:
- * 1. Check if card has visitor data (need to confirm data structure)
- * 2. Possible implementation methods:
- *    - If VitalFocusCard has visitor_count field, then card.visitor_count > 0
- *    - If VitalFocusCard has visitors array, then card.visitors?.length > 0
- *    - If need to distinguish visitors in residents, then card.residents?.some(r => r.is_visitor === true)
- * 
- * @returns {number} Number of cards with visitors
- * 
- * @todo
- * - Confirm visitor data storage structure (database field or API return field)
- * - Implement visitor judgment logic
- * - Update VitalFocusCard interface definition (if needed)
- */
-const visitorCount = computed(() => {
-  const cards = dataSource.value?.items || []
-  // TODO: Implement visitor statistics logic
-  // Example implementation (needs adjustment based on actual data structure):
-  // return cards.filter((card) => {
-  //   return (card.visitor_count ?? 0) > 0
-  //   // Or: return card.visitors?.length > 0
-  //   // Or: return card.residents?.some(r => r.is_visitor === true)
-  // }).length
-  
-  // Placeholder implementation: return 0 (to be implemented)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  void cards // Avoid unused variable warning
-  return 0
-})
-
-const awakeCount = computed(() => {
-  const cards = dataSource.value?.items || []
-  return cards.filter((card) => {
-    return card.bed_status === 0 && card.sleep_stage === 1
-  }).length
-})
-
-const sleepCount = computed(() => {
-  const cards = dataSource.value?.items || []
-  return cards.filter((card) => {
-    return card.bed_status === 0 && (card.sleep_stage === 2 || card.sleep_stage === 4)
-  }).length
-})
+// Note: Status counts (outofRoomCount, leftBedCount, visitorCount, awakeCount, sleepCount) 
+// are now ref values with lazy calculation (calculated only when clicked or when Ambient Rounds is clicked)
+// They are defined above in the "Lazy calculation state" section
 
 /**
  * Navigate to AllWellnessMonitor page

@@ -150,6 +150,12 @@ export interface AlarmEvent {
 
 /**
  * Get Alarm Events Parameters
+ * Note: userId and role are automatically added by HTTP interceptor in request headers (X-User-Id, X-User-Role)
+ * Backend should use these headers to filter alarm events based on user permissions:
+ * - Resident: Only see alarms related to their own cards/residents
+ * - Family: Only see alarms related to their family member's cards/residents
+ * - Staff (Nurse, Caregiver, etc.): See alarms based on their card permissions
+ * - Admin/Manager/IT: See all alarms in their tenant
  */
 export interface GetAlarmEventsParams {
   status: 'active' | 'resolved'  // Filter by alarm status
@@ -169,6 +175,8 @@ export interface GetAlarmEventsParams {
   // Pagination
   page?: number
   page_size?: number
+  // Note: userId and role are sent in request headers (X-User-Id, X-User-Role) by HTTP interceptor
+  // Backend should use these to enforce permission-based filtering
 }
 
 /**

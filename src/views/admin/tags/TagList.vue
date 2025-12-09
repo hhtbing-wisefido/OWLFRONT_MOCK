@@ -15,26 +15,34 @@
             </template>
           </a-button>
         </a-space>
-        <span class="label">Select type:</span>
-        <div class="tag-type-selector">
-          <div
-            v-for="(tagType, index) in availableTagTypesForSelection"
-            :key="tagType ?? `null-${index}`"
-            class="tag-type-option"
-            :class="{ 'tag-type-option-selected': selectedTagType === tagType }"
-            @click="selectedTagType = tagType"
-          >
-            <span class="tag-type-option-label">{{ formatTagTypeName(tagType) }}</span>
-          </div>
-        </div>
-        <span class="label">Tag Name:</span>
+        <a-button type="primary" @click="handleCreateBranch">Create Branch</a-button>
         <a-input
-          v-model:value="createTagData.tag_name"
-          placeholder="Tag Name"
-          style="width: 150px"
-          @pressEnter="handleCreateTag"
+          v-model:value="createBranchData"
+          placeholder="Branch Name"
+          style="width: 150px; margin-left: 8px;"
+          @pressEnter="handleCreateBranch"
         />
-        <a-button type="primary" @click="handleCreateTag">Create Tag</a-button>
+        <a-button type="primary" style="margin-left: 16px;" @click="handleCreateArea">Create AreaTag</a-button>
+        <a-input
+          v-model:value="createAreaData"
+          placeholder="Area Name"
+          style="width: 150px; margin-left: 8px;"
+          @pressEnter="handleCreateArea"
+        />
+        <a-button type="primary" style="margin-left: 16px;" @click="handleCreateUserTag">Create UserTag</a-button>
+        <a-input
+          v-model:value="createUserTagData"
+          placeholder="User Tag Name"
+          style="width: 150px; margin-left: 8px;"
+          @pressEnter="handleCreateUserTag"
+        />
+        <a-button type="primary" style="margin-left: 16px;" @click="handleCreateFamily">Create Familytag</a-button>
+        <a-input
+          v-model:value="createFamilyData"
+          placeholder="Family Name"
+          style="width: 150px; margin-left: 8px;"
+          @pressEnter="handleCreateFamily"
+        />
       </div>
     </div>
 
@@ -96,13 +104,15 @@
         </template>
       </template>
       <template #bodyCell="{ column, record }">
-        <!-- Tag_name column: only display tag_name itself (square shape, cross in top-right corner) -->
+        <!-- Tag_name column: display tag_name or "-" for Branch/Area -->
         <template v-if="column.dataIndex === 'tag_name'">
           <div class="tag-name-cell">
             <div class="tag-name-box">
-              <span class="tag-name-value">{{ record.tag_name }}</span>
+              <span class="tag-name-value">
+                {{ record.tag_name || '-' }}
+              </span>
               <a-tooltip
-                v-if="!hasObjects(record)"
+                v-if="!hasObjects(record) && (record.tag_type === 'user_tag' || record.tag_type === 'family_tag')"
                 title="delete"
                 :mouseEnterDelay="0.1"
               >
@@ -167,6 +177,7 @@ import {
   createTagApi,
   updateTagApi,
   deleteTagApi,
+  addTagObjectsApi,
   removeTagObjectsApi,
 } from '@/api/admin/tags/tags'
 import type {
@@ -174,6 +185,7 @@ import type {
   CreateTagParams,
   UpdateTagParams,
   DeleteTagParams,
+  AddTagObjectsParams,
   RemoveTagObjectsParams,
 } from '@/api/admin/tags/model/tagsModel'
 import { useUserStore } from '@/store/modules/user'
@@ -196,12 +208,11 @@ const goHome = () => {
 // Data
 const loading = ref(false)
 const dataSource = ref<TagCatalogItem[]>([])
-// Create tag data: tag_type defaults to 'custom_tag' for user-created tags
-// SystemAdmin can choose tag_type, non-SystemAdmin always uses 'custom_tag'
-const createTagData = ref<{ tag_name: string }>({
-  tag_name: '',
-})
-const selectedTagType = ref<string | null>('custom_tag') // Default to 'custom_tag' for new tags
+// Create tag data: separate inputs for different tag types
+const createBranchData = ref<string>('')
+const createAreaData = ref<string>('')
+const createFamilyData = ref<string>('')
+const createUserTagData = ref<string>('')
 const selectedTagTypeList = ref<(string | null)[]>([])
 const selectedObjects = ref<Record<string, string[]>>({}) // tag_id -> selected object keys
 const objectsToRemove = ref<Record<string, Array<{ objectType: string; objectId: string }>>>({}) // tag_id -> objects to remove
@@ -212,13 +223,6 @@ const availableTagTypesFromServer = ref<string[]>([])
 
 // System predefined tag types from server (for reference only, not used for modification)
 const systemPredefinedTagTypesFromServer = ref<string[]>([])
-
-// Available tag types for selection (for Create Tag dropdown)
-const availableTagTypesForSelection = computed(() => {
-  return availableTagTypesFromServer.value.length > 0
-    ? availableTagTypesFromServer.value
-    : ['custom_tag', 'user_tag', 'alarm_tag', 'location_tag', 'family_tag', 'area_tag']
-})
 
 // Sort state
 const tagTypeSortOrder = ref<'asc' | 'desc' | null>(null)
@@ -247,11 +251,99 @@ const columns = [
 ]
 
 // Sorted data source (default sorted by tag_type and tag_name)
+// For location_tag and area_tag, merge all tags of the same type into one row
 const sortedDataSource = computed(() => {
-  let sorted = [...dataSource.value]
+  let processed = [...dataSource.value]
   
-  // Default sort: first by tag_type, then by tag_name (ascending)
-  sorted.sort((a, b) => {
+  // Group tags by tag_type
+  const groupedByType: Record<string, TagCatalogItem[]> = {}
+  processed.forEach((tag) => {
+    const type = tag.tag_type || 'unknown'
+    if (!groupedByType[type]) {
+      groupedByType[type] = []
+    }
+    groupedByType[type].push(tag)
+  })
+  
+  // For location_tag and area_tag, merge into single row
+  const merged: TagCatalogItem[] = []
+  
+  Object.keys(groupedByType).forEach((tagType) => {
+    const tags = groupedByType[tagType]
+    if (!tags || tags.length === 0) return
+    
+    if (tagType === 'location_tag') {
+      // For location_tag, find the tag with tag_name = "Branch" and merge all location_tag tags
+      const branchTag = tags.find((tag) => tag.tag_name === 'Branch') || tags[0]
+      if (!branchTag) return
+      
+      const mergedTag: TagCatalogItem = {
+        tag_id: branchTag.tag_id,
+        tenant_id: branchTag.tenant_id,
+        tag_type: branchTag.tag_type,
+        tag_name: 'Branch', // Fixed tag_name
+        tag_objects: {},
+      }
+      
+      // Merge all tag_objects from all location_tag tags
+      tags.forEach((tag) => {
+        if (tag.tag_objects) {
+          Object.keys(tag.tag_objects).forEach((objectType) => {
+            if (!mergedTag.tag_objects) {
+              mergedTag.tag_objects = {}
+            }
+            if (!mergedTag.tag_objects[objectType]) {
+              mergedTag.tag_objects[objectType] = {}
+            }
+            const sourceObjects = tag.tag_objects?.[objectType]
+            if (sourceObjects && mergedTag.tag_objects) {
+              Object.assign(mergedTag.tag_objects[objectType], sourceObjects)
+            }
+          })
+        }
+      })
+      
+      merged.push(mergedTag)
+    } else if (tagType === 'area_tag') {
+      // For area_tag, find the tag with tag_name = "Area" and merge all area_tag tags
+      const areaTag = tags.find((tag) => tag.tag_name === 'Area') || tags[0]
+      if (!areaTag) return
+      
+      const mergedTag: TagCatalogItem = {
+        tag_id: areaTag.tag_id,
+        tenant_id: areaTag.tenant_id,
+        tag_type: areaTag.tag_type,
+        tag_name: 'Area', // Fixed tag_name
+        tag_objects: {},
+      }
+      
+      // Merge all tag_objects from all area_tag tags
+      tags.forEach((tag) => {
+        if (tag.tag_objects) {
+          Object.keys(tag.tag_objects).forEach((objectType) => {
+            if (!mergedTag.tag_objects) {
+              mergedTag.tag_objects = {}
+            }
+            if (!mergedTag.tag_objects[objectType]) {
+              mergedTag.tag_objects[objectType] = {}
+            }
+            const sourceObjects = tag.tag_objects?.[objectType]
+            if (sourceObjects && mergedTag.tag_objects) {
+              Object.assign(mergedTag.tag_objects[objectType], sourceObjects)
+            }
+          })
+        }
+      })
+      
+      merged.push(mergedTag)
+    } else {
+      // For other types (family_tag, user_tag), keep all rows
+      merged.push(...tags)
+    }
+  })
+  
+  // Sort: first by tag_type, then by tag_name (ascending)
+  merged.sort((a, b) => {
     // First compare tag_type
     const typeA = (a.tag_type ?? '') as string
     const typeB = (b.tag_type ?? '') as string
@@ -278,7 +370,7 @@ const sortedDataSource = computed(() => {
     return nameCompare
   })
   
-  return sorted
+  return merged
 })
 
 // Toggle Tag_type sort
@@ -347,9 +439,9 @@ const fetchTags = async () => {
     if (result.system_predefined_tag_types && result.system_predefined_tag_types.length > 0) {
       systemPredefinedTagTypesFromServer.value = result.system_predefined_tag_types
     } else {
-      // Fallback: use default system predefined types (alarm_tag, location_tag, family_tag, area_tag)
+      // Fallback: use default system predefined types (location_tag, family_tag, area_tag)
       // These are the built-in types that cannot be deleted according to database schema
-      systemPredefinedTagTypesFromServer.value = ['alarm_tag', 'location_tag', 'family_tag', 'area_tag']
+      systemPredefinedTagTypesFromServer.value = ['location_tag', 'family_tag', 'area_tag']
     }
     // Initialize selectedObjects: all objects selected by default
     result.items.forEach((tag) => {
@@ -392,7 +484,14 @@ const fetchTags = async () => {
 // Format Tag Type name
 const formatTagTypeName = (tagType: string | null): string => {
   if (!tagType) return '(None)'
-  return tagType.replace(/_tag$/, '').replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
+  // Map tag types to display names
+  const tagTypeMap: Record<string, string> = {
+    'location_tag': 'Branch_tag',
+    'area_tag': 'Area_tag',
+    'family_tag': 'Family_tag',
+    'user_tag': 'User_tag',
+  }
+  return tagTypeMap[tagType] || tagType.replace(/_tag$/, '').replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()) + '_tag'
 }
 
 // Get all related tags by Tag Type
@@ -402,13 +501,12 @@ const getTagsByType = (tagType: string | null): TagCatalogItem[] => {
 
 
 
-// Create Tag
-// Note: tag_type is automatically set to 'custom_tag' by backend (application layer control)
-// Users cannot modify tag_type, it's system predefined
-const handleCreateTag = async () => {
+// Create Branch (location_tag)
+// For location_tag, tag_name is empty, actual branch names are stored as members in tag_objects
+const handleCreateBranch = async () => {
   try {
-    if (!createTagData.value.tag_name.trim()) {
-      message.warning('Please enter tag name')
+    if (!createBranchData.value.trim()) {
+      message.warning('Please enter branch name')
       return
     }
 
@@ -420,26 +518,175 @@ const handleCreateTag = async () => {
       return
     }
 
-    // tag_type is automatically set to 'custom_tag' by backend (application layer control)
-    // Users cannot specify tag_type, it's system predefined
+    // For location_tag, we need to:
+    // 1. Ensure "Branch" tag exists (tag_name = "", tag_type = "location_tag")
+    // 2. Add the branch name as a member in tag_objects
+    // Note: This requires backend support to add objects to tag_objects
+    
+    // Check if location_tag exists (tag_name should be empty or "Branch")
+    const branchTag = dataSource.value.find(
+      (tag) => tag.tag_type === 'location_tag'
+    )
+
+    if (!branchTag) {
+      // Create location_tag with empty tag_name
+      const createParams: CreateTagParams = {
+        tenant_id: tenantId,
+        tag_type: 'location_tag',
+        tag_name: '', // Empty tag_name for location_tag
+      }
+      await createTagApi(createParams)
+      await fetchTags() // Refresh to get the new tag
+    }
+
+    // TODO: Add API call to add branch name to tag_objects
+    message.info('Branch member creation requires backend API support. Please implement addTagObjects API.')
+    
+    // Reset form
+    createBranchData.value = ''
+    await fetchTags()
+  } catch (error: any) {
+    message.error(error?.message || 'Failed to create branch')
+  }
+}
+
+// Create Area (area_tag)
+// For area_tag, all area names are stored as members in tag_objects of a single tag
+// There should be only one area_tag row, all areas are in its member column
+const handleCreateArea = async () => {
+  try {
+    if (!createAreaData.value.trim()) {
+      message.warning('Please enter area name')
+      return
+    }
+
+    const userInfo = userStore.getUserInfo
+    const tenantId = userInfo?.tenant_id
+
+    if (!tenantId) {
+      message.error('No tenant ID available')
+      return
+    }
+
+    // For area_tag, we need to:
+    // 1. Ensure area_tag exists with tag_name = "Area" (only one row for all areas)
+    // 2. Add the area name as a member in tag_objects JSONB
+    
+    // Check if area_tag with tag_name = "Area" exists
+    let areaTag = dataSource.value.find(
+      (tag) => tag.tag_type === 'area_tag' && tag.tag_name === 'Area'
+    )
+
+    if (!areaTag) {
+      // Create area_tag with tag_name = "Area"
+      const createParams: CreateTagParams = {
+        tenant_id: tenantId,
+        tag_type: 'area_tag',
+        tag_name: 'Area', // Fixed tag_name for area_tag
+      }
+      await createTagApi(createParams)
+      await fetchTags() // Refresh to get the new tag
+      // Find the newly created tag
+      areaTag = dataSource.value.find(
+        (tag) => tag.tag_type === 'area_tag' && tag.tag_name === 'Area'
+      )
+    }
+
+    if (!areaTag) {
+      message.error('Failed to create or find area tag')
+      return
+    }
+
+    // Generate a UUID for the area name
+    const areaId = crypto.randomUUID()
+    const areaName = createAreaData.value.trim()
+
+    // Add area name to tag_objects JSONB
+    const addParams: AddTagObjectsParams = {
+      tag_id: areaTag.tag_id,
+      object_type: 'area',
+      objects: [{ object_id: areaId, object_name: areaName }],
+    }
+
+    await addTagObjectsApi(addParams)
+    message.success('Area created successfully')
+    
+    // Reset form
+    createAreaData.value = ''
+    await fetchTags()
+  } catch (error: any) {
+    message.error(error?.message || 'Failed to create area')
+  }
+}
+
+// Create Family (family_tag)
+// For family_tag, each family has its own tag_name, members are stored in tag_objects
+// Similar to user_tag, can have multiple family tags, each with different residents as members
+const handleCreateFamily = async () => {
+  try {
+    if (!createFamilyData.value.trim()) {
+      message.warning('Please enter family name')
+      return
+    }
+
+    const userInfo = userStore.getUserInfo
+    const tenantId = userInfo?.tenant_id
+
+    if (!tenantId) {
+      message.error('No tenant ID available')
+      return
+    }
+
+    // For family_tag, tag_name is the actual family name
     const params: CreateTagParams = {
       tenant_id: tenantId,
-      tag_type: null, // Backend will set to 'custom_tag' automatically
-      tag_name: createTagData.value.tag_name.trim(),
+      tag_type: 'family_tag',
+      tag_name: createFamilyData.value.trim(),
     }
     
     await createTagApi(params)
-    message.success('Tag created successfully')
+    message.success('Family tag created successfully')
     
     // Reset form
-    createTagData.value = {
-      tag_name: '',
-    }
-    selectedTagType.value = 'custom_tag' // Reset to default
-    
+    createFamilyData.value = ''
     await fetchTags()
   } catch (error: any) {
-    message.error(error?.message || 'Failed to create tag')
+    message.error(error?.message || 'Failed to create family tag')
+  }
+}
+
+// Create User Tag (user_tag)
+// For user_tag, tag_name is the actual tag name, members are stored in tag_objects
+const handleCreateUserTag = async () => {
+  try {
+    if (!createUserTagData.value.trim()) {
+      message.warning('Please enter user tag name')
+      return
+    }
+
+    const userInfo = userStore.getUserInfo
+    const tenantId = userInfo?.tenant_id
+
+    if (!tenantId) {
+      message.error('No tenant ID available')
+      return
+    }
+
+    // For user_tag, tag_name is the actual tag name
+    const params: CreateTagParams = {
+      tenant_id: tenantId,
+      tag_type: 'user_tag',
+      tag_name: createUserTagData.value.trim(),
+    }
+    
+    await createTagApi(params)
+    message.success('User tag created successfully')
+    
+    // Reset form
+    createUserTagData.value = ''
+    await fetchTags()
+  } catch (error: any) {
+    message.error(error?.message || 'Failed to create user tag')
   }
 }
 
@@ -553,10 +800,10 @@ const handleSaveAll = async () => {
         const record = dataSource.value.find((tag) => tag.tag_id === tagId)
         if (!record) continue
         
-        // Check if tag_type is Area or Custom (only these support object deletion)
-        const allowedTagTypes = ['area_tag', 'custom_tag']
+        // Check if tag_type is Area (only area_tag supports object deletion)
+        const allowedTagTypes = ['area_tag']
         if (!record.tag_type || !allowedTagTypes.includes(record.tag_type)) {
-          message.warning(`Object deletion is only supported for Area and Custom tag types. Tag "${record.tag_name}" has type "${record.tag_type}"`)
+          message.warning(`Object deletion is only supported for Area tag type. Tag "${record.tag_name}" has type "${record.tag_type}"`)
           continue
         }
         

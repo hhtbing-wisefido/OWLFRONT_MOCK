@@ -1303,7 +1303,8 @@ watch(
     
     // TODO: 初始化 caregiver 数据（如果 API 返回了这些数据）
     // 目前 API 可能不返回 caregiver 数据，需要单独调用 API 获取
-    // 如果 API 返回了 caregiver_id1-5 或 caregivers_tag1-3，需要在这里初始化
+    // 如果 API 返回了 caregiver_id1-5，需要在这里初始化
+    // 注意：用户组管理统一使用 users.tags[]，不再使用 caregivers_tag1-3
     
     // Reset flag after a microtask to allow the watch to complete
     Promise.resolve().then(() => {

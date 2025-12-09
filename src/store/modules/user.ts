@@ -78,6 +78,7 @@ interface UserState {
   roleList: string[]
   pagePermissions: Record<string, string[]>  // Page access permissions: { routePath: [allowedRoles] }
   lastUpdateTime: number
+  loginType: 'staff' | 'resident' | null  // Login type selected in login form (staff/resident) - stored locally only, not on server
   // Note: PIN code is not stored in state (memory only, not persisted)
   // Note: locationTag and locationName are stored in userInfo
 }
@@ -91,6 +92,7 @@ export const useUserStore = defineStore('user', {
     roleList: [],
     pagePermissions: {},  // Page access permissions
     lastUpdateTime: 0,
+    loginType: null,  // Login type selected in login form
   }),
 
   getters: {
@@ -143,6 +145,19 @@ export const useUserStore = defineStore('user', {
     
     getLastUpdateTime(): number {
       return this.lastUpdateTime
+    },
+    
+    // Get login type (selected in login form)
+    getLoginType(): 'staff' | 'resident' | null {
+      // Try to get from state first, then from localStorage
+      if (this.loginType) {
+        return this.loginType
+      }
+      const saved = localStorage.getItem('LOGIN_TYPE')
+      if (saved === 'staff' || saved === 'resident') {
+        return saved
+      }
+      return null
     },
     
     // Get user home page path
@@ -353,6 +368,12 @@ export const useUserStore = defineStore('user', {
       // Page permissions can be stored in localStorage, but usually don't need persistence (reset on each login)
     },
     
+    // Set login type (selected in login form)
+    setLoginType(loginType: 'staff' | 'resident') {
+      this.loginType = loginType
+      localStorage.setItem('LOGIN_TYPE', loginType)
+    },
+    
     // Initialize page access permissions (based on role configuration)
     // Note: Roles have been updated to simplified version, only SystemAdmin can globally modify roles (system built-in)
     // Tenants (Admin and others) cannot modify system roles, can only view or manage tenant custom roles
@@ -368,7 +389,8 @@ export const useUserStore = defineStore('user', {
       const defaultPermissions: Record<string, string[]> = {
         // ==================== 【核心操作区域】 ====================
         '/monitoring/overview': ['SystemAdmin', 'Admin', 'Manager', 'IT', 'Nurse', 'Caregiver', 'Resident', 'Family'],
-        '/alarm/records': ['Admin', 'Manager', 'IT', 'Nurse', 'Caregiver', 'Resident', 'Family'],
+        // Note: Resident and Family can view alarm records from card detail page, but not from /alarm/records (privacy protection)
+        '/alarm/records': ['SystemAdmin', 'Admin', 'Manager', 'IT', 'Nurse', 'Caregiver'],
         '/alarm/cloud': ['SystemAdmin', 'Admin', 'Manager', 'IT', 'Nurse', 'Caregiver', 'Resident', 'Family'],
 
         // ==================== 【数据管理区域】 ====================
@@ -418,6 +440,12 @@ export const useUserStore = defineStore('user', {
       // Save token
       this.setToken(result.accessToken)
       this.setRefreshToken(result.refreshToken)
+      
+      // Save login type (selected in login form, stored locally only)
+      this.setLoginType(params.userType)
+      if (import.meta.env.DEV) {
+        console.log('[UserStore] login: Saved loginType', { loginType: params.userType })
+      }
       
       // Save institution information (Tenant table)
       if (result.tenant_id && result.tenant_name) {
@@ -564,6 +592,8 @@ export const useUserStore = defineStore('user', {
       this.roleList = []
       this.pagePermissions = {}
       this.lastUpdateTime = 0
+      this.loginType = null
+      localStorage.removeItem('LOGIN_TYPE')
       clearAuthCache()
     },
   },

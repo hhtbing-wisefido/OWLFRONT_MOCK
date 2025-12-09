@@ -13,6 +13,7 @@ import type {
   CreateTagResult,
   UpdateTagParams,
   DeleteTagParams,
+  AddTagObjectsParams,
   RemoveTagObjectsParams,
   DeleteTagTypeParams,
   GetTagsForObjectParams,
@@ -25,6 +26,7 @@ export enum Api {
   Create = '/admin/api/v1/tags',
   Update = '/admin/api/v1/tags/:id',
   Delete = '/admin/api/v1/tags',
+  AddObjects = '/admin/api/v1/tags/:id/objects',
   RemoveObjects = '/admin/api/v1/tags/:id/objects',
   DeleteTagType = '/admin/api/v1/tags/types',
   GetTagsForObject = '/admin/api/v1/tags/for-object',
@@ -157,6 +159,39 @@ export function deleteTagApi(params: DeleteTagParams, mode: ErrorMessageMode = '
       params: {
         tenant_id: params.tenant_id,
         tag_name: params.tag_name,
+      },
+    },
+    { errorMessageMode: mode },
+  )
+}
+
+/**
+ * @description: Add objects to Tag
+ * @param params - Add objects parameters
+ * @param mode - Error message mode
+ */
+export function addTagObjectsApi(params: AddTagObjectsParams, mode: ErrorMessageMode = 'modal') {
+  // In development with mock enabled, return mock data directly
+  if (useMock) {
+    return import('@test/index').then(({ tags }) => {
+      console.log('%c[Mock] Add Tag Objects API Request', 'color: #1890ff; font-weight: bold', { params })
+      return tags.mock.mockAddTagObjects?.(params).then((result) => {
+        console.log('%c[Mock] Add Tag Objects API - Success', 'color: #52c41a; font-weight: bold', { result })
+        return result
+      }).catch((error: any) => {
+        console.log('%c[Mock] Add Tag Objects API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
+        throw error
+      }) || Promise.resolve({ success: true })
+    })
+  }
+
+  // Production: Call real backend API
+  return defHttp.post<{ success: boolean }>(
+    {
+      url: Api.AddObjects.replace(':id', params.tag_id),
+      data: {
+        object_type: params.object_type,
+        objects: params.objects,
       },
     },
     { errorMessageMode: mode },

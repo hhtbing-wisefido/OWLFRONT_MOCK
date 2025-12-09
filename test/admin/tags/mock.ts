@@ -40,8 +40,8 @@ export async function mockGetTags(params?: GetTagsParams): Promise<GetTagsResult
   // 按 include_system_tag_types 过滤（默认包含系统预定义 tag_type）
   const includeSystemTagTypes = params?.include_system_tag_types !== false // 默认 true
   if (!includeSystemTagTypes) {
-    // System predefined types: alarm_tag, location_tag, family_tag, area_tag
-    const systemPredefinedTypes = ['alarm_tag', 'location_tag', 'family_tag', 'area_tag']
+    // System predefined types: location_tag, family_tag, area_tag
+    const systemPredefinedTypes = ['location_tag', 'family_tag', 'area_tag']
     filteredTags = filteredTags.filter(tag => !systemPredefinedTypes.includes(tag.tag_type))
   }
   
@@ -51,17 +51,14 @@ export async function mockGetTags(params?: GetTagsParams): Promise<GetTagsResult
     // Provide available tag types from server (all available tag types)
     // This avoids hardcoding tag_type values in frontend
     available_tag_types: [
-      'alarm_tag',
       'location_tag',
       'family_tag',
       'area_tag',
       'user_tag',
-      'custom_tag',
     ],
     // System predefined tag types (cannot be deleted, only SystemAdmin can modify)
-    // These are the built-in tag types: alarm_tag, location_tag, family_tag, area_tag
+    // These are the built-in tag types: location_tag, family_tag, area_tag
     system_predefined_tag_types: [
-      'alarm_tag',
       'location_tag',
       'family_tag',
       'area_tag',
@@ -84,8 +81,8 @@ export async function mockCreateTag(params: CreateTagParams): Promise<CreateTagR
     throw new Error(`Tag name "${params.tag_name}" already exists. Tag names must be unique across all tag types.`)
   }
   
-  // tag_type is now required (NOT NULL), default to 'custom_tag' if not provided
-  const tagType = params.tag_type || 'custom_tag'
+  // tag_type is now required (NOT NULL), default to 'user_tag' if not provided
+  const tagType = params.tag_type || 'user_tag'
   
   const newTag: TagCatalogItem = {
     tag_id: String(mockTagsData.length + 1),
@@ -117,7 +114,7 @@ export async function mockUpdateTag(tagId: string, params: UpdateTagParams): Pro
     tag.tag_name = params.tag_name
   }
   if (params.tag_type !== undefined) {
-    tag.tag_type = params.tag_type || 'custom_tag'
+    tag.tag_type = params.tag_type || 'user_tag'
   }
   
   return { success: true }
@@ -143,8 +140,8 @@ export async function mockDeleteTag(params: DeleteTagParams): Promise<{ success:
     throw new Error(`Tag "${params.tag_name}" not found`)
   }
   
-  // System predefined tag types cannot be deleted (alarm_tag, location_tag, family_tag, area_tag)
-  const systemPredefinedTypes = ['alarm_tag', 'location_tag', 'family_tag', 'area_tag']
+  // System predefined tag types cannot be deleted (location_tag, family_tag, area_tag)
+  const systemPredefinedTypes = ['location_tag', 'family_tag', 'area_tag']
   if (tag.tag_type && systemPredefinedTypes.includes(tag.tag_type)) {
     throw new Error(`Cannot delete system predefined tag_type: "${params.tag_name}" (type: ${tag.tag_type}). System predefined tag types cannot be deleted because they are used by other tables.`)
   }
@@ -210,7 +207,7 @@ export async function mockDeleteTagType(params: DeleteTagTypeParams): Promise<{ 
   }
   
   // Check if it's a system predefined tag_type (cannot be deleted)
-  const systemPredefinedTypes = ['alarm_tag', 'location_tag', 'family_tag', 'area_tag']
+  const systemPredefinedTypes = ['location_tag', 'family_tag', 'area_tag']
   if (systemPredefinedTypes.includes(params.tag_type)) {
     throw new Error(`Cannot delete system predefined tag_type: ${params.tag_type}. System predefined tag types cannot be deleted because they are used by other tables.`)
   }

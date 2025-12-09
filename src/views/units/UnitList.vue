@@ -19,12 +19,12 @@
           <EyeOutlined />
           View
         </a-button>
-        <span class="create-label">location_tag:</span>
+        <span class="create-label">Branch:</span>
         <a-select
           id="create-building-location-tag"
           name="create-building-location-tag"
           v-model:value="createBuildingForm.location_tag"
-          placeholder="Select tag"
+          placeholder="Select Branch"
           allow-clear
           show-search
           :filter-option="false"
@@ -49,7 +49,7 @@
           @pressEnter="handleCreateBuilding"
         />
         <span class="separator">:</span>
-        <span class="create-label">Floors:</span>
+        <span class="create-label">Total Floors:</span>
         <a-input-number
           id="create-building-floors"
           name="create-building-floors"
@@ -60,7 +60,7 @@
           style="width: 80px"
           @pressEnter="handleCreateBuilding"
         />
-        <a-button type="primary" @click="handleCreateBuilding">Create</a-button>
+        <a-button type="primary" @click="handleCreateBuilding">Create Building</a-button>
         <div class="building-tags">
           <div
             v-for="building in buildingsWithDisplayName"
@@ -92,7 +92,7 @@
                   :id="`edit-building-location-tag-${building.building_id}`"
                   :name="`edit-building-location-tag-${building.building_id}`"
                   v-model:value="editingBuildingForm.location_tag"
-                  placeholder="Select tag"
+                  placeholder="Select Branch"
                   size="small"
                   allow-clear
                   show-search
@@ -185,7 +185,7 @@
                   :id="`edit-building-location-tag-card-${building.building_id}`"
                   :name="`edit-building-location-tag-card-${building.building_id}`"
                   v-model:value="editingBuildingForm.location_tag"
-                  placeholder="Select tag"
+                  placeholder="Select Branch"
                   size="small"
                   allow-clear
                   show-search
@@ -321,7 +321,7 @@
             id="create-location-location-tag"
             name="create-location-location-tag"
             v-model:value="createUnitForm.location_tag"
-            placeholder="Select tag"
+            placeholder="Select Branch"
             allow-clear
             show-search
             :filter-option="false"
@@ -435,12 +435,12 @@
           <div class="unit-field inline-row">
             <div class="inline-field">
               <a-checkbox v-model:checked="editUnitForm.is_multi_person_room">
-                Multi-Person Room
+                SharedUnit
               </a-checkbox>
             </div>
             <div class="inline-field">
               <a-checkbox v-model:checked="editUnitForm.is_public_space">
-                Public
+                Public Space
               </a-checkbox>
             </div>
           </div>

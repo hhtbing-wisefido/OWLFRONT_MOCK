@@ -27,6 +27,24 @@ function getToken(): string | null {
   }
 }
 
+// Get user info from localStorage (synchronous function)
+// Note: Uses USER_INFO_KEY constant from auth utils
+function getUserInfo(): { userId?: string; role?: string } | null {
+  try {
+    const userInfoStr = localStorage.getItem('USER_INFO')
+    if (userInfoStr) {
+      const userInfo = JSON.parse(userInfoStr)
+      return {
+        userId: userInfo.userId,
+        role: userInfo.role,
+      }
+    }
+    return null
+  } catch (error) {
+    return null
+  }
+}
+
 // TODO: Use when implementing token refresh logic
 // let isRefreshing = false // Flag to indicate if a refresh is in progress
 // let requestsToRetry: Array<(token: string) => void> = [] // Queue for failed requests waiting for refresh
@@ -174,6 +192,20 @@ const transform: AxiosTransform = {
         ? `${options.authenticationScheme} ${token}`
         : token
     }
+    
+    // Add user info (userId and role) to request for backend permission filtering
+    // Backend can use these to filter data based on user permissions
+    const userInfo = getUserInfo()
+    if (userInfo) {
+      ;(config as any).headers = (config as any).headers || {}
+      if (userInfo.userId) {
+        ;(config as any).headers['X-User-Id'] = userInfo.userId
+      }
+      if (userInfo.role) {
+        ;(config as any).headers['X-User-Role'] = userInfo.role
+      }
+    }
+    
     return config
   },
 
