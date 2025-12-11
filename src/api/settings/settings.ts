@@ -4,7 +4,7 @@
  */
 
 import { defHttp } from '@/utils/http/axios'
-import type { ErrorMessageMode } from '#/axios'
+import type { ErrorMessageMode } from '/#/axios'
 import type {
   SleepaceMonitorSettings,
   RadarMonitorSettings,
