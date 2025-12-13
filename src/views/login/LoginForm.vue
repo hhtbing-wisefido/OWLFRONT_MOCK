@@ -550,10 +550,17 @@ const handleLogin = async () => {
     loading.value = true
     await formRef.value?.validate()
 
+    // IMPORTANT:
+    // - Institution search uses trimmed account/password.
+    // - If user copies password from a modal, it may include trailing spaces/newlines.
+    //   That would make institution search succeed (trimmed), but login fail (untrimmed).
+    const accountTrimmed = (formData.account || '').trim()
+    const passwordTrimmed = (formData.password || '').trim()
+
     // Submit tenant_id (not name) to backend
     const result = await userStore.login({
-      account: formData.account,
-      password: formData.password,
+      account: accountTrimmed,
+      password: passwordTrimmed,
       userType: formData.userType,
       tenant_id: formData.tenant_id || undefined, // Send ID to backend (e.g., "tenant-001")
     })

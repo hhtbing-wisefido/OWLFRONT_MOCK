@@ -76,22 +76,37 @@ const mainPermissions = computed(() => {
   const descriptions: string[] = []
 
   // Generate main permission descriptions based on permission matrix
-  // Updated to match new simplified role system: SystemAdmin, Admin, Manager, IT, Nurse, Caregiver, Resident, Family
+  // Updated to match new simplified role system: SystemAdmin, SystemOperator, Admin, Manager, IT, Nurse, Caregiver, Resident, Family
+  const hasAny = (resourceType: string) => perms.some((p) => p.resource_type === resourceType)
+
   if (props.role.code === 'SystemAdmin') {
-    if (perms.some((p) => p.resource_type === 'roles' && p.permission_type === 'manage')) {
+    if (hasAny('roles')) {
       descriptions.push('Role Management')
     }
-    if (perms.some((p) => p.resource_type === 'role_permissions' && p.permission_type === 'manage')) {
+    if (hasAny('role_permissions')) {
       descriptions.push('Permission Management')
     }
-    if (perms.some((p) => p.resource_type === 'tenants' && p.permission_type === 'manage')) {
+    if (hasAny('tenants')) {
       descriptions.push('Tenant Management')
     }
-    if (perms.some((p) => p.resource_type === 'tags_catalog' && p.permission_type === 'manage')) {
+    if (hasAny('tags_catalog')) {
       descriptions.push('Tags Catalog Management')
     }
-    if (perms.some((p) => p.resource_type === 'device_store' && p.permission_type === 'manage')) {
+    if (hasAny('device_store')) {
       descriptions.push('Device Store Management')
+    }
+    if (hasAny('alarm_cloud')) {
+      descriptions.push('Alarm Cloud Management')
+    }
+  } else if (props.role.code === 'SystemOperator') {
+    if (hasAny('tenants')) {
+      descriptions.push('Tenant Management')
+    }
+    if (hasAny('device_store')) {
+      descriptions.push('Device Store Management')
+    }
+    if (hasAny('alarm_cloud')) {
+      descriptions.push('Alarm Cloud Management')
     }
   } else if (props.role.code === 'Admin') {
     if (perms.some((p) => p.resource_type === 'users' && p.permission_type === 'manage')) {

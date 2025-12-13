@@ -43,6 +43,16 @@ export default defineConfig({
   },
   server: {
     port: 3100,
+    proxy: {
+      // 让 owlFront 在 dev 环境直接走相对路径（避免 CORS），并把 API 代理到 wisefido-data
+      '/admin/api': { target: 'http://localhost:8080', changeOrigin: true },
+      '/data/api': { target: 'http://localhost:8080', changeOrigin: true },
+      '/auth/api': { target: 'http://localhost:8080', changeOrigin: true },
+      '/settings/api': { target: 'http://localhost:8080', changeOrigin: true },
+      '/sleepace/api': { target: 'http://localhost:8080', changeOrigin: true },
+      '/device/api': { target: 'http://localhost:8080', changeOrigin: true },
+      '/api/v1': { target: 'http://localhost:8080', changeOrigin: true },
+    },
     // https: true, // TODO: 需要配置证书时启用
   },
 })

@@ -162,10 +162,27 @@
                 Enable
               </a-button>
               <a-button
+                v-if="record.status === 'left'"
+                size="small"
+                :disabled="record.user_id === userStore.getUserInfo?.userId || record.user_account === 'sysadmin'"
+                @click="restoreUser(record)"
+              >
+                Restore
+              </a-button>
+              <a-button
                 size="small"
                 @click="resetPin(record)"
               >
                 Reset PIN
+              </a-button>
+              <a-button
+                v-if="record.status !== 'left'"
+                size="small"
+                danger
+                :disabled="record.user_id === userStore.getUserInfo?.userId || record.user_account === 'sysadmin'"
+                @click="deleteUser(record)"
+              >
+                Delete
               </a-button>
             </div>
           </div>
@@ -407,6 +424,7 @@ import type { Rule } from 'ant-design-vue/lib/form'
 import {
   getUsersApi,
   createUserApi,
+  deleteUserApi,
   updateUserApi,
   resetPasswordApi,
   resetPinApi,
@@ -425,6 +443,10 @@ import { useUserStore } from '@/store/modules/user'
 
 const router = useRouter()
 const userStore = useUserStore()
+const SYSTEM_TENANT_ID = '00000000-0000-0000-0000-000000000001'
+
+const isSystemTenant = computed(() => userStore.userInfo?.tenant_id === SYSTEM_TENANT_ID)
+const isSystemAdmin = computed(() => userStore.userInfo?.role === 'SystemAdmin')
 
 // Navigate to home page
 // Go back
@@ -506,7 +528,8 @@ const hasManagePermission = computed(() => {
   
   // Check if user has users.update permission (simplified here, should actually check from role-permissions)
   // TODO: Implement complete permission check logic
-  const allowedRoles = ['Admin', 'Director', 'IT']
+  // Allow SystemAdmin to manage users in System tenant; tenant-side user management is handled by Admin/Manager/IT.
+  const allowedRoles = ['SystemAdmin', 'Admin', 'Manager', 'IT']
   return allowedRoles.includes(userInfo.role || '')
 })
 
@@ -755,6 +778,23 @@ const enableUser = (record: User) => {
   isConfirmModalVisible.value = true
 }
 
+const restoreUser = (record: User) => {
+  action.value = 'restore'
+  affectedUserId.value = record.user_id
+  confirmTitle.value = 'Restore User'
+  confirmMessage.value = `Restore user "${record.nickname || record.user_account}"? This will change status from left to active.`
+  isConfirmModalVisible.value = true
+}
+
+const deleteUser = (record: User) => {
+  action.value = 'delete'
+  affectedUserId.value = record.user_id
+  confirmTitle.value = 'Delete User'
+  // Soft delete (status=left) - keep audit history
+  confirmMessage.value = `Are you sure you want to delete user "${record.nickname || record.user_account}"? This will mark the user as left (soft delete).`
+  isConfirmModalVisible.value = true
+}
+
 // Handle Status filter changes
 const handleStatusFilterChange = (value: 'active' | 'disabled' | 'left', event: any) => {
   if (event.target.checked) {
@@ -833,6 +873,13 @@ const handleConfirm = async () => {
       const params: UpdateUserParams = { status: 'active' }
       await updateUserApi(affectedUserId.value, params)
       message.success('User enabled successfully')
+    } else if (action.value === 'restore') {
+      const params: UpdateUserParams = { status: 'active' }
+      await updateUserApi(affectedUserId.value, params)
+      message.success('User restored successfully')
+    } else if (action.value === 'delete') {
+      await deleteUserApi(affectedUserId.value)
+      message.success('User deleted (marked as left) successfully')
     }
     handleCancelConfirm()
     refreshData()
@@ -910,14 +957,17 @@ const handleCancelResetPin = () => {
 const fetchRoles = async () => {
   try {
     const data = await getRolesApi()
-    // Filter out SystemAdmin (no permission to manage tenant users)
-    // Filter out Resident and Family (not for users table, they are for residents table)
+    // Role dropdown is for creating/updating *users*:
+    // - Always hide Resident/Family (they belong to residents flow, not staff users)
+    // - Never allow assigning SystemAdmin here
+    // - Only SystemAdmin within System tenant can assign SystemOperator
     availableRoles.value = data.items.filter(
       (role) =>
         role.is_active &&
-        role.role_code !== 'SystemAdmin' &&
         role.role_code !== 'Resident' &&
-        role.role_code !== 'Family'
+        role.role_code !== 'Family' &&
+        role.role_code !== 'SystemAdmin' &&
+        (role.role_code !== 'SystemOperator' || (isSystemTenant.value && isSystemAdmin.value))
     )
   } catch (error: any) {
     console.error('Failed to fetch roles:', error)

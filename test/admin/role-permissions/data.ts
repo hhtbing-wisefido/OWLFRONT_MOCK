@@ -18,6 +18,12 @@ export const ROLES = [
     mainFunction: 'Manage system-level resources, business data read-only',
   },
   {
+    code: 'SystemOperator',
+    name: 'System Operator',
+    description: 'System Operator (Platform Ops)',
+    mainFunction: 'Platform operations: manage tenants, device_store, alarm_cloud',
+  },
+  {
     code: 'Admin',
     name: 'Administrator',
     description: 'Administrator',

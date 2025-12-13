@@ -249,6 +249,10 @@ const userStore = useUserStore()
 
 const userId = computed(() => route.params.id as string)
 
+const SYSTEM_TENANT_ID = '00000000-0000-0000-0000-000000000001'
+const isSystemTenant = computed(() => userStore.userInfo?.tenant_id === SYSTEM_TENANT_ID)
+const isSystemAdmin = computed(() => userStore.userInfo?.role === 'SystemAdmin')
+
 // Use permission check Composable
 const { hasManagePermission, isCurrentUser: checkIsCurrentUser } = usePermission()
 
@@ -342,14 +346,17 @@ const resetPasswordRules: Record<string, Rule[]> = {
 const fetchRoles = async () => {
   try {
     const data = await getRolesApi()
-    // Filter out SystemAdmin (no permission to manage tenant users)
-    // Filter out Resident and Family (not for users table, they are for residents table)
+    // Role dropdown is for editing *users*:
+    // - Always hide Resident/Family (they belong to residents flow, not staff users)
+    // - Never allow assigning SystemAdmin here
+    // - Only SystemAdmin within System tenant can assign SystemOperator
     availableRoles.value = data.items.filter(
       (role) =>
         role.is_active &&
-        role.role_code !== 'SystemAdmin' &&
         role.role_code !== 'Resident' &&
-        role.role_code !== 'Family'
+        role.role_code !== 'Family' &&
+        role.role_code !== 'SystemAdmin' &&
+        (role.role_code !== 'SystemOperator' || (isSystemTenant.value && isSystemAdmin.value))
     )
   } catch (error: any) {
     console.error('Failed to fetch roles:', error)

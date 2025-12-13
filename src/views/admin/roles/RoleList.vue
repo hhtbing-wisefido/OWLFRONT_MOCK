@@ -297,10 +297,12 @@ const rules: Record<string, Rule[]> = {
 const onSearch = () => {
   let filtered = dataSource.value
   
-  // SystemAdmin role is not visible to tenants (only SystemAdmin users can see it)
-  // Filter out SystemAdmin role for non-SystemAdmin users
+  // System roles (SystemAdmin/SystemOperator) are platform-only.
+  // Hide them from non-SystemAdmin users (ordinary tenants should not see/modify them).
   if (!isSystemAdmin.value) {
-    filtered = dataSource.value.filter((role) => role.role_code !== 'SystemAdmin')
+    filtered = dataSource.value.filter(
+      (role) => role.role_code !== 'SystemAdmin' && role.role_code !== 'SystemOperator',
+    )
   }
   
   if (!searchText.value || searchText.value.trim() === '') {
@@ -485,11 +487,12 @@ const fetchData = async () => {
     const data = await getRolesApi(params)
     dataSource.value = data.items
     
-    // SystemAdmin role is not visible to tenants (only SystemAdmin users can see it)
-    // Filter out SystemAdmin role for non-SystemAdmin users
+    // System roles are not visible to tenants (only SystemAdmin users can see them)
     let filtered = data.items
     if (!isSystemAdmin.value) {
-      filtered = data.items.filter((role) => role.role_code !== 'SystemAdmin')
+      filtered = data.items.filter(
+        (role) => role.role_code !== 'SystemAdmin' && role.role_code !== 'SystemOperator',
+      )
     }
     filteredDataSource.value = filtered
   } catch (error: any) {

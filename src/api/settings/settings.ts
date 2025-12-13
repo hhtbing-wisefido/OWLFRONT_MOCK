@@ -20,7 +20,8 @@ enum Api {
 }
 
 // Mock mode: In development, use mock data instead of real API calls
-const useMock = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK !== 'false'
+// DEV 默认走真实后端；只有显式设置 VITE_USE_MOCK='true' 才启用 mock
+const useMock = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true'
 
 // Display mock status in console
 if (useMock) {

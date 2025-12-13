@@ -204,6 +204,10 @@ const transform: AxiosTransform = {
       if (userInfo.role) {
         ;(config as any).headers['X-User-Role'] = userInfo.role
       }
+      // Multi-tenant: let backend resolve tenant without requiring tenant_id query param on every POST/PUT
+      if ((userInfo as any).tenant_id) {
+        ;(config as any).headers['X-Tenant-Id'] = (userInfo as any).tenant_id
+      }
     }
     
     return config

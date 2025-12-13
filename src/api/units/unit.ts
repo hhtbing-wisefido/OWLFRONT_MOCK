@@ -45,7 +45,8 @@ export enum Api {
 }
 
 // Mock mode: In development, use mock data instead of real API calls
-const useMock = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK !== 'false'
+// DEV 默认走真实后端；只有显式设置 VITE_USE_MOCK='true' 才启用 mock
+const useMock = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true'
 
 if (useMock) {
   console.log('%c[Mock] Unit API Mock enabled', 'color: #52c41a; font-weight: bold')

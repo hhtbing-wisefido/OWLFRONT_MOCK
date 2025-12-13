@@ -58,3 +58,11 @@ export interface UpdateRoleParams {
   _delete?: boolean // Used when deleting (true: delete)
 }
 
+/**
+ * Update role status request parameters (enable/disable)
+ * Used by: PUT /admin/api/v1/roles/:id/status
+ */
+export interface UpdateRoleStatusParams {
+  is_active: boolean
+}
+

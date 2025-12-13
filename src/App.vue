@@ -2,8 +2,9 @@
 import { RouterView } from 'vue-router'
 import { defineAsyncComponent } from 'vue'
 
-// Load RoleSwitcher component only in development environment
-const RoleSwitcher = import.meta.env.DEV
+// Dev-only helper. Disable when running against real backend (non-mock),
+// otherwise it will override real permissions and confuse testing.
+const RoleSwitcher = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true'
   ? defineAsyncComponent(() => import('@/components/dev/RoleSwitcher.vue'))
   : null
 </script>

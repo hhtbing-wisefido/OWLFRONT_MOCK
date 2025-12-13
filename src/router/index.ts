@@ -213,6 +213,15 @@ const routes: RouteRecordRaw[] = [
           requiresAuth: true,
         },
       },
+      {
+        path: '/admin/tenants',
+        name: 'TenantList',
+        component: () => import('@/views/admin/tenants.vue'),
+        meta: {
+          title: 'Tenant Management',
+          requiresAuth: true,
+        },
+      },
       
       // ==================== 其他功能路由 ====================
       {

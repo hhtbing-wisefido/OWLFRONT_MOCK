@@ -108,7 +108,9 @@ export const useUserStore = defineStore('user', {
       const userInfo = this.userInfo || getAuthCache<UserInfo>(USER_INFO_KEY)
       
       // Development environment: support test role override
-      if (import.meta.env.DEV && userInfo) {
+      // Only enable this when explicitly running in mock mode; otherwise it will
+      // override real backend role (e.g. sysadmin -> SystemAdmin) and break routing.
+      if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true' && userInfo) {
         const testRole = localStorage.getItem('dev_test_role')
         if (testRole) {
           return {
@@ -391,7 +393,7 @@ export const useUserStore = defineStore('user', {
         '/monitoring/overview': ['SystemAdmin', 'Admin', 'Manager', 'IT', 'Nurse', 'Caregiver', 'Resident', 'Family'],
         // Note: Resident and Family can view alarm records from card detail page, but not from /alarm/records (privacy protection)
         '/alarm/records': ['SystemAdmin', 'Admin', 'Manager', 'IT', 'Nurse', 'Caregiver'],
-        '/alarm/cloud': ['SystemAdmin', 'Admin', 'Manager', 'IT', 'Nurse', 'Caregiver', 'Resident', 'Family'],
+        '/alarm/cloud': ['SystemAdmin', 'SystemOperator', 'Admin', 'Manager', 'IT', 'Nurse', 'Caregiver', 'Resident', 'Family'],
 
         // ==================== 【数据管理区域】 ====================
         '/residents': ['Admin', 'Manager', 'Nurse', 'Caregiver', 'Resident', 'Family'],
@@ -403,15 +405,18 @@ export const useUserStore = defineStore('user', {
 
         // ==================== 【系统设置区域】 ====================
         '/devices': ['Admin', 'Manager', 'IT'],
-        '/admin/devicestore': ['SystemAdmin'],
+        '/admin/devicestore': ['SystemAdmin', 'SystemOperator'],
         '/units': ['Admin', 'Manager', 'IT'],
         '/unitview': ['Admin', 'Manager', 'IT'], // Same as /units
-        '/admin/users': ['Admin', 'Manager', 'IT'],
-        '/admin/users/:id': ['Admin', 'Manager', 'IT'],
+        // SystemAdmin is a platform role, but sysadmin account lives in the System tenant.
+        // Allow SystemAdmin to access Users page at least for System tenant management.
+        '/admin/users': ['SystemAdmin', 'Admin', 'Manager', 'IT'],
+        '/admin/users/:id': ['SystemAdmin', 'Admin', 'Manager', 'IT'],
         '/admin/roles': ['SystemAdmin', 'Admin', 'Manager', 'IT'],
         '/admin/permissions': ['SystemAdmin'],
         '/admin/role-permissions': ['SystemAdmin'], // Redirect to /admin/permissions
         '/admin/tags': ['SystemAdmin', 'Admin', 'Manager', 'IT', 'Nurse', 'Caregiver'],
+        '/admin/tenants': ['SystemAdmin', 'SystemOperator'],
 
         // ==================== 其他功能路由 ====================
         '/monitoring/detail/:cardId': ['Admin', 'Manager', 'IT', 'Nurse', 'Caregiver', 'Resident', 'Family'],

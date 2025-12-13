@@ -28,13 +28,22 @@
 <script lang="ts" setup>
 import { ref, computed, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
-import { getRolePermissionsApi } from '@/api/admin/role-permission/rolePermission'
+import { batchCreateRolePermissionsApi, getRolePermissionsApi } from '@/api/admin/role-permission/rolePermission'
 import type { RolePermission } from '@/api/admin/role-permission/model/rolePermissionModel'
 import { ROLES } from '@test/admin/role-permissions/data'
 import RoleCard from '@/views/admin/permissions/components/RoleCard.vue'
+import { useUserStore } from '@/store/modules/user'
 
-// All roles
-const roles = ROLES
+const SYSTEM_TENANT_ID = '00000000-0000-0000-0000-000000000001'
+const userStore = useUserStore()
+
+// All roles (hide system roles on non-System tenant)
+const roles = computed(() => {
+  const tenantId = userStore.userInfo?.tenant_id
+  const isSystemTenant = tenantId === SYSTEM_TENANT_ID
+  if (isSystemTenant) return ROLES
+  return ROLES.filter((r) => r.code !== 'SystemAdmin' && r.code !== 'SystemOperator')
+})
 
 // Expanded role
 const expandedRole = ref<string | null>(null)
@@ -46,7 +55,7 @@ const allPermissions = ref<RolePermission[]>([])
 const rolePermissions = computed(() => {
   const result: Record<string, RolePermission[]> = {}
   
-  roles.forEach((role) => {
+  roles.value.forEach((role) => {
     result[role.code] = []
   })
 
@@ -75,8 +84,17 @@ const handleCollapse = (roleCode: string) => {
 // Save permissions
 const handleSave = async (roleCode: string, permissions: RolePermission[]) => {
   try {
-    // TODO: Implement save logic
-    console.log('Save permissions for role:', roleCode, permissions)
+    const active = permissions.filter((p) => p.is_active)
+    // Save as a batch replace (global defaults in DB: tenant_id = SystemTenantID).
+    await batchCreateRolePermissionsApi({
+      role_code: roleCode,
+      permissions: active.map((p) => ({
+        resource_type: p.resource_type,
+        permission_type: p.permission_type,
+        scope: p.scope,
+        is_active: true,
+      })),
+    })
     message.success('Permissions saved successfully')
     // Refresh data
     await fetchPermissions()

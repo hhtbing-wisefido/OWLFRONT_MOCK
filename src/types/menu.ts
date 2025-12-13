@@ -97,5 +97,12 @@ export const menuItems: MenuItem[] = [
     path: '/admin/tags',
     permission: ['SystemAdmin', 'Admin', 'Manager', 'IT', 'Nurse', 'Caregiver'],
   },
+  {
+    key: 'admin-tenants',
+    label: 'Tenant Management',
+    icon: 'ApartmentOutlined',
+    path: '/admin/tenants',
+    permission: ['SystemAdmin'],
+  },
 ]
 
