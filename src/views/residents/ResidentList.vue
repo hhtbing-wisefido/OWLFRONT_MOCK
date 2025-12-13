@@ -177,13 +177,13 @@ const pagination = ref({
 })
 
 
-// Multi-column sorter with priority: location_tag > building > area_tag > unit_name
+// Multi-column sorter with priority: branch_tag > building > area_tag > unit_name
 const locationSorter = (a: Resident, b: Resident) => {
-  // Priority 1: location_tag
-  const aLocationTag = a.location_tag || ''
-  const bLocationTag = b.location_tag || ''
-  const locationTagCompare = aLocationTag.localeCompare(bLocationTag)
-  if (locationTagCompare !== 0) return locationTagCompare
+  // Priority 1: branch_tag
+  const aBranchTag = a.branch_tag || ''
+  const bBranchTag = b.branch_tag || ''
+  const branchTagCompare = aBranchTag.localeCompare(bBranchTag)
+  if (branchTagCompare !== 0) return branchTagCompare
 
   // Priority 2: building
   const aBuilding = a.building || ''
@@ -213,9 +213,9 @@ const columns = [
     width: 150,
   },
   {
-    title: 'location_tag',
-    dataIndex: 'location_tag',
-    key: 'location_tag',
+    title: 'Branch',
+    dataIndex: 'branch_tag',
+    key: 'branch_tag',
     ellipsis: true,
     align: 'left',
     width: 150,

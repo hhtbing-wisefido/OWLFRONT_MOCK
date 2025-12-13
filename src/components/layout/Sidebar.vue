@@ -41,6 +41,31 @@
         </a-button>
       </div>
     </div>
+
+    <!-- Change Password Modal (in-app, authenticated) -->
+    <a-modal
+      v-model:visible="passwordModalVisible"
+      title="Change Password"
+      :confirm-loading="changingPassword"
+      @ok="submitPasswordChange"
+      @cancel="closePasswordModal"
+      ok-text="Update"
+    >
+      <div style="margin-bottom: 12px; color: #666">
+        Please enter the new password twice.
+      </div>
+      <a-input-password
+        v-model:value="newPassword"
+        placeholder="New password"
+        autocomplete="new-password"
+        style="margin-bottom: 12px"
+      />
+      <a-input-password
+        v-model:value="confirmPassword"
+        placeholder="Confirm new password"
+        autocomplete="new-password"
+      />
+    </a-modal>
     
     <!-- Divider before menu -->
     <div class="sidebar-divider"></div>
@@ -50,11 +75,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Menu from './Menu.vue'
 import { MenuFoldOutlined, MenuUnfoldOutlined, LogoutOutlined, LockOutlined } from '@ant-design/icons-vue'
 import { useUserStore } from '@/store/modules/user'
+import { message } from 'ant-design-vue'
+import { resetPasswordApi } from '@/api/admin/user/user'
 
 defineProps<{
   collapsed: boolean
@@ -74,7 +101,52 @@ const handleLogout = () => {
 }
 
 const handlePasswordChange = () => {
-  router.push('/forgot-password')
+  // In-app change password (for logged-in user)
+  passwordModalVisible.value = true
+}
+
+const passwordModalVisible = ref(false)
+const changingPassword = ref(false)
+const newPassword = ref('')
+const confirmPassword = ref('')
+
+const closePasswordModal = () => {
+  passwordModalVisible.value = false
+  changingPassword.value = false
+  newPassword.value = ''
+  confirmPassword.value = ''
+}
+
+const submitPasswordChange = async () => {
+  const uid = userInfo.value?.userId
+  if (!uid) {
+    message.error('User is not loaded')
+    return
+  }
+  const p1 = (newPassword.value || '').trim()
+  const p2 = (confirmPassword.value || '').trim()
+  if (!p1 || !p2) {
+    message.error('Please enter the new password twice')
+    return
+  }
+  if (p1 !== p2) {
+    message.error('Passwords do not match')
+    return
+  }
+  if (p1.length < 4 || p1.length > 100) {
+    message.error('Password length must be 4–100 characters')
+    return
+  }
+  changingPassword.value = true
+  try {
+    await resetPasswordApi(uid, { new_password: p1 })
+    message.success('Password updated')
+    closePasswordModal()
+  } catch (e: any) {
+    message.error(e?.message || 'Failed to update password')
+  } finally {
+    changingPassword.value = false
+  }
 }
 
 // Get first word from tenant name

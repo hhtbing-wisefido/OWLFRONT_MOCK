@@ -5,7 +5,7 @@
 export interface Unit {
   unit_id: string
   tenant_id: string
-  location_tag?: string // Location tag (e.g., "AreaA MainBuild", "Spring SP")
+  branch_tag?: string // Location tag (e.g., "AreaA MainBuild", "Spring SP")
   unit_name: string // Unit name (colloquial, memorable, e.g., "E203", "201", "Home-001")
   building?: string // Building (Facility scenario, default: "-")
   floor?: string // Floor (Facility scenario, default: "1F")
@@ -27,23 +27,23 @@ export interface Building {
   building_name: string
   floors: number // Number of floors
   tenant_id?: string
-  location_tag?: string // API layer uses location_tag
+  branch_tag?: string // API layer uses branch_tag
 }
 
 export interface CreateBuildingParams {
   building_name: string
   floors: number
-  location_tag?: string // API layer uses location_tag
+  branch_tag?: string // API layer uses branch_tag
 }
 
 export interface UpdateBuildingParams {
   building_name?: string
   floors?: number
-  location_tag?: string // API layer uses location_tag
+  branch_tag?: string // API layer uses branch_tag
 }
 
 export interface CreateUnitParams {
-  location_tag?: string
+  branch_tag?: string
   unit_name: string
   building?: string // Default: "-"
   floor?: string // Default: "1F"
@@ -61,7 +61,7 @@ export interface CreateUnitParams {
 
 export interface GetUnitsParams {
   tenant_id?: string
-  location_tag?: string
+  branch_tag?: string
   unit_name?: string
   building?: string
   floor?: string
@@ -81,7 +81,7 @@ export interface GetUnitsResult {
 }
 
 export interface UpdateUnitParams {
-  location_tag?: string
+  branch_tag?: string
   unit_name?: string
   building?: string
   floor?: string

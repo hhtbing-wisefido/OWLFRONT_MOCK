@@ -254,7 +254,11 @@
           </a-select>
         </a-form-item>
         <a-form-item v-if="!editModel" label="Password" name="password">
-          <a-input-password placeholder="Please enter password" v-model:value="editData.password" />
+          <a-input-password 
+            placeholder="Please enter password" 
+            v-model:value="editData.password"
+            autocomplete="new-password"
+          />
         </a-form-item>
         <a-form-item label="Alarm Levels" name="alarm_levels">
           <a-select
@@ -288,7 +292,7 @@
             :disabled="!hasManagePermission"
           >
             <a-select-option value="ALL">ALL</a-select-option>
-            <a-select-option value="LOCATION-TAG">LOCATION-TAG</a-select-option>
+            <a-select-option value="BRANCH-TAG">BRANCH-TAG</a-select-option>
             <a-select-option value="ASSIGNED_ONLY">ASSIGNED_ONLY</a-select-option>
           </a-select>
         </a-form-item>
@@ -296,8 +300,10 @@
           <a-select
             v-model:value="editData.tags"
             mode="tags"
-            placeholder="Please enter tags"
+            placeholder="Please enter tags and press Enter"
             :disabled="!hasManagePermission"
+            allowClear
+            :token-separators="[',']"
           >
           </a-select>
         </a-form-item>
@@ -415,7 +421,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ExclamationCircleOutlined, FilterOutlined, ReloadOutlined, HomeOutlined, ArrowLeftOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
@@ -752,6 +758,23 @@ const addUser = () => {
   editModel.value = false
 }
 
+// Watch role changes to set default alarm_scope (only when creating new user)
+watch(
+  () => editData.value.role,
+  (newRole) => {
+    // Only auto-set default when creating new user (not editing)
+    if (!editModel.value && newRole) {
+      const roleLower = newRole.toLowerCase()
+      if (roleLower === 'caregiver' || roleLower === 'nurse') {
+        editData.value.alarm_scope = 'ASSIGNED_ONLY'
+      } else if (roleLower === 'manager') {
+        editData.value.alarm_scope = 'BRANCH-TAG'
+      }
+      // Other roles: keep current value or default to 'ALL'
+    }
+  }
+)
+
 const handleRowDoubleClick = (record: User) => {
   // Double-click row to enter detail page
   router.push(`/admin/users/${record.user_id}`)
@@ -913,6 +936,8 @@ const handleResetPassword = async () => {
 const handleCancel = () => {
   isEditModalVisible.value = false
   formEditRef.value?.resetFields()
+  // Reset editData to empty to prevent stale values (especially from browser autocomplete)
+  editData.value = { ...emptyUser }
 }
 
 const handleCancelConfirm = () => {

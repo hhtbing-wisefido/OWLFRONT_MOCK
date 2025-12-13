@@ -29,7 +29,7 @@ function getToken(): string | null {
 
 // Get user info from localStorage (synchronous function)
 // Note: Uses USER_INFO_KEY constant from auth utils
-function getUserInfo(): { userId?: string; role?: string } | null {
+function getUserInfo(): { userId?: string; role?: string; tenant_id?: string } | null {
   try {
     const userInfoStr = localStorage.getItem('USER_INFO')
     if (userInfoStr) {
@@ -37,6 +37,7 @@ function getUserInfo(): { userId?: string; role?: string } | null {
       return {
         userId: userInfo.userId,
         role: userInfo.role,
+        tenant_id: userInfo.tenant_id,
       }
     }
     return null

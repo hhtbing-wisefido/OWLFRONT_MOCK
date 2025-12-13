@@ -184,7 +184,7 @@
                 v-model:value="selectedUnitDisplay"
                 :disabled="true"
                 style="width: 300px"
-                placeholder="location_tag-Building-Floor-Unit_name"
+                placeholder="branch_tag-Building-Floor-Unit_name"
               />
               <a-select
                 v-model:value="localResidentData.room_id"
@@ -328,19 +328,19 @@
             </div>
           </template>
           <!-- Sortable columns -->
-          <template v-else-if="column.key === 'location_tag'">
+          <template v-else-if="column.key === 'branch_tag'">
             <div 
               style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;" 
-              @click="toggleSort('location_tag')"
-              :style="{ color: sortConfig.key === 'location_tag' && sortConfig.order ? '#1890ff' : 'inherit' }"
+              @click="toggleSort('branch_tag')"
+              :style="{ color: sortConfig.key === 'branch_tag' && sortConfig.order ? '#1890ff' : 'inherit' }"
             >
               <span>Unit_tag</span>
               <SortAscendingOutlined 
-                v-if="sortConfig.key === 'location_tag' && sortConfig.order === 'asc'" 
+                v-if="sortConfig.key === 'branch_tag' && sortConfig.order === 'asc'" 
                 style="font-size: 14px; color: #1890ff;"
               />
               <SortDescendingOutlined 
-                v-else-if="sortConfig.key === 'location_tag' && sortConfig.order === 'desc'" 
+                v-else-if="sortConfig.key === 'branch_tag' && sortConfig.order === 'desc'" 
                 style="font-size: 14px; color: #1890ff;"
               />
               <span v-else style="color: #d9d9d9; font-size: 12px;">⇅</span>
@@ -424,8 +424,8 @@
           </template>
         </template>
         <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'location_tag'">
-            {{ record.location_tag || '-' }}
+          <template v-if="column.key === 'branch_tag'">
+            {{ record.branch_tag || '-' }}
           </template>
           <template v-else-if="column.key === 'building'">
             {{ record.building || '-' }}
@@ -641,7 +641,7 @@ const sortConfig = ref<{ key: string | null; order: 'asc' | 'desc' | null }>({
 
 // Unit table columns
 const unitTableColumns = [
-  { title: 'Unit_tag', key: 'location_tag', dataIndex: 'location_tag', width: 120 },
+  { title: 'Branch', key: 'branch_tag', dataIndex: 'branch_tag', width: 120 },
   { title: 'Building', key: 'building', dataIndex: 'building', width: 100 },
   { title: 'Floor', key: 'floor', dataIndex: 'floor', width: 80 },
   { title: 'Area_tag', key: 'area_tag', dataIndex: 'area_tag', width: 100 },
@@ -713,9 +713,9 @@ const sortedAndFilteredUnits = computed(() => {
       let valueB: any = ''
       
       switch (key) {
-        case 'location_tag':
-          valueA = (a.location_tag || '').toLowerCase()
-          valueB = (b.location_tag || '').toLowerCase()
+        case 'branch_tag':
+          valueA = (a.branch_tag || '').toLowerCase()
+          valueB = (b.branch_tag || '').toLowerCase()
           break
         case 'building':
           valueA = (a.building || '').toLowerCase()
@@ -743,9 +743,9 @@ const sortedAndFilteredUnits = computed(() => {
   } else {
     // 默认排序：Unit_tag > building > floor > Area_tag > unitName
     units.sort((a, b) => {
-      // 1. Unit_tag (location_tag)
-      const tagA = (a.location_tag || '').toLowerCase()
-      const tagB = (b.location_tag || '').toLowerCase()
+      // 1. Unit_tag (branch_tag)
+      const tagA = (a.branch_tag || '').toLowerCase()
+      const tagB = (b.branch_tag || '').toLowerCase()
       if (tagA !== tagB) {
         return tagA.localeCompare(tagB)
       }
@@ -781,12 +781,12 @@ const sortedAndFilteredUnits = computed(() => {
   return units
 })
 
-// 获取选中的 unit 显示文本：location_tag-Building-Floor-Area_tag-Unit_name
+// 获取选中的 unit 显示文本：branch_tag-Building-Floor-Area_tag-Unit_name
 const selectedUnitDisplay = computed(() => {
   if (!selectedUnit.value) return ''
   const parts = []
-  if (selectedUnit.value.location_tag) {
-    parts.push(selectedUnit.value.location_tag)
+  if (selectedUnit.value.branch_tag) {
+    parts.push(selectedUnit.value.branch_tag)
   }
   if (selectedUnit.value.building) {
     parts.push(selectedUnit.value.building)

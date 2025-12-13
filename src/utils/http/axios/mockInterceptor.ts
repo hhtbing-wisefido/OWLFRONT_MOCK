@@ -9,7 +9,9 @@ import type { LoginParams, LoginResult, Institution } from '@/api/auth/model/aut
 /**
  * Whether to enable Mock (automatically enabled in development environment)
  */
-export const isMockEnabled = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK !== 'false'
+// Default: use real backend even in DEV.
+// Only enable mock when explicitly configured (VITE_USE_MOCK='true').
+export const isMockEnabled = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true'
 
 /**
  * Mock request interceptor

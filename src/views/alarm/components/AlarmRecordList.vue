@@ -25,11 +25,11 @@
           />
         </a-form-item>
 
-        <!-- location_tag Search -->
-        <a-form-item label="location_tag">
+        <!-- branch_tag Search -->
+        <a-form-item label="Branch">
           <a-input
-            v-model:value="searchParams.location_tag"
-            placeholder="Search by location tag"
+            v-model:value="searchParams.branch_tag"
+            placeholder="Search by branch"
             style="width: 120px"
             allow-clear
             @pressEnter="handleSearch"
@@ -368,7 +368,7 @@ const handling = ref(false)
 // Search parameters
 const searchParams = ref({
   resident: '',
-  location_tag: '',
+  branch_tag: '',
   unit_name: '',
   device_name: '',
 })
@@ -412,8 +412,8 @@ const formatDateTime = (timestamp: number): string => {
 
 const formatAddress = (record: AlarmEvent): string => {
   const parts: string[] = []
-  if (record.location_tag) {
-    parts.push(record.location_tag)
+  if (record.branch_tag) {
+    parts.push(record.branch_tag)
   }
   if (record.building) {
     parts.push(record.building)
@@ -490,12 +490,12 @@ const formatResidentInfo = (record: AlarmEvent): string => {
 }
 
 const formatAddressForModal = (record: AlarmEvent): string => {
-  // Full address format for modal: location_tag-building-floor-area_tag-unit_name-room-bed
+  // Full address format for modal: branch_tag-building-floor-area_tag-unit_name-room-bed
   // Device alarm should show complete device location information
   const parts: string[] = []
   
-  if (record.location_tag) {
-    parts.push(record.location_tag)
+  if (record.branch_tag) {
+    parts.push(record.branch_tag)
   }
   if (record.building) {
     parts.push(record.building)
@@ -602,7 +602,7 @@ const handleSearch = () => {
 const handleReset = () => {
   searchParams.value = {
     resident: '',
-    location_tag: '',
+    branch_tag: '',
     unit_name: '',
     device_name: '',
   }
@@ -715,8 +715,8 @@ const fetchData = async () => {
     if (searchParams.value.resident) {
       params.resident = searchParams.value.resident
     }
-    if (searchParams.value.location_tag) {
-      params.location_tag = searchParams.value.location_tag
+    if (searchParams.value.branch_tag) {
+      params.branch_tag = searchParams.value.branch_tag
     }
     if (searchParams.value.unit_name) {
       params.unit_name = searchParams.value.unit_name

@@ -118,7 +118,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 
-const mockEnabled = ref(import.meta.env.DEV && import.meta.env.VITE_USE_MOCK !== 'false')
+const mockEnabled = ref(import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true')
 const login = ref<any>(null)
 
 onMounted(async () => {

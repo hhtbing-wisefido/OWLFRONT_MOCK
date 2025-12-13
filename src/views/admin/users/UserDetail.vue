@@ -152,7 +152,7 @@
                 :disabled="!hasManagePermission"
               >
                 <a-radio value="ALL">ALL</a-radio>
-                <a-radio value="LOCATION-TAG">LOCATION-TAG</a-radio>
+                <a-radio value="BRANCH-TAG">BRANCH-TAG</a-radio>
                 <a-radio value="ASSIGNED_ONLY">ASSIGNED_ONLY</a-radio>
               </a-radio-group>
               <span v-if="!hasManagePermission" class="field-hint">

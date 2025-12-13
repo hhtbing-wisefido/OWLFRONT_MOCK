@@ -62,7 +62,7 @@ export interface UserInfo {
   domain?: string                   // Institution domain (corresponds to tenants.domain) - saved on login success
   
   // Location information (avoid address leakage, only store non-sensitive location identifiers)
-  locationTag?: string              // Location tag (corresponds to locations.location_tag) - non-sensitive, for grouping and routing
+  branchTag?: string              // Location tag (corresponds to locations.branch_tag) - non-sensitive, for grouping and routing
   locationName?: string             // Location name (corresponds to locations.location_name) - non-sensitive, for card display
   
   // Other
@@ -80,7 +80,7 @@ interface UserState {
   lastUpdateTime: number
   loginType: 'staff' | 'resident' | null  // Login type selected in login form (staff/resident) - stored locally only, not on server
   // Note: PIN code is not stored in state (memory only, not persisted)
-  // Note: locationTag and locationName are stored in userInfo
+  // Note: branchTag and locationName are stored in userInfo
 }
 
 export const useUserStore = defineStore('user', {
@@ -165,11 +165,33 @@ export const useUserStore = defineStore('user', {
     // Get user home page path
     getUserHomePath(): string {
       const userInfo = this.getUserInfo
-      // Prefer backend-returned homePath
-      if (userInfo?.homePath) {
-        return userInfo.homePath
+      const role = userInfo?.role || ''
+
+      // Role-based landing pages (prevent "login success but no redirect" due to permission guard loop)
+      // SystemOperator is a platform ops role and doesn't necessarily have monitoring permissions.
+      if (role === 'SystemOperator') {
+        return '/admin/tenants'
       }
-      // Default home page for all roles: Monitoring Overview
+      if (role === 'SystemAdmin') {
+        // SystemAdmin manages global rules/permissions; landing on permissions is the most useful default.
+        return '/admin/permissions'
+      }
+
+      // Prefer backend-returned homePath only if it's permitted by current role.
+      // Otherwise it can cause a guard loop (deny -> redirect to same denied path).
+      if (userInfo?.homePath) {
+        const allowedRoles = this.pagePermissions[userInfo.homePath]
+        if (!allowedRoles || allowedRoles.length === 0) {
+          // No config: allow for non-admin paths; deny for admin paths.
+          if (!userInfo.homePath.startsWith('/admin')) {
+            return userInfo.homePath
+          }
+        } else if (allowedRoles.includes(role)) {
+          return userInfo.homePath
+        }
+      }
+
+      // Default home page for other roles: Monitoring Overview
       return '/monitoring/overview'
     },
   },
@@ -473,7 +495,7 @@ export const useUserStore = defineStore('user', {
         tenant_id: result.tenant_id!,
         tenant_name: result.tenant_name!,
         domain: result.domain,
-        locationTag: result.locationTag,
+        branchTag: result.branchTag,
         locationName: result.locationName,
         homePath: result.homePath,
         avatar: result.avatar,
