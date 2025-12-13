@@ -38,10 +38,10 @@ export const useTagsStore = defineStore('tags', () => {
   })
 
   /**
-   * 获取 location_tag 列表
+   * 获取 branch_tag 列表
    */
-  const locationTags = computed(() => {
-    return getTagsByType.value('location_tag')
+  const branchTags = computed(() => {
+    return getTagsByType.value('branch_tag')
   })
 
   /**
@@ -122,7 +122,7 @@ export const useTagsStore = defineStore('tags', () => {
     
     // Getters
     getTagsByType,
-    locationTags,
+    branchTags,
     areaTags,
     
     // Actions

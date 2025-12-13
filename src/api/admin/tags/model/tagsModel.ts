@@ -9,7 +9,7 @@
 export interface TagCatalogItem {
   tag_id: string
   tenant_id: string
-  tag_type: string // Tag type: required, 'location_tag', 'family_tag', 'area_tag', 'user_tag', 'custom_tag'
+  tag_type: string // Tag type: required, 'branch_tag', 'family_tag', 'area_tag', 'user_tag', 'custom_tag'
   tag_name: string // Tag name: required, globally unique within same tenant_id (across all tag_type)
   tag_objects?: Record<string, Record<string, string>> // JSONB format: {"resident": {"uuid1": "name1"}, "location": {"uuid2": "name2"}}
 }
@@ -31,10 +31,10 @@ export interface GetTagsResult {
   total: number
   // Available tag types (system predefined types that can be used)
   // This list is provided by the server to avoid hardcoding in frontend
-  available_tag_types?: string[] // Optional: list of all available tag_type values (e.g., ['location_tag', 'family_tag', 'area_tag', 'user_tag', 'custom_tag'])
+  available_tag_types?: string[] // Optional: list of all available tag_type values (e.g., ['branch_tag', 'family_tag', 'area_tag', 'user_tag', 'custom_tag'])
   // System predefined tag types (cannot be deleted, only SystemAdmin can modify)
-  // These are the built-in tag types: location_tag, family_tag, area_tag
-  system_predefined_tag_types?: string[] // Optional: list of system predefined tag_type values that cannot be deleted (e.g., ['location_tag', 'family_tag', 'area_tag'])
+  // These are the built-in tag types: branch_tag, family_tag, area_tag
+  system_predefined_tag_types?: string[] // Optional: list of system predefined tag_type values that cannot be deleted (e.g., ['branch_tag', 'family_tag', 'area_tag'])
 }
 
 /**

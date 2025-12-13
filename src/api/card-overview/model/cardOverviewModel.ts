@@ -77,7 +77,7 @@ export interface CardOverviewCaregiver {
 export interface CardOverviewItem {
   card_id: string
   card_name: string
-  card_address: string  // location_tag-building-unit_name
+  card_address: string  // branch_tag-building-unit_name
   
   // Space type fields
   unit_type: 'Facility' | 'Home'

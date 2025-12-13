@@ -11,7 +11,7 @@ export type PermissionType = 'read' | 'create' | 'update' | 'delete' | 'manage'
 /**
  * Permission scope
  */
-export type PermissionScope = 'all' | 'assigned_only' | 'location_tag'
+export type PermissionScope = 'all' | 'assigned_only' | 'branch_tag'
 
 /**
  * Role permission data model
@@ -132,7 +132,7 @@ export const PERMISSION_TYPES: PermissionType[] = ['read', 'create', 'update', '
 /**
  * Permission scope options (for dropdown selection)
  */
-export const PERMISSION_SCOPES: PermissionScope[] = ['all', 'assigned_only', 'location_tag']
+export const PERMISSION_SCOPES: PermissionScope[] = ['all', 'assigned_only', 'branch_tag']
 
 /**
  * Get resource types response

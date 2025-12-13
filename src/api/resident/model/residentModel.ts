@@ -22,7 +22,7 @@ export interface Resident {
   note?: string
   unit_id?: string
   unit_name?: string
-  location_tag?: string
+  branch_tag?: string
   building?: string // Building name (from units table)
   area_tag?: string // Area tag (from units table)
   unit_number?: string // Unit number (from units table)

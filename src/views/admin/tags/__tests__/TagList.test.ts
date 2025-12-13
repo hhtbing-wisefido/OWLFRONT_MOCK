@@ -294,7 +294,7 @@ describe('TagList', () => {
       const tagTypeSelect = selects[selects.length > 1 ? 1 : 0]
       
       // 修改下拉框值
-      await tagTypeSelect.setValue('location_tag')
+      await tagTypeSelect.setValue('branch_tag')
       await nextTick()
       await new Promise(resolve => setTimeout(resolve, 300))
       await nextTick()

@@ -16,21 +16,21 @@ export function useBuilding() {
   // State
   const buildings = ref<Building[]>([])
   const selectedFloor = ref<string>('')
-  const selectedLocationTag = ref<string>('')
+  const selectedBranchTag = ref<string>('')
   const expandedBuildings = ref<Set<string>>(new Set())
   const selectedBuilding = ref<Building | null>(null)
   const currentBuildingForGrid = ref<Building | null>(null)
   
   // Forms
   const createBuildingForm = ref({
-    location_tag: undefined as string | undefined,
+    branch_tag: undefined as string | undefined,
     building_name: '',
     floors: 1,
   })
   
   const editingBuildingId = ref<string | null>(null)
   const editingBuildingForm = ref({
-    location_tag: undefined as string | undefined,
+    branch_tag: undefined as string | undefined,
     building_name: '',
   })
 
@@ -47,10 +47,10 @@ export function useBuilding() {
   const handleToggleBuildingTag = (building: Building) => {
     if (currentBuildingForGrid.value?.building_id === building.building_id) {
       currentBuildingForGrid.value = null
-      selectedLocationTag.value = ''
+      selectedBranchTag.value = ''
     } else {
       currentBuildingForGrid.value = building
-      selectedLocationTag.value = building.location_tag || '-'
+      selectedBranchTag.value = building.branch_tag || '-'
     }
   }
 
@@ -75,8 +75,8 @@ export function useBuilding() {
   // Create building
   const handleCreateBuilding = async () => {
     try {
-      if (!createBuildingForm.value.location_tag && !createBuildingForm.value.building_name) {
-        message.error('Please provide either location_tag or Building name')
+      if (!createBuildingForm.value.branch_tag && !createBuildingForm.value.building_name) {
+        message.error('Please provide either branch_tag or Building name')
         return
       }
       
@@ -85,14 +85,14 @@ export function useBuilding() {
         return
       }
 
-      // Both location_tag and building_name default to '-' when empty
+      // Both branch_tag and building_name default to '-' when empty
       const buildingName = createBuildingForm.value.building_name?.trim() || '-'
-      const locationTag = createBuildingForm.value.location_tag?.trim() || '-'
+      const branchTag = createBuildingForm.value.branch_tag?.trim() || '-'
 
       await createBuildingApi({
         building_name: buildingName,
         floors: createBuildingForm.value.floors,
-        location_tag: locationTag,
+        branch_tag: branchTag,
       } as any)
 
       message.success('Building created successfully')
@@ -106,7 +106,7 @@ export function useBuilding() {
   // Reset create building form
   const resetCreateBuildingForm = () => {
     createBuildingForm.value = {
-      location_tag: undefined,
+      branch_tag: undefined,
       building_name: '',
       floors: 1,
     }
@@ -116,7 +116,7 @@ export function useBuilding() {
   const handleEditBuilding = (building: Building) => {
     editingBuildingId.value = building.building_id || null
     editingBuildingForm.value = {
-      location_tag: building.location_tag || undefined,
+      branch_tag: building.branch_tag || undefined,
       building_name: building.building_name || '',
     }
   }
@@ -130,13 +130,13 @@ export function useBuilding() {
         return
       }
 
-      // Both location_tag and building_name default to '-' when empty
+      // Both branch_tag and building_name default to '-' when empty
       const buildingName = editingBuildingForm.value.building_name?.trim() || '-'
-      const locationTag = editingBuildingForm.value.location_tag?.trim() || '-'
+      const branchTag = editingBuildingForm.value.branch_tag?.trim() || '-'
 
       await updateBuildingApi(building.building_id, {
         building_name: buildingName,
-        location_tag: locationTag,
+        branch_tag: branchTag,
       } as any)
 
       message.success('Building updated successfully')
@@ -222,7 +222,7 @@ export function useBuilding() {
 
       if (currentBuildingForGrid.value?.building_id === building.building_id) {
         currentBuildingForGrid.value = null
-        selectedLocationTag.value = ''
+        selectedBranchTag.value = ''
       }
 
       await fetchBuildings()
@@ -235,7 +235,7 @@ export function useBuilding() {
     // State
     buildings,
     selectedFloor,
-    selectedLocationTag,
+    selectedBranchTag,
     expandedBuildings,
     selectedBuilding,
     currentBuildingForGrid,

@@ -139,7 +139,7 @@
           <div class="objects-cell">
             <div v-if="record.tag_objects">
               <!-- Branch and Area: display with delete buttons only (no checkbox) -->
-              <template v-if="record.tag_type === 'location_tag' || record.tag_type === 'area_tag'">
+              <template v-if="record.tag_type === 'branch_tag' || record.tag_type === 'area_tag'">
                 <div class="objects-list-simple">
                   <template
                     v-for="(objects, objectType) in record.tag_objects"
@@ -281,7 +281,7 @@ const columns = [
 ]
 
 // Sorted data source (default sorted by tag_type and tag_name)
-// For location_tag and area_tag, merge all tags of the same type into one row
+// For branch_tag and area_tag, merge all tags of the same type into one row
 const sortedDataSource = computed(() => {
   let processed = [...dataSource.value]
   
@@ -295,15 +295,15 @@ const sortedDataSource = computed(() => {
     groupedByType[type].push(tag)
   })
   
-  // For location_tag and area_tag, merge into single row
+  // For branch_tag and area_tag, merge into single row
   const merged: TagCatalogItem[] = []
   
   Object.keys(groupedByType).forEach((tagType) => {
     const tags = groupedByType[tagType]
     if (!tags || tags.length === 0) return
     
-    if (tagType === 'location_tag') {
-      // For location_tag, find the tag with tag_name = "Branch" and merge all location_tag tags
+    if (tagType === 'branch_tag') {
+      // For branch_tag, find the tag with tag_name = "Branch" and merge all branch_tag tags
       const branchTag = tags.find((tag) => tag.tag_name === 'Branch') || tags[0]
       if (!branchTag) return
       
@@ -315,7 +315,7 @@ const sortedDataSource = computed(() => {
         tag_objects: {},
       }
       
-      // Merge all tag_objects from all location_tag tags
+      // Merge all tag_objects from all branch_tag tags
       tags.forEach((tag) => {
         if (tag.tag_objects) {
           Object.keys(tag.tag_objects).forEach((objectType) => {
@@ -469,11 +469,12 @@ const fetchTags = async () => {
     if (result.system_predefined_tag_types && result.system_predefined_tag_types.length > 0) {
       systemPredefinedTagTypesFromServer.value = result.system_predefined_tag_types
     } else {
-      // Fallback: use default system predefined types (location_tag, family_tag, area_tag)
+      // Fallback: use default system predefined types (branch_tag, family_tag, area_tag)
       // These are the built-in types that cannot be deleted according to database schema
-      systemPredefinedTagTypesFromServer.value = ['location_tag', 'family_tag', 'area_tag']
+      systemPredefinedTagTypesFromServer.value = ['branch_tag', 'family_tag', 'area_tag']
     }
-    // Initialize selectedObjects: all objects selected by default
+    // Initialize selectedObjects: all objects selected by default (based on DB data)
+    // Always re-initialize from DB to reflect current state
     result.items.forEach((tag) => {
       const allKeys: string[] = []
       if (tag.tag_objects) {
@@ -483,8 +484,12 @@ const fetchTags = async () => {
           }
         }
       }
+      // Always update from DB (don't preserve user selections, as they're reflected in tag_objects)
       selectedObjects.value[tag.tag_id] = allKeys
-      objectsToRemove.value[tag.tag_id] = []
+      // Only initialize objectsToRemove if not already set (preserve pending removals)
+      if (!objectsToRemove.value[tag.tag_id]) {
+        objectsToRemove.value[tag.tag_id] = []
+      }
     })
     
     // Initialize selectedTagTypeList: list all tag_type (from server response, not hardcoded)
@@ -516,7 +521,7 @@ const formatTagTypeName = (tagType: string | null): string => {
   if (!tagType) return '(None)'
   // Map tag types to display names
   const tagTypeMap: Record<string, string> = {
-    'location_tag': 'Branch_tag',
+    'branch_tag': 'Branch_tag',
     'area_tag': 'Area_tag',
     'family_tag': 'Family_tag',
     'user_tag': 'User_tag',
@@ -531,8 +536,8 @@ const getTagsByType = (tagType: string | null): TagCatalogItem[] => {
 
 
 
-// Create Branch (location_tag)
-// For location_tag, tag_name is "Branch", actual branch names are stored as members in tag_objects
+// Create Branch (branch_tag)
+// For branch_tag, tag_name is "Branch", actual branch names are stored as members in tag_objects
 const handleCreateBranch = async () => {
   try {
     if (!createBranchData.value.trim()) {
@@ -548,27 +553,27 @@ const handleCreateBranch = async () => {
       return
     }
 
-    // For location_tag, we need to:
-    // 1. Ensure "Branch" tag exists (tag_name = "Branch", tag_type = "location_tag")
+    // For branch_tag, we need to:
+    // 1. Ensure "Branch" tag exists (tag_name = "Branch", tag_type = "branch_tag")
     // 2. Add the branch name as a member in tag_objects
     
-    // Check if location_tag with tag_name = "Branch" exists
+    // Check if branch_tag with tag_name = "Branch" exists
     let branchTag = dataSource.value.find(
-      (tag) => tag.tag_type === 'location_tag' && tag.tag_name === 'Branch'
+      (tag) => tag.tag_type === 'branch_tag' && tag.tag_name === 'Branch'
     )
 
     if (!branchTag) {
-      // Create location_tag with tag_name = "Branch"
+      // Create branch_tag with tag_name = "Branch"
       const createParams: CreateTagParams = {
         tenant_id: tenantId,
-        tag_type: 'location_tag',
-        tag_name: 'Branch', // Fixed tag_name for location_tag
+        tag_type: 'branch_tag',
+        tag_name: 'Branch', // Fixed tag_name for branch_tag
       }
       await createTagApi(createParams)
       await fetchTags() // Refresh to get the new tag
       // Find the newly created tag
       branchTag = dataSource.value.find(
-        (tag) => tag.tag_type === 'location_tag' && tag.tag_name === 'Branch'
+        (tag) => tag.tag_type === 'branch_tag' && tag.tag_name === 'Branch'
       )
     }
 
@@ -788,12 +793,34 @@ const deleteTagName = async (record: TagCatalogItem) => {
 // Handle object checkbox changes
 const handleObjectCheckChange = (record: TagCatalogItem, checkedValues: string[]) => {
   const tagId = record.tag_id
-  const previousSelected = selectedObjects.value[tagId] || []
   
-  // Find unselected objects
+  // Build previous selected from record.tag_objects (what should be selected based on DB data)
+  // This represents the state before user unselected items
+  const previousSelected: string[] = []
+  if (record.tag_objects) {
+    for (const [objectType, objects] of Object.entries(record.tag_objects)) {
+      for (const objectId of Object.keys(objects)) {
+        previousSelected.push(`${objectType}:${objectId}`)
+      }
+    }
+  }
+  
+  console.log(`[handleObjectCheckChange] Tag ${tagId}:`, {
+    previousSelected,
+    checkedValues,
+    previousCount: previousSelected.length,
+    currentCount: checkedValues.length,
+    previousSelectedKeys: previousSelected.map(k => k),
+    checkedValuesKeys: checkedValues.map(k => k),
+    recordTagObjects: record.tag_objects
+  })
+  
+  // Find unselected objects (objects that were in DB but not in checkedValues)
   const unselected = previousSelected.filter((key) => !checkedValues.includes(key))
   
-  // Record objects to be removed
+  console.log(`[handleObjectCheckChange] Unselected objects (${unselected.length}):`, unselected)
+  
+  // Initialize objectsToRemove if needed
   if (!objectsToRemove.value[tagId]) {
     objectsToRemove.value[tagId] = []
   }
@@ -801,26 +828,41 @@ const handleObjectCheckChange = (record: TagCatalogItem, checkedValues: string[]
   // Add newly unselected objects to removal list
   unselected.forEach((key) => {
     const [objectType, objectId] = key.split(':')
-    if (!objectType || !objectId) return
-    if (!objectsToRemove.value[tagId]) {
-      objectsToRemove.value[tagId] = []
+    if (!objectType || !objectId) {
+      console.log(`[handleObjectCheckChange] Invalid key format: ${key}`)
+      return
     }
     const exists = objectsToRemove.value[tagId].some(
       (obj) => obj.objectType === objectType && obj.objectId === objectId
     )
     if (!exists) {
+      console.log(`[handleObjectCheckChange] Adding to removal list: ${objectType}:${objectId}`)
       objectsToRemove.value[tagId].push({ objectType, objectId })
+    } else {
+      console.log(`[handleObjectCheckChange] Already in removal list: ${objectType}:${objectId}`)
     }
   })
   
   // Remove re-selected objects (if previously marked for deletion)
+  const beforeFilter = objectsToRemove.value[tagId].length
   objectsToRemove.value[tagId] = objectsToRemove.value[tagId].filter((obj) => {
     const key = `${obj.objectType}:${obj.objectId}`
-    return !checkedValues.includes(key)
+    const shouldKeep = !checkedValues.includes(key)
+    if (!shouldKeep) {
+      console.log(`[handleObjectCheckChange] Removing from removal list (re-selected): ${key}`)
+    }
+    return shouldKeep
   })
+  const afterFilter = objectsToRemove.value[tagId].length
+  if (beforeFilter !== afterFilter) {
+    console.log(`[handleObjectCheckChange] Removed ${beforeFilter - afterFilter} re-selected objects from removal list`)
+  }
   
-  // Update selected state
-  selectedObjects.value[tagId] = checkedValues
+  console.log(`[handleObjectCheckChange] Final objectsToRemove[${tagId}]:`, objectsToRemove.value[tagId])
+  console.log(`[handleObjectCheckChange] Final objectsToRemove[${tagId}] length:`, objectsToRemove.value[tagId].length)
+  
+  // v-model already updated selectedObjects.value[tagId], no need to update manually
+  // After save and refresh, selectedObjects will be re-initialized from DB data
 }
 
 // Cancel changes (reset to original state)
@@ -849,55 +891,65 @@ const handleCancel = () => {
 const handleSaveAll = async () => {
   try {
     let hasChanges = false
+    let totalRemoved = 0
+    
+    // Debug: Log objectsToRemove to see what we have
+    console.log('[handleSaveAll] objectsToRemove:', JSON.stringify(objectsToRemove.value, null, 2))
     
     // Handle all objects that need to be removed
+    // Process each tag and each object individually
     for (const [tagId, objects] of Object.entries(objectsToRemove.value)) {
-      if (objects.length > 0) {
+      // Check if objects is an array and has items
+      if (Array.isArray(objects) && objects.length > 0) {
         const record = dataSource.value.find((tag) => tag.tag_id === tagId)
-        if (!record) continue
-        
-        // Check if tag_type is Area (only area_tag supports object deletion)
-        const allowedTagTypes = ['area_tag']
-        if (!record.tag_type || !allowedTagTypes.includes(record.tag_type)) {
-          message.warning(`Object deletion is only supported for Area tag type. Tag "${record.tag_name}" has type "${record.tag_type}"`)
+        if (!record) {
+          console.log(`[handleSaveAll] Tag ${tagId} not found in dataSource`)
           continue
         }
         
         hasChanges = true
+        console.log(`[handleSaveAll] Processing ${objects.length} objects to remove from tag ${tagId}`)
         
-        // Group by objectType
-        const groupedByType: Record<string, string[]> = {}
-        objects.forEach((obj) => {
-          if (!obj.objectType || !obj.objectId) return
-          const objectType = obj.objectType
-          const objectId = obj.objectId
-          if (!groupedByType[objectType]) {
-            groupedByType[objectType] = []
+        // Remove each object individually (sequentially)
+        for (const obj of objects) {
+          if (!obj.objectType || !obj.objectId) {
+            console.log(`[handleSaveAll] Skipping invalid object:`, obj)
+            continue
           }
-          groupedByType[objectType].push(objectId)
-        })
-        
-        // Remove objects of each type
-        for (const [objectType, objectIds] of Object.entries(groupedByType)) {
+          
           const params: RemoveTagObjectsParams = {
             tag_id: tagId,
-            object_type: objectType,
-            object_ids: objectIds,
+            object_type: obj.objectType,
+            object_ids: [obj.objectId], // Remove one at a time
           }
-          await removeTagObjectsApi(params)
+          
+          console.log(`[handleSaveAll] Removing object: ${obj.objectType}:${obj.objectId} from tag ${tagId}`)
+          try {
+            await removeTagObjectsApi(params)
+            totalRemoved++
+            console.log(`[handleSaveAll] Successfully removed ${obj.objectType}:${obj.objectId}`)
+          } catch (error: any) {
+            console.error(`[handleSaveAll] Failed to remove ${obj.objectType}:${obj.objectId}:`, error)
+            // Continue with next object even if one fails
+          }
         }
       }
     }
     
     if (hasChanges) {
-      message.success('All changes saved successfully')
+      message.success(`Successfully removed ${totalRemoved} object(s)`)
       // Clear removal list
       objectsToRemove.value = {}
+      // Refresh tags page from DB
+      console.log('[handleSaveAll] Refreshing tags from database...')
       await fetchTags()
+      console.log('[handleSaveAll] Tags refreshed successfully')
     } else {
+      console.log('[handleSaveAll] No changes detected, objectsToRemove:', objectsToRemove.value)
       message.info('No changes to save')
     }
   } catch (error: any) {
+    console.error('[handleSaveAll] Error:', error)
     message.error(error?.message || 'Failed to save changes')
   }
 }

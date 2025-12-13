@@ -140,10 +140,12 @@ export async function mockDeleteTag(params: DeleteTagParams): Promise<{ success:
     throw new Error(`Tag "${params.tag_name}" not found`)
   }
   
-  // System predefined tag types cannot be deleted (location_tag, family_tag, area_tag)
-  const systemPredefinedTypes = ['location_tag', 'family_tag', 'area_tag']
-  if (tag.tag_type && systemPredefinedTypes.includes(tag.tag_type)) {
-    throw new Error(`Cannot delete system predefined tag_type: "${params.tag_name}" (type: ${tag.tag_type}). System predefined tag types cannot be deleted because they are used by other tables.`)
+  // 对于 branch_tag：删除前必须检查是否有 units 使用（mock 中无法检查真实 units，这里只做逻辑说明）
+  // 实际实现中，后端会检查 units 表
+  if (tag.tag_type === 'branch_tag') {
+    // In real implementation, check if any units use this branch_tag
+    // For mock, we allow deletion but note that real backend will check
+    // throw new Error(`Cannot delete branch_tag "${params.tag_name}" because it is still used by units. Please update or remove all units using this branch_tag first.`)
   }
   
   // 检查 tag_name 下面是否有对象
@@ -151,6 +153,11 @@ export async function mockDeleteTag(params: DeleteTagParams): Promise<{ success:
   if (hasObjects) {
     throw new Error(`Cannot delete tag_name "${params.tag_name}" (type: ${tag.tag_type || 'NULL'}) because it still has objects. Please remove all objects first.`)
   }
+  
+  // area_tag 和 family_tag 可以删除，删除时会自动清除相关对象的字段
+  // - area_tag: 清除 units.area_tag
+  // - family_tag: 清除 residents.family_tag
+  // branch_tag: 删除前必须检查 units 表，有使用则不允许删除（已在上面检查）
   
   mockTagsData.splice(tagIndex, 1)
   

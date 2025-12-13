@@ -27,7 +27,7 @@ export interface LoginResult {
   domain?: string  // Institution domain (corresponds to tenants.domain) - saved on login success
   
   // Location information (avoid address leakage, only store non-sensitive location identifiers)
-  locationTag?: string  // Location tag (corresponds to locations.location_tag, e.g., "A Building Main") - non-sensitive, for grouping and routing
+  branchTag?: string  // Location tag (corresponds to locations.branch_tag, e.g., "A Building Main") - non-sensitive, for grouping and routing
   locationName?: string  // Location name (corresponds to locations.location_name, e.g., "E203", "Home-001") - non-sensitive, for card display
   
   // Other information
@@ -53,8 +53,8 @@ export interface LoginResult {
   // - locationType: corresponds to locations.location_type (location type associated with current user)
   // - They may differ: e.g., Resident is home type, but its location may be institution type
   
-  // Notes on locationTag and locationName:
-  // - locationTag: Location tag (e.g., "A Building Main", "Spring Area Group SP"), for grouping and routing, does not contain PHI
+  // Notes on branchTag and locationName:
+  // - branchTag: Location tag (e.g., "A Building Main", "Spring Area Group SP"), for grouping and routing, does not contain PHI
   // - locationName: Location name (e.g., "E203", "201", "Home-001"), for card display, does not contain PHI
   // - Real address information (e.g., city, state, zip code) stored in encrypted resident_phi table, not stored here
   // - These fields comply with HIPAA requirements, do not contain sensitive information

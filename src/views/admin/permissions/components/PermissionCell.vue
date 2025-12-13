@@ -57,7 +57,7 @@ const getScopeLabel = (scope: PermissionScope): string => {
   const labels: Record<PermissionScope, string> = {
     all: '',
     assigned_only: 'A',
-    location_tag: 'L',
+    branch_tag: 'L',
   }
   return labels[scope] || ''
 }

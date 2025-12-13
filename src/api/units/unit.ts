@@ -54,7 +54,7 @@ if (useMock) {
 
 /**
  * Create Building
- * Params from frontend may contain tag_name (for UI display), need to convert to location_tag
+ * Params from frontend may contain tag_name (for UI display), need to convert to branch_tag
  */
 export async function createBuildingApi(
   params: CreateBuildingParams & { tag_name?: string },
@@ -62,20 +62,20 @@ export async function createBuildingApi(
 ): Promise<Building> {
   if (useMock) {
     const { unit } = await import('@test/index')
-    // Mock layer also needs to handle tag_name -> location_tag conversion
+    // Mock layer also needs to handle tag_name -> branch_tag conversion
     const mockParams: CreateBuildingParams = {
       building_name: params.building_name,
       floors: params.floors,
-      location_tag: (params as any).tag_name || params.location_tag,
+      branch_tag: (params as any).tag_name || params.branch_tag,
     }
     return unit.mock.mockCreateBuilding(mockParams)
   }
 
-  // Convert frontend tag_name to API location_tag
+  // Convert frontend tag_name to API branch_tag
   const apiParams: CreateBuildingParams = {
     building_name: params.building_name,
     floors: params.floors,
-    location_tag: (params as any).tag_name || params.location_tag,
+    branch_tag: (params as any).tag_name || params.branch_tag,
   }
 
   return defHttp.post<Building>(
@@ -89,7 +89,7 @@ export async function createBuildingApi(
 
 /**
  * Get Building list
- * location_tag returned by API will be mapped to tag_name for frontend UI display
+ * branch_tag returned by API will be mapped to tag_name for frontend UI display
  */
 export async function getBuildingsApi(
   mode: ErrorMessageMode = 'none'
@@ -109,7 +109,7 @@ export async function getBuildingsApi(
 
 /**
  * Update Building
- * Params from frontend may contain tag_name (for UI display), need to convert to location_tag
+ * Params from frontend may contain tag_name (for UI display), need to convert to branch_tag
  */
 export async function updateBuildingApi(
   id: string,
@@ -118,20 +118,20 @@ export async function updateBuildingApi(
 ): Promise<Building> {
   if (useMock) {
     const { unit } = await import('@test/index')
-    // Mock layer also needs to handle tag_name -> location_tag conversion
+    // Mock layer also needs to handle tag_name -> branch_tag conversion
     const mockParams: UpdateBuildingParams = {
       building_name: params.building_name,
       floors: params.floors,
-      location_tag: (params as any).tag_name || params.location_tag,
+      branch_tag: (params as any).tag_name || params.branch_tag,
     }
     return unit.mock.mockUpdateBuilding(id, mockParams)
   }
 
-  // Convert frontend tag_name to API location_tag
+  // Convert frontend tag_name to API branch_tag
   const apiParams: UpdateBuildingParams = {
     building_name: params.building_name,
     floors: params.floors,
-    location_tag: (params as any).tag_name || params.location_tag,
+    branch_tag: (params as any).tag_name || params.branch_tag,
   }
 
   return defHttp.put<Building>(

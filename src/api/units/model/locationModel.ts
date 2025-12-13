@@ -11,7 +11,7 @@ export interface Unit {
   unit_type: 'Facility' | 'Home' // Facility / Home scenario types (replaces location_type)
   building?: string // Building tag
   floor?: string // Floor tag
-  location_tag?: string // Location tag
+  branch_tag?: string // Location tag
   area_tag?: string // Area tag
   is_active: boolean // Status (active/disabled)
   created_at?: string
@@ -23,19 +23,19 @@ export interface Building {
   building_name: string
   floors: number // Number of floors
   tenant_id?: string
-  location_tag?: string // API layer uses location_tag
+  branch_tag?: string // API layer uses branch_tag
 }
 
 export interface CreateBuildingParams {
   building_name: string
   floors: number
-  location_tag?: string // API layer uses location_tag
+  branch_tag?: string // API layer uses branch_tag
 }
 
 export interface UpdateBuildingParams {
   building_name?: string
   floors?: number
-  location_tag?: string // API layer uses location_tag
+  branch_tag?: string // API layer uses branch_tag
 }
 
 export interface CreateUnitParams {
@@ -45,7 +45,7 @@ export interface CreateUnitParams {
   unit_type: 'Facility' | 'Home' // Facility / Home scenario types (replaces location_type)
   building?: string
   floor?: string
-  location_tag?: string
+  branch_tag?: string
   area_tag?: string
 }
 
@@ -54,7 +54,7 @@ export interface GetUnitsParams {
   address_id?: string // Filter by Address ID (new)
   building?: string
   floor?: string
-  location_tag?: string
+  branch_tag?: string
   area_tag?: string
   unit_number?: string
   unit_name?: string
@@ -72,7 +72,7 @@ export interface UpdateUnitParams {
   unit_name?: string
   building?: string
   floor?: string
-  location_tag?: string
+  branch_tag?: string
   area_tag?: string
 }
 

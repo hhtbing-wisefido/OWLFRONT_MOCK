@@ -28,7 +28,7 @@ export function useUnit() {
     unit_number: '',
     unit_name: '',
     unit_type: 'Facility' as 'Facility' | 'Home',
-    location_tag: undefined as string | undefined,
+    branch_tag: undefined as string | undefined,
     area_tag: undefined as string | undefined,
     building: '',
     floor: '',
@@ -103,7 +103,7 @@ export function useUnit() {
   }
 
   // Fetch location tags
-  const fetchLocationTags = async () => {
+  const fetchBranchTags = async () => {
     await tagsStore.fetchAllTags()
   }
 
@@ -116,7 +116,7 @@ export function useUnit() {
   const handleCellClick = async (unit: Unit | null, _index: number, fetchRoomsWithBedsFn: (id: string) => Promise<void>) => {
     try {
       await fetchAreaTags()
-      await fetchLocationTags()
+      await fetchBranchTags()
 
       if (unit) {
         editingUnit.value = unit
@@ -175,9 +175,9 @@ export function useUnit() {
       const buildingValue: string = createUnitForm.value.building?.trim() || selectedBuilding?.building_name || '-'
       // Determine floor value: form > selectedFloor > default
       const floorValue: string = createUnitForm.value.floor?.trim() || selectedFloor || '1F'
-      // Determine location_tag: form > selectedBuilding > default '-'
-      // location_tag defaults to '-' when empty
-      const locationTagValue = createUnitForm.value.location_tag?.trim() || selectedBuilding?.location_tag || '-'
+      // Determine branch_tag: form > selectedBuilding > default '-'
+      // branch_tag defaults to '-' when empty
+      const branchTagValue = createUnitForm.value.branch_tag?.trim() || selectedBuilding?.branch_tag || '-'
       // area_tag from form
       const areaTagValue = createUnitForm.value.area_tag || undefined
       
@@ -187,7 +187,7 @@ export function useUnit() {
         unit_type: createUnitForm.value.unit_type,
         building: buildingValue,
         floor: floorValue,
-        location_tag: locationTagValue,
+        branch_tag: branchTagValue,
         area_tag: areaTagValue,
         is_public_space: createUnitForm.value.is_public_space,
         is_multi_person_room: createUnitForm.value.is_multi_person_room,
@@ -203,14 +203,14 @@ export function useUnit() {
       console.log('[Create Unit API] Source values:', {
         form_building: createUnitForm.value.building,
         form_floor: createUnitForm.value.floor,
-        form_location_tag: createUnitForm.value.location_tag,
+        form_branch_tag: createUnitForm.value.branch_tag,
         form_area_tag: createUnitForm.value.area_tag,
         selectedBuilding_name: selectedBuilding?.building_name,
-        selectedBuilding_location_tag: selectedBuilding?.location_tag,
+        selectedBuilding_branch_tag: selectedBuilding?.branch_tag,
         selectedFloor: selectedFloor,
         final_building: buildingValue,
         final_floor: floorValue,
-        final_location_tag: locationTagValue,
+        final_branch_tag: branchTagValue,
         final_area_tag: areaTagValue,
       })
       
@@ -222,7 +222,7 @@ export function useUnit() {
         unit_name: result?.unit_name,
         building: result?.building,
         floor: result?.floor,
-        location_tag: result?.location_tag,
+        branch_tag: result?.branch_tag,
         area_tag: result?.area_tag,
         is_active: result?.is_active,
       })
@@ -249,7 +249,7 @@ export function useUnit() {
       unit_number: '',
       unit_name: '',
       unit_type: 'Facility',
-      location_tag: undefined,
+      branch_tag: undefined,
       area_tag: undefined,
       building: '',
       floor: '',
@@ -277,8 +277,8 @@ export function useUnit() {
 
   // Save unit
   const handleSaveUnit = async (
-    currentBuildingForGrid: { location_tag?: string } | null,
-    selectedLocationTag: string
+    currentBuildingForGrid: { branch_tag?: string } | null,
+    selectedBranchTag: string
   ) => {
     try {
       if (!editUnitForm.value.unit_name || !editUnitForm.value.unit_number) {
@@ -286,8 +286,8 @@ export function useUnit() {
         return
       }
 
-      // location_tag defaults to '-' when empty
-      const locationTagValue = currentBuildingForGrid?.location_tag || selectedLocationTag || '-'
+      // branch_tag defaults to '-' when empty
+      const branchTagValue = currentBuildingForGrid?.branch_tag || selectedBranchTag || '-'
 
       if (!editingUnit.value) {
         // Create new unit
@@ -300,7 +300,7 @@ export function useUnit() {
           unit_type: editUnitForm.value.unit_type || 'Facility',
           building: buildingValue,
           floor: floorValue,
-          location_tag: locationTagValue,
+          branch_tag: branchTagValue,
           area_tag: editUnitForm.value.area_tag,
           is_public_space: editUnitForm.value.is_public_space,
           is_multi_person_room: editUnitForm.value.is_multi_person_room,
@@ -312,7 +312,7 @@ export function useUnit() {
         return newUnit
       } else {
         // Update existing unit
-        // Note: building, floor, location_tag, unit_number, unit_type are typically not changed after creation
+        // Note: building, floor, branch_tag, unit_number, unit_type are typically not changed after creation
         // But we include them in case they need to be updated
         const updateParams: UpdateUnitParams = {
           unit_name: editUnitForm.value.unit_name,
@@ -323,7 +323,7 @@ export function useUnit() {
           is_multi_person_room: editUnitForm.value.is_multi_person_room,
           timezone: editUnitForm.value.timezone || 'America/Denver', // Default to Mountain Time if not set
           // Preserve existing values for fields not in edit form
-          // building, floor, location_tag should remain unchanged unless explicitly needed
+          // building, floor, branch_tag should remain unchanged unless explicitly needed
           // Optional fields (not in form, can be added later if needed):
           // layout_config: editingUnit.value.layout_config,
           // primary_resident_id: editingUnit.value.primary_resident_id,
@@ -393,7 +393,7 @@ export function useUnit() {
     fetchAllUnits,
     fetchRoomsWithBeds,
     ensureUnitRoom,
-    fetchLocationTags,
+    fetchBranchTags,
     fetchAreaTags,
     handleCellClick,
     handleCreateUnit,

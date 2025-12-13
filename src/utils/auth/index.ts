@@ -8,7 +8,7 @@
 // Token storage key name constants
 export const TOKEN_KEY = 'ACCESS_TOKEN'
 export const REFRESH_TOKEN_KEY = 'REFRESH_TOKEN'
-export const USER_INFO_KEY = 'USER_INFO'  // Contains userId, userType, residentType, role, nickName, tenant_id, locationType, locationTag, locationName
+export const USER_INFO_KEY = 'USER_INFO'  // Contains userId, userType, residentType, role, nickName, tenant_id, locationType, branchTag, locationName
 export const INSTITUTION_INFO_KEY = 'INSTITUTION_INFO'  // Institution information
 export const ROLES_KEY = 'ROLES'  // Role list (optional, if multiple roles are needed)
 

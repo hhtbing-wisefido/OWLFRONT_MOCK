@@ -137,14 +137,14 @@ export interface AlarmEvent {
   // Address information (from device → unit/room/bed → locations)
   // Device can be bound to room (bound_room_id) or bed (bound_bed_id)
   // Backend should JOIN with related tables to return complete address
-  location_tag?: string  // from locations table (via unit/room/bed)
+  branch_tag?: string  // from locations table (via unit/room/bed)
   building?: string     // from locations table (via unit/room/bed)
   floor?: string        // from locations table (e.g., "2F")
   area_tag?: string     // from units table (via device binding)
   unit_name?: string    // from units table (via device binding)
   room_name?: string    // from rooms table (via device.bound_room_id)
   bed_name?: string     // from beds table (via device.bound_bed_id)
-  // Formatted address display: "location_tag-Building-UnitName" (for list view)
+  // Formatted address display: "branch_tag-Building-UnitName" (for list view)
   address_display?: string
 }
 
@@ -163,7 +163,7 @@ export interface GetAlarmEventsParams {
   alarm_time_start?: number  // timestamp (start of time range)
   alarm_time_end?: number    // timestamp (end of time range)
   resident?: string          // Search text (resident name or account)
-  location_tag?: string      // Search text (location tag)
+  branch_tag?: string      // Search text (location tag)
   unit_name?: string         // Search text (unit name)
   device_name?: string       // Search text (device name)
   // Filter parameters
