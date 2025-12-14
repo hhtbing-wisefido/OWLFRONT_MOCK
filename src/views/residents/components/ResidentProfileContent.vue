@@ -28,7 +28,7 @@
                 <span>First Name：</span>
                 <a-checkbox 
                   v-if="canViewField('nickname') && mode === 'create'"
-                  v-model:checked="autoFillNickname"
+                  :checked="autoFillNickname"
                   @change="handleAutoFillNicknameChange"
                 >
                   =Nickname
@@ -56,12 +56,18 @@
           </a-form-item>
         </a-col>
         <a-col v-if="canViewField('resident_account')">
-          <a-form-item label="Account" style="margin-bottom: 0;">
+          <a-form-item 
+            label="Account" 
+            :required="mode === 'create'"
+            :rules="mode === 'create' ? [{ required: true, message: 'Account is required (each institution has its own encoding pattern)', trigger: 'blur' }] : []"
+            style="margin-bottom: 0;"
+          >
             <a-input
               v-model:value="localResidentData.resident_account"
               :disabled="!canEditField('resident_account')"
               :maxlength="100"
               style="width: 180px"
+              placeholder="Enter account (required)"
             />
           </a-form-item>
         </a-col>
@@ -857,12 +863,8 @@ const handleUnitSelectConfirm = () => {
       availableBeds.value = []
       // Fetch rooms for the selected unit
       fetchRooms(unit.unit_id)
-      emit('update:resident-data', {
-        ...localResidentData.value,
-        unit_id: unit.unit_id,
-        room_id: undefined,
-        bed_id: undefined,
-      })
+      // Watch will emit the update automatically
+      // No need for explicit emit here to avoid loops
     }
   }
   showUnitSelectModal.value = false
@@ -929,11 +931,8 @@ const handleRoomChange = (roomId: string | undefined) => {
   if (!roomId) {
     localResidentData.value.bed_id = undefined
     availableBeds.value = []
-    emit('update:resident-data', {
-      ...localResidentData.value,
-      room_id: undefined,
-      bed_id: undefined,
-    })
+  // Watch will emit the update automatically
+  // No need for explicit emit here to avoid loops
     return
   }
   
@@ -942,10 +941,8 @@ const handleRoomChange = (roomId: string | undefined) => {
     availableBeds.value = room.beds || []
   }
   
-  emit('update:resident-data', {
-    ...localResidentData.value,
-    room_id: roomId,
-  })
+  // Watch will emit the update automatically
+  // No need for explicit emit here to avoid loops
 }
 
 // Fetch caregivers (Nurse or Caregiver role, active status)
@@ -1198,122 +1195,109 @@ const canEditField = (fieldName: string) => {
   )
 }
 
+// Initialize local data from props (only once, no watch)
 const localResidentData = ref<Partial<Resident>>({ ...props.residentData })
 const localPHIData = ref<Partial<ResidentPHI>>({ ...(props.residentData.phi || {}) })
 const autoFillNickname = ref(false)
 const mode = computed(() => props.mode)
 
-// Flag to prevent circular updates when props change
-const isUpdatingFromProps = ref(false)
-
-// Handle nickname change
+// Handle nickname change - sync to first_name if checkbox is checked
 const handleNicknameChange = () => {
   if (autoFillNickname.value && mode.value === 'create') {
     // When =Nickname is checked, update first_name from nickname
     const nickname = localResidentData.value.nickname || ''
     localPHIData.value.first_name = nickname
-    emit('update:phi-data', localPHIData.value)
   }
 }
 
-// Handle first name change
+// Handle first name change - sync to nickname if checkbox is checked
 const handleFirstNameChange = () => {
   if (autoFillNickname.value && mode.value === 'create') {
     // When =Nickname is checked, update nickname from first_name
     const firstName = localPHIData.value.first_name || ''
     localResidentData.value.nickname = firstName
   }
-  emit('update:phi-data', localPHIData.value)
 }
 
 // Handle last name change
+// Watch will emit the PHI update automatically
 const handleLastNameChange = () => {
-  emit('update:phi-data', localPHIData.value)
+  // Watch will handle the emit
 }
 
 // Handle auto-fill nickname checkbox change
-const handleAutoFillNicknameChange = () => {
-  if (autoFillNickname.value && mode.value === 'create') {
-    // When checked, copy nickname to first_name
+const handleAutoFillNicknameChange = (e: any) => {
+  const checked = e.target.checked
+  autoFillNickname.value = checked
+  
+  if (checked && mode.value === 'create') {
+    // When checked, copy current nickname to first_name
     const nickname = localResidentData.value.nickname || ''
-    localPHIData.value.first_name = nickname
-    emit('update:phi-data', localPHIData.value)
-  } else {
-    // When unchecked, clear first_name if it was auto-filled
+    if (nickname) {
+      localPHIData.value.first_name = nickname
+    }
+  } else if (!checked && mode.value === 'create') {
+    // When unchecked, clear first_name if it matches nickname
     if (localPHIData.value.first_name === localResidentData.value.nickname) {
       localPHIData.value.first_name = ''
-      emit('update:phi-data', localPHIData.value)
     }
   }
 }
 
-// Watch for changes and emit updates (only when not updating from props)
+// Watch for changes and emit updates (one-way data flow: child -> parent)
+// No need to watch props changes - parent will update props after saving to DB
 watch(
   () => localResidentData.value,
   (newData) => {
-    if (!isUpdatingFromProps.value) {
     emit('update:resident-data', newData)
-    }
   },
-  { deep: true }
+  { deep: true, immediate: false }
 )
 
-// Watch props changes
+// Watch localPHIData changes and emit updates
 watch(
-  () => props.residentData,
+  () => localPHIData.value,
   (newData) => {
-    isUpdatingFromProps.value = true
-    localResidentData.value = { ...newData }
-    localPHIData.value = { ...(newData.phi || {}) }
-    
-    // 初始化 is_access_enabled 为 false（默认 disable）
-    if (localResidentData.value.is_access_enabled === undefined) {
-      localResidentData.value.is_access_enabled = false
-    }
-    // 如果已有 unit_id，设置选中的 unit 并加载 rooms
-    // 需要等待 availableUnits 加载完成
-    if (localResidentData.value.unit_id) {
-      if (availableUnits.value.length > 0) {
-        // Units 已加载，直接查找
-        const unit = availableUnits.value.find(u => u.unit_id === localResidentData.value.unit_id)
-        if (unit) {
-          selectedUnit.value = unit
-          fetchRooms(unit.unit_id)
-        } else {
-          selectedUnit.value = null
-        }
-      } else {
-        // Units 未加载，等待加载完成后再设置
-        // 这个逻辑会在 fetchUnits 完成后执行
-        fetchUnits().then(() => {
-          if (localResidentData.value.unit_id) {
-            const unit = availableUnits.value.find(u => u.unit_id === localResidentData.value.unit_id)
-            if (unit) {
-              selectedUnit.value = unit
-              fetchRooms(unit.unit_id)
-            }
+    emit('update:phi-data', newData)
+  },
+  { deep: true, immediate: false }
+)
+
+
+// Initialize data from props when component is created or props change
+// This is called once on mount and when props change (but no watch loop)
+const initializeFromProps = () => {
+  // Update local data from props (only if props actually changed)
+  localResidentData.value = { ...props.residentData }
+  localPHIData.value = { ...(props.residentData.phi || {}) }
+  
+  // 初始化 is_access_enabled 为 false（默认 disable）
+  if (localResidentData.value.is_access_enabled === undefined) {
+    localResidentData.value.is_access_enabled = false
+  }
+  
+  // 如果已有 unit_id，设置选中的 unit 并加载 rooms
+  if (localResidentData.value.unit_id && availableUnits.value.length > 0) {
+    const unit = availableUnits.value.find(u => u.unit_id === localResidentData.value.unit_id)
+    if (unit) {
+      selectedUnit.value = unit
+      fetchRooms(unit.unit_id).then(() => {
+        if (localResidentData.value.room_id) {
+          const room = availableRooms.value.find(r => r.room_id === localResidentData.value.room_id)
+          if (room) {
+            availableBeds.value = room.beds || []
           }
-        })
-      }
+        }
+      })
     } else {
       selectedUnit.value = null
-      availableRooms.value = []
-      availableBeds.value = []
     }
-    
-    // TODO: 初始化 caregiver 数据（如果 API 返回了这些数据）
-    // 目前 API 可能不返回 caregiver 数据，需要单独调用 API 获取
-    // 如果 API 返回了 caregiver_id1-5，需要在这里初始化
-    // 注意：用户组管理统一使用 users.tags[]，不再使用 caregivers_tag1-3
-    
-    // Reset flag after a microtask to allow the watch to complete
-    Promise.resolve().then(() => {
-      isUpdatingFromProps.value = false
-    })
-  },
-  { deep: true }
-)
-
+  } else {
+    selectedUnit.value = null
+    availableRooms.value = []
+    availableBeds.value = []
+  }
+}
 
 onMounted(async () => {
   await Promise.all([
@@ -1323,27 +1307,22 @@ onMounted(async () => {
     fetchCaregiverTags(),
   ])
   
-  // 初始化 is_access_enabled 为 false（默认 disable）
-  if (localResidentData.value.is_access_enabled === undefined) {
-    localResidentData.value.is_access_enabled = false
-  }
-  
-  // 如果已有 unit_id，设置选中的 unit 并加载 rooms
-  // 等待 fetchUnits 完成后再设置
-  if (localResidentData.value.unit_id) {
-    const unit = availableUnits.value.find(u => u.unit_id === localResidentData.value.unit_id)
-    if (unit) {
-      selectedUnit.value = unit
-      await fetchRooms(unit.unit_id)
-      if (localResidentData.value.room_id) {
-        const room = availableRooms.value.find(r => r.room_id === localResidentData.value.room_id)
-        if (room) {
-          availableBeds.value = room.beds || []
-        }
-      }
-    }
-  }
+  // Initialize from props after units are loaded
+  initializeFromProps()
 })
+
+// Watch props only to re-initialize when parent updates data after DB save
+// Use a simple watch that doesn't trigger loops (shallow watch, no deep comparison)
+watch(
+  () => props.residentData,
+  () => {
+    // Only re-initialize if units are already loaded
+    if (availableUnits.value.length > 0) {
+      initializeFromProps()
+    }
+  },
+  { deep: false } // Shallow watch to avoid deep comparison loops
+)
 </script>
 
 <style scoped>

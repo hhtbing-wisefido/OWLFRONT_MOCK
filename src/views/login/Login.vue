@@ -28,7 +28,6 @@ import LoginForm from './LoginForm.vue'
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Aptos+Display:wght@400;600;700&display=swap');
 .login-container {
   min-height: 100vh;
   background: #f5f7fa;
@@ -96,7 +95,7 @@ import LoginForm from './LoginForm.vue'
 
 .slogan-line1,
 .slogan-line2 {
-  font-family: 'Aptos Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
   font-size: 45px; /* 60px * 0.75 = 45px */
   font-weight: 400;
   color: #1a202c;

@@ -14,7 +14,15 @@
             </template>
           </a-button>
           <a-button 
-            v-if="canEdit && (mode === 'create' || mode === 'edit')" 
+            v-if="canEdit" 
+            type="default" 
+            @click="handleCancel"
+            :disabled="saving"
+          >
+            Cancel
+          </a-button>
+          <a-button 
+            v-if="canEdit" 
             type="primary" 
             @click="handleSave" 
             :loading="saving"
@@ -84,7 +92,7 @@ import { ArrowLeftOutlined, HomeOutlined } from '@ant-design/icons-vue'
 import ResidentProfileContent from './components/ResidentProfileContent.vue'
 import ResidentPHIContent from './components/ResidentPHIContent.vue'
 import ResidentContactsContent from './components/ResidentContactsContent.vue'
-import { getResidentApi, createResidentApi, updateResidentApi, updateResidentPHIApi } from '@/api/resident/resident'
+import { getResidentApi, createResidentApi, updateResidentApi, updateResidentPHIApi, updateResidentContactApi } from '@/api/resident/resident'
 import type { Resident, CreateResidentParams, UpdateResidentPHIParams } from '@/api/resident/model/residentModel'
 import { useUserStore } from '@/store/modules/user'
 import { useEntitiesStore } from '@/store/modules/entities'
@@ -97,9 +105,12 @@ const entitiesStore = useEntitiesStore()
 const { hasManagePermission, hasRole } = usePermission()
 
 // 判断模式：create / edit / view
+// 注意：需要在 isManager 和 isNurse 定义之后才能使用
 const mode = computed(() => {
   if (route.name === 'CreateResident') return 'create'
   if (route.query.mode === 'edit') return 'edit'
+  // 如果有编辑权限且有 resident ID，默认视为 edit 模式
+  if ((isManager.value || isNurse.value) && route.params.id) return 'edit'
   return 'view'
 })
 
@@ -224,12 +235,14 @@ const fetchResident = async (params?: { include_phi?: boolean; include_contacts?
   try {
     // Check store cache first
     const cached = entitiesStore.getResidentDetail(residentId.value)
-    if (cached && !entitiesStore.shouldRefreshResidentDetail(residentId.value)) {
+      if (cached && !entitiesStore.shouldRefreshResidentDetail(residentId.value)) {
       residentData.value = { ...cached }
+      originalResidentData.value = { ...cached } // Store original for cancel
       // If we need PHI or contacts and they're not in cache, fetch them
       if ((params?.include_phi && !cached.phi) || (params?.include_contacts && !cached.contacts)) {
         const result = await getResidentApi(residentId.value, params)
         residentData.value = { ...residentData.value, ...result }
+        originalResidentData.value = { ...residentData.value } // Store original for cancel
         entitiesStore.setResidentDetail(residentId.value, residentData.value)
       }
     } else {
@@ -244,13 +257,30 @@ const fetchResident = async (params?: { include_phi?: boolean; include_contacts?
   }
 }
 
-// Handle save
+// Handle cancel - abandon changes, don't save, don't create
+const handleCancel = () => {
+  if (mode.value === 'create') {
+    // Create mode: go back to list (abandon creation)
+    goBack()
+  } else {
+    // Edit mode: reset to original data (abandon changes)
+    if (Object.keys(originalResidentData.value).length > 0) {
+      residentData.value = { ...originalResidentData.value }
+      message.info('Changes cancelled')
+    } else {
+      // If no original data, refresh from server
+      fetchResident()
+      message.info('Changes cancelled')
+    }
+  }
+}
+
+// Handle save - unified save for all tabs
 const handleSave = async () => {
   saving.value = true
   try {
     if (mode.value === 'create') {
-      // Create new resident
-      // 无论当前在哪个 Tab，都保存所有数据
+      // Create new resident - save all data from all tabs
       const createParams: CreateResidentParams = {
         first_name: residentData.value.phi?.first_name,
         last_name: residentData.value.phi?.last_name,
@@ -266,16 +296,14 @@ const handleSave = async () => {
       }
       const result = await createResidentApi(createParams)
       
-      // 如果填写了 PHI 信息，创建 PHI 记录
+      // Save PHI data if provided
       if (residentData.value.phi && Object.keys(residentData.value.phi).length > 0) {
         try {
-          // 移除 resident_id, phi_id, tenant_id，因为 API 会从路径参数获取或自动生成
           const phiParams: UpdateResidentPHIParams = { ...residentData.value.phi }
           delete (phiParams as any).resident_id
           delete (phiParams as any).phi_id
           delete (phiParams as any).tenant_id
           
-          // 过滤掉空值
           const filteredPhiParams: UpdateResidentPHIParams = {}
           Object.keys(phiParams).forEach(key => {
             const value = (phiParams as any)[key]
@@ -286,18 +314,26 @@ const handleSave = async () => {
           
           if (Object.keys(filteredPhiParams).length > 0) {
             await updateResidentPHIApi(result.resident_id, filteredPhiParams)
-            message.success('Resident and PHI data created successfully')
-          } else {
-            message.success('Resident created successfully')
           }
         } catch (error: any) {
           console.error('Failed to create PHI:', error)
-          // PHI 创建失败不影响主流程，只显示警告
           message.warning('Resident created successfully, but PHI data creation failed. You can add it later.')
         }
-      } else {
-        message.success('Resident created successfully')
       }
+      
+      // Save Contacts if provided
+      if (residentData.value.contacts && residentData.value.contacts.length > 0) {
+        try {
+          await updateResidentContactApi(result.resident_id, {
+            contacts: residentData.value.contacts,
+          })
+        } catch (error: any) {
+          console.error('Failed to create contacts:', error)
+          message.warning('Resident created successfully, but contacts creation failed. You can add them later.')
+        }
+      }
+      
+      message.success('Resident created successfully')
       
       // 跳转到详情页面，并自动转为 edit 模式
       router.push({
@@ -305,20 +341,21 @@ const handleSave = async () => {
         query: { mode: 'edit' }
       })
     } else {
-      // Update existing resident
-      if (activeTab.value === 'profile') {
-        // 权限检查：Nurse 只能更新 note 字段
-        if (isNurse.value && !isManager.value) {
-          const updateParams = {
+      // Update existing resident - save all data from all tabs
+      const updatePromises: Promise<any>[] = []
+      
+      // 1. Update Profile data
+      if (isNurse.value && !isManager.value) {
+        // Nurse 只能更新 note 字段
+        updatePromises.push(
+          updateResidentApi(residentId.value, {
             note: residentData.value.note,
-          }
-          await updateResidentApi(residentId.value, updateParams)
-          entitiesStore.updateResident(residentId.value, updateParams)
-          entitiesStore.setResidentDetail(residentId.value, { ...residentData.value, ...updateParams })
-          message.success('Note updated successfully')
-        } else {
-          // Manager/Admin 可以更新所有字段
-          const updateParams = {
+          })
+        )
+      } else {
+        // Manager/Admin 可以更新所有字段
+        updatePromises.push(
+          updateResidentApi(residentId.value, {
             nickname: residentData.value.nickname,
             resident_account: residentData.value.resident_account,
             email: residentData.value.email,
@@ -329,19 +366,62 @@ const handleSave = async () => {
             discharge_date: residentData.value.discharge_date,
             family_tag: residentData.value.family_tag,
             note: residentData.value.note,
-          }
-          await updateResidentApi(residentId.value, updateParams)
-          entitiesStore.updateResident(residentId.value, updateParams)
-          entitiesStore.setResidentDetail(residentId.value, { ...residentData.value, ...updateParams })
-          message.success('Resident updated successfully')
-        }
-      } else if (activeTab.value === 'phi' && residentData.value.phi) {
-        // Save PHI data
-        await updateResidentPHIApi(residentId.value, residentData.value.phi)
-        entitiesStore.setResidentDetail(residentId.value, residentData.value)
-        message.success('PHI data updated successfully')
+          })
+        )
       }
-      // Contacts are saved separately in ResidentContactsContent component
+      
+      // 2. Update PHI data if exists
+      if (residentData.value.phi && Object.keys(residentData.value.phi).length > 0) {
+        updatePromises.push(
+          updateResidentPHIApi(residentId.value, residentData.value.phi)
+        )
+      }
+      
+      // 3. Update Contacts if exists (save each contact individually)
+      if (residentData.value.contacts && residentData.value.contacts.length > 0) {
+        const contactPromises = residentData.value.contacts
+          .filter(contact => contact.is_enabled || contact.contact_first_name || contact.contact_last_name)
+          .map(contact => {
+            const params: any = {
+              slot: contact.slot,
+              is_enabled: contact.is_enabled || false,
+              contact_first_name: contact.contact_first_name,
+              contact_last_name: contact.contact_last_name,
+              relationship: contact.relationship,
+              contact_family_tag: contact.contact_family_tag,
+              receive_sms: contact.receive_sms || false,
+              receive_email: contact.receive_email || false,
+            }
+            // Only include phone/email if save flags are set
+            if (contact.save_phone && contact.contact_phone) {
+              params.contact_phone = contact.contact_phone
+            }
+            if (contact.save_email && contact.contact_email) {
+              params.contact_email = contact.contact_email
+            }
+            if (contact.contact_id) {
+              params.contact_id = contact.contact_id
+            }
+            return updateResidentContactApi(residentId.value, params)
+          })
+        updatePromises.push(...contactPromises)
+      }
+      
+      // Execute all updates in parallel
+      await Promise.all(updatePromises)
+      
+      // Update store
+      entitiesStore.updateResident(residentId.value, {
+        nickname: residentData.value.nickname,
+        status: residentData.value.status,
+        service_level: residentData.value.service_level,
+      })
+      entitiesStore.setResidentDetail(residentId.value, { ...residentData.value })
+      
+      // Update original data after successful save
+      originalResidentData.value = { ...residentData.value }
+      
+      message.success('All data saved successfully')
     }
   } catch (error: any) {
     console.error('Failed to save resident:', error)
@@ -351,15 +431,21 @@ const handleSave = async () => {
   }
 }
 
-// Go back
+// Go back - refresh residents list from DB
 const goBack = () => {
-  router.push('/residents')
+  // Force refresh by adding timestamp query parameter
+  router.push({
+    path: '/residents',
+    query: { _refresh: Date.now() }
+  })
 }
 
-// Go home
+// Go home - refresh monitoring overview from DB
 const goHome = () => {
+  // Force refresh by adding timestamp query parameter
   router.push({
     name: 'MonitoringOverview',
+    query: { _refresh: Date.now() }
   })
 }
 
