@@ -182,6 +182,7 @@ import { ref, watch } from 'vue'
 import { message } from 'ant-design-vue'
 import type { ResidentContact, UpdateResidentContactParams } from '@/api/resident/model/residentModel'
 import { updateResidentContactApi } from '@/api/resident/resident'
+import { hashAccount } from '@/utils/crypto'
 
 interface Props {
   residentId: string
@@ -442,8 +443,7 @@ const getContactBySlot = (slot: string): ResidentContact => {
 const handleContactChange = async (slot: string) => {
   const contact = getContactBySlot(slot)
   
-  // 如果 save_phone 或 save_email 为 false，不发送 phone/email 到后端
-  const contactToSave: Partial<ResidentContact> = {
+  const contactToSave: any = {
     slot: contact.slot,
     is_enabled: contact.is_enabled,
     contact_first_name: contact.contact_first_name,
@@ -451,12 +451,38 @@ const handleContactChange = async (slot: string) => {
     relationship: contact.relationship,
   }
   
-  // 只有勾选了 save 才保存 phone/email
-  if (contact.save_phone && contact.contact_phone) {
-    contactToSave.contact_phone = contact.contact_phone
+  // Handle phone: calculate hash and set phone field based on save_phone flag
+  if (contact.contact_phone && contact.contact_phone.trim() !== '') {
+    // Calculate hash for login
+    const phoneHash = await hashAccount(contact.contact_phone)
+    contactToSave.phone_hash = phoneHash
+    // Only send plaintext if save_phone is true
+    if (contact.save_phone) {
+      contactToSave.contact_phone = contact.contact_phone
+    } else {
+      contactToSave.contact_phone = null
+    }
+  } else {
+    // If phone is empty, send null for both hash and phone
+    contactToSave.phone_hash = null
+    contactToSave.contact_phone = null
   }
-  if (contact.save_email && contact.contact_email) {
-    contactToSave.contact_email = contact.contact_email
+  
+  // Handle email: calculate hash and set email field based on save_email flag
+  if (contact.contact_email && contact.contact_email.trim() !== '') {
+    // Calculate hash for login
+    const emailHash = await hashAccount(contact.contact_email)
+    contactToSave.email_hash = emailHash
+    // Only send plaintext if save_email is true
+    if (contact.save_email) {
+      contactToSave.contact_email = contact.contact_email
+    } else {
+      contactToSave.contact_email = null
+    }
+  } else {
+    // If email is empty, send null for both hash and email
+    contactToSave.email_hash = null
+    contactToSave.contact_email = null
   }
   
   // 保存接收告警设置

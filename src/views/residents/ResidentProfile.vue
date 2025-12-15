@@ -276,7 +276,10 @@ const handleSave = async () => {
   try {
     // Read data directly from child components (only on save, not on every input)
     const profileData = profileContentRef.value?.getResidentData?.() || {}
-    const phiData = profileContentRef.value?.getPHIData?.() || phiContentRef.value?.getPHIData?.() || {}
+    // getPHIData is async in ResidentPHIContent, so we need to await it
+    const phiDataFromProfile = profileContentRef.value?.getPHIData?.() || {}
+    const phiDataFromPHI = await phiContentRef.value?.getPHIData?.() || {}
+    const phiData = { ...phiDataFromProfile, ...phiDataFromPHI }
     const password = profileContentRef.value?.getPassword?.()
     
     if (mode.value === 'create') {

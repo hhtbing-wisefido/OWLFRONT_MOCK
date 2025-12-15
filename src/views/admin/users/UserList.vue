@@ -399,11 +399,26 @@
           <a-select
             v-model:value="editData.tags"
             mode="tags"
-            placeholder="Please enter tags and press Enter"
+            placeholder="Please enter tags and press Enter or select"
             :disabled="!hasManagePermission"
             allowClear
             :token-separators="[',']"
           >
+            <a-select-option v-for="tag in allTagsList" :key="tag" :value="tag">
+              {{ tag }}
+            </a-select-option>
+          </a-select>
+        </a-form-item>
+        <a-form-item label="Branch" name="branch_tag">
+          <a-select
+            v-model:value="editData.branch_tag"
+            placeholder="Please select branch"
+            :disabled="!hasManagePermission"
+            allowClear
+          >
+            <a-select-option v-for="branch in branchTagsList" :key="branch" :value="branch">
+              {{ branch }}
+            </a-select-option>
           </a-select>
         </a-form-item>
       </a-form>
@@ -567,6 +582,7 @@ import type {
 } from '@/api/admin/user/model/userModel'
 import { getRolesApi } from '@/api/admin/role/role'
 import type { Role } from '@/api/admin/role/model/roleModel'
+import { getTagsApi } from '@/api/admin/tags/tags'
 import { useUserStore } from '@/store/modules/user'
 import { usePermission } from '@/hooks/usePermission'
 
@@ -618,6 +634,8 @@ const affectedUserId = ref('')
 const confirmTitle = ref('')
 const confirmMessage = ref('')
 const availableRoles = ref<Role[]>([])
+const allTagsList = ref<string[]>([]) // All available tags list
+const branchTagsList = ref<string[]>([]) // All available branch tags list
 const resetPasswordUserId = ref('')
 const resetPinUserId = ref('')
 
@@ -919,6 +937,7 @@ const emptyUser: Partial<User & { password?: string }> = {
   alarm_channels: [],
   alarm_scope: 'ALL',
   tags: [],
+  branch_tag: '',
   password: '',
 }
 
@@ -1227,19 +1246,40 @@ const addUser = () => {
   editModel.value = false
 }
 
-// Watch role changes to set default alarm_scope (only when creating new user)
+// Watch role changes to set default alarm configuration (only when creating new user)
 watch(
   () => editData.value.role,
   (newRole) => {
     // Only auto-set default when creating new user (not editing)
     if (!editModel.value && newRole) {
       const roleLower = newRole.toLowerCase()
-      if (roleLower === 'caregiver' || roleLower === 'nurse') {
-        editData.value.alarm_scope = 'ASSIGNED_ONLY'
+      
+      if (roleLower === 'admin') {
+        // admin: Alarm Levels 空白，Alarm Channel 空白，Alarm Scope: All
+        editData.value.alarm_levels = []
+        editData.value.alarm_channels = []
+        editData.value.alarm_scope = 'ALL'
       } else if (roleLower === 'manager') {
-        editData.value.alarm_scope = 'BRANCH' // Manager default: filter by branch_tag (users.branch_tag = units.branch_tag)
+        // manager: Alarm Levels 0,1，Alarm Channel: email/sms，Alarm Scope: Branch
+        editData.value.alarm_levels = ['0', '1']
+        editData.value.alarm_channels = ['EMAIL', 'SMS']
+        editData.value.alarm_scope = 'BRANCH'
+      } else if (roleLower === 'caregiver' || roleLower === 'nurse') {
+        // Nurse/caregiver: Alarm Levels 0,1,2,3,4，Alarm Channel: email/sms，Alarm Scope: Assigned_only
+        editData.value.alarm_levels = ['0', '1', '2', '3', '4']
+        editData.value.alarm_channels = ['EMAIL', 'SMS']
+        editData.value.alarm_scope = 'ASSIGNED_ONLY'
+      } else if (roleLower === 'it') {
+        // IT: Alarm Levels 0,1,2,3,4，Alarm Channel: email/sms，Alarm Scope: Branch
+        editData.value.alarm_levels = ['0', '1', '2', '3', '4']
+        editData.value.alarm_channels = ['EMAIL', 'SMS']
+        editData.value.alarm_scope = 'BRANCH'
+      } else {
+        // Other roles: keep current value or default to 'ALL'
+        if (!editData.value.alarm_scope) {
+          editData.value.alarm_scope = 'ALL'
+        }
       }
-      // Other roles: keep current value or default to 'ALL'
     }
   }
 )
@@ -1354,6 +1394,7 @@ const handleSave = async () => {
             alarm_channels: editData.value.alarm_channels,
             alarm_scope: editData.value.alarm_scope,
             tags: editData.value.tags,
+            branch_tag: editData.value.branch_tag,
           }
           await createUserApi(params)
           message.success('User created successfully')
@@ -1502,6 +1543,78 @@ const fetchRoles = async () => {
   }
 }
 
+// Initialize tags list (from tags_catalog API)
+const initializeTagsList = async () => {
+  try {
+    // Get current user's tenant_id
+    const userInfo = userStore.userInfo
+    const tenantId = userInfo?.tenant_id
+    
+    if (!tenantId) {
+      console.warn('[UserList] No tenant_id available, using empty tags list')
+      allTagsList.value = []
+      return
+    }
+    
+    // Get tags from API (only get user_tag type tags)
+    const result = await getTagsApi({
+      tenant_id: tenantId,
+      tag_type: 'user_tag',
+      include_system_tag_types: true,
+    })
+    
+    // Extract tag_name list
+    allTagsList.value = result.items.map(tag => tag.tag_name).sort()
+  } catch (error: any) {
+    console.error('Failed to fetch tags:', error)
+    // If API call fails, use empty list (avoid showing error)
+    allTagsList.value = []
+  }
+}
+
+// Initialize branch tags list (from tags_catalog API)
+// For branch_tag, branch names are stored in tag_objects JSONB
+const initializeBranchTagsList = async () => {
+  try {
+    // Get current user's tenant_id
+    const userInfo = userStore.userInfo
+    const tenantId = userInfo?.tenant_id
+    
+    if (!tenantId) {
+      console.warn('[UserList] No tenant_id available, using empty branch tags list')
+      branchTagsList.value = []
+      return
+    }
+    
+    // Get branch_tag from API
+    const result = await getTagsApi({
+      tenant_id: tenantId,
+      tag_type: 'branch_tag',
+      include_system_tag_types: true,
+    })
+    
+    // Extract branch names from tag_objects
+    // For branch_tag, tag_objects structure: { "branch": { "<uuid>": "<branch_name>", ... } }
+    const branchNames: string[] = []
+    result.items.forEach(tag => {
+      if (tag.tag_objects && tag.tag_objects.branch) {
+        // Extract all branch names from tag_objects.branch
+        Object.values(tag.tag_objects.branch).forEach(branchName => {
+          if (typeof branchName === 'string' && branchName && !branchNames.includes(branchName)) {
+            branchNames.push(branchName)
+          }
+        })
+      }
+    })
+    
+    branchTagsList.value = branchNames.sort()
+  } catch (error: any) {
+    console.error('Failed to fetch branch tags:', error)
+    // If API call fails, use empty list (avoid showing error)
+    branchTagsList.value = []
+  }
+}
+
 const fetchData = async () => {
   loading.value = true
   try {
@@ -1630,6 +1743,8 @@ const refreshData = () => {
 
 onMounted(() => {
   fetchRoles()
+  initializeTagsList()
+  initializeBranchTagsList()
   refreshData()
 })
 </script>
