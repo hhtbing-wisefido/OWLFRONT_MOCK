@@ -46,43 +46,56 @@
     <a-modal
       v-model:visible="passwordModalVisible"
       title="Change Password"
-      :confirm-loading="changingPassword"
+      width="500px"
       @ok="submitPasswordChange"
       @cancel="closePasswordModal"
-      ok-text="Update"
     >
-      <div style="padding: 20px">
-        <a-form-item label="Password: At least 8 characters, including uppercase, lowercase, number, and special character" style="margin-bottom: 16px;">
-          <div style="display: flex; gap: 12px; align-items: flex-start; flex-direction: column;">
-            <div style="display: flex; gap: 12px; width: 100%;">
-              <a-input-password
-                v-model:value="sidebarPassword"
-                placeholder="Enter new password"
-                style="width: 200px"
-                @input="handleSidebarPasswordInput"
-                @blur="handleSidebarPasswordBlur"
-              />
-              <a-input-password
-                v-model:value="sidebarPasswordConfirm"
-                placeholder="Confirm password"
-                style="width: 200px"
-                @input="handleSidebarPasswordConfirmInput"
-                @blur="handleSidebarPasswordConfirmBlur"
-              />
-              <a-button
-                type="default"
-                @click="generateSidebarPassword"
-                style="min-width: 100px"
-              >
-                GeneratePW
-              </a-button>
-            </div>
-            <div v-if="sidebarPasswordErrorMessage" style="font-size: 12px; color: #ff4d4f; margin-top: 4px;">
+      <template #footer>
+        <div style="padding: 10px 16px">
+          <a-button key="back" @click="closePasswordModal" style="margin-right: 30px">Cancel</a-button>
+          <a-button key="submit" type="primary" @click="submitPasswordChange" :loading="changingPassword" style="margin-right: 20px">
+            Update
+          </a-button>
+        </div>
+      </template>
+      <a-form
+        layout="horizontal"
+        :model="sidebarPasswordData"
+        ref="sidebarPasswordFormRef"
+        :labelCol="{ span: 8 }"
+        :wrapperCol="{ span: 16 }"
+        style="padding: 20px"
+      >
+        <div style="margin-bottom: 16px; word-wrap: break-word; white-space: normal;">
+          Password: At least 8 characters, including uppercase, lowercase, number, and special character
+        </div>
+        <a-form-item label="New Password" name="new_password" style="margin-bottom: 12px;">
+          <a-input-password 
+            placeholder="Please enter new password" 
+            v-model:value="sidebarPassword"
+            @input="handleSidebarPasswordInput"
+            @blur="handleSidebarPasswordBlur"
+            :status="sidebarPasswordErrorMessage ? 'error' : ''"
+          />
+        </a-form-item>
+        <a-form-item label="Confirm Password" name="confirm_password">
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <a-input-password 
+              placeholder="Please confirm new password" 
+              v-model:value="sidebarPasswordConfirm"
+              @input="handleSidebarPasswordConfirmInput"
+              @blur="handleSidebarPasswordConfirmBlur"
+              :status="sidebarPasswordErrorMessage ? 'error' : ''"
+            />
+            <a-button type="primary" @click="generateSidebarPassword" style="align-self: flex-start;">
+              Generate PW
+            </a-button>
+            <span v-if="sidebarPasswordErrorMessage" style="color: #ff4d4f; font-size: 12px;">
               {{ sidebarPasswordErrorMessage }}
-            </div>
+            </span>
           </div>
         </a-form-item>
-      </div>
+      </a-form>
     </a-modal>
     
     <!-- Divider before menu -->
@@ -129,6 +142,13 @@ const changingPassword = ref(false)
 const sidebarPassword = ref('')
 const sidebarPasswordConfirm = ref('')
 const sidebarPasswordErrorMessage = ref('')
+const sidebarPasswordFormRef = ref()
+
+// Form data for sidebar password change
+const sidebarPasswordData = computed(() => ({
+  new_password: sidebarPassword.value,
+  confirm_password: sidebarPasswordConfirm.value,
+}))
 
 // Password validation constants
 const PASSWORD_MIN_LENGTH = 8
@@ -274,6 +294,7 @@ const closePasswordModal = () => {
   sidebarPassword.value = ''
   sidebarPasswordConfirm.value = ''
   sidebarPasswordErrorMessage.value = ''
+  sidebarPasswordFormRef.value?.resetFields()
 }
 
 const submitPasswordChange = async () => {

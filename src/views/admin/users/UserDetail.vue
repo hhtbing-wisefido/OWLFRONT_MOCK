@@ -9,7 +9,10 @@
           </a-button>
           <a-button @click="goBack">Cancel</a-button>
           <a-button @click="handleResetPassword" v-if="canResetPassword">
-            Reset PW
+            Passwd
+          </a-button>
+          <a-button @click="handleResetPin" v-if="canResetPassword">
+            PIN
           </a-button>
         </a-space>
         <h1>{{ editModel ? 'Edit User' : 'User Detail' }}</h1>
@@ -218,36 +221,89 @@
           </a-button>
         </div>
       </template>
-      <div style="padding: 20px">
-        <a-form-item label="Password: At least 8 characters, including uppercase, lowercase, number, and special character" style="margin-bottom: 16px;">
-          <div style="display: flex; gap: 12px; align-items: flex-start;">
-            <a-input-password
-              v-model:value="resetPassword"
-              placeholder="Enter new password"
-              style="width: 200px"
-              @input="handleResetPasswordInput"
-              @blur="handleResetPasswordBlur"
-            />
-            <a-input-password
-              v-model:value="resetPasswordConfirm"
-              placeholder="Confirm password"
-              style="width: 200px"
+      <a-form
+        layout="horizontal"
+        :model="resetPasswordData"
+        ref="resetPasswordFormRef"
+        :rules="resetPasswordRules"
+        :labelCol="{ span: 8 }"
+        :wrapperCol="{ span: 16 }"
+        style="padding: 20px"
+      >
+        <div style="margin-bottom: 16px; word-wrap: break-word; white-space: normal;">
+          Password: At least 8 characters, including uppercase, lowercase, number, and special character
+        </div>
+        <a-form-item label="New Password" name="new_password" style="margin-bottom: 12px;">
+          <a-input-password 
+            placeholder="Please enter new password" 
+            v-model:value="resetPasswordData.new_password"
+            @input="handleResetPasswordInput"
+            @blur="handleResetPasswordBlur"
+            :status="resetPasswordErrorMessage ? 'error' : ''"
+          />
+        </a-form-item>
+        <a-form-item label="Confirm Password" name="confirm_password">
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <a-input-password 
+              placeholder="Please confirm new password" 
+              v-model:value="resetPasswordData.confirm_password"
               @input="handleResetPasswordConfirmInput"
               @blur="handleResetPasswordConfirmBlur"
+              :status="resetPasswordErrorMessage ? 'error' : ''"
             />
-            <a-button
-              type="default"
-              @click="generateResetPassword"
-              style="min-width: 100px"
-            >
-              GeneratePW
+            <a-button type="primary" @click="generateResetPassword" style="align-self: flex-start;">
+              Generate PW
             </a-button>
-          </div>
-          <div v-if="resetPasswordErrorMessage" style="font-size: 12px; color: #ff4d4f; margin-top: 4px;">
-            {{ resetPasswordErrorMessage }}
+            <span v-if="resetPasswordErrorMessage" style="color: #ff4d4f; font-size: 12px;">
+              {{ resetPasswordErrorMessage }}
+            </span>
           </div>
         </a-form-item>
-      </div>
+      </a-form>
+    </a-modal>
+
+    <!-- Reset PIN Modal -->
+    <a-modal
+      v-model:visible="isResetPinModalVisible"
+      title="Reset PIN"
+      width="500px"
+      @ok="handleResetPinConfirm"
+      @cancel="handleCancelResetPin"
+    >
+      <template #footer>
+        <div style="padding: 10px 16px">
+          <a-button key="back" @click="handleCancelResetPin" style="margin-right: 30px">Cancel</a-button>
+          <a-button key="submit" type="primary" @click="handleResetPinConfirm" style="margin-right: 20px">
+            Confirm
+          </a-button>
+        </div>
+      </template>
+      <a-form
+        layout="horizontal"
+        :model="resetPinData"
+        ref="resetPinFormRef"
+        :rules="resetPinRules"
+        :labelCol="{ span: 6 }"
+        :wrapperCol="{ span: 18 }"
+        style="padding: 20px"
+      >
+        <a-form-item label="New PIN" name="new_pin">
+          <a-input
+            placeholder="Please enter 4-digit PIN"
+            v-model:value="resetPinData.new_pin"
+            maxlength="4"
+            :inputmode="'numeric'"
+          />
+        </a-form-item>
+        <a-form-item label="Confirm PIN" name="confirm_pin">
+          <a-input
+            placeholder="Please confirm 4-digit PIN"
+            v-model:value="resetPinData.confirm_pin"
+            maxlength="4"
+            :inputmode="'numeric'"
+          />
+        </a-form-item>
+      </a-form>
     </a-modal>
   </div>
 </template>
@@ -262,11 +318,14 @@ import {
   getUserApi,
   updateUserApi,
   resetPasswordApi,
+  resetPinApi,
 } from '@/api/admin/user/user'
 import { getTagsApi } from '@/api/admin/tags/tags'
 import type {
   User,
   UpdateUserParams,
+  ResetPasswordParams,
+  ResetPinParams,
 } from '@/api/admin/user/model/userModel'
 import { getRolesApi } from '@/api/admin/role/role'
 import type { Role } from '@/api/admin/role/model/roleModel'
@@ -308,10 +367,12 @@ const formRef = ref()
 const formRefRight = ref()
 const saving = ref(false)
 const isResetPasswordModalVisible = ref(false)
+const isResetPinModalVisible = ref(false)
 const availableRoles = ref<Role[]>([])
 const allTagsList = ref<string[]>([]) // All available tags list
 const branchTagsList = ref<string[]>([]) // All available branch tags list
-
+const resetPasswordFormRef = ref()
+const resetPinFormRef = ref()
 
 const userData = ref<Partial<User>>({
   user_account: '',
@@ -327,16 +388,24 @@ const userData = ref<Partial<User>>({
   last_login_at: '',
 })
 
-// Password reset state (independent implementation)
-const resetPassword = ref('')
-const resetPasswordConfirm = ref('')
+// Password reset state (reuse UserList.vue logic)
+const resetPasswordData = ref({
+  new_password: '',
+  confirm_password: '',
+})
 const resetPasswordErrorMessage = ref('')
+
+// PIN reset state (reuse UserList.vue logic)
+const resetPinData = ref({
+  new_pin: '',
+  confirm_pin: '',
+})
 
 // Password validation constants
 const PASSWORD_MIN_LENGTH = 8
 const PASSWORD_SPECIAL_CHARS = '!@#$%^&*(),.?":{}|<>'
 
-// Validate password strength
+// Validate reset password strength (reuse UserList.vue logic)
 const validateResetPasswordStrength = (password: string): { isValid: boolean; errorMessage: string } => {
   if (!password) {
     return { isValid: false, errorMessage: '' }
@@ -364,10 +433,10 @@ const validateResetPasswordStrength = (password: string): { isValid: boolean; er
   return { isValid: true, errorMessage: '' }
 }
 
-// Validate password confirmation
+// Validate reset password confirmation (reuse UserList.vue logic)
 const validateResetPasswordConfirm = (): boolean => {
-  if (!resetPasswordConfirm.value) {
-    if (resetPassword.value) {
+  if (!resetPasswordData.value.confirm_password) {
+    if (resetPasswordData.value.new_password) {
       resetPasswordErrorMessage.value = 'Please confirm your password'
     } else {
       resetPasswordErrorMessage.value = ''
@@ -375,48 +444,48 @@ const validateResetPasswordConfirm = (): boolean => {
     return false
   }
 
-  if (resetPassword.value !== resetPasswordConfirm.value) {
+  if (resetPasswordData.value.new_password !== resetPasswordData.value.confirm_password) {
     resetPasswordErrorMessage.value = 'Passwords do not match'
     return false
   }
 
   // If passwords match, also validate the password strength
-  const strengthResult = validateResetPasswordStrength(resetPassword.value)
+  const strengthResult = validateResetPasswordStrength(resetPasswordData.value.new_password)
   resetPasswordErrorMessage.value = strengthResult.errorMessage
   return strengthResult.isValid
 }
 
-// Handle password input
+// Handle reset password input (reuse UserList.vue logic)
 const handleResetPasswordInput = () => {
-  if (!resetPassword.value) {
+  if (!resetPasswordData.value.new_password) {
     resetPasswordErrorMessage.value = ''
     return
   }
   if (!resetPasswordErrorMessage.value.includes('match')) {
-    const result = validateResetPasswordStrength(resetPassword.value)
+    const result = validateResetPasswordStrength(resetPasswordData.value.new_password)
     resetPasswordErrorMessage.value = result.errorMessage
   } else {
     validateResetPasswordConfirm()
   }
 }
 
-// Handle password blur
+// Handle reset password blur (reuse UserList.vue logic)
 const handleResetPasswordBlur = () => {
-  if (resetPassword.value) {
-    const result = validateResetPasswordStrength(resetPassword.value)
+  if (resetPasswordData.value.new_password) {
+    const result = validateResetPasswordStrength(resetPasswordData.value.new_password)
     resetPasswordErrorMessage.value = result.errorMessage
 
     // If password is valid, also check confirmation if it exists
-    if (result.isValid && resetPasswordConfirm.value) {
+    if (result.isValid && resetPasswordData.value.confirm_password) {
       validateResetPasswordConfirm()
     }
   }
 }
 
-// Handle password confirm input
+// Handle reset password confirm input (reuse UserList.vue logic)
 const handleResetPasswordConfirmInput = () => {
-  if (!resetPasswordConfirm.value) {
-    if (!resetPassword.value) {
+  if (!resetPasswordData.value.confirm_password) {
+    if (!resetPasswordData.value.new_password) {
       resetPasswordErrorMessage.value = ''
     }
     return
@@ -424,14 +493,14 @@ const handleResetPasswordConfirmInput = () => {
   validateResetPasswordConfirm()
 }
 
-// Handle password confirm blur
+// Handle reset password confirm blur (reuse UserList.vue logic)
 const handleResetPasswordConfirmBlur = () => {
-  if (resetPasswordConfirm.value) {
+  if (resetPasswordData.value.confirm_password) {
     validateResetPasswordConfirm()
   }
 }
 
-// Generate random password
+// Generate random password for reset (reuse UserList.vue logic)
 const generateResetPassword = () => {
   const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
   const lowercase = 'abcdefghijklmnopqrstuvwxyz'
@@ -454,18 +523,18 @@ const generateResetPassword = () => {
   // Shuffle the password
   const randomPassword = password.split('').sort(() => Math.random() - 0.5).join('')
   
-  resetPassword.value = randomPassword
-  resetPasswordConfirm.value = randomPassword
+  resetPasswordData.value.new_password = randomPassword
+  resetPasswordData.value.confirm_password = randomPassword
   resetPasswordErrorMessage.value = ''
 }
 
-// Check if password is valid
+// Check if reset password is valid (reuse UserList.vue logic)
 const isResetPasswordValid = computed(() => {
-  if (!resetPassword.value || !resetPasswordConfirm.value) {
+  if (!resetPasswordData.value.new_password || !resetPasswordData.value.confirm_password) {
     return false
   }
-  const strengthResult = validateResetPasswordStrength(resetPassword.value)
-  const confirmResult = resetPassword.value === resetPasswordConfirm.value
+  const strengthResult = validateResetPasswordStrength(resetPasswordData.value.new_password)
+  const confirmResult = resetPasswordData.value.new_password === resetPasswordData.value.confirm_password
   return strengthResult.isValid && confirmResult
 })
 
@@ -488,6 +557,61 @@ const canResetPassword = computed(() => {
 
 const rules: Record<string, Rule[]> = {
   role: [{ required: true, message: 'Please select role', trigger: 'change' }],
+}
+
+const resetPasswordRules: Record<string, Rule[]> = {
+  new_password: [
+    { required: true, message: 'Please enter new password', trigger: 'blur' },
+    { min: 8, message: 'Password must be at least 8 characters', trigger: 'blur' },
+    {
+      validator: (_rule: any, value: string) => {
+        if (!value) return Promise.resolve()
+        const result = validateResetPasswordStrength(value)
+        if (!result.isValid) {
+          return Promise.reject(result.errorMessage)
+        }
+        return Promise.resolve()
+      },
+      trigger: 'blur',
+    },
+  ],
+  confirm_password: [
+    { required: true, message: 'Please confirm password', trigger: 'blur' },
+    {
+      validator: (_rule: any, value: string) => {
+        if (!value) return Promise.resolve()
+        if (value !== resetPasswordData.value.new_password) {
+          return Promise.reject('Passwords do not match')
+        }
+        return Promise.resolve()
+      },
+      trigger: 'blur',
+    },
+  ],
+}
+
+const resetPinRules: Record<string, Rule[]> = {
+  new_pin: [
+    { required: true, message: 'Please enter 4-digit PIN', trigger: 'blur' },
+    { len: 4, message: 'PIN must be exactly 4 digits', trigger: 'blur' },
+    {
+      pattern: /^\d{4}$/,
+      message: 'PIN must be 4 digits',
+      trigger: 'blur',
+    },
+  ],
+  confirm_pin: [
+    { required: true, message: 'Please confirm PIN', trigger: 'blur' },
+    {
+      validator: (_rule: any, value: string) => {
+        if (value && value !== resetPinData.value.new_pin) {
+          return Promise.reject('PINs do not match')
+        }
+        return Promise.resolve()
+      },
+      trigger: 'blur',
+    },
+  ],
 }
 
 const fetchRoles = async () => {
@@ -693,50 +817,88 @@ const handleSave = async () => {
 }
 
 const handleResetPassword = () => {
-  resetPassword.value = ''
-  resetPasswordConfirm.value = ''
+  resetPasswordData.value = {
+    new_password: '',
+    confirm_password: '',
+  }
   resetPasswordErrorMessage.value = ''
   isResetPasswordModalVisible.value = true
 }
 
 const handleResetPasswordConfirm = async () => {
-  // Validate password
+  // Validate password strength first (reuse UserList.vue logic)
   if (!isResetPasswordValid.value) {
     message.error(resetPasswordErrorMessage.value || 'Please check password requirements')
     return
   }
 
-  if (!resetPassword.value || !resetPasswordConfirm.value) {
-    message.error('Please enter a valid password')
-    return
-  }
-  if (resetPassword.value !== resetPasswordConfirm.value) {
-    message.error('Passwords do not match')
-    return
-  }
-  const strengthResult = validateResetPasswordStrength(resetPassword.value)
-  if (!strengthResult.isValid) {
-    message.error(strengthResult.errorMessage || 'Please enter a valid password')
-    return
-  }
-
-  try {
-    await resetPasswordApi(userId.value, {
-      new_password: resetPassword.value,
+  resetPasswordFormRef.value
+    .validate()
+    .then(async () => {
+      try {
+        const params: Omit<ResetPasswordParams, 'user_id'> = {
+          new_password: resetPasswordData.value.new_password,
+        }
+        await resetPasswordApi(userId.value, params)
+        message.success('Password reset successfully')
+        handleCancelResetPassword()
+      } catch (error: any) {
+        console.error('Failed to reset password:', error)
+        message.error(error?.message || 'Failed to reset password')
+      }
     })
-    message.success('Password reset successfully')
-    handleCancelResetPassword()
-  } catch (error: any) {
-    console.error('Failed to reset password:', error)
-    message.error(error?.message || 'Failed to reset password')
-  }
+    .catch((error: any) => {
+      console.error('Validation failed:', error)
+    })
 }
 
 const handleCancelResetPassword = () => {
   isResetPasswordModalVisible.value = false
-  resetPassword.value = ''
-  resetPasswordConfirm.value = ''
+  resetPasswordFormRef.value?.resetFields()
+  // Clear password fields and error message
+  resetPasswordData.value = {
+    new_password: '',
+    confirm_password: '',
+  }
   resetPasswordErrorMessage.value = ''
+}
+
+const handleResetPin = () => {
+  resetPinData.value = {
+    new_pin: '',
+    confirm_pin: '',
+  }
+  isResetPinModalVisible.value = true
+}
+
+const handleResetPinConfirm = async () => {
+  resetPinFormRef.value
+    .validate()
+    .then(async () => {
+      try {
+        const params: Omit<ResetPinParams, 'user_id'> = {
+          new_pin: resetPinData.value.new_pin,
+        }
+        await resetPinApi(userId.value, params)
+        message.success('PIN reset successfully')
+        handleCancelResetPin()
+      } catch (error: any) {
+        console.error('Failed to reset PIN:', error)
+        message.error(error?.message || 'Failed to reset PIN')
+      }
+    })
+    .catch((error: any) => {
+      console.error('Validation failed:', error)
+    })
+}
+
+const handleCancelResetPin = () => {
+  isResetPinModalVisible.value = false
+  resetPinFormRef.value?.resetFields()
+  resetPinData.value = {
+    new_pin: '',
+    confirm_pin: '',
+  }
 }
 
 const goBack = () => {

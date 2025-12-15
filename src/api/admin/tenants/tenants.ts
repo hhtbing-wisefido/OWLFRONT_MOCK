@@ -120,6 +120,7 @@ export async function resetTenantBootstrapAccountsApi(
 export async function resetTenantBootstrapAccountApi(
   id: string,
   userAccount: 'admin',
+  password?: string,
   mode: ErrorMessageMode = 'modal'
 ): Promise<any> {
   if (useMock) {
@@ -129,16 +130,21 @@ export async function resetTenantBootstrapAccountApi(
         {
           user_account: userAccount,
           role: 'Admin',
-          temp_password: 'mock-admin-pass',
+          temp_password: password || 'mock-admin-pass',
         },
       ],
     }
+  }
+  const data: any = {}
+  if (password) {
+    data.new_password = password
   }
   return defHttp.post<any>(
     {
       // NOTE: some defHttp wrappers don't forward POST `params` to querystring.
       // Build the querystring explicitly to ensure backend receives user_account.
       url: `${Api.TenantBootstrapReset.replace(':id', id)}?user_account=${encodeURIComponent(userAccount)}`,
+      data,
     },
     { errorMessageMode: mode }
   )
