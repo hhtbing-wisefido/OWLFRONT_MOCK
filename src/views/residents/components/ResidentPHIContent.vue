@@ -279,7 +279,7 @@
 
 <script lang="ts" setup>
 import { ref, watch } from 'vue'
-import dayjs, { type Dayjs } from 'dayjs'
+import dayjs from 'dayjs'
 import type { ResidentPHI } from '@/api/resident/model/residentModel'
 
 interface Props {
@@ -326,22 +326,21 @@ const filterStateOption = (input: string, option: any) => {
   return option.value.toLowerCase().includes(input.toLowerCase())
 }
 
-// Watch for changes and emit updates
-watch(
-  () => localPHIData.value,
-  (newData) => {
-    // 如果 saveEmail 或 savePhone 为 false，不发送 email/phone 到后端
-    const dataToEmit = { ...newData }
-    if (!saveEmail.value) {
-      delete dataToEmit.resident_email
-    }
-    if (!savePhone.value) {
-      delete dataToEmit.resident_phone
-    }
-    emit('update:phi-data', dataToEmit)
-  },
-  { deep: true }
-)
+// Expose method to get current PHI data (called by parent on save)
+const getPHIData = () => {
+  const dataToEmit = { ...localPHIData.value }
+  if (!saveEmail.value) {
+    delete dataToEmit.resident_email
+  }
+  if (!savePhone.value) {
+    delete dataToEmit.resident_phone
+  }
+  return dataToEmit
+}
+
+defineExpose({
+  getPHIData
+})
 
 // Watch props changes
 watch(
@@ -349,12 +348,12 @@ watch(
   (newData) => {
     if (newData) {
       localPHIData.value = {
-        resident_id: props.residentId,
         ...newData,
+        resident_id: props.residentId, // Ensure resident_id is set from props
       }
-      // 如果已有 email_hash 或 phone_hash，说明已保存，设置 save 为 true
-      saveEmail.value = !!newData.email_hash
-      savePhone.value = !!newData.phone_hash
+      // 如果已有 resident_email 或 resident_phone，说明已保存，设置 save 为 true
+      saveEmail.value = !!newData.resident_email
+      savePhone.value = !!newData.resident_phone
     }
   },
   { deep: true }

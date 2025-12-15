@@ -46,11 +46,10 @@
         <!-- Profile Tab -->
         <a-tab-pane key="profile" tab="Profile">
           <ResidentProfileContent 
+            ref="profileContentRef"
             :resident-data="residentData"
             :mode="mode"
             :readonly="!canEditProfile"
-            @update:resident-data="handleResidentDataUpdate"
-            @update:phi-data="handlePHIDataUpdate"
           />
         </a-tab-pane>
 
@@ -61,11 +60,11 @@
           tab="PHI"
         >
           <ResidentPHIContent 
+            ref="phiContentRef"
             :resident-id="residentId || 'new'"
             :phi-data="residentData.phi"
             :readonly="!canEditPHI"
             :mode="mode"
-            @update:phi-data="handlePHIDataUpdate"
           />
         </a-tab-pane>
 
@@ -93,7 +92,7 @@ import ResidentProfileContent from './components/ResidentProfileContent.vue'
 import ResidentPHIContent from './components/ResidentPHIContent.vue'
 import ResidentContactsContent from './components/ResidentContactsContent.vue'
 import { getResidentApi, createResidentApi, updateResidentApi, updateResidentPHIApi, updateResidentContactApi } from '@/api/resident/resident'
-import type { Resident, CreateResidentParams, UpdateResidentPHIParams } from '@/api/resident/model/residentModel'
+import type { Resident, CreateResidentParams, UpdateResidentPHIParams, ResidentContact } from '@/api/resident/model/residentModel'
 import { useUserStore } from '@/store/modules/user'
 import { useEntitiesStore } from '@/store/modules/entities'
 import { usePermission } from '@/hooks/usePermission'
@@ -122,6 +121,8 @@ const residentId = computed(() => {
 const activeTab = ref<string>((route.params.tab as string) || (route.query.tab as string) || 'profile')
 const residentData = ref<Resident>({} as Resident)
 const saving = ref(false)
+// Store original data for cancel functionality
+const originalResidentData = ref<Resident>({} as Resident)
 
 const userInfo = computed(() => userStore.getUserInfo)
 const userRole = computed(() => userInfo.value?.role || '')
@@ -130,7 +131,6 @@ const userType = computed(() => userInfo.value?.userType || '')
 // 角色判断
 const isManager = computed(() => hasManagePermission.value || hasRole(['Manager']))
 const isNurse = computed(() => hasRole(['Nurse']))
-const isCaregiver = computed(() => hasRole(['Caregiver']))
 const isResident = computed(() => userType.value === 'resident' && userRole.value === 'Resident')
 const isFamily = computed(() => userRole.value === 'Family')
 
@@ -197,20 +197,9 @@ const handleTabChange = (key: string) => {
   }
 }
 
-// Handle resident data update
-const handleResidentDataUpdate = (data: Partial<Resident>) => {
-  residentData.value = { ...residentData.value, ...data }
-}
-
-// Handle PHI data update
-const handlePHIDataUpdate = (data: any) => {
-  residentData.value.phi = { ...residentData.value.phi, ...data }
-}
-
-// Handle contacts update
-const handleContactsUpdate = (contacts: any[]) => {
-  residentData.value.contacts = contacts
-}
+// Refs to child components (to read data on save)
+const profileContentRef = ref<InstanceType<typeof ResidentProfileContent> | null>(null)
+const phiContentRef = ref<InstanceType<typeof ResidentPHIContent> | null>(null)
 
 
 // Fetch resident data
@@ -248,6 +237,7 @@ const fetchResident = async (params?: { include_phi?: boolean; include_contacts?
     } else {
       const result = await getResidentApi(residentId.value, params)
       residentData.value = { ...result }
+      originalResidentData.value = { ...result } // Store original for cancel
       entitiesStore.setResidentDetail(residentId.value, residentData.value)
     }
   } catch (error: any) {
@@ -255,6 +245,11 @@ const fetchResident = async (params?: { include_phi?: boolean; include_contacts?
     message.error(error?.message || 'Failed to fetch resident')
     goBack()
   }
+}
+
+// Handle contacts update from ResidentContactsContent component
+const handleContactsUpdate = (contacts: ResidentContact[]) => {
+  residentData.value.contacts = contacts
 }
 
 // Handle cancel - abandon changes, don't save, don't create
@@ -279,27 +274,32 @@ const handleCancel = () => {
 const handleSave = async () => {
   saving.value = true
   try {
+    // Read data directly from child components (only on save, not on every input)
+    const profileData = profileContentRef.value?.getResidentData?.() || {}
+    const phiData = profileContentRef.value?.getPHIData?.() || phiContentRef.value?.getPHIData?.() || {}
+    const password = profileContentRef.value?.getPassword?.()
+    
     if (mode.value === 'create') {
       // Create new resident - save all data from all tabs
       const createParams: CreateResidentParams = {
-        first_name: residentData.value.phi?.first_name,
-        last_name: residentData.value.phi?.last_name,
-        nickname: residentData.value.nickname,
-        resident_account: residentData.value.resident_account,
-        email: residentData.value.email,
-        phone: residentData.value.phone,
-        status: residentData.value.status || 'active',
-        service_level: residentData.value.service_level || undefined,
-        admission_date: residentData.value.admission_date,
-        family_tag: residentData.value.family_tag,
-        note: residentData.value.note,
+        first_name: phiData.first_name,
+        last_name: phiData.last_name,
+        nickname: profileData.nickname,
+        resident_account: profileData.resident_account,
+        email: profileData.email,
+        phone: profileData.phone,
+        status: profileData.status || 'active',
+        service_level: profileData.service_level || undefined,
+        admission_date: profileData.admission_date,
+        family_tag: profileData.family_tag,
+        note: profileData.note,
       }
       const result = await createResidentApi(createParams)
       
       // Save PHI data if provided
-      if (residentData.value.phi && Object.keys(residentData.value.phi).length > 0) {
+      if (phiData && Object.keys(phiData).length > 0) {
         try {
-          const phiParams: UpdateResidentPHIParams = { ...residentData.value.phi }
+          const phiParams: UpdateResidentPHIParams = { ...phiData }
           delete (phiParams as any).resident_id
           delete (phiParams as any).phi_id
           delete (phiParams as any).tenant_id
@@ -321,17 +321,7 @@ const handleSave = async () => {
         }
       }
       
-      // Save Contacts if provided
-      if (residentData.value.contacts && residentData.value.contacts.length > 0) {
-        try {
-          await updateResidentContactApi(result.resident_id, {
-            contacts: residentData.value.contacts,
-          })
-        } catch (error: any) {
-          console.error('Failed to create contacts:', error)
-          message.warning('Resident created successfully, but contacts creation failed. You can add them later.')
-        }
-      }
+      // Contacts are already included in createParams above (if provided)
       
       message.success('Resident created successfully')
       
@@ -349,35 +339,50 @@ const handleSave = async () => {
         // Nurse 只能更新 note 字段
         updatePromises.push(
           updateResidentApi(residentId.value, {
-            note: residentData.value.note,
+            note: profileData.note,
           })
         )
       } else {
         // Manager/Admin 可以更新所有字段
         updatePromises.push(
           updateResidentApi(residentId.value, {
-            nickname: residentData.value.nickname,
-            resident_account: residentData.value.resident_account,
-            email: residentData.value.email,
-            phone: residentData.value.phone,
-            status: residentData.value.status,
-            service_level: residentData.value.service_level,
-            admission_date: residentData.value.admission_date,
-            discharge_date: residentData.value.discharge_date,
-            family_tag: residentData.value.family_tag,
-            note: residentData.value.note,
+            nickname: profileData.nickname,
+            resident_account: profileData.resident_account,
+            email: profileData.email,
+            phone: profileData.phone,
+            status: profileData.status,
+            service_level: profileData.service_level,
+            admission_date: profileData.admission_date,
+            discharge_date: profileData.discharge_date,
+            family_tag: profileData.family_tag,
+            note: profileData.note,
           })
         )
       }
       
-      // 2. Update PHI data if exists
-      if (residentData.value.phi && Object.keys(residentData.value.phi).length > 0) {
+      // 2. Update password if provided
+      if (password) {
+        try {
+          const { resetResidentPasswordApi } = await import('@/api/resident/resident')
+          await resetResidentPasswordApi(residentId.value, password)
+        } catch (error: any) {
+          console.error('Failed to reset password:', error)
+          message.warning('Resident updated successfully, but password reset failed.')
+        }
+      }
+      
+      // 3. Update PHI data if exists (read from child component)
+      if (phiData && Object.keys(phiData).length > 0) {
+        const phiParams: UpdateResidentPHIParams = { ...phiData }
+        delete (phiParams as any).resident_id
+        delete (phiParams as any).phi_id
+        delete (phiParams as any).tenant_id
         updatePromises.push(
-          updateResidentPHIApi(residentId.value, residentData.value.phi)
+          updateResidentPHIApi(residentId.value, phiParams)
         )
       }
       
-      // 3. Update Contacts if exists (save each contact individually)
+      // 4. Update Contacts if exists (save each contact individually)
       if (residentData.value.contacts && residentData.value.contacts.length > 0) {
         const contactPromises = residentData.value.contacts
           .filter(contact => contact.is_enabled || contact.contact_first_name || contact.contact_last_name)

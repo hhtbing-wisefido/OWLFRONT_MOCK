@@ -153,7 +153,43 @@
         </a-col>
       </a-row>
 
-      <!-- Row 3: Note -->
+      <!-- Row 3: Password Reset -->
+      <a-row v-if="canViewField('note')">
+        <a-col :span="24">
+          <a-form-item label="Password: At least 8 characters, including uppercase, lowercase, number, and special character" style="margin-bottom: 0;">
+            <div style="display: flex; gap: 12px; align-items: flex-start;">
+              <a-input-password
+                v-model:value="residentPassword"
+                :disabled="!canEditField('note')"
+                placeholder="Enter new password"
+                style="width: 200px"
+                @input="handleResidentPasswordInput"
+                @blur="handleResidentPasswordBlur"
+              />
+              <a-input-password
+                v-model:value="residentPasswordConfirm"
+                :disabled="!canEditField('note')"
+                placeholder="Confirm password"
+                style="width: 200px"
+                @input="handleResidentPasswordConfirmInput"
+                @blur="handleResidentPasswordConfirmBlur"
+              />
+              <a-button 
+                type="default" 
+                @click="generateResidentPassword"
+                :disabled="!canEditField('note')"
+              >
+                GeneratePW
+              </a-button>
+            </div>
+            <div v-if="residentPasswordErrorMessage" style="font-size: 12px; color: #ff4d4f; margin-top: 4px;">
+              {{ residentPasswordErrorMessage }}
+            </div>
+          </a-form-item>
+        </a-col>
+      </a-row>
+
+      <!-- Row 4: Note -->
       <a-row v-if="canViewField('note')">
         <a-col :span="24">
           <a-form-item label="Note" style="margin-bottom: 0;">
@@ -538,7 +574,6 @@ import { getUsersApi } from '@/api/admin/user/user'
 import type { User } from '@/api/admin/user/model/userModel'
 import { getTagsApi } from '@/api/admin/tags/tags'
 import type { TagCatalogItem } from '@/api/admin/tags/model/tagsModel'
-
 interface Props {
   residentData: Resident
   readonly?: boolean
@@ -1201,6 +1236,171 @@ const localPHIData = ref<Partial<ResidentPHI>>({ ...(props.residentData.phi || {
 const autoFillNickname = ref(false)
 const mode = computed(() => props.mode)
 
+// Password reset for resident (independent implementation)
+const residentPassword = ref('')
+const residentPasswordConfirm = ref('')
+const residentPasswordErrorMessage = ref('')
+
+// Password validation constants
+const PASSWORD_MIN_LENGTH = 8
+const PASSWORD_SPECIAL_CHARS = '!@#$%^&*(),.?":{}|<>'
+
+// Validate password strength
+const validateResidentPasswordStrength = (password: string): { isValid: boolean; errorMessage: string } => {
+  if (!password) {
+    return { isValid: false, errorMessage: '' }
+  }
+
+  if (password.length < PASSWORD_MIN_LENGTH) {
+    return {
+      isValid: false,
+      errorMessage: 'Password must be at least 8 characters',
+    }
+  }
+
+  const hasUpperCase = /[A-Z]/.test(password)
+  const hasLowerCase = /[a-z]/.test(password)
+  const hasNumber = /[0-9]/.test(password)
+  const hasSpecialChar = new RegExp(`[${PASSWORD_SPECIAL_CHARS.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}]`).test(password)
+
+  if (!hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecialChar) {
+    return {
+      isValid: false,
+      errorMessage: 'Password must include uppercase, lowercase, number, and special character',
+    }
+  }
+
+  return { isValid: true, errorMessage: '' }
+}
+
+// Validate password confirmation
+const validateResidentPasswordConfirm = (): boolean => {
+  if (!residentPasswordConfirm.value) {
+    if (residentPassword.value) {
+      residentPasswordErrorMessage.value = 'Please confirm your password'
+    } else {
+      residentPasswordErrorMessage.value = ''
+    }
+    return false
+  }
+
+  if (residentPassword.value !== residentPasswordConfirm.value) {
+    residentPasswordErrorMessage.value = 'Passwords do not match'
+    return false
+  }
+
+  // If passwords match, also validate the password strength
+  const strengthResult = validateResidentPasswordStrength(residentPassword.value)
+  residentPasswordErrorMessage.value = strengthResult.errorMessage
+  return strengthResult.isValid
+}
+
+// Handle password input
+const handleResidentPasswordInput = () => {
+  if (!residentPassword.value) {
+    residentPasswordErrorMessage.value = ''
+    return
+  }
+  if (!residentPasswordErrorMessage.value.includes('match')) {
+    const result = validateResidentPasswordStrength(residentPassword.value)
+    residentPasswordErrorMessage.value = result.errorMessage
+  } else {
+    validateResidentPasswordConfirm()
+  }
+}
+
+// Handle password blur
+const handleResidentPasswordBlur = () => {
+  if (residentPassword.value) {
+    const result = validateResidentPasswordStrength(residentPassword.value)
+    residentPasswordErrorMessage.value = result.errorMessage
+
+    // If password is valid, also check confirmation if it exists
+    if (result.isValid && residentPasswordConfirm.value) {
+      validateResidentPasswordConfirm()
+    }
+  }
+}
+
+// Handle password confirm input
+const handleResidentPasswordConfirmInput = () => {
+  if (!residentPasswordConfirm.value) {
+    if (!residentPassword.value) {
+      residentPasswordErrorMessage.value = ''
+    }
+    return
+  }
+  validateResidentPasswordConfirm()
+}
+
+// Handle password confirm blur
+const handleResidentPasswordConfirmBlur = () => {
+  if (residentPasswordConfirm.value) {
+    validateResidentPasswordConfirm()
+  }
+}
+
+// Generate random password
+const generateResidentPassword = () => {
+  const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+  const lowercase = 'abcdefghijklmnopqrstuvwxyz'
+  const numbers = '0123456789'
+  const special = PASSWORD_SPECIAL_CHARS
+  const allChars = uppercase + lowercase + numbers + special
+
+  // Ensure at least one of each required type
+  let password = ''
+  password += uppercase[Math.floor(Math.random() * uppercase.length)]
+  password += lowercase[Math.floor(Math.random() * lowercase.length)]
+  password += numbers[Math.floor(Math.random() * numbers.length)]
+  password += special[Math.floor(Math.random() * special.length)]
+
+  // Fill the rest randomly (minimum 8 chars total)
+  for (let i = password.length; i < PASSWORD_MIN_LENGTH; i++) {
+    password += allChars[Math.floor(Math.random() * allChars.length)]
+  }
+
+  // Shuffle the password
+  const randomPassword = password.split('').sort(() => Math.random() - 0.5).join('')
+  
+  residentPassword.value = randomPassword
+  residentPasswordConfirm.value = randomPassword
+  residentPasswordErrorMessage.value = ''
+}
+
+// Check if password is valid
+const isResidentPasswordValid = computed(() => {
+  if (!residentPassword.value || !residentPasswordConfirm.value) {
+    return false
+  }
+  const strengthResult = validateResidentPasswordStrength(residentPassword.value)
+  const confirmResult = residentPassword.value === residentPasswordConfirm.value
+  return strengthResult.isValid && confirmResult
+})
+
+// Expose method to get current data (called by parent on save)
+const getResidentData = () => {
+  return { ...localResidentData.value }
+}
+
+const getPHIData = () => {
+  return { ...localPHIData.value }
+}
+
+const getPassword = () => {
+  // Get password if valid
+  if (isResidentPasswordValid.value) {
+    return residentPassword.value || undefined
+  }
+  return undefined
+}
+
+defineExpose({
+  getResidentData,
+  getPHIData,
+  getPassword
+})
+
 // Handle nickname change - sync to first_name if checkbox is checked
 const handleNicknameChange = () => {
   if (autoFillNickname.value && mode.value === 'create') {
@@ -1244,24 +1444,7 @@ const handleAutoFillNicknameChange = (e: any) => {
   }
 }
 
-// Watch for changes and emit updates (one-way data flow: child -> parent)
-// No need to watch props changes - parent will update props after saving to DB
-watch(
-  () => localResidentData.value,
-  (newData) => {
-    emit('update:resident-data', newData)
-  },
-  { deep: true, immediate: false }
-)
-
-// Watch localPHIData changes and emit updates
-watch(
-  () => localPHIData.value,
-  (newData) => {
-    emit('update:phi-data', newData)
-  },
-  { deep: true, immediate: false }
-)
+// Data is read directly from child components on save (no watch needed)
 
 
 // Initialize data from props when component is created or props change
@@ -1298,6 +1481,9 @@ const initializeFromProps = () => {
     availableBeds.value = []
   }
 }
+
+// Password will be saved when user clicks Save button in parent component
+// No separate ResetPW button needed - password is part of the form
 
 onMounted(async () => {
   await Promise.all([

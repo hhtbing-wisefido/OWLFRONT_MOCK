@@ -41,29 +41,35 @@ if (useMock) {
  */
 export async function loginApi(params: LoginParams, mode: ErrorMessageMode = 'modal') {
   // Import crypto utility
-  const { hashAccount, hashAccountPassword } = await import('@/utils/crypto')
+  const { hashAccount, hashPassword } = await import('@/utils/crypto')
+  
+  // Trim account to remove leading/trailing spaces
+  const accountTrimmed = params.account.trim()
   
   // Hash account (phone/email/username) for HIPAA compliance
-  const accountHash = await hashAccount(params.account)
+  // account_hash = SHA256(account) - independent hash for account identification
+  const accountHash = await hashAccount(accountTrimmed)
   
-  // Hash account + password combination
-  const accountPasswordHash = await hashAccountPassword(params.account, params.password)
+  // Hash password - independent of account
+  // password_hash = SHA256(password) - independent hash for password verification
+  // Use original password (no trim) - password hash should only depend on password itself
+  const passwordHash = await hashPassword(params.password)
   
   // In development with mock enabled, return mock data directly
   if (useMock) {
     // Use relative path to avoid Vite alias resolution issues in dynamic imports
     return import('../../../test/index').then(({ login }) => {
       console.log('%c[Mock] Login API Request', 'color: #1890ff; font-weight: bold', {
-        accountType: params.account.includes('@') ? 'email' : /^\d+$/.test(params.account.replace(/\D/g, '')) ? 'phone' : 'username',
+        account: accountTrimmed,
         accountHash: accountHash.substring(0, 16) + '...', // Show partial hash for debugging
-        accountPasswordHash: accountPasswordHash.substring(0, 16) + '...', // Show partial hash for debugging
+        passwordHash: passwordHash.substring(0, 16) + '...', // Show partial hash for debugging
         userType: params.userType,
         tenant_id: params.tenant_id,
         note: 'Only hashes are sent, no raw PHI (phone/email) transmitted',
       })
       
       // For mock, we still pass plain account/password for testing
-      return login.mockLogin(params).then((result) => {
+      return login.mockLogin({ ...params, account: accountTrimmed }).then((result) => {
         console.log('%c[Mock] Login API - Success', 'color: #52c41a; font-weight: bold', {
           result,
         })
@@ -79,15 +85,18 @@ export async function loginApi(params: LoginParams, mode: ErrorMessageMode = 'mo
 
   // Production: Call real API with hashed account and password
   // Chrome DevTools will show only hashes in Network tab, proving no raw PHI is transmitted
+  // account_hash and password_hash are independent: account_hash = SHA256(account), password_hash = SHA256(password)
+  const requestParams: any = {
+    accountHash, // Hash of account (phone/email/username) - NO raw PHI
+    passwordHash, // Hash of password only - NO raw password
+    userType: params.userType,
+    tenant_id: params.tenant_id,
+  }
+  
   return defHttp.post<LoginResult>(
     {
       url: Api.Login,
-      params: {
-        accountHash, // Hash of account (phone/email/username) - NO raw PHI
-        accountPasswordHash, // Hash of account:password - NO raw password
-        userType: params.userType,
-        tenant_id: params.tenant_id,
-      },
+      params: requestParams,
     },
     {
       errorMessageMode: mode,
@@ -119,29 +128,34 @@ export async function searchInstitutionsApi(
   mode: ErrorMessageMode = 'none',
 ) {
   // Import crypto utility
-  const { hashAccount, hashAccountPassword } = await import('@/utils/crypto')
+  const { hashAccount, hashPassword } = await import('@/utils/crypto')
+  
+  // Trim account to remove leading/trailing spaces
+  const accountTrimmed = account.trim()
   
   // Hash account (phone/email/username) for HIPAA compliance
-  // This ensures raw PHI is never transmitted to backend
-  const accountHash = await hashAccount(account)
+  // account_hash = SHA256(account) - independent hash for account identification
+  const accountHash = await hashAccount(accountTrimmed)
   
-  // Hash account + password combination for secure transmission
-  const accountPasswordHash = await hashAccountPassword(account, password)
+  // Hash password - independent of account
+  // password_hash = SHA256(password) - independent hash for password verification
+  // Use original password (no trim) - password hash should only depend on password itself
+  const passwordHash = await hashPassword(password)
   
   // In development with mock enabled, return mock data directly
   if (useMock) {
     // Use relative path to avoid Vite alias resolution issues in dynamic imports
     return import('../../../test/index').then(({ login }) => {
       console.log('%c[Mock] Institution Search API Request', 'color: #1890ff; font-weight: bold', {
-        accountType: account.includes('@') ? 'email' : /^\d+$/.test(account.replace(/\D/g, '')) ? 'phone' : 'username',
+        account: accountTrimmed,
         accountHash: accountHash.substring(0, 16) + '...', // Show partial hash for debugging
-        accountPasswordHash: accountPasswordHash.substring(0, 16) + '...', // Show partial hash for debugging
+        passwordHash: passwordHash.substring(0, 16) + '...', // Show partial hash for debugging
         userType,
         note: 'Only hashes are sent, no raw PHI (phone/email) transmitted',
       })
       
       // For mock, we still pass plain account/password for testing, but in production only hashes are sent
-      return login.mockSearchInstitutions(account, password, userType).then((result) => {
+      return login.mockSearchInstitutions(accountTrimmed, password, userType).then((result) => {
         console.log('%c[Mock] Institution Search API - Result', 'color: #1890ff; font-weight: bold', {
           count: result.length,
           institutions: result,
@@ -153,14 +167,17 @@ export async function searchInstitutionsApi(
 
   // Production: Call real API with hashed account and password
   // Chrome DevTools will show only hashes in Network tab, proving no raw PHI is transmitted
+  // account_hash and password_hash are independent: account_hash = SHA256(account), password_hash = SHA256(password)
+  const requestParams: any = {
+    accountHash, // Hash of account (phone/email/username) - NO raw PHI
+    passwordHash, // Hash of password only - NO raw password
+    userType,
+  }
+  
   return defHttp.get<Institution[]>(
     {
       url: Api.SearchInstitutions,
-      params: {
-        accountHash, // Hash of account (phone/email/username) - NO raw PHI
-        accountPasswordHash, // Hash of account:password - NO raw password
-        userType,
-      },
+      params: requestParams,
     },
     {
       errorMessageMode: mode,

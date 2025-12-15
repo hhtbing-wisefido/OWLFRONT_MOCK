@@ -29,6 +29,8 @@ export enum Api {
   Delete = '/admin/api/v1/residents/:id',
   UpdatePHI = '/admin/api/v1/residents/:id/phi',
   UpdateContact = '/admin/api/v1/residents/:id/contacts',
+  ResetPassword = '/admin/api/v1/residents/:id/reset-password',
+  ResetContactPassword = '/admin/api/v1/residents/:id/contacts/:slot/reset-password',
 }
 
 // Mock mode: In development, use mock data instead of real API calls
@@ -229,6 +231,62 @@ export function updateResidentPHIApi(
     {
       url: Api.UpdatePHI.replace(':id', residentId),
       data: params,
+    },
+    { errorMessageMode: mode },
+  )
+}
+
+/**
+ * @description: Reset resident password
+ * @param residentId - Resident ID
+ * @param password - New password
+ * @param mode - Error message mode
+ */
+export function resetResidentPasswordApi(
+  residentId: string,
+  password: string,
+  mode: ErrorMessageMode = 'modal',
+) {
+  if (useMock) {
+    return import('@test/index').then(({ residents }) => {
+      console.log('%c[Mock] Reset Resident Password API Request', 'color: #1890ff; font-weight: bold', { residentId, password })
+      return Promise.resolve({ success: true })
+    })
+  }
+
+  return defHttp.post(
+    {
+      url: Api.ResetPassword.replace(':id', residentId),
+      data: { password },
+    },
+    { errorMessageMode: mode },
+  )
+}
+
+/**
+ * @description: Reset contact password
+ * @param residentId - Resident ID
+ * @param slot - Contact slot (A, B, C, D, E)
+ * @param password - New password
+ * @param mode - Error message mode
+ */
+export function resetContactPasswordApi(
+  residentId: string,
+  slot: string,
+  password: string,
+  mode: ErrorMessageMode = 'modal',
+) {
+  if (useMock) {
+    return import('@test/index').then(({ residents }) => {
+      console.log('%c[Mock] Reset Contact Password API Request', 'color: #1890ff; font-weight: bold', { residentId, slot, password })
+      return Promise.resolve({ success: true })
+    })
+  }
+
+  return defHttp.post(
+    {
+      url: Api.ResetContactPassword.replace(':id', residentId).replace(':slot', slot),
+      data: { password },
     },
     { errorMessageMode: mode },
   )

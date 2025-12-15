@@ -129,25 +129,6 @@ const ASelect = Select
 const ASelectOption = Select.Option
 const ACheckbox = Checkbox
 
-/**
- * Detect account type: 'email' | 'phone' | 'userAccount'
- * - Email: contains '@'
- * - Phone: only digits (may contain spaces/dashes)
- * - UserAccount: everything else
- */
-function detectAccountType(account: string): 'email' | 'phone' | 'userAccount' {
-  const trimmed = account.trim()
-  if (trimmed.includes('@')) {
-    return 'email'
-  }
-  // Check if it's a phone number (only digits, spaces, dashes, parentheses, plus)
-  const phonePattern = /^[\d\s\-\(\)\+]+$/
-  if (phonePattern.test(trimmed) && trimmed.replace(/\D/g, '').length >= 7) {
-    return 'phone'
-  }
-  return 'userAccount'
-}
-
 // Form data
 const formData = reactive({
   userType: 'staff' as 'staff' | 'resident',
@@ -302,9 +283,6 @@ const debouncedSearchInstitutions = debounce(async (account: string, password: s
     
     matchedInstitutions.value = institutions
 
-    // Detect account type
-    const accountType = detectAccountType(accountTrimmed)
-
     if (institutions.length === 0) {
       // Security: Don't reveal if account exists or not
       // Just show a generic message
@@ -317,30 +295,18 @@ const debouncedSearchInstitutions = debounce(async (account: string, password: s
       if (!formData.tenant_id) {
         // Only auto-fill if user hasn't manually entered a value
         formData.tenant_id = institutions[0].id
-        formData.tenant_name = institutions[0].name
+        // Auto-fill tenant_name if available (backend returns name for matched institutions)
+        formData.tenant_name = institutions[0].name || undefined
       }
       accountError.value = ''
       requiresManualInstitutionInput.value = false
     } else {
-      // Multiple institutions found - this is a successful search, clear any errors
+      // Multiple institutions found - show selection list (clickable divs)
+      // Backend returns name for matched institutions (already verified by password)
       accountError.value = '' // Clear error message - multiple matches is normal
-      
-      if (accountType === 'userAccount') {
-        // For UserAccount: require manual input, don't show list
-        requiresManualInstitutionInput.value = true
-        formData.tenant_id = undefined
-        formData.tenant_name = undefined
-        institutionInputError.value = 'Please enter the organize name'
-      } else {
-        // For Email/Phone: show list for selection (existing behavior)
-        requiresManualInstitutionInput.value = false
-        institutionOptions.value = institutions.map((inst) => ({
-          label: inst.name,
-          value: inst.id,
-        }))
-        formData.tenant_id = undefined // Clear selection, force user to choose
-        formData.tenant_name = undefined
-      }
+      requiresManualInstitutionInput.value = false
+      formData.tenant_id = undefined
+      formData.tenant_name = undefined
     }
   } catch (error: any) {
     console.error('Failed to search organizes:', error)
@@ -412,8 +378,13 @@ const handlePasswordInput = () => {
   }
 }
 
-// Handle account blur - trigger search if both account and password are entered
+// Handle account blur - trim account and trigger search if both account and password are entered
 const handleAccountBlur = () => {
+  // Trim account to remove leading/trailing spaces and update display
+  if (formData.account) {
+    formData.account = formData.account.trim()
+  }
+  
   if (formData.account && formData.password && matchedInstitutions.value.length === 0) {
     debouncedSearchInstitutions(formData.account, formData.password, formData.userType)
   }
@@ -441,97 +412,101 @@ watch(
   },
 )
 
-// Select institution from matched list
+// Select institution from matched list (for clickable divs)
 const selectInstitution = (institution: Institution) => {
   formData.tenant_id = institution.id // Store ID for API (e.g., "tenant-001")
   formData.tenant_name = institution.name // Store name for display (e.g., "Sunset")
+  institutionInputError.value = ''
 }
 
 /**
- * Match institutions by prefix (case-insensitive)
- * Returns array of matching institutions
+ * Match institutions by tenant_name or tenant_id
+ * Backend returns name for matched institutions (already verified by password)
  */
-function matchInstitutionsByPrefix(input: string): Institution[] {
+function matchInstitutions(input: string): Institution[] {
   if (!input || !input.trim()) {
     return []
   }
-  const prefix = input.trim().toLowerCase()
-  return matchedInstitutions.value.filter((inst) =>
-    inst.name.toLowerCase().startsWith(prefix)
-  )
+  const trimmed = input.trim().toLowerCase()
+  // Match by tenant_name (preferred, user-friendly) or tenant_id (UUID format)
+  return matchedInstitutions.value.filter((inst) => {
+    if (inst.name && inst.name.toLowerCase().includes(trimmed)) {
+      return true
+    }
+    if (inst.id.toLowerCase() === trimmed) {
+      return true
+    }
+    return false
+  })
 }
 
 /**
- * Handle institution input - real-time matching and auto-fill
- * When only 1 institution matches, auto-fill and select
- * When multiple match, wait for more input (no dropdown)
+ * Handle institution input - match by tenant_name or tenant_id (for UserAccount only)
+ * Backend returns name for matched institutions (already verified by password)
+ * This implements prefix matching for UserAccount security mechanism
  */
 const handleInstitutionInput = () => {
   institutionInputError.value = ''
   
+  // Only apply prefix matching for UserAccount with multiple institutions
   if (!requiresManualInstitutionInput.value) {
     return
   }
   
+  // User can input tenant_name (for display) or tenant_id (UUID)
   const input = formData.tenant_name || ''
-  const matches = matchInstitutionsByPrefix(input)
+  const matches = matchInstitutions(input)
   
   if (matches.length === 0) {
     // No match - clear selection, wait for more input
     formData.tenant_id = undefined
   } else if (matches.length === 1) {
-    // Single match - auto-fill full name and select
+    // Single match - select this institution automatically
     const matched = matches[0]
     if (matched) {
-      formData.tenant_name = matched.name
       formData.tenant_id = matched.id
+      formData.tenant_name = matched.name || undefined
       institutionInputError.value = ''
-      console.log('%c[LoginForm] Auto-filled organize', 'color: #52c41a; font-weight: bold', {
-        input,
-        matched: matched.name,
-      })
     }
   } else {
-    // Multiple matches - clear selection, wait for more input to distinguish
+    // Multiple matches - wait for more specific input (don't show dropdown)
     formData.tenant_id = undefined
-    console.log('%c[LoginForm] Multiple organizes match', 'color: #fa8c16; font-weight: bold', {
-      input,
-      matches: matches.map(m => m.name),
-      message: 'Continue typing to distinguish',
-    })
   }
 }
 
 /**
- * Handle institution blur - validate input
- * If input doesn't match any institution or matches multiple, show error
+ * Handle institution blur - validate tenant_name or tenant_id (for UserAccount only)
+ * Backend returns name for matched institutions (already verified by password)
+ * This implements validation for UserAccount prefix matching
  */
 const handleInstitutionBlur = () => {
+  // Only validate for UserAccount with multiple institutions
   if (!requiresManualInstitutionInput.value) {
     return
   }
   
+  // User can input tenant_name (for display) or tenant_id (UUID)
   const input = formData.tenant_name || ''
-  const matches = matchInstitutionsByPrefix(input)
+  const matches = matchInstitutions(input)
   
   if (!input.trim()) {
-    institutionInputError.value = 'Please enter organize name'
+    institutionInputError.value = 'Please enter organize name or ID'
     formData.tenant_id = undefined
   } else if (matches.length === 0) {
     // No match - show error
-    institutionInputError.value = 'Organize name not found'
+    institutionInputError.value = 'Organize name or ID not found'
     formData.tenant_id = undefined
   } else if (matches.length === 1) {
     // Single match - ensure it's selected
     const matched = matches[0]
     if (matched) {
-      formData.tenant_name = matched.name
       formData.tenant_id = matched.id
+      formData.tenant_name = matched.name || undefined
       institutionInputError.value = ''
     }
   } else {
-    // Multiple matches - need more input
-    institutionInputError.value = 'Please enter more characters to distinguish the organize'
+    // Multiple matches - show error (user needs to be more specific)
+    institutionInputError.value = 'Multiple matches found, please be more specific'
     formData.tenant_id = undefined
   }
 }

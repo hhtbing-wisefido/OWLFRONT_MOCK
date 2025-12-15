@@ -66,3 +66,15 @@ export async function hashAccount(account: string): Promise<string> {
   return sha256(normalized)
 }
 
+/**
+ * Hash password only (independent of account/phone/email)
+ * Used for contact password_hash which should only depend on password itself
+ * 
+ * @param password The password (case-sensitive)
+ * @returns Promise<string> The hex-encoded hash of password
+ */
+export async function hashPassword(password: string): Promise<string> {
+  // Password hash only depends on password itself: SHA256(password)
+  return sha256(password)
+}
+

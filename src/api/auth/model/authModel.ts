@@ -27,7 +27,7 @@ export interface LoginResult {
   domain?: string  // Institution domain (corresponds to tenants.domain) - saved on login success
   
   // Location information (avoid address leakage, only store non-sensitive location identifiers)
-  branchTag?: string  // Location tag (corresponds to locations.branch_tag, e.g., "A Building Main") - non-sensitive, for grouping and routing
+  branchTag?: string  // Branch tag: for staff users, corresponds to users.branch_tag; for residents, corresponds to units.branch_tag (via residents.unit_id) - non-sensitive, for grouping and routing
   locationName?: string  // Location name (corresponds to locations.location_name, e.g., "E203", "Home-001") - non-sensitive, for card display
   
   // Other information
@@ -54,7 +54,9 @@ export interface LoginResult {
   // - They may differ: e.g., Resident is home type, but its location may be institution type
   
   // Notes on branchTag and locationName:
-  // - branchTag: Location tag (e.g., "A Building Main", "Spring Area Group SP"), for grouping and routing, does not contain PHI
+  // - branchTag: Branch tag (e.g., "A Building Main", "Spring Area Group SP"), for grouping and routing, does not contain PHI
+  //   * For staff users: from users.branch_tag (directly stored in users table)
+  //   * For residents: from units.branch_tag (via residents.unit_id JOIN units)
   // - locationName: Location name (e.g., "E203", "201", "Home-001"), for card display, does not contain PHI
   // - Real address information (e.g., city, state, zip code) stored in encrypted resident_phi table, not stored here
   // - These fields comply with HIPAA requirements, do not contain sensitive information
@@ -62,8 +64,9 @@ export interface LoginResult {
 
 export interface Institution {
   id: string           // Institution ID (corresponds to tenants.tenant_id, UUID)
-  name: string         // Institution name (corresponds to tenants.tenant_name)
-  domain?: string       // Institution domain (corresponds to tenants.domain, optional)
+  name?: string        // Institution name (corresponds to tenants.tenant_name) - only returned for matched institutions (already verified by password)
+  // Security: Only institutions that match both account and password are returned with name
+  // This allows frontend to display and match by name, while preventing enumeration of all institutions
 }
 
 /**

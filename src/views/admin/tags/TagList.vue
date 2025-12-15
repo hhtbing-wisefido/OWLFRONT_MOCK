@@ -15,34 +15,45 @@
             </template>
           </a-button>
         </a-space>
-        <a-button type="primary" @click="handleCreateBranch">Create Branch</a-button>
         <a-input
           v-model:value="createBranchData"
           placeholder="Branch Name"
           style="width: 150px; margin-left: 8px;"
+          :disabled="!canManageBranch"
           @pressEnter="handleCreateBranch"
         />
-        <a-button type="primary" style="margin-left: 16px;" @click="handleCreateArea">Create AreaTag</a-button>
+        <a-button 
+          type="primary" 
+          style="margin-left: 8px;"
+          @click="handleCreateBranch"
+          :disabled="!canManageBranch"
+        >
+          Create Branch
+        </a-button>
         <a-input
           v-model:value="createAreaData"
           placeholder="Area Name"
-          style="width: 150px; margin-left: 8px;"
+          style="width: 150px; margin-left: 16px;"
+          :disabled="!canManageOtherTags"
           @pressEnter="handleCreateArea"
         />
-        <a-button type="primary" style="margin-left: 16px;" @click="handleCreateUserTag">Create UserTag</a-button>
+        <a-button type="primary" style="margin-left: 8px;" :disabled="!canManageOtherTags" @click="handleCreateArea">Create AreaTag</a-button>
         <a-input
           v-model:value="createUserTagData"
           placeholder="User Tag Name"
-          style="width: 150px; margin-left: 8px;"
+          style="width: 150px; margin-left: 16px;"
+          :disabled="!canManageOtherTags"
           @pressEnter="handleCreateUserTag"
         />
-        <a-button type="primary" style="margin-left: 16px;" @click="handleCreateFamily">Create Familytag</a-button>
+        <a-button type="primary" style="margin-left: 8px;" :disabled="!canManageOtherTags" @click="handleCreateUserTag">Create UserTag</a-button>
         <a-input
           v-model:value="createFamilyData"
           placeholder="Family Name"
-          style="width: 150px; margin-left: 8px;"
+          style="width: 150px; margin-left: 16px;"
+          :disabled="!canManageOtherTags"
           @pressEnter="handleCreateFamily"
         />
+        <a-button type="primary" style="margin-left: 8px;" :disabled="!canManageOtherTags" @click="handleCreateFamily">Create Familytag</a-button>
       </div>
     </div>
 
@@ -112,7 +123,7 @@
                 {{ record.tag_name || '-' }}
               </span>
               <a-tooltip
-                v-if="!hasObjects(record) && (record.tag_type === 'user_tag' || record.tag_type === 'family_tag')"
+                v-if="!hasObjects(record) && (record.tag_type === 'user_tag' || record.tag_type === 'family_tag') && canManageOtherTags"
                 title="delete"
                 :mouseEnterDelay="0.1"
               >
@@ -151,9 +162,13 @@
                       class="object-item-wrapper has-delete-btn"
                     >
                       <span class="object-name">{{ objectName }}</span>
-                      <a-tooltip title="删除" :mouseEnterDelay="0.1">
+                      <a-tooltip 
+                        :title="(record.tag_type === 'branch_tag' && !canManageBranch) ? 'Only administrators can delete branch' : '删除'" 
+                        :mouseEnterDelay="0.1"
+                      >
                         <span
                           class="delete-object-icon"
+                          :class="{ 'disabled': record.tag_type === 'branch_tag' && !canManageBranch }"
                           @click="deleteObjectFromTag(record, String(objectType), String(objectId))"
                         >
                           ×
@@ -219,11 +234,18 @@ import type {
   RemoveTagObjectsParams,
 } from '@/api/admin/tags/model/tagsModel'
 import { useUserStore } from '@/store/modules/user'
+import { usePermission } from '@/hooks/usePermission'
 
 const router = useRouter()
 const userStore = useUserStore()
+const { hasManagePermission } = usePermission()
 const currentUserRole = computed(() => userStore.getUserInfo?.role || '')
 const isSystemAdmin = computed(() => currentUserRole.value === 'SystemAdmin')
+// Permission checks for tag operations
+const isAdmin = computed(() => currentUserRole.value === 'Admin')
+const isManager = computed(() => currentUserRole.value === 'Manager')
+const canManageBranch = computed(() => isAdmin.value) // Only Admin can manage Branch
+const canManageOtherTags = computed(() => isManager.value || isAdmin.value) // Manager or Admin can manage Area/Family/User tags
 
 // Navigate to home page
 // Go back
@@ -760,6 +782,12 @@ const hasObjects = (record: TagCatalogItem): boolean => {
 
 // Delete Tag Name
 const deleteTagName = async (record: TagCatalogItem) => {
+  // Check permission: Manager or Admin required for deleting tags
+  if (!canManageOtherTags.value) {
+    message.warning('Only Manager or Admin can delete tags')
+    return
+  }
+  
   try {
     // Check if it has objects
     if (hasObjects(record)) {
@@ -889,6 +917,12 @@ const handleCancel = () => {
 
 // Save all changes (submit to server)
 const handleSaveAll = async () => {
+  // Check permission: Manager or Admin required for editing Area/Family/User tags
+  if (!canManageOtherTags.value) {
+    message.warning('Only Manager or Admin can edit tags')
+    return
+  }
+  
   try {
     let hasChanges = false
     let totalRemoved = 0
@@ -960,7 +994,20 @@ const deleteObjectFromTag = async (
   objectType: string,
   objectId: string
 ) => {
+  // Check permission: only Admin can delete branch_tag objects
+  if (record.tag_type === 'branch_tag' && !canManageBranch.value) {
+    message.warning('Only administrators can delete branch')
+    return
+  }
+  
+  // Check permission: Manager or Admin required for deleting area_tag objects
+  if (record.tag_type === 'area_tag' && !canManageOtherTags.value) {
+    message.warning('Only Manager or Admin can delete area')
+    return
+  }
+  
   try {
+
     const params: RemoveTagObjectsParams = {
       tag_id: record.tag_id,
       object_type: objectType,
@@ -1307,10 +1354,16 @@ onMounted(() => {
   transition: all 0.2s;
 }
 
-.delete-object-icon:hover {
+.delete-object-icon:hover:not(.disabled) {
   color: #cf1322;
   background: #fff1f0;
   transform: scale(1.1);
+}
+
+.delete-object-icon.disabled {
+  cursor: not-allowed;
+  color: #d9d9d9;
+  opacity: 0.5;
 }
 
 .objects-list {

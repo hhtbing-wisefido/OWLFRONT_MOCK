@@ -51,20 +51,38 @@
       @cancel="closePasswordModal"
       ok-text="Update"
     >
-      <div style="margin-bottom: 12px; color: #666">
-        Please enter the new password twice.
+      <div style="padding: 20px">
+        <a-form-item label="Password: At least 8 characters, including uppercase, lowercase, number, and special character" style="margin-bottom: 16px;">
+          <div style="display: flex; gap: 12px; align-items: flex-start; flex-direction: column;">
+            <div style="display: flex; gap: 12px; width: 100%;">
+              <a-input-password
+                v-model:value="sidebarPassword"
+                placeholder="Enter new password"
+                style="width: 200px"
+                @input="handleSidebarPasswordInput"
+                @blur="handleSidebarPasswordBlur"
+              />
+              <a-input-password
+                v-model:value="sidebarPasswordConfirm"
+                placeholder="Confirm password"
+                style="width: 200px"
+                @input="handleSidebarPasswordConfirmInput"
+                @blur="handleSidebarPasswordConfirmBlur"
+              />
+              <a-button
+                type="default"
+                @click="generateSidebarPassword"
+                style="min-width: 100px"
+              >
+                GeneratePW
+              </a-button>
+            </div>
+            <div v-if="sidebarPasswordErrorMessage" style="font-size: 12px; color: #ff4d4f; margin-top: 4px;">
+              {{ sidebarPasswordErrorMessage }}
+            </div>
+          </div>
+        </a-form-item>
       </div>
-      <a-input-password
-        v-model:value="newPassword"
-        placeholder="New password"
-        autocomplete="new-password"
-        style="margin-bottom: 12px"
-      />
-      <a-input-password
-        v-model:value="confirmPassword"
-        placeholder="Confirm new password"
-        autocomplete="new-password"
-      />
     </a-modal>
     
     <!-- Divider before menu -->
@@ -82,7 +100,6 @@ import { MenuFoldOutlined, MenuUnfoldOutlined, LogoutOutlined, LockOutlined } fr
 import { useUserStore } from '@/store/modules/user'
 import { message } from 'ant-design-vue'
 import { resetPasswordApi } from '@/api/admin/user/user'
-
 defineProps<{
   collapsed: boolean
 }>()
@@ -107,14 +124,156 @@ const handlePasswordChange = () => {
 
 const passwordModalVisible = ref(false)
 const changingPassword = ref(false)
-const newPassword = ref('')
-const confirmPassword = ref('')
+
+// Password state for sidebar password change (independent implementation)
+const sidebarPassword = ref('')
+const sidebarPasswordConfirm = ref('')
+const sidebarPasswordErrorMessage = ref('')
+
+// Password validation constants
+const PASSWORD_MIN_LENGTH = 8
+const PASSWORD_SPECIAL_CHARS = '!@#$%^&*(),.?":{}|<>'
+
+// Validate password strength
+const validateSidebarPasswordStrength = (password: string): { isValid: boolean; errorMessage: string } => {
+  if (!password) {
+    return { isValid: false, errorMessage: '' }
+  }
+
+  if (password.length < PASSWORD_MIN_LENGTH) {
+    return {
+      isValid: false,
+      errorMessage: 'Password must be at least 8 characters',
+    }
+  }
+
+  const hasUpperCase = /[A-Z]/.test(password)
+  const hasLowerCase = /[a-z]/.test(password)
+  const hasNumber = /[0-9]/.test(password)
+  const hasSpecialChar = new RegExp(`[${PASSWORD_SPECIAL_CHARS.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}]`).test(password)
+
+  if (!hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecialChar) {
+    return {
+      isValid: false,
+      errorMessage: 'Password must include uppercase, lowercase, number, and special character',
+    }
+  }
+
+  return { isValid: true, errorMessage: '' }
+}
+
+// Validate password confirmation
+const validateSidebarPasswordConfirm = (): boolean => {
+  if (!sidebarPasswordConfirm.value) {
+    if (sidebarPassword.value) {
+      sidebarPasswordErrorMessage.value = 'Please confirm your password'
+    } else {
+      sidebarPasswordErrorMessage.value = ''
+    }
+    return false
+  }
+
+  if (sidebarPassword.value !== sidebarPasswordConfirm.value) {
+    sidebarPasswordErrorMessage.value = 'Passwords do not match'
+    return false
+  }
+
+  // If passwords match, also validate the password strength
+  const strengthResult = validateSidebarPasswordStrength(sidebarPassword.value)
+  sidebarPasswordErrorMessage.value = strengthResult.errorMessage
+  return strengthResult.isValid
+}
+
+// Handle password blur
+const handleSidebarPasswordBlur = () => {
+  if (sidebarPassword.value) {
+    const result = validateSidebarPasswordStrength(sidebarPassword.value)
+    sidebarPasswordErrorMessage.value = result.errorMessage
+
+    // If password is valid, also check confirmation if it exists
+    if (result.isValid && sidebarPasswordConfirm.value) {
+      validateSidebarPasswordConfirm()
+    }
+  }
+}
+
+// Handle password confirm blur
+const handleSidebarPasswordConfirmBlur = () => {
+  if (sidebarPasswordConfirm.value) {
+    validateSidebarPasswordConfirm()
+  }
+}
+
+// Handle password input
+const handleSidebarPasswordInput = () => {
+  if (!sidebarPassword.value) {
+    sidebarPasswordErrorMessage.value = ''
+    return
+  }
+  if (!sidebarPasswordErrorMessage.value.includes('match')) {
+    const result = validateSidebarPasswordStrength(sidebarPassword.value)
+    sidebarPasswordErrorMessage.value = result.errorMessage
+  } else {
+    validateSidebarPasswordConfirm()
+  }
+}
+
+// Handle password confirm input
+const handleSidebarPasswordConfirmInput = () => {
+  if (!sidebarPasswordConfirm.value) {
+    if (!sidebarPassword.value) {
+      sidebarPasswordErrorMessage.value = ''
+    }
+    return
+  }
+  validateSidebarPasswordConfirm()
+}
+
+// Generate random password
+const generateSidebarPassword = () => {
+  const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+  const lowercase = 'abcdefghijklmnopqrstuvwxyz'
+  const numbers = '0123456789'
+  const special = PASSWORD_SPECIAL_CHARS
+  const allChars = uppercase + lowercase + numbers + special
+
+  // Ensure at least one of each required type
+  let password = ''
+  password += uppercase[Math.floor(Math.random() * uppercase.length)]
+  password += lowercase[Math.floor(Math.random() * lowercase.length)]
+  password += numbers[Math.floor(Math.random() * numbers.length)]
+  password += special[Math.floor(Math.random() * special.length)]
+
+  // Fill the rest randomly (minimum 8 chars total)
+  for (let i = password.length; i < PASSWORD_MIN_LENGTH; i++) {
+    password += allChars[Math.floor(Math.random() * allChars.length)]
+  }
+
+  // Shuffle the password
+  const randomPassword = password.split('').sort(() => Math.random() - 0.5).join('')
+  
+  sidebarPassword.value = randomPassword
+  sidebarPasswordConfirm.value = randomPassword
+  sidebarPasswordErrorMessage.value = ''
+}
+
+// Check if password is valid
+const isSidebarPasswordValid = computed(() => {
+  if (!sidebarPassword.value || !sidebarPasswordConfirm.value) {
+    return false
+  }
+  const strengthResult = validateSidebarPasswordStrength(sidebarPassword.value)
+  const confirmResult = sidebarPassword.value === sidebarPasswordConfirm.value
+  return strengthResult.isValid && confirmResult
+})
 
 const closePasswordModal = () => {
   passwordModalVisible.value = false
   changingPassword.value = false
-  newPassword.value = ''
-  confirmPassword.value = ''
+  // Clear password fields
+  sidebarPassword.value = ''
+  sidebarPasswordConfirm.value = ''
+  sidebarPasswordErrorMessage.value = ''
 }
 
 const submitPasswordChange = async () => {
@@ -123,23 +282,32 @@ const submitPasswordChange = async () => {
     message.error('User is not loaded')
     return
   }
-  const p1 = (newPassword.value || '').trim()
-  const p2 = (confirmPassword.value || '').trim()
-  if (!p1 || !p2) {
-    message.error('Please enter the new password twice')
+
+  // Validate password
+  if (!isSidebarPasswordValid.value) {
+    message.error(sidebarPasswordErrorMessage.value || 'Please check password requirements')
     return
   }
-  if (p1 !== p2) {
+
+  if (!sidebarPassword.value || !sidebarPasswordConfirm.value) {
+    message.error('Please enter a valid password')
+    return
+  }
+  if (sidebarPassword.value !== sidebarPasswordConfirm.value) {
     message.error('Passwords do not match')
     return
   }
-  if (p1.length < 4 || p1.length > 100) {
-    message.error('Password length must be 4–100 characters')
+  const strengthResult = validateSidebarPasswordStrength(sidebarPassword.value)
+  if (!strengthResult.isValid) {
+    message.error(strengthResult.errorMessage || 'Please enter a valid password')
     return
   }
+
+  const password = sidebarPassword.value
+
   changingPassword.value = true
   try {
-    await resetPasswordApi(uid, { new_password: p1 })
+    await resetPasswordApi(uid, { new_password: password })
     message.success('Password updated')
     closePasswordModal()
   } catch (e: any) {

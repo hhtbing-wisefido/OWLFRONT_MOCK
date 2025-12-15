@@ -61,7 +61,7 @@
         </template>
         <template v-else-if="column.key === 'operation'">
           <div class="operation-buttons">
-            <!-- Disable button: Only Resident and Family can be disabled by non-SystemAdmin -->
+            <!-- Disable button: Critical system roles (SystemAdmin, SystemOperator, Admin, Manager, Caregiver, Resident, Family) cannot be disabled -->
             <a-button
               v-if="record.is_active"
               size="small"
@@ -70,7 +70,7 @@
             >
               Disable
             </a-button>
-            <!-- Edit button: Only SystemAdmin can see Edit button, System roles can only be edited by SystemAdmin -->
+            <!-- Edit button: Only SystemAdmin can edit roles (including system roles) -->
             <a-button 
               v-if="isSystemAdmin"
               size="small" 
@@ -128,7 +128,7 @@
           <a-input 
             placeholder="Please enter display name" 
             v-model:value="editData.display_name"
-            :disabled="editData.is_system"
+            :disabled="editData.is_system && !isSystemAdmin"
           />
         </a-form-item>
         <a-form-item label="Description" name="description">
@@ -137,7 +137,7 @@
             :auto-size="{ minRows: 3, maxRows: 5 }"
             show-count
             :maxlength="500"
-            :disabled="editData.is_system"
+            :disabled="editData.is_system && !isSystemAdmin"
           />
         </a-form-item>
       </a-form>
@@ -198,7 +198,6 @@ const router = useRouter()
 const userStore = useUserStore()
 const currentUserRole = computed(() => userStore.getUserInfo?.role || '')
 const isSystemAdmin = computed(() => currentUserRole.value === 'SystemAdmin')
-const isAdminOrManager = computed(() => currentUserRole.value === 'Admin' || currentUserRole.value === 'Manager')
 
 // Navigate to home page
 // Go back
@@ -326,11 +325,7 @@ const addRole = () => {
 }
 
 const editRole = (record: Role) => {
-  // System roles cannot be modified (only SystemAdmin can see Edit button, but system roles should not be modified)
-  if (record.is_system) {
-    message.warning('System roles cannot be modified')
-    return
-  }
+  // SystemAdmin can edit all roles (including system roles)
   editData.value = { ...record }
   isEditModalVisible.value = true
   editModel.value = true
@@ -350,38 +345,34 @@ const deleteRole = (record: Role) => {
 
 // Check if a role can be disabled
 const canDisableRole = (record: Role): boolean => {
-  // SystemAdmin can disable any role
+  // Critical system roles that cannot be disabled: SystemAdmin, SystemOperator, Admin, Manager, Caregiver, Resident, Family
+  const protectedRoles = ['SystemAdmin', 'SystemOperator', 'Admin', 'Manager', 'Caregiver', 'Resident', 'Family']
+  if (protectedRoles.includes(record.role_code)) {
+    return false
+  }
+  // SystemAdmin can disable other system roles
   if (isSystemAdmin.value) {
     return true
   }
-  // Non-SystemAdmin can only disable Resident and Family roles
-  return record.role_code === 'Resident' || record.role_code === 'Family'
+  // Non-SystemAdmin cannot disable system roles
+  return !record.is_system
 }
 
 const disableRole = (record: Role) => {
-  // SystemAdmin can disable any role
+  // Critical system roles that cannot be disabled: SystemAdmin, SystemOperator, Admin, Manager, Caregiver, Resident, Family
+  const protectedRoles = ['SystemAdmin', 'SystemOperator', 'Admin', 'Manager', 'Caregiver', 'Resident', 'Family']
+  if (protectedRoles.includes(record.role_code)) {
+    message.warning(`${record.display_name} (${record.role_code}) is a critical system role and cannot be disabled. Disabling it would break business functionality.`)
+    return
+  }
+  
+  // SystemAdmin can disable other system roles
   if (isSystemAdmin.value) {
     action.value = 'disable'
     affectedRoleId.value = record.role_id
     confirmTitle.value = 'Disable Role'
     confirmMessage.value = `Are you sure you want to disable role "${record.display_name}" (${record.role_code})?`
     isConfirmModalVisible.value = true
-    return
-  }
-  
-  // Admin and Manager can disable Resident and Family (even if they are system roles)
-  if (isAdminOrManager.value && (record.role_code === 'Resident' || record.role_code === 'Family')) {
-    action.value = 'disable'
-    affectedRoleId.value = record.role_id
-    confirmTitle.value = 'Disable Role'
-    confirmMessage.value = `Are you sure you want to disable role "${record.display_name}" (${record.role_code})?`
-    isConfirmModalVisible.value = true
-    return
-  }
-  
-  // Resident and Family roles can only be disabled by Admin or Manager
-  if ((record.role_code === 'Resident' || record.role_code === 'Family') && !isAdminOrManager.value) {
-    message.warning('Resident and Family roles can only be disabled by Admin or Manager')
     return
   }
   
@@ -391,12 +382,7 @@ const disableRole = (record: Role) => {
     return
   }
   
-  // Non-system roles: Only Resident and Family can be disabled by Admin/Manager
-  if (record.role_code !== 'Resident' && record.role_code !== 'Family') {
-    message.warning('Only Resident and Family roles can be disabled')
-    return
-  }
-  
+  // Non-system roles can be disabled by Admin/Manager
   action.value = 'disable'
   affectedRoleId.value = record.role_id
   confirmTitle.value = 'Disable Role'
@@ -420,9 +406,9 @@ const handleSave = async () => {
           message.success('Role created successfully')
         } else {
           // Update role
-          // System roles cannot be modified
-          if (editData.value.is_system) {
-            message.error('System roles cannot be modified')
+          // System roles can only be modified by SystemAdmin (display_name and description only)
+          if (editData.value.is_system && !isSystemAdmin.value) {
+            message.error('System roles can only be modified by SystemAdmin')
             return
           }
           const params: UpdateRoleParams = {

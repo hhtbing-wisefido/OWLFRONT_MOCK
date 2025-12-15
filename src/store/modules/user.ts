@@ -62,7 +62,7 @@ export interface UserInfo {
   domain?: string                   // Institution domain (corresponds to tenants.domain) - saved on login success
   
   // Location information (avoid address leakage, only store non-sensitive location identifiers)
-  branchTag?: string              // Location tag (corresponds to locations.branch_tag) - non-sensitive, for grouping and routing
+  branchTag?: string              // Branch tag: for staff users, corresponds to users.branch_tag; for residents, corresponds to units.branch_tag (via residents.unit_id) - non-sensitive, for grouping and routing
   locationName?: string             // Location name (corresponds to locations.location_name) - non-sensitive, for card display
   
   // Other

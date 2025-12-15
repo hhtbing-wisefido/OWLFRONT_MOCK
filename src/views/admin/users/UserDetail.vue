@@ -152,7 +152,7 @@
                 :disabled="!hasManagePermission"
               >
                 <a-radio value="ALL">ALL</a-radio>
-                <a-radio value="BRANCH-TAG">BRANCH-TAG</a-radio>
+                <a-radio value="BRANCH">BRANCH</a-radio>
                 <a-radio value="ASSIGNED_ONLY">ASSIGNED_ONLY</a-radio>
               </a-radio-group>
               <span v-if="!hasManagePermission" class="field-hint">
@@ -181,6 +181,22 @@
               </span>
             </a-form-item>
 
+            <a-form-item label="Branch" name="branch_tag">
+              <a-select
+                v-model:value="userData.branch_tag"
+                placeholder="Please select branch"
+                :disabled="!hasManagePermission"
+                allow-clear
+              >
+                <a-select-option v-for="branch in branchTagsList" :key="branch" :value="branch">
+                  {{ branch }}
+                </a-select-option>
+              </a-select>
+              <span v-if="!hasManagePermission" class="field-hint">
+                This field can only be modified by administrators
+              </span>
+            </a-form-item>
+
           </a-form>
         </a-col>
       </a-row>
@@ -202,22 +218,36 @@
           </a-button>
         </div>
       </template>
-      <a-form
-        layout="horizontal"
-        :model="resetPasswordData"
-        ref="resetPasswordFormRef"
-        :rules="resetPasswordRules"
-        :labelCol="{ span: 6 }"
-        :wrapperCol="{ span: 18 }"
-        style="padding: 20px"
-      >
-        <a-form-item label="New Password" name="new_password">
-          <a-input-password placeholder="Please enter new password" v-model:value="resetPasswordData.new_password" />
+      <div style="padding: 20px">
+        <a-form-item label="Password: At least 8 characters, including uppercase, lowercase, number, and special character" style="margin-bottom: 16px;">
+          <div style="display: flex; gap: 12px; align-items: flex-start;">
+            <a-input-password
+              v-model:value="resetPassword"
+              placeholder="Enter new password"
+              style="width: 200px"
+              @input="handleResetPasswordInput"
+              @blur="handleResetPasswordBlur"
+            />
+            <a-input-password
+              v-model:value="resetPasswordConfirm"
+              placeholder="Confirm password"
+              style="width: 200px"
+              @input="handleResetPasswordConfirmInput"
+              @blur="handleResetPasswordConfirmBlur"
+            />
+            <a-button
+              type="default"
+              @click="generateResetPassword"
+              style="min-width: 100px"
+            >
+              GeneratePW
+            </a-button>
+          </div>
+          <div v-if="resetPasswordErrorMessage" style="font-size: 12px; color: #ff4d4f; margin-top: 4px;">
+            {{ resetPasswordErrorMessage }}
+          </div>
         </a-form-item>
-        <a-form-item label="Confirm Password" name="confirm_password">
-          <a-input-password placeholder="Please confirm new password" v-model:value="resetPasswordData.confirm_password" />
-        </a-form-item>
-      </a-form>
+      </div>
     </a-modal>
   </div>
 </template>
@@ -242,7 +272,6 @@ import { getRolesApi } from '@/api/admin/role/role'
 import type { Role } from '@/api/admin/role/model/roleModel'
 import { useUserStore } from '@/store/modules/user'
 import { usePermission } from '@/hooks/usePermission'
-
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
@@ -277,11 +306,11 @@ if (import.meta.env.DEV) {
 const editModel = ref(true) // Detail page is editable by default
 const formRef = ref()
 const formRefRight = ref()
-const resetPasswordFormRef = ref()
 const saving = ref(false)
 const isResetPasswordModalVisible = ref(false)
 const availableRoles = ref<Role[]>([])
 const allTagsList = ref<string[]>([]) // All available tags list
+const branchTagsList = ref<string[]>([]) // All available branch tags list
 
 
 const userData = ref<Partial<User>>({
@@ -298,9 +327,146 @@ const userData = ref<Partial<User>>({
   last_login_at: '',
 })
 
-const resetPasswordData = ref({
-  new_password: '',
-  confirm_password: '',
+// Password reset state (independent implementation)
+const resetPassword = ref('')
+const resetPasswordConfirm = ref('')
+const resetPasswordErrorMessage = ref('')
+
+// Password validation constants
+const PASSWORD_MIN_LENGTH = 8
+const PASSWORD_SPECIAL_CHARS = '!@#$%^&*(),.?":{}|<>'
+
+// Validate password strength
+const validateResetPasswordStrength = (password: string): { isValid: boolean; errorMessage: string } => {
+  if (!password) {
+    return { isValid: false, errorMessage: '' }
+  }
+
+  if (password.length < PASSWORD_MIN_LENGTH) {
+    return {
+      isValid: false,
+      errorMessage: 'Password must be at least 8 characters',
+    }
+  }
+
+  const hasUpperCase = /[A-Z]/.test(password)
+  const hasLowerCase = /[a-z]/.test(password)
+  const hasNumber = /[0-9]/.test(password)
+  const hasSpecialChar = new RegExp(`[${PASSWORD_SPECIAL_CHARS.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}]`).test(password)
+
+  if (!hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecialChar) {
+    return {
+      isValid: false,
+      errorMessage: 'Password must include uppercase, lowercase, number, and special character',
+    }
+  }
+
+  return { isValid: true, errorMessage: '' }
+}
+
+// Validate password confirmation
+const validateResetPasswordConfirm = (): boolean => {
+  if (!resetPasswordConfirm.value) {
+    if (resetPassword.value) {
+      resetPasswordErrorMessage.value = 'Please confirm your password'
+    } else {
+      resetPasswordErrorMessage.value = ''
+    }
+    return false
+  }
+
+  if (resetPassword.value !== resetPasswordConfirm.value) {
+    resetPasswordErrorMessage.value = 'Passwords do not match'
+    return false
+  }
+
+  // If passwords match, also validate the password strength
+  const strengthResult = validateResetPasswordStrength(resetPassword.value)
+  resetPasswordErrorMessage.value = strengthResult.errorMessage
+  return strengthResult.isValid
+}
+
+// Handle password input
+const handleResetPasswordInput = () => {
+  if (!resetPassword.value) {
+    resetPasswordErrorMessage.value = ''
+    return
+  }
+  if (!resetPasswordErrorMessage.value.includes('match')) {
+    const result = validateResetPasswordStrength(resetPassword.value)
+    resetPasswordErrorMessage.value = result.errorMessage
+  } else {
+    validateResetPasswordConfirm()
+  }
+}
+
+// Handle password blur
+const handleResetPasswordBlur = () => {
+  if (resetPassword.value) {
+    const result = validateResetPasswordStrength(resetPassword.value)
+    resetPasswordErrorMessage.value = result.errorMessage
+
+    // If password is valid, also check confirmation if it exists
+    if (result.isValid && resetPasswordConfirm.value) {
+      validateResetPasswordConfirm()
+    }
+  }
+}
+
+// Handle password confirm input
+const handleResetPasswordConfirmInput = () => {
+  if (!resetPasswordConfirm.value) {
+    if (!resetPassword.value) {
+      resetPasswordErrorMessage.value = ''
+    }
+    return
+  }
+  validateResetPasswordConfirm()
+}
+
+// Handle password confirm blur
+const handleResetPasswordConfirmBlur = () => {
+  if (resetPasswordConfirm.value) {
+    validateResetPasswordConfirm()
+  }
+}
+
+// Generate random password
+const generateResetPassword = () => {
+  const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+  const lowercase = 'abcdefghijklmnopqrstuvwxyz'
+  const numbers = '0123456789'
+  const special = PASSWORD_SPECIAL_CHARS
+  const allChars = uppercase + lowercase + numbers + special
+
+  // Ensure at least one of each required type
+  let password = ''
+  password += uppercase[Math.floor(Math.random() * uppercase.length)]
+  password += lowercase[Math.floor(Math.random() * lowercase.length)]
+  password += numbers[Math.floor(Math.random() * numbers.length)]
+  password += special[Math.floor(Math.random() * special.length)]
+
+  // Fill the rest randomly (minimum 8 chars total)
+  for (let i = password.length; i < PASSWORD_MIN_LENGTH; i++) {
+    password += allChars[Math.floor(Math.random() * allChars.length)]
+  }
+
+  // Shuffle the password
+  const randomPassword = password.split('').sort(() => Math.random() - 0.5).join('')
+  
+  resetPassword.value = randomPassword
+  resetPasswordConfirm.value = randomPassword
+  resetPasswordErrorMessage.value = ''
+}
+
+// Check if password is valid
+const isResetPasswordValid = computed(() => {
+  if (!resetPassword.value || !resetPasswordConfirm.value) {
+    return false
+  }
+  const strengthResult = validateResetPasswordStrength(resetPassword.value)
+  const confirmResult = resetPassword.value === resetPasswordConfirm.value
+  return strengthResult.isValid && confirmResult
 })
 
 // Check if field can be edited
@@ -322,25 +488,6 @@ const canResetPassword = computed(() => {
 
 const rules: Record<string, Rule[]> = {
   role: [{ required: true, message: 'Please select role', trigger: 'change' }],
-}
-
-const resetPasswordRules: Record<string, Rule[]> = {
-  new_password: [
-    { required: true, message: 'Please enter new password', trigger: 'blur' },
-    { min: 4, message: 'Password must be at least 4 characters', trigger: 'blur' },
-  ],
-  confirm_password: [
-    { required: true, message: 'Please confirm password', trigger: 'blur' },
-    {
-      validator: (_rule: any, value: string) => {
-        if (value && value !== resetPasswordData.value.new_password) {
-          return Promise.reject('Passwords do not match')
-        }
-        return Promise.resolve()
-      },
-      trigger: 'blur',
-    },
-  ],
 }
 
 const fetchRoles = async () => {
@@ -395,9 +542,12 @@ const fetchUser = async () => {
       alarm_channels: user.alarm_channels || [],
       alarm_scope: user.alarm_scope || 'ALL',
       tags: user.tags || [],
+      branch_tag: user.branch_tag || '',
     }
     // Initialize all tags list (from tags_catalog API)
     await initializeTagsList()
+    // Initialize branch tags list
+    await initializeBranchTagsList()
   } catch (error: any) {
     console.error('Failed to fetch user:', error)
     message.error(error?.message || 'Failed to fetch user')
@@ -431,6 +581,49 @@ const initializeTagsList = async () => {
     console.error('Failed to fetch tags:', error)
     // If API call fails, use empty list (avoid showing error)
     allTagsList.value = []
+  }
+}
+
+// Initialize branch tags list (from tags_catalog API)
+// For branch_tag, branch names are stored in tag_objects JSONB
+const initializeBranchTagsList = async () => {
+  try {
+    // Get current user's tenant_id
+    const userInfo = userStore.getUserInfo
+    const tenantId = userInfo?.tenant_id || userData.value.tenant_id
+    
+    if (!tenantId) {
+      console.warn('[UserDetail] No tenant_id available, using empty branch tags list')
+      branchTagsList.value = []
+      return
+    }
+    
+    // Get branch_tag from API
+    const result = await getTagsApi({
+      tenant_id: tenantId,
+      tag_type: 'branch_tag',
+      include_system_tag_types: true,
+    })
+    
+    // Extract branch names from tag_objects
+    // For branch_tag, tag_objects structure: { "branch": { "<uuid>": "<branch_name>", ... } }
+    const branchNames: string[] = []
+    result.items.forEach(tag => {
+      if (tag.tag_objects && tag.tag_objects.branch) {
+        // Extract all branch names from tag_objects.branch
+        Object.values(tag.tag_objects.branch).forEach(branchName => {
+          if (typeof branchName === 'string' && branchName && !branchNames.includes(branchName)) {
+            branchNames.push(branchName)
+          }
+        })
+      }
+    })
+    
+    branchTagsList.value = branchNames.sort()
+  } catch (error: any) {
+    console.error('Failed to fetch branch tags:', error)
+    // If API call fails, use empty list (avoid showing error)
+    branchTagsList.value = []
   }
 }
 
@@ -482,6 +675,7 @@ const handleSave = async () => {
           alarm_channels: hasManagePermission.value ? userData.value.alarm_channels : undefined,
           alarm_scope: hasManagePermission.value ? userData.value.alarm_scope : undefined,
           tags: hasManagePermission.value ? userData.value.tags : undefined,
+          branch_tag: hasManagePermission.value ? userData.value.branch_tag : undefined,
         }
         await updateUserApi(userId.value, params)
         message.success('User updated successfully')
@@ -499,36 +693,50 @@ const handleSave = async () => {
 }
 
 const handleResetPassword = () => {
-  resetPasswordData.value = {
-    new_password: '',
-    confirm_password: '',
-  }
+  resetPassword.value = ''
+  resetPasswordConfirm.value = ''
+  resetPasswordErrorMessage.value = ''
   isResetPasswordModalVisible.value = true
 }
 
 const handleResetPasswordConfirm = async () => {
-  resetPasswordFormRef.value
-    .validate()
-    .then(async () => {
-      try {
-        await resetPasswordApi(userId.value, {
-          new_password: resetPasswordData.value.new_password,
-        })
-        message.success('Password reset successfully')
-        handleCancelResetPassword()
-      } catch (error: any) {
-        console.error('Failed to reset password:', error)
-        message.error(error?.message || 'Failed to reset password')
-      }
+  // Validate password
+  if (!isResetPasswordValid.value) {
+    message.error(resetPasswordErrorMessage.value || 'Please check password requirements')
+    return
+  }
+
+  if (!resetPassword.value || !resetPasswordConfirm.value) {
+    message.error('Please enter a valid password')
+    return
+  }
+  if (resetPassword.value !== resetPasswordConfirm.value) {
+    message.error('Passwords do not match')
+    return
+  }
+  const strengthResult = validateResetPasswordStrength(resetPassword.value)
+  if (!strengthResult.isValid) {
+    message.error(strengthResult.errorMessage || 'Please enter a valid password')
+    return
+  }
+
+  try {
+    await resetPasswordApi(userId.value, {
+      new_password: resetPassword.value,
     })
-    .catch((error: any) => {
-      console.error('Validation failed:', error)
-    })
+    message.success('Password reset successfully')
+    handleCancelResetPassword()
+  } catch (error: any) {
+    console.error('Failed to reset password:', error)
+    message.error(error?.message || 'Failed to reset password')
+  }
 }
 
 const handleCancelResetPassword = () => {
   isResetPasswordModalVisible.value = false
-  resetPasswordFormRef.value?.resetFields()
+  resetPassword.value = ''
+  resetPasswordConfirm.value = ''
+  resetPasswordErrorMessage.value = ''
 }
 
 const goBack = () => {
@@ -598,6 +806,48 @@ onMounted(() => {
   border: 1px solid #d9d9d9;
   border-radius: 4px;
   background: #fafafa;
+}
+
+.tags-checkbox-container :deep(.ant-checkbox-group) {
+  width: 100%;
+}
+
+.tags-checkbox-container :deep(.ant-row) {
+  margin-left: -8px !important;
+  margin-right: -8px !important;
+}
+
+.tags-checkbox-container :deep(.ant-col) {
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+  margin-bottom: 4px;
+}
+
+.tag-checkbox {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.5;
+  margin: 0;
+  padding: 0;
+}
+
+.tag-checkbox :deep(.ant-checkbox) {
+  margin-right: 8px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.tag-checkbox :deep(.ant-checkbox + span) {
+  flex: 1;
+  display: inline-block;
+  word-break: break-word;
+  white-space: normal;
+  line-height: 1.5;
+  padding-right: 8px;
+  min-width: 0;
 }
 
 .last-login-label {

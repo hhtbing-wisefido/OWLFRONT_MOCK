@@ -39,7 +39,7 @@ const userStore = useUserStore()
 
 // All roles (hide system roles on non-System tenant)
 const roles = computed(() => {
-  const tenantId = userStore.userInfo?.tenant_id
+  const tenantId = userStore.getUserInfo?.tenant_id
   const isSystemTenant = tenantId === SYSTEM_TENANT_ID
   if (isSystemTenant) return ROLES
   return ROLES.filter((r) => r.code !== 'SystemAdmin' && r.code !== 'SystemOperator')

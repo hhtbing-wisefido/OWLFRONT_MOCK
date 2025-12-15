@@ -1,16 +1,16 @@
 <template>
   <div class="contacts-content">
     <a-form layout="horizontal" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
-      <!-- Header: Family account explanation -->
+      <!-- Header: Family login explanation -->
       <div style="margin-bottom: 16px; font-size: 14px; color: #666;">
-        <div>Family account = resident'account + A/B/C/D or family'account + A/B/C/D</div>
+        <div>Family contacts login using their own phone number or email address</div>
         <div style="margin-top: 4px;">
-          For example: resident'account='R001', login_account='R001A'; family'account='F001', login_account='F001A'
+          Phone/Email is used to reset password. Don't save by default. If save, please check [Save].
         </div>
       </div>
 
       <!-- Contact Slots A, B, C, D -->
-      <div v-for="slot in ['A', 'B', 'C', 'D']" :key="slot" class="contact-slot" style="margin-bottom: 24px; padding: 16px; border: 1px solid #e8e8e8; border-radius: 4px;">
+      <div v-for="slot in SLOTS" :key="slot" class="contact-slot" style="margin-bottom: 24px; padding: 16px; border: 1px solid #e8e8e8; border-radius: 4px;">
         <div class="slot-header" style="margin-bottom: 12px; font-weight: 600; cursor: pointer;" @click="toggleSlot(slot)">
           <a-space>
             <span>{{ expandedSlots[slot] ? '▼' : '▶' }}</span>
@@ -67,6 +67,44 @@
                 <a-select-option value="Caregiver">Caregiver</a-select-option>
                 <a-select-option value="Other">Other</a-select-option>
               </a-select>
+            </a-form-item>
+          </a-col>
+        </a-row>
+
+        <!-- Password Reset -->
+        <a-row :gutter="12" style="margin-top: 12px; margin-bottom: 16px;">
+          <a-col :span="24">
+            <a-form-item :label-col="{ span: 0 }" :wrapper-col="{ span: 24 }">
+              <div style="display: flex; gap: 12px; align-items: flex-start;">
+                <span>*Password:  </span>
+                <a-input-password
+                  v-model:value="contactPasswords[slot]"
+                  :disabled="readonly"
+                  placeholder="Enter new password"
+                  style="width: 200px"
+                  @input="handleContactPasswordInput(slot)"
+                  @blur="handleContactPasswordBlur(slot)"
+                />
+                <a-input-password
+                  v-model:value="contactPasswordConfirms[slot]"
+                  :disabled="readonly"
+                  placeholder="Confirm password"
+                  style="width: 200px"
+                  @input="handleContactPasswordConfirmInput(slot)"
+                  @blur="handleContactPasswordConfirmBlur(slot)"
+                />
+                <a-button
+                  type="default"
+                  @click="generateContactPassword(slot)"
+                  :disabled="readonly"
+                  style="min-width: 100px"
+                >
+                  GeneratePW
+                </a-button>
+              </div>
+              <div v-if="contactPasswordErrors[slot]" style="font-size: 12px; color: #ff4d4f; margin-top: 4px;">
+                {{ contactPasswordErrors[slot] }}
+              </div>
             </a-form-item>
           </a-col>
         </a-row>
@@ -131,7 +169,7 @@
 
         <!-- Save hint -->
         <div style="font-size: 14px; color: #999; margin-bottom: 8px;">
-          Use to reset password. Don't save by default. If save, please check [Save].
+          Email/Phone is used to reset password. Don't save by default. If save, please check [Save].
         </div>
         </div>
       </div>
@@ -161,9 +199,12 @@ const emit = defineEmits<{
   'update:contacts': [contacts: ResidentContact[]]
 }>()
 
+// Define available slots - single source of truth
+const SLOTS = ['A', 'B', 'C', 'D'] as const
+
 // Initialize contacts for slots A, B, C, D
 const initializeContacts = () => {
-  const slots = ['A', 'B', 'C', 'D']
+  const slots = [...SLOTS] as string[]
   const contactsMap = new Map<string, ResidentContact>()
   
   // Load existing contacts
@@ -199,16 +240,181 @@ const initializeContacts = () => {
 const contactsMap = ref<Map<string, ResidentContact>>(initializeContacts())
 
 // Expanded state for each slot - default A expanded, B/C/D collapsed
-const expandedSlots = ref<Record<string, boolean>>({
-  A: true,
-  B: false,
-  C: false,
-  D: false,
-})
+const expandedSlots = ref<Record<string, boolean>>(
+  SLOTS.reduce((acc, slot, index) => {
+    acc[slot] = index === 0 // First slot (A) expanded by default
+    return acc
+  }, {} as Record<string, boolean>)
+)
 
 // Toggle slot expand/collapse
 const toggleSlot = (slot: string) => {
   expandedSlots.value[slot] = !expandedSlots.value[slot]
+}
+
+// Password state for each contact slot - dynamically initialized from SLOTS
+const contactPasswords = ref<Record<string, string>>(
+  SLOTS.reduce((acc, slot) => {
+    acc[slot] = ''
+    return acc
+  }, {} as Record<string, string>)
+)
+const contactPasswordConfirms = ref<Record<string, string>>(
+  SLOTS.reduce((acc, slot) => {
+    acc[slot] = ''
+    return acc
+  }, {} as Record<string, string>)
+)
+const contactPasswordErrors = ref<Record<string, string>>(
+  SLOTS.reduce((acc, slot) => {
+    acc[slot] = ''
+    return acc
+  }, {} as Record<string, string>)
+)
+
+// Password validation constants
+const PASSWORD_MIN_LENGTH = 8
+const PASSWORD_SPECIAL_CHARS = '!@#$%^&*(),.?":{}|<>'
+
+// Validate password strength
+const validatePasswordStrength = (password: string): { isValid: boolean; errorMessage: string } => {
+  if (!password) {
+    return { isValid: false, errorMessage: '' }
+  }
+
+  if (password.length < PASSWORD_MIN_LENGTH) {
+    return {
+      isValid: false,
+      errorMessage: 'Password must be at least 8 characters',
+    }
+  }
+
+  const hasUpperCase = /[A-Z]/.test(password)
+  const hasLowerCase = /[a-z]/.test(password)
+  const hasNumber = /[0-9]/.test(password)
+  const hasSpecialChar = new RegExp(`[${PASSWORD_SPECIAL_CHARS.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}]`).test(password)
+
+  if (!hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecialChar) {
+    return {
+      isValid: false,
+      errorMessage: 'Password must include uppercase, lowercase, number, and special character',
+    }
+  }
+
+  return { isValid: true, errorMessage: '' }
+}
+
+// Validate password confirmation for a specific slot
+const validatePasswordConfirm = (slot: string): boolean => {
+  if (!contactPasswordConfirms.value[slot]) {
+    if (contactPasswords.value[slot]) {
+      contactPasswordErrors.value[slot] = 'Please confirm your password'
+    } else {
+      contactPasswordErrors.value[slot] = ''
+    }
+    return false
+  }
+
+  if (contactPasswords.value[slot] !== contactPasswordConfirms.value[slot]) {
+    contactPasswordErrors.value[slot] = 'Passwords do not match'
+    return false
+  }
+
+  // If passwords match, also validate the password strength
+  const strengthResult = validatePasswordStrength(contactPasswords.value[slot])
+  contactPasswordErrors.value[slot] = strengthResult.errorMessage
+  return strengthResult.isValid
+}
+
+// Handle password input for a specific slot
+const handleContactPasswordInput = (slot: string) => {
+  if (!contactPasswords.value[slot]) {
+    contactPasswordErrors.value[slot] = ''
+    return
+  }
+  if (!contactPasswordErrors.value[slot]?.includes('match')) {
+    const result = validatePasswordStrength(contactPasswords.value[slot])
+    contactPasswordErrors.value[slot] = result.errorMessage
+  } else {
+    validatePasswordConfirm(slot)
+  }
+}
+
+// Handle password blur for a specific slot
+const handleContactPasswordBlur = (slot: string) => {
+  if (contactPasswords.value[slot]) {
+    const result = validatePasswordStrength(contactPasswords.value[slot])
+    contactPasswordErrors.value[slot] = result.errorMessage
+
+    // If password is valid, also check confirmation if it exists
+    if (result.isValid && contactPasswordConfirms.value[slot]) {
+      validatePasswordConfirm(slot)
+    }
+  }
+}
+
+// Handle password confirm input for a specific slot
+const handleContactPasswordConfirmInput = (slot: string) => {
+  if (!contactPasswordConfirms.value[slot]) {
+    if (!contactPasswords.value[slot]) {
+      contactPasswordErrors.value[slot] = ''
+    }
+    return
+  }
+  validatePasswordConfirm(slot)
+}
+
+// Handle password confirm blur for a specific slot
+const handleContactPasswordConfirmBlur = (slot: string) => {
+  if (contactPasswordConfirms.value[slot]) {
+    validatePasswordConfirm(slot)
+  }
+}
+
+// Generate random password for a specific slot
+const generateContactPassword = (slot: string) => {
+  const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+  const lowercase = 'abcdefghijklmnopqrstuvwxyz'
+  const numbers = '0123456789'
+  const special = PASSWORD_SPECIAL_CHARS
+  const allChars = uppercase + lowercase + numbers + special
+
+  // Ensure at least one of each required type
+  let password = ''
+  password += uppercase[Math.floor(Math.random() * uppercase.length)]
+  password += lowercase[Math.floor(Math.random() * lowercase.length)]
+  password += numbers[Math.floor(Math.random() * numbers.length)]
+  password += special[Math.floor(Math.random() * special.length)]
+
+  // Fill the rest randomly (minimum 8 chars total)
+  for (let i = password.length; i < PASSWORD_MIN_LENGTH; i++) {
+    password += allChars[Math.floor(Math.random() * allChars.length)]
+  }
+
+  // Shuffle the password
+  const randomPassword = password.split('').sort(() => Math.random() - 0.5).join('')
+  
+  contactPasswords.value[slot] = randomPassword
+  contactPasswordConfirms.value[slot] = randomPassword
+  contactPasswordErrors.value[slot] = ''
+}
+
+// Check if password is valid for a specific slot
+const isContactPasswordValid = (slot: string): boolean => {
+  if (!contactPasswords.value[slot] || !contactPasswordConfirms.value[slot]) {
+    return false
+  }
+  const strengthResult = validatePasswordStrength(contactPasswords.value[slot])
+  const confirmResult = contactPasswords.value[slot] === contactPasswordConfirms.value[slot]
+  return strengthResult.isValid && confirmResult
+}
+
+// Get password for a specific slot (for saving)
+const getContactPasswordValue = (slot: string): string | undefined => {
+  if (!isContactPasswordValid(slot)) {
+    return undefined
+  }
+  return contactPasswords.value[slot] || undefined
 }
 
 // Get contact by slot
@@ -256,6 +462,12 @@ const handleContactChange = async (slot: string) => {
   // 保存接收告警设置
   contactToSave.receive_sms = contact.receive_sms || false
   contactToSave.receive_email = contact.receive_email || false
+  
+  // 如果密码有效，包含密码
+  const password = getContactPasswordValue(slot)
+  if (password) {
+    contactToSave.contact_password = password
+  }
   
   // Emit update
   const allContacts = Array.from(contactsMap.value.values())

@@ -19,9 +19,10 @@ export interface User {
   status: 'active' | 'disabled' | 'left'
   alarm_levels?: string[]
   alarm_channels?: string[]
-  alarm_scope?: 'ALL' | 'BRANCH-TAG' | 'ASSIGNED_ONLY'
+  alarm_scope?: 'ALL' | 'BRANCH' | 'ASSIGNED_ONLY' // BRANCH: filter by matching users.branch_tag = units.branch_tag
   last_login_at?: string // ISO 8601 format time string
   tags?: string[] // JSONB field, stored as string array
+  branch_tag?: string // Branch tag for location filtering
   preferences?: Record<string, any> // JSONB field
 }
 
@@ -52,8 +53,9 @@ export interface CreateUserParams {
   password: string // Required when creating
   alarm_levels?: string[]
   alarm_channels?: string[]
-  alarm_scope?: 'ALL' | 'BRANCH-TAG' | 'ASSIGNED_ONLY'
+  alarm_scope?: 'ALL' | 'BRANCH' | 'ASSIGNED_ONLY' // BRANCH: filter by matching users.branch_tag = units.branch_tag
   tags?: string[]
+  branch_tag?: string
 }
 
 /**
@@ -75,7 +77,7 @@ export interface UpdateUserParams {
   status?: 'active' | 'disabled' | 'left'
   alarm_levels?: string[]
   alarm_channels?: string[]
-  alarm_scope?: 'ALL' | 'BRANCH-TAG' | 'ASSIGNED_ONLY'
+  alarm_scope?: 'ALL' | 'BRANCH' | 'ASSIGNED_ONLY' // BRANCH: filter by matching users.branch_tag = units.branch_tag
   tags?: string[]
   _delete?: boolean // Used when deleting (true: delete)
 }

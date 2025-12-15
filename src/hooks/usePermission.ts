@@ -73,7 +73,7 @@ export function usePermission() {
     // Temporarily based on role judgment, will be changed to based on role-permissions table later
     const permissionMap: Record<string, string[]> = {
       'users.read': ['Admin', 'Director', 'IT', 'Nurse', 'Caregiver'],
-      'users.create': ['Admin', 'Director', 'IT'],
+      'users.create': ['Admin', 'Manager', 'IT'],
       'users.update': ['Admin', 'Director', 'IT'],
       'users.delete': ['Admin', 'Director', 'IT'],
       'roles.read': ['Admin', 'Director', 'CO', 'IT'],

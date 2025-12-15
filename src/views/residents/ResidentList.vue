@@ -16,6 +16,16 @@
                   <HomeOutlined />
                 </template>
               </a-button>
+              <a-button 
+                type="text" 
+                @click="handleRefresh" 
+                :title="'Refresh'"
+                :loading="loading"
+              >
+                <template #icon>
+                  <ReloadOutlined />
+                </template>
+              </a-button>
             </a-space>
           </a-form-item>
           <!-- Search Input -->
@@ -106,9 +116,14 @@
           />
         </template>
         <template v-else-if="column.key === 'operation'">
-          <a-button size="small" @click="viewResident(record)">
-            Details
-          </a-button>
+          <a-space>
+            <a-button size="small" @click="viewResident(record)">
+              Details
+            </a-button>
+            <a-button size="small" @click="handleResetPassword(record)">
+              ResetPW
+            </a-button>
+          </a-space>
         </template>
       </template>
     </a-table>
@@ -118,9 +133,9 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, h } from 'vue'
 import { useRouter } from 'vue-router'
-import { FilterOutlined, HomeOutlined, ArrowLeftOutlined } from '@ant-design/icons-vue'
+import { FilterOutlined, HomeOutlined, ArrowLeftOutlined, ReloadOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import {
   getResidentsApi,
@@ -146,6 +161,13 @@ const goBack = () => {
 
 const goHome = () => {
   router.push('/monitoring/overview')
+}
+
+// Handle refresh - force refresh from DB
+const handleRefresh = async () => {
+  // Force refresh by clearing cache and fetching from DB
+  await fetchResidents(true)
+  message.success('Data refreshed from database')
 }
 
 // 权限控制：只有 Manager/Admin 可以创建住户
@@ -367,6 +389,52 @@ const handleToggleAccess = async (record: Resident, checked: boolean) => {
   } finally {
     saving.value = false
   }
+}
+
+// Generate random password (HIPAA compliant: at least 8 chars, uppercase, lowercase, number, special char)
+const generateRandomPassword = (): string => {
+  const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+  const lowercase = 'abcdefghijklmnopqrstuvwxyz'
+  const numbers = '0123456789'
+  const special = '!@#$%^&*(),.?":{}|<>'
+  const allChars = uppercase + lowercase + numbers + special
+  
+  // Ensure at least one of each required type
+  let password = ''
+  password += uppercase[Math.floor(Math.random() * uppercase.length)]
+  password += lowercase[Math.floor(Math.random() * lowercase.length)]
+  password += numbers[Math.floor(Math.random() * numbers.length)]
+  password += special[Math.floor(Math.random() * special.length)]
+  
+  // Fill the rest randomly (minimum 8 chars total as per HIPAA)
+  const minLength = 8
+  for (let i = password.length; i < minLength; i++) {
+    password += allChars[Math.floor(Math.random() * allChars.length)]
+  }
+  
+  // Shuffle the password
+  return password.split('').sort(() => Math.random() - 0.5).join('')
+}
+
+// Handle reset password - auto-generate random password
+const handleResetPassword = async (record: Resident) => {
+  const { Modal } = await import('ant-design-vue')
+  
+  Modal.confirm({
+    title: `Reset Password for ${record.nickname || record.resident_account}`,
+    content: 'A random password will be generated and set for this resident. Continue?',
+    onOk: async () => {
+      try {
+        const randomPassword = generateRandomPassword()
+        const { resetResidentPasswordApi } = await import('@/api/resident/resident')
+        await resetResidentPasswordApi(record.resident_id, randomPassword)
+        message.success(`Password reset successfully. New password: ${randomPassword}`)
+      } catch (error: any) {
+        message.error(error?.message || 'Failed to reset password')
+        return Promise.reject()
+      }
+    }
+  })
 }
 
 

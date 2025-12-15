@@ -22,7 +22,7 @@
           <a-form-item class="flex-grow">
             <a-input
               v-model:value="searchText"
-              placeholder="Search by account, nickname, email, or phone"
+              placeholder="Search by account, nickname, email, phone, or branch"
               style="width: 400px"
               :allowClear="true"
               @pressEnter="onSearch"
@@ -36,7 +36,7 @@
 
           <!-- Create User Button -->
           <a-form-item>
-            <a-button type="primary" @click="addUser">Create User</a-button>
+            <a-button type="primary" @click="addUser" :disabled="!canCreateUser">Create User</a-button>
           </a-form-item>
 
           <!-- Refresh Button -->
@@ -82,6 +82,79 @@
             </a-dropdown>
           </div>
         </template>
+        <!-- Sortable columns: User Account, Nickname, Branch, Role -->
+        <template v-else-if="column.dataIndex === 'user_account'">
+          <div 
+            style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;" 
+            @click="toggleUserAccountSort"
+            :style="{ color: userAccountSortOrder ? '#1890ff' : 'inherit' }"
+          >
+            <span>{{ column.title }}</span>
+            <SortAscendingOutlined 
+              v-if="userAccountSortOrder === 'asc'" 
+              style="font-size: 14px; color: #1890ff;"
+            />
+            <SortDescendingOutlined 
+              v-else-if="userAccountSortOrder === 'desc'" 
+              style="font-size: 14px; color: #1890ff;"
+            />
+            <span v-else style="color: #d9d9d9; font-size: 12px;">⇅</span>
+          </div>
+        </template>
+        <template v-else-if="column.dataIndex === 'nickname'">
+          <div 
+            style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;" 
+            @click="toggleNicknameSort"
+            :style="{ color: nicknameSortOrder ? '#1890ff' : 'inherit' }"
+          >
+            <span>{{ column.title }}</span>
+            <SortAscendingOutlined 
+              v-if="nicknameSortOrder === 'asc'" 
+              style="font-size: 14px; color: #1890ff;"
+            />
+            <SortDescendingOutlined 
+              v-else-if="nicknameSortOrder === 'desc'" 
+              style="font-size: 14px; color: #1890ff;"
+            />
+            <span v-else style="color: #d9d9d9; font-size: 12px;">⇅</span>
+          </div>
+        </template>
+        <template v-else-if="column.dataIndex === 'branch_tag'">
+          <div 
+            style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;" 
+            @click="toggleBranchSort"
+            :style="{ color: branchSortOrder ? '#1890ff' : 'inherit' }"
+          >
+            <span>{{ column.title }}</span>
+            <SortAscendingOutlined 
+              v-if="branchSortOrder === 'asc'" 
+              style="font-size: 14px; color: #1890ff;"
+            />
+            <SortDescendingOutlined 
+              v-else-if="branchSortOrder === 'desc'" 
+              style="font-size: 14px; color: #1890ff;"
+            />
+            <span v-else style="color: #d9d9d9; font-size: 12px;">⇅</span>
+          </div>
+        </template>
+        <template v-else-if="column.dataIndex === 'role'">
+          <div 
+            style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;" 
+            @click="toggleRoleSort"
+            :style="{ color: roleSortOrder ? '#1890ff' : 'inherit' }"
+          >
+            <span>{{ column.title }}</span>
+            <SortAscendingOutlined 
+              v-if="roleSortOrder === 'asc'" 
+              style="font-size: 14px; color: #1890ff;"
+            />
+            <SortDescendingOutlined 
+              v-else-if="roleSortOrder === 'desc'" 
+              style="font-size: 14px; color: #1890ff;"
+            />
+            <span v-else style="color: #d9d9d9; font-size: 12px;">⇅</span>
+          </div>
+        </template>
         <!-- Other columns: display title -->
         <template v-else>
           {{ column.title }}
@@ -123,6 +196,9 @@
         </template>
         <template v-else-if="column.dataIndex === 'alarm_scope'">
           <span>{{ record.alarm_scope || '-' }}</span>
+        </template>
+        <template v-else-if="column.dataIndex === 'branch_tag'">
+          <span>{{ record.branch_tag || '-' }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'role'">
           <span>{{ roleMap[record.role] || record.role || '-' }}</span>
@@ -253,12 +329,35 @@
             <a-select-option value="left">Left</a-select-option>
           </a-select>
         </a-form-item>
-        <a-form-item v-if="!editModel" label="Password" name="password">
-          <a-input-password 
-            placeholder="Please enter password" 
-            v-model:value="editData.password"
-            autocomplete="new-password"
-          />
+        <a-form-item v-if="!editModel" label="Password">
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; gap: 8px; align-items: flex-start;">
+              <a-input-password 
+                placeholder="Please enter password" 
+                v-model:value="createPassword"
+                @input="handleCreatePasswordInput"
+                @blur="handleCreatePasswordBlur"
+                autocomplete="new-password"
+                :status="createPasswordErrorMessage ? 'error' : ''"
+                style="flex: 1;"
+              />
+              <a-input-password 
+                placeholder="Please confirm password" 
+                v-model:value="createPasswordConfirm"
+                @input="handleCreatePasswordConfirmInput"
+                @blur="handleCreatePasswordConfirmBlur"
+                autocomplete="new-password"
+                :status="createPasswordErrorMessage ? 'error' : ''"
+                style="flex: 1;"
+              />
+              <a-button type="default" @click="generateCreatePassword" style="flex-shrink: 0;">
+                GeneratePW
+              </a-button>
+            </div>
+            <span v-if="createPasswordErrorMessage" style="color: #ff4d4f; font-size: 12px;">
+              {{ createPasswordErrorMessage }}
+            </span>
+          </div>
         </a-form-item>
         <a-form-item label="Alarm Levels" name="alarm_levels">
           <a-select
@@ -292,7 +391,7 @@
             :disabled="!hasManagePermission"
           >
             <a-select-option value="ALL">ALL</a-select-option>
-            <a-select-option value="BRANCH-TAG">BRANCH-TAG</a-select-option>
+            <a-select-option value="BRANCH">BRANCH</a-select-option>
             <a-select-option value="ASSIGNED_ONLY">ASSIGNED_ONLY</a-select-option>
           </a-select>
         </a-form-item>
@@ -423,7 +522,7 @@
 <script lang="ts" setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { ExclamationCircleOutlined, FilterOutlined, ReloadOutlined, HomeOutlined, ArrowLeftOutlined } from '@ant-design/icons-vue'
+import { ExclamationCircleOutlined, FilterOutlined, ReloadOutlined, HomeOutlined, ArrowLeftOutlined, SortAscendingOutlined, SortDescendingOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import type { Rule } from 'ant-design-vue/lib/form'
 
@@ -446,9 +545,11 @@ import type {
 import { getRolesApi } from '@/api/admin/role/role'
 import type { Role } from '@/api/admin/role/model/roleModel'
 import { useUserStore } from '@/store/modules/user'
+import { usePermission } from '@/hooks/usePermission'
 
 const router = useRouter()
 const userStore = useUserStore()
+const { hasPermission } = usePermission()
 const SYSTEM_TENANT_ID = '00000000-0000-0000-0000-000000000001'
 
 const isSystemTenant = computed(() => userStore.userInfo?.tenant_id === SYSTEM_TENANT_ID)
@@ -476,6 +577,11 @@ const statusOptions = [
 const loading = ref(false)
 const dataSource = ref<User[]>([])
 const filteredDataSource = ref<User[]>([])
+// Sort order state
+const userAccountSortOrder = ref<'asc' | 'desc' | null>(null)
+const nicknameSortOrder = ref<'asc' | 'desc' | null>(null)
+const branchSortOrder = ref<'asc' | 'desc' | null>(null)
+const roleSortOrder = ref<'asc' | 'desc' | null>(null)
 const isEditModalVisible = ref(false)
 const isConfirmModalVisible = ref(false)
 const isResetPasswordModalVisible = ref(false)
@@ -491,6 +597,148 @@ const confirmMessage = ref('')
 const availableRoles = ref<Role[]>([])
 const resetPasswordUserId = ref('')
 const resetPinUserId = ref('')
+
+// Password state for create user form
+const createPassword = ref('')
+const createPasswordConfirm = ref('')
+const createPasswordErrorMessage = ref('')
+
+// Password validation constants
+const PASSWORD_MIN_LENGTH = 8
+const PASSWORD_SPECIAL_CHARS = '!@#$%^&*(),.?":{}|<>'
+
+// Validate password strength
+const validateCreatePasswordStrength = (password: string): { isValid: boolean; errorMessage: string } => {
+  if (!password) {
+    return { isValid: false, errorMessage: '' }
+  }
+
+  if (password.length < PASSWORD_MIN_LENGTH) {
+    return {
+      isValid: false,
+      errorMessage: 'Password must be at least 8 characters',
+    }
+  }
+
+  const hasUpperCase = /[A-Z]/.test(password)
+  const hasLowerCase = /[a-z]/.test(password)
+  const hasNumber = /[0-9]/.test(password)
+  const hasSpecialChar = new RegExp(`[${PASSWORD_SPECIAL_CHARS.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}]`).test(password)
+
+  if (!hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecialChar) {
+    return {
+      isValid: false,
+      errorMessage: 'Password must include uppercase, lowercase, number, and special character',
+    }
+  }
+
+  return { isValid: true, errorMessage: '' }
+}
+
+// Validate password confirmation
+const validateCreatePasswordConfirm = (): boolean => {
+  if (!createPasswordConfirm.value) {
+    if (createPassword.value) {
+      createPasswordErrorMessage.value = 'Please confirm your password'
+    } else {
+      createPasswordErrorMessage.value = ''
+    }
+    return false
+  }
+
+  if (createPassword.value !== createPasswordConfirm.value) {
+    createPasswordErrorMessage.value = 'Passwords do not match'
+    return false
+  }
+
+  // If passwords match, also validate the password strength
+  const strengthResult = validateCreatePasswordStrength(createPassword.value)
+  createPasswordErrorMessage.value = strengthResult.errorMessage
+  return strengthResult.isValid
+}
+
+// Handle password input
+const handleCreatePasswordInput = () => {
+  if (!createPassword.value) {
+    createPasswordErrorMessage.value = ''
+    return
+  }
+  if (!createPasswordErrorMessage.value.includes('match')) {
+    const result = validateCreatePasswordStrength(createPassword.value)
+    createPasswordErrorMessage.value = result.errorMessage
+  } else {
+    validateCreatePasswordConfirm()
+  }
+}
+
+// Handle password blur
+const handleCreatePasswordBlur = () => {
+  if (createPassword.value) {
+    const result = validateCreatePasswordStrength(createPassword.value)
+    createPasswordErrorMessage.value = result.errorMessage
+
+    // If password is valid, also check confirmation if it exists
+    if (result.isValid && createPasswordConfirm.value) {
+      validateCreatePasswordConfirm()
+    }
+  }
+}
+
+// Handle password confirm input
+const handleCreatePasswordConfirmInput = () => {
+  if (!createPasswordConfirm.value) {
+    if (!createPassword.value) {
+      createPasswordErrorMessage.value = ''
+    }
+    return
+  }
+  validateCreatePasswordConfirm()
+}
+
+// Handle password confirm blur
+const handleCreatePasswordConfirmBlur = () => {
+  if (createPasswordConfirm.value) {
+    validateCreatePasswordConfirm()
+  }
+}
+
+// Generate random password
+const generateCreatePassword = () => {
+  const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+  const lowercase = 'abcdefghijklmnopqrstuvwxyz'
+  const numbers = '0123456789'
+  const special = PASSWORD_SPECIAL_CHARS
+  const allChars = uppercase + lowercase + numbers + special
+
+  // Ensure at least one of each required type
+  let password = ''
+  password += uppercase[Math.floor(Math.random() * uppercase.length)]
+  password += lowercase[Math.floor(Math.random() * lowercase.length)]
+  password += numbers[Math.floor(Math.random() * numbers.length)]
+  password += special[Math.floor(Math.random() * special.length)]
+
+  // Fill the rest randomly (minimum 8 chars total)
+  for (let i = password.length; i < PASSWORD_MIN_LENGTH; i++) {
+    password += allChars[Math.floor(Math.random() * allChars.length)]
+  }
+
+  // Shuffle the password
+  const randomPassword = password.split('').sort(() => Math.random() - 0.5).join('')
+  
+  createPassword.value = randomPassword
+  createPasswordConfirm.value = randomPassword
+  createPasswordErrorMessage.value = ''
+}
+
+// Check if password is valid
+const isCreatePasswordValid = computed(() => {
+  if (!createPassword.value || !createPasswordConfirm.value) {
+    return false
+  }
+  const strengthResult = validateCreatePasswordStrength(createPassword.value)
+  const confirmResult = createPassword.value === createPasswordConfirm.value
+  return strengthResult.isValid && confirmResult
+})
 
 // Role mapping (role_code -> display_name)
 const roleMap = computed(() => {
@@ -539,6 +787,16 @@ const hasManagePermission = computed(() => {
   return allowedRoles.includes(userInfo.role || '')
 })
 
+// Check if user can create users
+const canCreateUser = computed(() => {
+  // SystemAdmin can always create users in System tenant
+  if (isSystemAdmin.value && isSystemTenant.value) {
+    return true
+  }
+  // For other tenants, check users.create permission
+  return hasPermission('users.create')
+})
+
 const columns = [
   {
     title: 'User Account',
@@ -571,6 +829,14 @@ const columns = [
     ellipsis: true,
     align: 'left',
     className: 'phone-column',
+  },
+  {
+    title: 'Branch',
+    dataIndex: 'branch_tag',
+    key: 'branch_tag',
+    ellipsis: true,
+    align: 'left',
+    className: 'branch-column',
   },
   {
     title: 'Role',
@@ -631,7 +897,7 @@ const columns = [
 const rules: Record<string, Rule[]> = {
   user_account: [{ required: true, message: 'Please enter user account', trigger: 'blur' }],
   role: [{ required: true, message: 'Please select role', trigger: 'change' }],
-  password: [{ required: true, message: 'Please enter password', trigger: 'blur' }],
+  // Password validation is handled by local password logic, not form rules
 }
 
 const resetPasswordRules: Record<string, Rule[]> = {
@@ -740,13 +1006,45 @@ const onSearch = () => {
       user.user_account.toLowerCase().includes(searchLower) ||
       (user.nickname && user.nickname.toLowerCase().includes(searchLower)) ||
       (user.email && user.email.toLowerCase().includes(searchLower)) ||
-      (user.phone && user.phone.toLowerCase().includes(searchLower))
+      (user.phone && user.phone.toLowerCase().includes(searchLower)) ||
+      (user.branch_tag && user.branch_tag.toLowerCase().includes(searchLower))
     )
   })
   
   // Apply status filter
   if (statusFilter.value.length > 0) {
     filtered = filtered.filter((user) => statusFilter.value.includes(user.status))
+  }
+  
+  // Apply sorting
+  if (userAccountSortOrder.value) {
+    filtered.sort((a, b) => {
+      const aVal = (a.user_account || '').toLowerCase()
+      const bVal = (b.user_account || '').toLowerCase()
+      const comparison = aVal.localeCompare(bVal)
+      return userAccountSortOrder.value === 'asc' ? comparison : -comparison
+    })
+  } else if (nicknameSortOrder.value) {
+    filtered.sort((a, b) => {
+      const aVal = (a.nickname || '').toLowerCase()
+      const bVal = (b.nickname || '').toLowerCase()
+      const comparison = aVal.localeCompare(bVal)
+      return nicknameSortOrder.value === 'asc' ? comparison : -comparison
+    })
+  } else if (branchSortOrder.value) {
+    filtered.sort((a, b) => {
+      const aVal = (a.branch_tag || '').toLowerCase()
+      const bVal = (b.branch_tag || '').toLowerCase()
+      const comparison = aVal.localeCompare(bVal)
+      return branchSortOrder.value === 'asc' ? comparison : -comparison
+    })
+  } else if (roleSortOrder.value) {
+    filtered.sort((a, b) => {
+      const aVal = (roleMap.value[a.role || ''] || a.role || '').toLowerCase()
+      const bVal = (roleMap.value[b.role || ''] || b.role || '').toLowerCase()
+      const comparison = aVal.localeCompare(bVal)
+      return roleSortOrder.value === 'asc' ? comparison : -comparison
+    })
   }
   
   filteredDataSource.value = filtered
@@ -768,7 +1066,7 @@ watch(
       if (roleLower === 'caregiver' || roleLower === 'nurse') {
         editData.value.alarm_scope = 'ASSIGNED_ONLY'
       } else if (roleLower === 'manager') {
-        editData.value.alarm_scope = 'BRANCH-TAG'
+        editData.value.alarm_scope = 'BRANCH' // Manager default: filter by branch_tag (users.branch_tag = units.branch_tag)
       }
       // Other roles: keep current value or default to 'ALL'
     }
@@ -850,19 +1148,37 @@ const resetPin = (record: User) => {
 }
 
 const handleSave = async () => {
+  // Validate password for create user
+  if (!editModel.value) {
+    if (!isCreatePasswordValid.value) {
+      message.error(createPasswordErrorMessage.value || 'Please enter a valid password')
+      return
+    }
+  }
+  
   formEditRef.value
     .validate()
     .then(async () => {
       try {
         if (!editModel.value) {
-          // Create new user
+          // Create new user - get password from local state
+          if (!isCreatePasswordValid.value) {
+            message.error(createPasswordErrorMessage.value || 'Please enter a valid password')
+            return
+          }
+          const password = createPassword.value
+          if (!password) {
+            message.error('Please enter a valid password')
+            return
+          }
+          
           const params: CreateUserParams = {
             user_account: editData.value.user_account!,
             nickname: editData.value.nickname,
             email: editData.value.email,
             phone: editData.value.phone,
             role: editData.value.role!,
-            password: editData.value.password!,
+            password: password,
             alarm_levels: editData.value.alarm_levels,
             alarm_channels: editData.value.alarm_channels,
             alarm_scope: editData.value.alarm_scope,
@@ -938,6 +1254,10 @@ const handleCancel = () => {
   formEditRef.value?.resetFields()
   // Reset editData to empty to prevent stale values (especially from browser autocomplete)
   editData.value = { ...emptyUser }
+  // Clear password fields
+  createPassword.value = ''
+  createPasswordConfirm.value = ''
+  createPasswordErrorMessage.value = ''
 }
 
 const handleCancelConfirm = () => {
@@ -1017,13 +1337,105 @@ const fetchData = async () => {
   }
 }
 
-// Apply filters to dataSource
+// Toggle sort functions
+const toggleUserAccountSort = () => {
+  if (userAccountSortOrder.value === null) {
+    userAccountSortOrder.value = 'asc'
+  } else if (userAccountSortOrder.value === 'asc') {
+    userAccountSortOrder.value = 'desc'
+  } else {
+    userAccountSortOrder.value = null
+  }
+  // Reset other sorts
+  nicknameSortOrder.value = null
+  branchSortOrder.value = null
+  roleSortOrder.value = null
+  applyFilters()
+}
+
+const toggleNicknameSort = () => {
+  if (nicknameSortOrder.value === null) {
+    nicknameSortOrder.value = 'asc'
+  } else if (nicknameSortOrder.value === 'asc') {
+    nicknameSortOrder.value = 'desc'
+  } else {
+    nicknameSortOrder.value = null
+  }
+  // Reset other sorts
+  userAccountSortOrder.value = null
+  branchSortOrder.value = null
+  roleSortOrder.value = null
+  applyFilters()
+}
+
+const toggleBranchSort = () => {
+  if (branchSortOrder.value === null) {
+    branchSortOrder.value = 'asc'
+  } else if (branchSortOrder.value === 'asc') {
+    branchSortOrder.value = 'desc'
+  } else {
+    branchSortOrder.value = null
+  }
+  // Reset other sorts
+  userAccountSortOrder.value = null
+  nicknameSortOrder.value = null
+  roleSortOrder.value = null
+  applyFilters()
+}
+
+const toggleRoleSort = () => {
+  if (roleSortOrder.value === null) {
+    roleSortOrder.value = 'asc'
+  } else if (roleSortOrder.value === 'asc') {
+    roleSortOrder.value = 'desc'
+  } else {
+    roleSortOrder.value = null
+  }
+  // Reset other sorts
+  userAccountSortOrder.value = null
+  nicknameSortOrder.value = null
+  branchSortOrder.value = null
+  applyFilters()
+}
+
+// Apply filters and sorting to dataSource
 const applyFilters = () => {
   let filtered = [...dataSource.value]
   
   // Filter by status
   if (statusFilter.value.length > 0) {
     filtered = filtered.filter((user) => statusFilter.value.includes(user.status))
+  }
+  
+  // Apply sorting
+  if (userAccountSortOrder.value) {
+    filtered.sort((a, b) => {
+      const aVal = (a.user_account || '').toLowerCase()
+      const bVal = (b.user_account || '').toLowerCase()
+      const comparison = aVal.localeCompare(bVal)
+      return userAccountSortOrder.value === 'asc' ? comparison : -comparison
+    })
+  } else if (nicknameSortOrder.value) {
+    filtered.sort((a, b) => {
+      const aVal = (a.nickname || '').toLowerCase()
+      const bVal = (b.nickname || '').toLowerCase()
+      const comparison = aVal.localeCompare(bVal)
+      return nicknameSortOrder.value === 'asc' ? comparison : -comparison
+    })
+  } else if (branchSortOrder.value) {
+    filtered.sort((a, b) => {
+      const aVal = (a.branch_tag || '').toLowerCase()
+      const bVal = (b.branch_tag || '').toLowerCase()
+      const comparison = aVal.localeCompare(bVal)
+      return branchSortOrder.value === 'asc' ? comparison : -comparison
+    })
+  } else if (roleSortOrder.value) {
+    filtered.sort((a, b) => {
+      const aVal = (roleMap.value[a.role || ''] || a.role || '').toLowerCase()
+      const bVal = (roleMap.value[b.role || ''] || b.role || '').toLowerCase()
+      const comparison = aVal.localeCompare(bVal)
+      return roleSortOrder.value === 'asc' ? comparison : -comparison
+    })
   }
   
   filteredDataSource.value = filtered

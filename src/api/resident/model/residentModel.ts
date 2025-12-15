@@ -117,6 +117,8 @@ export interface ResidentContact {
   // 前端使用的临时字段
   save_phone?: boolean // 是否保存手机号（用于重置密码）
   save_email?: boolean // 是否保存邮箱（用于重置密码）
+  contact_password?: string // 临时字段：用于重置密码
+  contact_password_confirm?: string // 临时字段：用于确认密码
   // 兼容旧字段
   contact_name?: string
   phone?: string
