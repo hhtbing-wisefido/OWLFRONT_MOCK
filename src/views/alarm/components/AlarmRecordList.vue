@@ -789,7 +789,7 @@ const fetchData = async () => {
 
       // If many cards are missing, load cards list to populate cache
       // This is a best-effort optimization, permission check will still work with fallback
-      if (cardIdsToLoad.size === 0 && cardStore.shouldRefreshList.value) {
+      if (cardIdsToLoad.size === 0 && cardStore.shouldRefreshList) {
         // Silently load cards list in background (don't await, don't show loading)
         cardStore.loadCardsList().catch(err => {
           console.warn('Failed to preload cards for permission check:', err)

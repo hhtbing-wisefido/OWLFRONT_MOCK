@@ -367,9 +367,9 @@
             :disabled="!hasManagePermission"
           >
             <a-select-option value="0">0 (EMERG)</a-select-option>
-            <a-select-option value="1">1 (ALERT)</a-select-option>
-            <a-select-option value="2">2 (CRIT)</a-select-option>
-            <a-select-option value="3">3 (ERR)</a-select-option>
+            <!-- <a-select-option value="1">1 (ALERT)</a-select-option> -->
+            <!-- <a-select-option value="2">2 (CRIT)</a-select-option> -->
+            <!-- <a-select-option value="3">3 (ERR)</a-select-option> -->
             <a-select-option value="4">4 (WARNING)</a-select-option>
           </a-select>
         </a-form-item>
@@ -1260,18 +1260,18 @@ watch(
         editData.value.alarm_channels = []
         editData.value.alarm_scope = 'ALL'
       } else if (roleLower === 'manager') {
-        // manager: Alarm Levels 0,1，Alarm Channel: email/sms，Alarm Scope: Branch
-        editData.value.alarm_levels = ['0', '1']
+        // manager: Alarm Levels 0,4，Alarm Channel: email/sms，Alarm Scope: Branch
+        editData.value.alarm_levels = ['0', '4']
         editData.value.alarm_channels = ['EMAIL', 'SMS']
         editData.value.alarm_scope = 'BRANCH'
       } else if (roleLower === 'caregiver' || roleLower === 'nurse') {
-        // Nurse/caregiver: Alarm Levels 0,1,2,3,4，Alarm Channel: email/sms，Alarm Scope: Assigned_only
-        editData.value.alarm_levels = ['0', '1', '2', '3', '4']
+        // Nurse/caregiver: Alarm Levels 0,4，Alarm Channel: email/sms，Alarm Scope: Assigned_only
+        editData.value.alarm_levels = ['0', '4']
         editData.value.alarm_channels = ['EMAIL', 'SMS']
         editData.value.alarm_scope = 'ASSIGNED_ONLY'
       } else if (roleLower === 'it') {
-        // IT: Alarm Levels 0,1,2,3,4，Alarm Channel: email/sms，Alarm Scope: Branch
-        editData.value.alarm_levels = ['0', '1', '2', '3', '4']
+        // IT: Alarm Levels 0,4，Alarm Channel: email/sms，Alarm Scope: Branch
+        editData.value.alarm_levels = ['0', '4']
         editData.value.alarm_channels = ['EMAIL', 'SMS']
         editData.value.alarm_scope = 'BRANCH'
       } else {
