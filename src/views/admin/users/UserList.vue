@@ -291,44 +291,66 @@
         :wrapperCol="{ span: 18 }"
         style="padding: 20px"
       >
-        <a-form-item label="User Account" name="user_account">
-          <a-input
-            placeholder="Please enter user account"
-            v-model:value="editData.user_account"
-            :disabled="editModel"
-          />
-        </a-form-item>
-        <a-form-item label="Nickname" name="nickname">
-          <a-input placeholder="Please enter nickname" v-model:value="editData.nickname" />
-        </a-form-item>
-        <a-form-item label="Email" name="email">
-          <a-input placeholder="Please enter email" v-model:value="editData.email" />
-        </a-form-item>
-        <a-form-item label="Phone" name="phone">
-          <a-input placeholder="Please enter phone" v-model:value="editData.phone" />
-        </a-form-item>
-        <a-form-item label="Role" name="role">
-          <a-select
-            v-model:value="editData.role"
-            placeholder="Please select role"
-            :disabled="!hasManagePermission"
-          >
-            <a-select-option v-for="role in availableRoles" :key="role.role_code" :value="role.role_code">
-              {{ role.display_name }}
-            </a-select-option>
-          </a-select>
-        </a-form-item>
-        <a-form-item label="Status" name="status">
-          <a-select
-            v-model:value="editData.status"
-            placeholder="Please select status"
-            :disabled="!hasManagePermission"
-          >
-            <a-select-option value="active">Active</a-select-option>
-            <a-select-option value="disabled">Disabled</a-select-option>
-            <a-select-option value="left">Left</a-select-option>
-          </a-select>
-        </a-form-item>
+        <a-row :gutter="16">
+          <a-col :span="12">
+            <a-form-item label="Account" name="user_account">
+              <a-input
+                placeholder="Please enter user account"
+                v-model:value="editData.user_account"
+                :disabled="editModel"
+              />
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item label="Nickname" name="nickname">
+              <a-input placeholder="Please enter nickname" v-model:value="editData.nickname" />
+            </a-form-item>
+          </a-col>
+        </a-row>
+        <a-row :gutter="16">
+          <a-col :span="12">
+            <a-form-item label="Email" name="email">
+              <a-input placeholder="Please enter email" v-model:value="editData.email" />
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item label="Phone" name="phone">
+              <a-input 
+                placeholder="(XXX) XXX-XXXX or XXX-XXX-XXXX" 
+                v-model:value="editData.phone"
+                :maxlength="20"
+              />
+            </a-form-item>
+          </a-col>
+        </a-row>
+        <a-row :gutter="16">
+          <a-col :span="12">
+            <a-form-item label="Role" name="role">
+              <a-select
+                v-model:value="editData.role"
+                placeholder="Please select role"
+                :disabled="!hasManagePermission"
+              >
+                <a-select-option v-for="role in availableRoles" :key="role.role_code" :value="role.role_code">
+                  {{ role.display_name }}
+                </a-select-option>
+              </a-select>
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item label="Status" name="status">
+              <a-select
+                v-model:value="editData.status"
+                placeholder="Please select status"
+                :disabled="!hasManagePermission"
+              >
+                <a-select-option value="active">Active</a-select-option>
+                <a-select-option value="disabled">Disabled</a-select-option>
+                <a-select-option value="left">Left</a-select-option>
+              </a-select>
+            </a-form-item>
+          </a-col>
+        </a-row>
         <a-form-item v-if="!editModel" label="Password">
           <div style="display: flex; flex-direction: column; gap: 8px;">
             <div style="display: flex; gap: 8px; align-items: flex-start;">
@@ -356,6 +378,35 @@
             </div>
             <span v-if="createPasswordErrorMessage" style="color: #ff4d4f; font-size: 12px;">
               {{ createPasswordErrorMessage }}
+            </span>
+          </div>
+        </a-form-item>
+        <a-form-item v-if="!editModel" label="PIN">
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; gap: 8px; align-items: flex-start;">
+              <a-input
+                placeholder="Please enter 4-digit PIN"
+                v-model:value="createPin"
+                maxlength="4"
+                :inputmode="'numeric'"
+                :status="createPinErrorMessage ? 'error' : ''"
+                @input="handleCreatePinInput"
+                @blur="handleCreatePinBlur"
+                style="flex: 1;"
+              />
+              <a-input
+                placeholder="Please confirm 4-digit PIN"
+                v-model:value="createPinConfirm"
+                maxlength="4"
+                :inputmode="'numeric'"
+                :status="createPinErrorMessage ? 'error' : ''"
+                @input="handleCreatePinConfirmInput"
+                @blur="handleCreatePinConfirmBlur"
+                style="flex: 1;"
+              />
+            </div>
+            <span v-if="createPinErrorMessage" style="color: #ff4d4f; font-size: 12px;">
+              {{ createPinErrorMessage }}
             </span>
           </div>
         </a-form-item>
@@ -647,6 +698,10 @@ const createPassword = ref('')
 const createPasswordConfirm = ref('')
 const createPasswordErrorMessage = ref('')
 
+const createPin = ref('')
+const createPinConfirm = ref('')
+const createPinErrorMessage = ref('')
+
 // Password validation constants
 const PASSWORD_MIN_LENGTH = 8
 const PASSWORD_SPECIAL_CHARS = '!@#$%^&*(),.?":{}|<>'
@@ -782,6 +837,87 @@ const isCreatePasswordValid = computed(() => {
   const strengthResult = validateCreatePasswordStrength(createPassword.value)
   const confirmResult = createPassword.value === createPasswordConfirm.value
   return strengthResult.isValid && confirmResult
+})
+
+// Validate PIN
+const validateCreatePin = (): boolean => {
+  if (!createPinConfirm.value) {
+    if (createPin.value) {
+      createPinErrorMessage.value = 'Please confirm your PIN'
+    } else {
+      createPinErrorMessage.value = ''
+    }
+    return false
+  }
+
+  if (createPin.value !== createPinConfirm.value) {
+    createPinErrorMessage.value = 'PINs do not match'
+    return false
+  }
+
+  if (createPin.value.length !== 4 || !/^\d{4}$/.test(createPin.value)) {
+    createPinErrorMessage.value = 'PIN must be exactly 4 digits'
+    return false
+  }
+
+  createPinErrorMessage.value = ''
+  return true
+}
+
+// Handle PIN input
+const handleCreatePinInput = () => {
+  if (!createPin.value) {
+    createPinErrorMessage.value = ''
+    return
+  }
+  if (!createPinErrorMessage.value.includes('match')) {
+    if (createPin.value.length !== 4 || !/^\d{4}$/.test(createPin.value)) {
+      createPinErrorMessage.value = 'PIN must be exactly 4 digits'
+    } else {
+      createPinErrorMessage.value = ''
+    }
+  } else {
+    validateCreatePin()
+  }
+}
+
+// Handle PIN blur
+const handleCreatePinBlur = () => {
+  if (createPin.value) {
+    if (createPin.value.length !== 4 || !/^\d{4}$/.test(createPin.value)) {
+      createPinErrorMessage.value = 'PIN must be exactly 4 digits'
+    } else if (createPinConfirm.value) {
+      validateCreatePin()
+    } else {
+      createPinErrorMessage.value = ''
+    }
+  }
+}
+
+// Handle PIN confirm input
+const handleCreatePinConfirmInput = () => {
+  if (!createPinConfirm.value) {
+    if (!createPin.value) {
+      createPinErrorMessage.value = ''
+    }
+    return
+  }
+  validateCreatePin()
+}
+
+// Handle PIN confirm blur
+const handleCreatePinConfirmBlur = () => {
+  if (createPinConfirm.value) {
+    validateCreatePin()
+  }
+}
+
+// Check if PIN is valid
+const isCreatePinValid = computed(() => {
+  if (!createPin.value || !createPinConfirm.value) {
+    return false
+  }
+  return validateCreatePin()
 })
 
 // Validate reset password strength
@@ -1072,9 +1208,47 @@ const columns = [
   },
 ]
 
+// Validate US phone number
+// Format: 10 digits, area code (2-9)XX, exchange code (2-9)XX, subscriber number XXXX
+// Supports formats: (XXX) XXX-XXXX, XXX-XXX-XXXX, XXX.XXX.XXXX, XXXXXXXXXX
+const validateUSPhoneNumber = (_rule: any, value: string): Promise<void> => {
+  if (!value || value.trim() === '') {
+    // Phone is optional, empty is valid
+    return Promise.resolve()
+  }
+  
+  // Remove all non-digit characters
+  const digitsOnly = value.replace(/\D/g, '')
+  
+  // Check if it's exactly 10 digits
+  if (digitsOnly.length !== 10) {
+    return Promise.reject('Phone number must be 10 digits')
+  }
+  
+  // Check area code: first digit must be 2-9
+  const areaCode = digitsOnly.substring(0, 3)
+  const areaCodeFirst = areaCode.charAt(0)
+  if (areaCodeFirst && (areaCodeFirst < '2' || areaCodeFirst > '9')) {
+    return Promise.reject('Area code must start with 2-9')
+  }
+  
+  // Check exchange code (middle 3 digits): first digit must be 2-9
+  const exchangeCode = digitsOnly.substring(3, 6)
+  const exchangeCodeFirst = exchangeCode.charAt(0)
+  if (exchangeCodeFirst && (exchangeCodeFirst < '2' || exchangeCodeFirst > '9')) {
+    return Promise.reject('Exchange code must start with 2-9')
+  }
+  
+  // Valid US phone number format
+  return Promise.resolve()
+}
+
 const rules: Record<string, Rule[]> = {
   user_account: [{ required: true, message: 'Please enter user account', trigger: 'blur' }],
   role: [{ required: true, message: 'Please select role', trigger: 'change' }],
+  phone: [
+    { validator: validateUSPhoneNumber, trigger: 'blur' }
+  ],
   // Password validation is handled by local password logic, not form rules
 }
 
@@ -1396,8 +1570,22 @@ const handleSave = async () => {
             tags: editData.value.tags,
             branch_tag: editData.value.branch_tag,
           }
-          await createUserApi(params)
-          message.success('User created successfully')
+          const result = await createUserApi(params)
+          
+          // Set PIN if provided and valid
+          if (isCreatePinValid.value && createPin.value) {
+            try {
+              await resetPinApi(result.user_id, {
+                new_pin: createPin.value,
+              })
+              message.success('User and PIN created successfully')
+            } catch (error: any) {
+              console.error('Failed to set PIN:', error)
+              message.warning('User created successfully, but PIN setup failed. You can set it later.')
+            }
+          } else {
+            message.success('User created successfully')
+          }
         } else {
           // Update user (should not edit in list page, should navigate to detail page)
           // Keep this logic just in case

@@ -281,7 +281,6 @@
 import { ref, watch } from 'vue'
 import dayjs from 'dayjs'
 import type { ResidentPHI } from '@/api/resident/model/residentModel'
-import { hashAccount } from '@/utils/crypto'
 
 interface Props {
   residentId: string
@@ -328,43 +327,14 @@ const filterStateOption = (input: string, option: any) => {
 }
 
 // Expose method to get current PHI data (called by parent on save)
-const getPHIData = async () => {
+const getPHIData = () => {
   const dataToEmit = { ...localPHIData.value }
-  
-  // Handle phone: calculate hash and set phone field based on save_phone flag
-  if (dataToEmit.resident_phone && dataToEmit.resident_phone.trim() !== '') {
-    // Calculate hash for login
-    const phoneHash = await hashAccount(dataToEmit.resident_phone)
-    ;(dataToEmit as any).phone_hash = phoneHash
-    // Only send plaintext if save_phone is true
-    if (!savePhone.value) {
-      ;(dataToEmit as any).resident_phone = null
-    }
-  } else {
-    // If phone is empty, send null for both hash and phone
-    ;(dataToEmit as any).phone_hash = null
-    ;(dataToEmit as any).resident_phone = null
+  if (!saveEmail.value) {
+    delete dataToEmit.resident_email
   }
-  
-  // Handle email: calculate hash and set email field based on save_email flag
-  if (dataToEmit.resident_email && dataToEmit.resident_email.trim() !== '') {
-    // Calculate hash for login
-    const emailHash = await hashAccount(dataToEmit.resident_email)
-    ;(dataToEmit as any).email_hash = emailHash
-    // Only send plaintext if save_email is true
-    if (!saveEmail.value) {
-      ;(dataToEmit as any).resident_email = null
-    }
-  } else {
-    // If email is empty, send null for both hash and email
-    ;(dataToEmit as any).email_hash = null
-    ;(dataToEmit as any).resident_email = null
+  if (!savePhone.value) {
+    delete dataToEmit.resident_phone
   }
-  
-  // Add save flags to indicate whether to save plaintext
-  ;(dataToEmit as any).save_phone = savePhone.value
-  ;(dataToEmit as any).save_email = saveEmail.value
-  
   return dataToEmit
 }
 

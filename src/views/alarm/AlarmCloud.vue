@@ -292,7 +292,7 @@
             <span class="section-title">Note</span>
             <div style="color: #666; font-size: 14px; line-height: 1.8">
               <div style="color: #faad14; margin-bottom: 8px;">• Alarm triggered by cloud-based evaluation.</div>
-              <div>• Manager: Recall All alarm of Organize; • Nurse/Caregiver: alarm of assigned_only; • Can Modify at users-setting</div>
+              <div>• Manager: Recall All alarm of Branch; • Nurse/Caregiver: alarm of assigned_only; • Can Modify at users-setting</div>
             </div>
           </div>
         </div>
@@ -363,9 +363,9 @@ const dangerLevelOptions = [
   { value: 'DISABLE', label: 'Disabled' },
   { value: 'EMERGENCY', label: 'EMERGENCY' },
   { value: 'WARNING', label: 'WARNING' },
-  { value: 'ERROR', label: 'ERROR' },
-  { value: 'INFORMATIONAL', label: 'INFORMATIONAL' },
-  { value: 'CRITICAL', label: 'CRITICAL' },
+  // { value: 'ERROR', label: 'ERROR' },
+  // { value: 'INFORMATIONAL', label: 'INFORMATIONAL' },
+  // { value: 'CRITICAL', label: 'CRITICAL' },
 ]
 
 // Heart Rate threshold values (computed from conditions)

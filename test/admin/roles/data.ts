@@ -39,7 +39,7 @@ export const mockRolesData: Role[] = [
     tenant_id: null,
     role_code: 'Manager',
     display_name: 'Facility Director',
-    description: 'Facility Director\n- Business management: Staff, Unit, Resident manager, Device, Alarm setting.\n- Approve/disable Resident and Family account access.',
+    description: 'Executive Director / Facility Director of Branch\n- Business management: Staff, Unit, Resident manager, Device, Alarm setting.\n- Approve/disable Resident and Family account access of this branch.',
     is_system: true,
     is_active: true,
   },

@@ -66,7 +66,8 @@
               <a-input
                 v-model:value="userData.phone"
                 :disabled="!canEditPhone"
-                placeholder="Please enter phone"
+                placeholder="(XXX) XXX-XXXX or XXX-XXX-XXXX"
+                :maxlength="20"
               />
               <span v-if="!canEditPhone && isCurrentUser" class="field-hint">
                 You can edit your own phone
@@ -102,11 +103,6 @@
                 This field can only be modified by administrators
               </span>
             </a-form-item>
-
-            <a-form-item>
-              <span class="last-login-label">Last Login:</span>
-              <span style="margin-left: 8px;">{{ userData.last_login_at || '-' }}</span>
-            </a-form-item>
           </a-form>
         </a-col>
 
@@ -126,9 +122,9 @@
                 :disabled="!hasManagePermission"
               >
                 <a-checkbox value="0" class="alarm-level-emerg">0 (<span class="alarm-text-emerg">EMERG</span>)</a-checkbox>
-                <a-checkbox value="1" class="alarm-level-alert">1 (<span class="alarm-text-alert">ALERT</span>)</a-checkbox>
-                <a-checkbox value="2" class="alarm-level-crit">2 (<span class="alarm-text-crit">CRIT</span>)</a-checkbox>
-                <a-checkbox value="3" class="alarm-level-err">3 (<span class="alarm-text-err">ERR</span>)</a-checkbox>
+                <!-- <a-checkbox value="1" class="alarm-level-alert">1 (<span class="alarm-text-alert">ALERT</span>)</a-checkbox> -->
+                <!-- <a-checkbox value="2" class="alarm-level-crit">2 (<span class="alarm-text-crit">CRIT</span>)</a-checkbox> -->
+                <!-- <a-checkbox value="3" class="alarm-level-err">3 (<span class="alarm-text-err">ERR</span>)</a-checkbox> -->
                 <a-checkbox value="4" class="alarm-level-warning">4 (<span class="alarm-text-warning">WARNING</span>)</a-checkbox>
               </a-checkbox-group>
               <span v-if="!hasManagePermission" class="field-hint">
@@ -555,8 +551,47 @@ const canResetPassword = computed(() => {
   return isCurrentUser.value || hasManagePermission.value
 })
 
+// Validate US phone number
+// Format: 10 digits, area code (2-9)XX, exchange code (2-9)XX, subscriber number XXXX
+// Supports formats: (XXX) XXX-XXXX, XXX-XXX-XXXX, XXX.XXX.XXXX, XXXXXXXXXX
+const validateUSPhoneNumber = (_rule: any, value: string): Promise<void> => {
+  if (!value || value.trim() === '') {
+    // Phone is optional, empty is valid
+    return Promise.resolve()
+  }
+  
+  // Remove all non-digit characters
+  const digitsOnly = value.replace(/\D/g, '')
+  
+  // Check if it's exactly 10 digits
+  if (digitsOnly.length !== 10) {
+    return Promise.reject('Phone number must be 10 digits')
+  }
+  
+  // Check area code: first digit must be 2-9
+  const areaCode = digitsOnly.substring(0, 3)
+  const areaCodeFirst = areaCode.charAt(0)
+  if (areaCodeFirst && (areaCodeFirst < '2' || areaCodeFirst > '9')) {
+    return Promise.reject('Area code must start with 2-9')
+  }
+  
+  // Check exchange code (middle 3 digits): first digit must be 2-9
+  const exchangeCode = digitsOnly.substring(3, 6)
+  const exchangeCodeFirst = exchangeCode.charAt(0)
+  if (exchangeCodeFirst && (exchangeCodeFirst < '2' || exchangeCodeFirst > '9')) {
+    return Promise.reject('Exchange code must start with 2-9')
+  }
+  
+  // Valid US phone number format
+  return Promise.resolve()
+}
+
 const rules: Record<string, Rule[]> = {
+  user_account: [{ required: true, message: 'Account is required', trigger: 'blur' }],
   role: [{ required: true, message: 'Please select role', trigger: 'change' }],
+  phone: [
+    { validator: validateUSPhoneNumber, trigger: 'blur' }
+  ],
 }
 
 const resetPasswordRules: Record<string, Rule[]> = {
@@ -635,26 +670,26 @@ const fetchRoles = async () => {
 }
 
 // Convert old alarm_levels format to new numeric format
+// Only keep '0' (EMERG) and '4' (WARNING), filter out others
 const normalizeAlarmLevels = (levels: string[] | undefined): string[] => {
   if (!levels || levels.length === 0) return []
   
-  // Old format to new format mapping
+  // Old format to new format mapping (only EMERG and WARNING)
   const oldToNewMap: Record<string, string> = {
     'EMERGENCY': '0',
+    'EMERG': '0',
     'WARNING': '4',
-    'ERROR': '3',
   }
   
-  // If already in numeric format, return directly
-  // If in old format, convert to new format
+  // Convert and filter to only keep '0' and '4'
   return levels.map(level => {
-    // If already a numeric string (0-7), return directly
+    // If already a numeric string, only keep '0' and '4'
     if (/^[0-7]$/.test(level)) {
-      return level
+      return level === '0' || level === '4' ? level : null
     }
-    // If in old format, convert to new format
-    return oldToNewMap[level] || level
-  }).filter(Boolean) // Filter out unmapped values
+    // If in old format, convert to new format (only EMERG and WARNING)
+    return oldToNewMap[level] || null
+  }).filter((level): level is string => level !== null && (level === '0' || level === '4')) // Filter out unmapped values and only keep '0' and '4'
 }
 
 const fetchUser = async () => {
@@ -791,8 +826,9 @@ const handleSave = async () => {
       try {
         const params: UpdateUserParams = {
           nickname: userData.value.nickname,
-          email: userData.value.email,
-          phone: userData.value.phone,
+          // Send empty string to delete email/phone (backend will convert to NULL)
+          email: userData.value.email !== undefined ? (userData.value.email.trim() || '') : undefined,
+          phone: userData.value.phone !== undefined ? (userData.value.phone.trim() || '') : undefined,
           role: hasManagePermission.value ? userData.value.role : undefined,
           status: hasManagePermission.value ? userData.value.status : undefined,
           alarm_levels: hasManagePermission.value ? userData.value.alarm_levels : undefined,
@@ -1011,12 +1047,6 @@ onMounted(() => {
   padding-right: 8px;
   min-width: 0;
 }
-
-.last-login-label {
-  font-weight: 500;
-  color: #262626;
-}
-
 
 /* Alarm level colors - consistent with wellnessMonitor, only change text color */
 :deep(.alarm-text-emerg) {

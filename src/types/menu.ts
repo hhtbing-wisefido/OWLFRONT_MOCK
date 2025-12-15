@@ -48,10 +48,10 @@ export const menuItems: MenuItem[] = [
   },
   // System Settings Area (with divider)
   {
-    key: 'devices',
-    label: 'Device Management',
-    icon: 'svg:device',
-    path: '/devices',
+    key: 'units',
+    label: 'Unit Management',
+    icon: 'HomeOutlined',
+    path: '/units',
     permission: ['Admin', 'Manager', 'IT'],
     divider: true,
   },
@@ -63,10 +63,10 @@ export const menuItems: MenuItem[] = [
     permission: ['SystemAdmin'],
   },
   {
-    key: 'units',
-    label: 'Unit Management',
-    icon: 'HomeOutlined',
-    path: '/units',
+    key: 'devices',
+    label: 'Device Management',
+    icon: 'svg:device',
+    path: '/devices',
     permission: ['Admin', 'Manager', 'IT'],
   },
   {

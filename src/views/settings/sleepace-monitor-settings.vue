@@ -496,13 +496,13 @@ const canEdit = computed(() => {
 const alarmLevelOptions = [
   { value: 'disabled', label: 'Disabled' },
   { value: '0', label: 'EMERG' },
-  { value: '1', label: 'ALERT' },
-  { value: '2', label: 'CRIT' },
-  { value: '3', label: 'ERR' },
   { value: '4', label: 'WARNING' },
-  { value: '5', label: 'NOTICE' },
-  { value: '6', label: 'INFO' },
-  { value: '7', label: 'DEBUG' },
+  // { value: '1', label: 'ALERT' },
+  // { value: '2', label: 'CRIT' },
+  // { value: '3', label: 'ERR' },
+  // { value: '5', label: 'NOTICE' },
+  // { value: '6', label: 'INFO' },
+  // { value: '7', label: 'DEBUG' },
 ]
 
 // Tooltip titles

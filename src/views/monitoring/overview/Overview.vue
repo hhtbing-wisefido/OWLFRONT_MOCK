@@ -1037,7 +1037,7 @@ const goBack = () => {
 
 // Navigate to home page
 const goHome = () => {
-  const homePath = userStore.getUserHomePath()
+  const homePath = userStore.getUserHomePath
   router.push(homePath)
 }
 

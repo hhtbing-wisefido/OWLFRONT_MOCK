@@ -480,13 +480,13 @@ const canEdit = computed(() => {
 const alarmLevelOptions = [
   { value: 'disabled', label: 'Disabled' },
   { value: '0', label: 'EMERG' },
-  { value: '1', label: 'ALERT' },
-  { value: '2', label: 'CRIT' },
-  { value: '3', label: 'ERR' },
   { value: '4', label: 'WARNING' },
-  { value: '5', label: 'NOTICE' },
-  { value: '6', label: 'INFO' },
-  { value: '7', label: 'DEBUG' },
+  // { value: '1', label: 'ALERT' },
+  // { value: '2', label: 'CRIT' },
+  // { value: '3', label: 'ERR' },
+  // { value: '5', label: 'NOTICE' },
+  // { value: '6', label: 'INFO' },
+  // { value: '7', label: 'DEBUG' },
 ]
 
 // Tooltip titles
@@ -567,6 +567,7 @@ interface FormData {
   breathRateSlowAlarmLevel: AlarmLevel
   upperBreathRate: number
   breathRateFastAlarmLevel: AlarmLevel
+  breathPauseAlarmLevel: AlarmLevel
   weakVitalDuration: number
   weakVitalSensitivity: number
   weakVitalAlarmLevel: AlarmLevel
@@ -594,6 +595,7 @@ const formData = ref<FormData>({
   breathRateSlowAlarmLevel: 'disabled',
   upperBreathRate: 0,
   breathRateFastAlarmLevel: 'disabled',
+  breathPauseAlarmLevel: 'disabled',
   weakVitalDuration: 0,
   weakVitalSensitivity: 0,
   weakVitalAlarmLevel: 'disabled',
@@ -673,6 +675,7 @@ onMounted(async () => {
     formData.value.breathRateSlowAlarmLevel = settings.breath_rate_slow_alarm_level || 'disabled'
     formData.value.upperBreathRate = settings.upper_breath_rate
     formData.value.breathRateFastAlarmLevel = settings.breath_rate_fast_alarm_level || 'disabled'
+    formData.value.breathPauseAlarmLevel = settings.breath_pause_alarm_level || 'disabled'
     
     formData.value.weakVitalDuration = settings.weak_vital_duration
     formData.value.weakVitalSensitivity = settings.weak_vital_sensitivity
@@ -715,6 +718,7 @@ const handleSubmit = () => {
         breath_rate_slow_alarm_level: formData.value.breathRateSlowAlarmLevel,
         upper_breath_rate: formData.value.upperBreathRate,
         breath_rate_fast_alarm_level: formData.value.breathRateFastAlarmLevel,
+        breath_pause_alarm_level: formData.value.breathPauseAlarmLevel,
         weak_vital_duration: formData.value.weakVitalDuration,
         weak_vital_sensitivity: formData.value.weakVitalSensitivity,
         weak_vital_alarm_level: formData.value.weakVitalAlarmLevel,
@@ -733,7 +737,7 @@ const handleSubmit = () => {
       message.success('Settings saved successfully')
       router.go(-1)
     })
-    .catch((error) => {
+    .catch((error: any) => {
       console.log('Validation error:', error)
       message.error('Please fill in all required fields')
     })

@@ -32,8 +32,8 @@ export const ROLES = [
   {
     code: 'Manager',
     name: 'Manager',
-    description: 'Executive Director / Facility Director',
-    mainFunction: 'Business management: Staff, Unit, Resident manager, Device, Alarm setting',
+    description: 'Executive Director / Director of Nursing',
+    mainFunction: 'Business management: Staff, Unit, Resident manager, Device, Alarm setting for Branch',
   },
   {
     code: 'IT',
@@ -118,7 +118,7 @@ export const mockRolePermissionsData: RolePermission[] = [
   { permission_id: 'admin-22', role_code: 'Admin', resource_type: 'iot_timeseries', permission_type: 'manage', scope: 'all', is_active: true },
   { permission_id: 'admin-23', role_code: 'Admin', resource_type: 'device_store', permission_type: 'read', scope: 'assigned_only', is_active: true },
 
-  // ========== Manager: Executive Director / Facility Director ==========
+  // ========== Manager: Executive Director / Director of Nursing ==========
   // Matrix: cards (R), roles (RU), users (RCDU), resident (RCDU), resident_phi (RCDU), resident_contacts (RCDU),
   //         resident_caregivers (RCDU), cloud_alarm_polices (RCDU), Iot_Monitor_alarm (RCDU), tags_catalog (RCDU),
   //         service_level (RCDU), alarm_event (RCDU), rounds (RCDU), round_details (RCDU), units (RCDU),
