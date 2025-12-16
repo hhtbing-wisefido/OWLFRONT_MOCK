@@ -1485,6 +1485,9 @@ const initializeFromProps = () => {
 // Password will be saved when user clicks Save button in parent component
 // No separate ResetPW button needed - password is part of the form
 
+// Track if units are loaded
+const unitsLoaded = ref(false)
+
 onMounted(async () => {
   await Promise.all([
     fetchServiceLevels(),
@@ -1493,21 +1496,41 @@ onMounted(async () => {
     fetchCaregiverTags(),
   ])
   
+  unitsLoaded.value = true
+  
   // Initialize from props after units are loaded
-  initializeFromProps()
+  // Check if residentData is already available (from cache)
+  if (props.residentData && Object.keys(props.residentData).length > 0) {
+    initializeFromProps()
+  }
 })
 
-// Watch props only to re-initialize when parent updates data after DB save
-// Use a simple watch that doesn't trigger loops (shallow watch, no deep comparison)
+// Watch props to re-initialize when parent updates data
+// Use immediate: true to handle initial data load (when cache has data)
 watch(
   () => props.residentData,
-  () => {
-    // Only re-initialize if units are already loaded
-    if (availableUnits.value.length > 0) {
-      initializeFromProps()
+  (newData) => {
+    // Only initialize if we have actual data (not empty object)
+    if (newData && Object.keys(newData).length > 0) {
+      // If units are loaded, initialize immediately
+      // If units are not loaded yet, wait for them to load
+      if (unitsLoaded.value) {
+        initializeFromProps()
+      }
     }
   },
-  { deep: false } // Shallow watch to avoid deep comparison loops
+  { deep: true, immediate: true } // Immediate to catch initial data from cache
+)
+
+// Also watch for when units are loaded, in case residentData was set before units were ready
+watch(
+  () => availableUnits.value.length,
+  (newLength) => {
+    // When units are loaded and we have residentData, re-initialize to set unit/room/bed
+    if (newLength > 0 && props.residentData && Object.keys(props.residentData).length > 0) {
+      initializeFromProps()
+    }
+  }
 )
 </script>
 

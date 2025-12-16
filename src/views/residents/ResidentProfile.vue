@@ -224,7 +224,7 @@ const fetchResident = async (params?: { include_phi?: boolean; include_contacts?
   try {
     // Check store cache first
     const cached = entitiesStore.getResidentDetail(residentId.value)
-      if (cached && !entitiesStore.shouldRefreshResidentDetail(residentId.value)) {
+    if (cached && !entitiesStore.shouldRefreshResidentDetail(residentId.value)) {
       residentData.value = { ...cached }
       originalResidentData.value = { ...cached } // Store original for cancel
       // If we need PHI or contacts and they're not in cache, fetch them
@@ -283,10 +283,19 @@ const handleSave = async () => {
     const password = profileContentRef.value?.getPassword?.()
     
     if (mode.value === 'create') {
+      // Validate required fields
+      if (!phiData.first_name || !phiData.first_name.trim()) {
+        message.error('First name is required')
+        saving.value = false
+        // Switch to PHI tab to show the error
+        activeTab.value = 'phi'
+        return
+      }
+      
       // Create new resident - save all data from all tabs
       const createParams: CreateResidentParams = {
-        first_name: phiData.first_name,
-        last_name: phiData.last_name,
+        first_name: phiData.first_name.trim(),
+        last_name: phiData.last_name?.trim() || undefined,
         nickname: profileData.nickname,
         resident_account: profileData.resident_account,
         email: profileData.email,
@@ -387,31 +396,58 @@ const handleSave = async () => {
       
       // 4. Update Contacts if exists (save each contact individually)
       if (residentData.value.contacts && residentData.value.contacts.length > 0) {
-        const contactPromises = residentData.value.contacts
-          .filter(contact => contact.is_enabled || contact.contact_first_name || contact.contact_last_name)
-          .map(contact => {
-            const params: any = {
-              slot: contact.slot,
-              is_enabled: contact.is_enabled || false,
-              contact_first_name: contact.contact_first_name,
-              contact_last_name: contact.contact_last_name,
-              relationship: contact.relationship,
-              contact_family_tag: contact.contact_family_tag,
-              receive_sms: contact.receive_sms || false,
-              receive_email: contact.receive_email || false,
-            }
-            // Only include phone/email if save flags are set
-            if (contact.save_phone && contact.contact_phone) {
-              params.contact_phone = contact.contact_phone
-            }
-            if (contact.save_email && contact.contact_email) {
-              params.contact_email = contact.contact_email
-            }
-            if (contact.contact_id) {
-              params.contact_id = contact.contact_id
-            }
-            return updateResidentContactApi(residentId.value, params)
-          })
+        const { hashAccount } = await import('@/utils/crypto')
+        const contactPromises = await Promise.all(
+          residentData.value.contacts
+            .filter(contact => contact.is_enabled || contact.contact_first_name || contact.contact_last_name)
+            .map(async (contact) => {
+              const params: any = {
+                slot: contact.slot,
+                is_enabled: contact.is_enabled || false,
+                contact_first_name: contact.contact_first_name,
+                contact_last_name: contact.contact_last_name,
+                relationship: contact.relationship,
+                contact_family_tag: contact.contact_family_tag,
+                receive_sms: contact.receive_sms || false,
+                receive_email: contact.receive_email || false,
+              }
+              
+              // Handle contact_phone: always calculate hash if has value (for login)
+              // If save_phone is checked, send contact_phone; if not checked, send null to delete
+              if (contact.contact_phone && contact.contact_phone.trim()) {
+                params.phone_hash = await hashAccount(contact.contact_phone)
+                // If save_phone is checked, send contact_phone; if not, send null to delete existing phone
+                if (contact.save_phone) {
+                  params.contact_phone = contact.contact_phone
+                } else {
+                  params.contact_phone = null // Explicitly delete phone when save is unchecked
+                }
+              } else {
+                params.contact_phone = null
+                params.phone_hash = null
+              }
+              
+              // Handle contact_email: always calculate hash if has value (for login)
+              // If save_email is checked, send contact_email; if not checked, send null to delete
+              if (contact.contact_email && contact.contact_email.trim()) {
+                params.email_hash = await hashAccount(contact.contact_email)
+                // If save_email is checked, send contact_email; if not, send null to delete existing email
+                if (contact.save_email) {
+                  params.contact_email = contact.contact_email
+                } else {
+                  params.contact_email = null // Explicitly delete email when save is unchecked
+                }
+              } else {
+                params.contact_email = null
+                params.email_hash = null
+              }
+              
+              if (contact.contact_id) {
+                params.contact_id = contact.contact_id
+              }
+              return updateResidentContactApi(residentId.value, params)
+            })
+        )
         updatePromises.push(...contactPromises)
       }
       
@@ -464,6 +500,24 @@ watch(() => route.params.tab || route.query.tab, (newTab) => {
   }
 })
 
+// Watch residentId changes (when navigating between different residents)
+watch(
+  () => residentId.value,
+  async (newId, oldId) => {
+    // Only reload if residentId actually changed (not on initial mount)
+    if (newId && newId !== oldId && mode.value !== 'create') {
+      // Load initial data - Profile tab also needs PHI data for first_name/last_name display
+      await fetchResident({ include_phi: true })
+      
+      // If URL has tab parameter, load corresponding data
+      const tab = (route.params.tab || route.query.tab) as string
+      if (tab === 'contacts') {
+        await fetchResident({ include_contacts: true })
+      }
+    }
+  }
+)
+
 onMounted(async () => {
   // Create 模式下初始化空数据
   if (mode.value === 'create') {
@@ -471,14 +525,12 @@ onMounted(async () => {
     return
   }
 
-  // Load initial data
-  await fetchResident()
+  // Load initial data - Profile tab also needs PHI data for first_name/last_name display
+  await fetchResident({ include_phi: true })
   
   // If URL has tab parameter, load corresponding data
   const tab = (route.params.tab || route.query.tab) as string
-  if (tab === 'phi') {
-    await fetchResident({ include_phi: true })
-  } else if (tab === 'contacts') {
+  if (tab === 'contacts') {
     await fetchResident({ include_contacts: true })
   }
 })

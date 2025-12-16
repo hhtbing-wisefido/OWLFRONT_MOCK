@@ -191,20 +191,21 @@
       <!-- Email with Save, Phone with Save -->
       <a-row :gutter="12" style="margin-bottom: 16px;">
         <a-col>
-          <a-form-item label="Email" style="margin-bottom: 0;">
+          <a-form-item label="Email" name="resident_email" :rules="emailRules" style="margin-bottom: 0;">
             <a-space>
               <a-input
                 v-model:value="localPHIData.resident_email"
                 :disabled="readonly"
                 :maxlength="255"
                 style="width: 150px"
+                @blur="handleEmailBlur"
               />
-              <a-checkbox v-model:checked="saveEmail" :disabled="readonly">Save</a-checkbox>
+              <a-checkbox v-model:checked="saveEmail" :disabled="readonly || !localPHIData.resident_email || localPHIData.resident_email.trim() === ''">Save</a-checkbox>
             </a-space>
           </a-form-item>
         </a-col>
         <a-col>
-          <a-form-item label="Phone" style="margin-bottom: 0;">
+          <a-form-item label="Phone" name="resident_phone" :rules="phoneRules" style="margin-bottom: 0;">
             <a-space>
               <a-input
                 v-model:value="localPHIData.resident_phone"
@@ -212,7 +213,7 @@
                 :maxlength="25"
                 style="width: 150px"
               />
-              <a-checkbox v-model:checked="savePhone" :disabled="readonly">Save</a-checkbox>
+              <a-checkbox v-model:checked="savePhone" :disabled="readonly || !localPHIData.resident_phone || localPHIData.resident_phone.trim() === ''">Save</a-checkbox>
             </a-space>
           </a-form-item>
         </a-col>
@@ -280,7 +281,9 @@
 <script lang="ts" setup>
 import { ref, watch } from 'vue'
 import dayjs from 'dayjs'
+import type { Rule } from 'ant-design-vue/es/form'
 import type { ResidentPHI } from '@/api/resident/model/residentModel'
+import { hashAccount } from '@/utils/crypto'
 
 interface Props {
   residentId: string
@@ -303,9 +306,26 @@ const localPHIData = ref<ResidentPHI>({
   ...props.phiData,
 })
 
-// Save checkboxes - 默认不保存
+// Save checkboxes - 根据初始 phiData 设置
 const saveEmail = ref(false)
 const savePhone = ref(false)
+
+// Initialize save flags based on initial phiData
+const initializeSaveFlags = (phiData?: ResidentPHI) => {
+  if (phiData) {
+    const emailValue = phiData.resident_email && phiData.resident_email.trim()
+    saveEmail.value = !!(emailValue && emailValue !== '***@***')
+    
+    const phoneValue = phiData.resident_phone && phiData.resident_phone.trim()
+    savePhone.value = !!(phoneValue && phoneValue !== 'xxx-xxx-xxxx')
+  } else {
+    saveEmail.value = false
+    savePhone.value = false
+  }
+}
+
+// Initialize save flags on component mount
+initializeSaveFlags(props.phiData)
 
 // US State options (abbreviations)
 const usStateOptions = [
@@ -326,15 +346,155 @@ const filterStateOption = (input: string, option: any) => {
   return option.value.toLowerCase().includes(input.toLowerCase())
 }
 
+// Validate US phone number
+// Format: 10 digits, area code (2-9)XX, exchange code (2-9)XX, subscriber number XXXX
+// Supports formats: (XXX) XXX-XXXX, XXX-XXX-XXXX, XXX.XXX.XXXX, XXXXXXXXXX
+const validateUSPhoneNumber = (_rule: any, value: string): Promise<void> => {
+  if (!value || value.trim() === '') {
+    // Phone is optional, empty is valid
+    return Promise.resolve()
+  }
+  
+  // Skip validation for placeholder
+  if (value === 'xxx-xxx-xxxx') {
+    return Promise.resolve()
+  }
+  
+  // Remove all non-digit characters
+  const digitsOnly = value.replace(/\D/g, '')
+  
+  // Check if it's exactly 10 digits
+  if (digitsOnly.length !== 10) {
+    return Promise.reject('Phone number must be 10 digits')
+  }
+  
+  // Check area code: first digit must be 2-9
+  const areaCode = digitsOnly.substring(0, 3)
+  const areaCodeFirst = areaCode.charAt(0)
+  if (areaCodeFirst && (areaCodeFirst < '2' || areaCodeFirst > '9')) {
+    return Promise.reject('Area code must start with 2-9')
+  }
+  
+  // Check exchange code (middle 3 digits): first digit must be 2-9
+  const exchangeCode = digitsOnly.substring(3, 6)
+  const exchangeCodeFirst = exchangeCode.charAt(0)
+  if (exchangeCodeFirst && (exchangeCodeFirst < '2' || exchangeCodeFirst > '9')) {
+    return Promise.reject('Exchange code must start with 2-9')
+  }
+  
+  // Valid US phone number format
+  return Promise.resolve()
+}
+
+// Phone validation rules
+const phoneRules: Rule[] = [
+  { validator: validateUSPhoneNumber, trigger: 'blur' }
+]
+
+// Validate email format and trim
+const validateEmail = (_rule: any, value: string): Promise<void> => {
+  if (!value || value.trim() === '') {
+    // Email is optional, empty is valid
+    return Promise.resolve()
+  }
+  
+  // Skip validation for placeholder
+  if (value === '***@***') {
+    return Promise.resolve()
+  }
+  
+  // Trim the value for validation
+  const trimmedValue = value.trim()
+  
+  // Basic email format validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(trimmedValue)) {
+    return Promise.reject('Please enter a valid email address')
+  }
+  
+  // Valid email format
+  return Promise.resolve()
+}
+
+// Email validation rules
+const emailRules: Rule[] = [
+  { validator: validateEmail, trigger: 'blur' }
+]
+
+// Handle email blur - auto trim
+const handleEmailBlur = () => {
+  if (localPHIData.value.resident_email) {
+    localPHIData.value.resident_email = localPHIData.value.resident_email.trim()
+  }
+}
+
 // Expose method to get current PHI data (called by parent on save)
-const getPHIData = () => {
-  const dataToEmit = { ...localPHIData.value }
-  if (!saveEmail.value) {
-    delete dataToEmit.resident_email
+const getPHIData = async () => {
+  const dataToEmit: any = { ...localPHIData.value }
+  
+  // Calculate and send email_hash and phone_hash (for login in residents table)
+  // Always calculate hash if email/phone has value (for login)
+  // If save flag is checked, send email/phone; if not checked, send null to delete
+  // If placeholder "***@***", treat as empty (hash exists but email not saved)
+  const emailValue = localPHIData.value.resident_email && localPHIData.value.resident_email.trim() && localPHIData.value.resident_email !== '***@***' 
+    ? localPHIData.value.resident_email.trim() 
+    : ''
+  if (emailValue) {
+    // Always calculate and send email_hash when email has value (for login)
+    dataToEmit.email_hash = await hashAccount(emailValue)
+    // If saveEmail is checked, send resident_email; if not, send null to delete existing email
+    if (saveEmail.value) {
+      dataToEmit.resident_email = emailValue
+    } else {
+      // Save unchecked: send null to delete email, but keep email_hash for login
+      dataToEmit.resident_email = null
+      // email_hash is already set above, so it will be sent to update residents table
+    }
+  } else {
+    // Empty or placeholder: send null to delete/clear, but keep hash if it was placeholder (hash already exists in DB)
+    if (localPHIData.value.resident_email === '***@***') {
+      // Placeholder: hash exists in DB, don't send email_hash (backend will keep existing hash)
+      dataToEmit.resident_email = null
+      // Don't send email_hash - backend will keep existing hash
+      // Explicitly delete email_hash from dataToEmit to ensure it's not sent
+      delete dataToEmit.email_hash
+    } else {
+      // Empty: clear both email and hash
+      dataToEmit.email_hash = null
+      dataToEmit.resident_email = null
+    }
   }
-  if (!savePhone.value) {
-    delete dataToEmit.resident_phone
+  
+  // If placeholder "xxx-xxx-xxxx", treat as empty (hash exists but phone not saved)
+  const phoneValue = localPHIData.value.resident_phone && localPHIData.value.resident_phone.trim() && localPHIData.value.resident_phone !== 'xxx-xxx-xxxx' 
+    ? localPHIData.value.resident_phone.trim() 
+    : ''
+  if (phoneValue) {
+    // Always calculate and send phone_hash when phone has value (for login)
+    dataToEmit.phone_hash = await hashAccount(phoneValue)
+    // If savePhone is checked, send resident_phone; if not, send null to delete existing phone
+    if (savePhone.value) {
+      dataToEmit.resident_phone = phoneValue
+    } else {
+      // Save unchecked: send null to delete phone, but keep phone_hash for login
+      dataToEmit.resident_phone = null
+      // phone_hash is already set above, so it will be sent to update residents table
+    }
+  } else {
+    // Empty or placeholder: send null to delete/clear, but keep hash if it was placeholder (hash already exists in DB)
+    if (localPHIData.value.resident_phone === 'xxx-xxx-xxxx') {
+      // Placeholder: hash exists in DB, don't send phone_hash (backend will keep existing hash)
+      dataToEmit.resident_phone = null
+      // Don't send phone_hash - backend will keep existing hash
+      // Explicitly delete phone_hash from dataToEmit to ensure it's not sent
+      delete dataToEmit.phone_hash
+    } else {
+      // Empty: clear both phone and hash
+      dataToEmit.phone_hash = null
+      dataToEmit.resident_phone = null
+    }
   }
+  
   return dataToEmit
 }
 
@@ -351,12 +511,15 @@ watch(
         ...newData,
         resident_id: props.residentId, // Ensure resident_id is set from props
       }
-      // 如果已有 resident_email 或 resident_phone，说明已保存，设置 save 为 true
-      saveEmail.value = !!newData.resident_email
-      savePhone.value = !!newData.resident_phone
+      // Update save flags when props change
+      initializeSaveFlags(newData)
+    } else {
+      // If phiData is cleared, reset save flags
+      saveEmail.value = false
+      savePhone.value = false
     }
   },
-  { deep: true }
+  { deep: true, immediate: true } // Immediate to handle initial data load
 )
 
 // Watch residentId changes
