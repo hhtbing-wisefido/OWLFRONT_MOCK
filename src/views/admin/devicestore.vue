@@ -197,6 +197,66 @@
         Supported formats: .xlsx, .xls, .csv
       </div>
     </a-modal>
+
+    <!-- Import Result Modal -->
+    <a-modal
+      v-model:visible="isImportResultVisible"
+      title="Import Result"
+      width="800px"
+      @cancel="isImportResultVisible = false"
+    >
+      <template #footer>
+        <a-button key="close" type="primary" @click="isImportResultVisible = false">
+          Close
+        </a-button>
+      </template>
+      <div v-if="importResult">
+        <a-descriptions :column="2" bordered>
+          <a-descriptions-item label="Total Records">
+            {{ importResult.total }}
+          </a-descriptions-item>
+          <a-descriptions-item label="Success">
+            <span style="color: #52c41a">{{ importResult.success_count }}</span>
+          </a-descriptions-item>
+          <a-descriptions-item label="Failed">
+            <span style="color: #ff4d4f">{{ importResult.failed_count }}</span>
+          </a-descriptions-item>
+          <a-descriptions-item label="Skipped">
+            <span style="color: #faad14">{{ importResult.skipped_count }}</span>
+          </a-descriptions-item>
+        </a-descriptions>
+
+        <div v-if="importResult.errors && importResult.errors.length > 0" style="margin-top: 24px">
+          <h4 style="color: #ff4d4f; margin-bottom: 12px;">Errors:</h4>
+          <a-table
+            :dataSource="importResult.errors"
+            :columns="[
+              { title: 'Row', dataIndex: 'row', key: 'row', width: 80 },
+              { title: 'Serial Number', dataIndex: 'serial_number', key: 'serial_number' },
+              { title: 'UID', dataIndex: 'uid', key: 'uid' },
+              { title: 'Error', dataIndex: 'error', key: 'error' },
+            ]"
+            :pagination="false"
+            size="small"
+          />
+        </div>
+
+        <div v-if="importResult.skipped && importResult.skipped.length > 0" style="margin-top: 24px">
+          <h4 style="color: #faad14; margin-bottom: 12px;">Skipped (Duplicate):</h4>
+          <a-table
+            :dataSource="importResult.skipped"
+            :columns="[
+              { title: 'Row', dataIndex: 'row', key: 'row', width: 80 },
+              { title: 'Serial Number', dataIndex: 'serial_number', key: 'serial_number' },
+              { title: 'UID', dataIndex: 'uid', key: 'uid' },
+              { title: 'Reason', dataIndex: 'reason', key: 'reason' },
+            ]"
+            :pagination="false"
+            size="small"
+          />
+        </div>
+      </div>
+    </a-modal>
   </div>
 </template>
 
@@ -215,20 +275,20 @@ import { message } from 'ant-design-vue'
 import type { TableProps } from 'ant-design-vue'
 import dayjs from 'dayjs'
 
-// TODO: Import device store API when available
-// import {
-//   getDeviceStoresApi,
-//   updateDeviceStoreApi,
-//   importDeviceStoresApi,
-//   exportDeviceStoresApi,
-//   getImportTemplateApi,
-// } from '@/api/admin/device-store/deviceStore'
-// import type {
-//   DeviceStore,
-//   GetDeviceStoresParams,
-//   UpdateDeviceStoreParams,
-// } from '@/api/admin/device-store/model/deviceStoreModel'
-// import { getTenantsApi } from '@/api/admin/tenant/tenant'
+import {
+  getDeviceStoresApi,
+  batchUpdateDeviceStoresApi,
+  importDeviceStoresApi,
+  exportDeviceStoresApi,
+  getImportTemplateApi,
+} from '@/api/admin/device-store/deviceStore'
+import type {
+  DeviceStore,
+  GetDeviceStoresParams,
+  ImportDeviceStoresResult,
+  ExportDeviceStoresParams,
+} from '@/api/admin/device-store/model/deviceStoreModel'
+import { getTenantsApi } from '@/api/admin/tenants/tenants'
 
 // DEV 默认走真实后端；只有显式设置 VITE_USE_MOCK='true' 才启用 mock
 const useMock = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true'
@@ -245,18 +305,20 @@ const goHome = () => {
   router.push('/monitoring/overview')
 }
 
-// Import types from mock data
-import type { DeviceStore, Tenant } from '@test/admin/device-store/types'
+// Import types from API models (commented out mock types)
+// import type { DeviceStore, Tenant } from '@test/admin/device-store/types'
 
 const searchText = ref('')
 const loading = ref(false)
 const saving = ref(false)
 const dataSource = ref<DeviceStore[]>([])
 const filteredDataSource = ref<DeviceStore[]>([])
-const tenantList = ref<Tenant[]>([])
+const tenantList = ref<Array<{ tenant_id: string; tenant_name: string }>>([])
 const changedRecords = ref<Set<string>>(new Set()) // Track changed device_store_id
 const isImportModalVisible = ref(false)
 const fileList = ref<any[]>([])
+const importResult = ref<ImportDeviceStoresResult | null>(null)
+const isImportResultVisible = ref(false)
 
 // Sort state
 const sortField = ref<string | undefined>(undefined)
@@ -510,15 +572,19 @@ const handleSaveAll = async () => {
     if (useMock) {
       // Use mock API in development
       const { deviceStore } = await import('@test/index')
-      await deviceStore.mock.mockBatchUpdateDeviceStores(updates)
+      // Convert updates to match mock API expected format (handle null values)
+      const mockUpdates = updates.map(update => ({
+        ...update,
+        data: Object.fromEntries(
+          Object.entries(update.data).map(([key, value]) => [key, value === null ? undefined : value])
+        )
+      }))
+      await deviceStore.mock.mockBatchUpdateDeviceStores(mockUpdates as any)
       console.log('%c[Mock] Update Device Store API - Success', 'color: #52c41a; font-weight: bold', {
         updateCount: updates.length,
       })
     } else {
-      // TODO: Implement API call when available
-      // for (const update of updates) {
-      //   await updateDeviceStoreApi(update.device_store_id, update.data)
-      // }
+      await batchUpdateDeviceStoresApi(updates)
     }
 
     message.success(`Successfully saved ${updates.length} device(s)`)
@@ -540,19 +606,18 @@ const handleImport = () => {
 // Download template
 const downloadTemplate = async () => {
   try {
-    // TODO: Implement API call when available
-    // const response = await getImportTemplateApi()
-    // const blob = new Blob([response], {
-    //   type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    // })
-    // const url = window.URL.createObjectURL(blob)
-    // const link = document.createElement('a')
-    // link.href = url
-    // link.download = `device-store-import-template.xlsx`
-    // link.click()
-    // window.URL.revokeObjectURL(url)
-    message.info('Download template API will be implemented')
+    const blob = await getImportTemplateApi()
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `device-store-import-template.xlsx`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+    message.success('Template downloaded successfully')
   } catch (error: any) {
+    console.error('Failed to download template:', error)
     message.error(error?.message || 'Failed to download template')
   }
 }
@@ -582,19 +647,25 @@ const handleImportConfirm = async () => {
       return
     }
 
-    // TODO: Implement API call when available
-    // const formData = new FormData()
-    // formData.append('file', file)
-    // const result = await importDeviceStoresApi(formData)
-    // message.success(`Import completed: ${result.success_count} succeeded, ${result.failed_count} failed`)
-    // if (result.errors && result.errors.length > 0) {
-    //   console.error('Import errors:', result.errors)
-    // }
-
-    message.info('Import API will be implemented')
+    const result = await importDeviceStoresApi(file)
+    importResult.value = result
+    isImportResultVisible.value = true
+    
+    if (result.success) {
+      const successMsg = `Import completed: ${result.success_count} succeeded, ${result.failed_count} failed`
+      if (result.failed_count > 0 || result.skipped_count > 0) {
+        message.warning(successMsg)
+      } else {
+        message.success(successMsg)
+      }
+    } else {
+      message.error('Import failed')
+    }
+    
     handleImportCancel()
     await fetchData()
   } catch (error: any) {
+    console.error('Failed to import devices:', error)
     message.error(error?.message || 'Failed to import devices')
   }
 }
@@ -608,22 +679,22 @@ const handleImportCancel = () => {
 // Export function
 const handleExport = async () => {
   try {
-    // TODO: Implement API call when available
-    // const response = await exportDeviceStoresApi({
-    //   format: 'excel',
-    //   search: searchText.value,
-    // })
-    // const blob = new Blob([response], {
-    //   type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    // })
-    // const url = window.URL.createObjectURL(blob)
-    // const link = document.createElement('a')
-    // link.href = url
-    // link.download = `device-store-export-${dayjs().format('YYYYMMDD-HHmmss')}.xlsx`
-    // link.click()
-    // window.URL.revokeObjectURL(url)
-    message.info('Export API will be implemented')
+    const params: ExportDeviceStoresParams = {
+      format: 'excel',
+      search: searchText.value || undefined,
+    }
+    const blob = await exportDeviceStoresApi(params)
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `device-store-export-${dayjs().format('YYYYMMDD-HHmmss')}.xlsx`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+    message.success('Export completed successfully')
   } catch (error: any) {
+    console.error('Failed to export devices:', error)
     message.error(error?.message || 'Failed to export devices')
   }
 }
@@ -640,20 +711,28 @@ const fetchData = async () => {
         deviceStore.mock.mockGetTenants(),
       ])
       dataSource.value = deviceData.items
-      tenantList.value = tenantData.items
+      tenantList.value = tenantData.items.map(t => ({
+        tenant_id: t.tenant_id,
+        tenant_name: t.tenant_name,
+      }))
       console.log('%c[Mock] Device Store API - Success', 'color: #52c41a; font-weight: bold', {
         deviceCount: deviceData.items.length,
         tenantCount: tenantData.items.length,
       })
     } else {
-      // TODO: Implement API calls when available
-      // const data = await getDeviceStoresApi()
-      // dataSource.value = data.items
-      // 注意：API 应该返回 tenant_name（通过 JOIN tenants 表）
-      // const tenants = await getTenantsApi()
-      // tenantList.value = tenants.items
-      dataSource.value = []
-      tenantList.value = []
+      const params: GetDeviceStoresParams = {
+        search: searchText.value || undefined,
+      }
+      const [deviceData, tenantsData] = await Promise.all([
+        getDeviceStoresApi(params),
+        getTenantsApi({}),
+      ])
+      dataSource.value = deviceData.items
+      // tenantList only needs tenant_id and tenant_name for dropdown
+      tenantList.value = tenantsData.items.map(t => ({
+        tenant_id: t.tenant_id,
+        tenant_name: t.tenant_name,
+      }))
     }
     applyFilters()
   } catch (error: any) {

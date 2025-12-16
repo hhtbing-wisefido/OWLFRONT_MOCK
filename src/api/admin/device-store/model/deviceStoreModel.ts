@@ -41,3 +41,36 @@ export interface TenantLite {
   tenant_id: string
   tenant_name: string
 }
+
+/**
+ * Import device stores response
+ */
+export interface ImportDeviceStoresResult {
+  success: boolean
+  total: number
+  success_count: number
+  failed_count: number
+  skipped_count: number
+  errors?: Array<{
+    row: number
+    serial_number?: string
+    uid?: string
+    error: string
+  }>
+  skipped?: Array<{
+    row: number
+    serial_number?: string
+    uid?: string
+    reason: string
+  }>
+}
+
+/**
+ * Export device stores parameters
+ */
+export interface ExportDeviceStoresParams {
+  format?: 'excel' | 'csv'
+  tenant_id?: string
+  device_type?: string
+  search?: string
+}
