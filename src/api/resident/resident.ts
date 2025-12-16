@@ -30,7 +30,8 @@ export enum Api {
   UpdatePHI = '/admin/api/v1/residents/:id/phi',
   UpdateContact = '/admin/api/v1/residents/:id/contacts',
   ResetPassword = '/admin/api/v1/residents/:id/reset-password',
-  ResetContactPassword = '/admin/api/v1/residents/:id/contacts/:slot/reset-password',
+  ResetContactPassword = '/admin/api/v1/residents/:id/contacts/:slot/reset-password', // Old format (backward compatibility)
+  ResetContactPasswordByID = '/admin/api/v1/contacts/:contact_id/reset-password', // New format (uses contact_id directly)
 }
 
 // Mock mode: In development, use mock data instead of real API calls
@@ -264,13 +265,41 @@ export function resetResidentPasswordApi(
 }
 
 /**
- * @description: Reset contact password
- * @param residentId - Resident ID
- * @param slot - Contact slot (A, B, C, D, E)
+ * @description: Reset contact password by contact_id (recommended - each slot is independent)
+ * @param contactId - Contact ID (UUID)
  * @param password - New password
  * @param mode - Error message mode
  */
 export function resetContactPasswordApi(
+  contactId: string,
+  password: string,
+  mode: ErrorMessageMode = 'modal',
+) {
+  if (useMock) {
+    return import('@test/index').then(({ residents }) => {
+      console.log('%c[Mock] Reset Contact Password API Request', 'color: #1890ff; font-weight: bold', { contactId, password })
+      return Promise.resolve({ success: true })
+    })
+  }
+
+  return defHttp.post(
+    {
+      url: Api.ResetContactPasswordByID.replace(':contact_id', contactId),
+      data: { password },
+    },
+    { errorMessageMode: mode },
+  )
+}
+
+/**
+ * @description: Reset contact password by resident_id and slot (backward compatibility)
+ * @param residentId - Resident ID
+ * @param slot - Contact slot (A, B, C, D, E)
+ * @param password - New password
+ * @param mode - Error message mode
+ * @deprecated Use resetContactPasswordApi(contactId, password) instead
+ */
+export function resetContactPasswordBySlotApi(
   residentId: string,
   slot: string,
   password: string,

@@ -113,6 +113,7 @@ import { MenuFoldOutlined, MenuUnfoldOutlined, LogoutOutlined, LockOutlined } fr
 import { useUserStore } from '@/store/modules/user'
 import { message } from 'ant-design-vue'
 import { resetPasswordApi } from '@/api/admin/user/user'
+import { resetResidentPasswordApi, resetContactPasswordApi } from '@/api/resident/resident'
 defineProps<{
   collapsed: boolean
 }>()
@@ -325,10 +326,28 @@ const submitPasswordChange = async () => {
   }
 
   const password = sidebarPassword.value
+  const userType = userInfo.value?.userType
 
   changingPassword.value = true
   try {
-    await resetPasswordApi(uid, { new_password: password })
+    if (userType === 'resident') {
+      // For resident type, userId could be either contact_id (for resident_contact) or resident_id (for resident)
+      // Try contact_id first (since each slot is independent with its own contact_id)
+      // If it fails, fall back to resident_id
+      try {
+        await resetContactPasswordApi(uid, password)
+      } catch (contactError: any) {
+        // If contact not found, try as resident_id
+        if (contactError?.message?.includes('not found') || contactError?.message?.includes('contact')) {
+          await resetResidentPasswordApi(uid, password)
+        } else {
+          throw contactError
+        }
+      }
+    } else {
+      // This is a staff login - use user password reset API
+      await resetPasswordApi(uid, { new_password: password })
+    }
     message.success('Password updated')
     closePasswordModal()
   } catch (e: any) {
