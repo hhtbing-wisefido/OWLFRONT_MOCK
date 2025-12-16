@@ -182,11 +182,12 @@ const handleTabChange = (key: string) => {
       query: { tab: key },
     })
   } else {
-    // Edit/View 模式下，使用 params
-  router.replace({
-    name: 'ResidentProfile',
-    params: { id: residentId.value, tab: key },
-  })
+    // Edit/View 模式下，使用 query 参数（路由定义不支持 tab params）
+    router.replace({
+      name: 'ResidentProfile',
+      params: { id: residentId.value },
+      query: { tab: key },
+    })
   }
   
   // 按需加载 Tab 内容
@@ -319,8 +320,11 @@ const handleSave = async () => {
           const filteredPhiParams: UpdateResidentPHIParams = {}
           Object.keys(phiParams).forEach(key => {
             const value = (phiParams as any)[key]
-            if (value !== undefined && value !== null && value !== '') {
-              filteredPhiParams[key as keyof UpdateResidentPHIParams] = value
+            // Include null values (for deleting fields like resident_email/resident_phone when Save is unchecked)
+            // Exclude undefined (field not modified) and empty strings (convert to null for consistency)
+            if (value !== undefined) {
+              // Convert empty string to null for consistency
+              filteredPhiParams[key as keyof UpdateResidentPHIParams] = (value === '' ? null : value)
             }
           })
           
@@ -389,9 +393,25 @@ const handleSave = async () => {
         delete (phiParams as any).resident_id
         delete (phiParams as any).phi_id
         delete (phiParams as any).tenant_id
-        updatePromises.push(
-          updateResidentPHIApi(residentId.value, phiParams)
-        )
+        
+        // Filter out undefined values, but keep null values (for deleting fields)
+        // Convert empty strings to null for consistency
+        const filteredPhiParams: UpdateResidentPHIParams = {}
+        Object.keys(phiParams).forEach(key => {
+          const value = (phiParams as any)[key]
+          // Include null values (for deleting fields like resident_email/resident_phone when Save is unchecked)
+          // Exclude undefined (field not modified) and empty strings (convert to null for consistency)
+          if (value !== undefined) {
+            // Convert empty string to null for consistency
+            filteredPhiParams[key as keyof UpdateResidentPHIParams] = (value === '' ? null : value)
+          }
+        })
+        
+        if (Object.keys(filteredPhiParams).length > 0) {
+          updatePromises.push(
+            updateResidentPHIApi(residentId.value, filteredPhiParams)
+          )
+        }
       }
       
       // 4. Update Contacts if exists (save each contact individually)
@@ -454,13 +474,23 @@ const handleSave = async () => {
       // Execute all updates in parallel
       await Promise.all(updatePromises)
       
-      // Update store
+      // Clear cache and reload data from server to get latest saved values
+      // This ensures the UI displays the actual saved data from database
+      // Delete from cache to force refresh
+      const cacheMap = entitiesStore.residentDetailsCache
+      if (cacheMap.has(residentId.value)) {
+        cacheMap.delete(residentId.value)
+      }
+      
+      // Reload data from server with all tabs data to get latest saved values
+      await fetchResident({ include_phi: true, include_contacts: true })
+      
+      // Update store with fresh data
       entitiesStore.updateResident(residentId.value, {
         nickname: residentData.value.nickname,
         status: residentData.value.status,
         service_level: residentData.value.service_level,
       })
-      entitiesStore.setResidentDetail(residentId.value, { ...residentData.value })
       
       // Update original data after successful save
       originalResidentData.value = { ...residentData.value }

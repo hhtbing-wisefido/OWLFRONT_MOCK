@@ -200,7 +200,9 @@
                 style="width: 150px"
                 @blur="handleEmailBlur"
               />
-              <a-checkbox v-model:checked="saveEmail" :disabled="readonly || !localPHIData.resident_email || localPHIData.resident_email.trim() === ''">Save</a-checkbox>
+              <a-form-item-rest>
+                <a-checkbox v-model:checked="saveEmail" :disabled="readonly || !localPHIData.resident_email || localPHIData.resident_email.trim() === ''">Save</a-checkbox>
+              </a-form-item-rest>
             </a-space>
           </a-form-item>
         </a-col>
@@ -213,7 +215,9 @@
                 :maxlength="25"
                 style="width: 150px"
               />
-              <a-checkbox v-model:checked="savePhone" :disabled="readonly || !localPHIData.resident_phone || localPHIData.resident_phone.trim() === ''">Save</a-checkbox>
+              <a-form-item-rest>
+                <a-checkbox v-model:checked="savePhone" :disabled="readonly || !localPHIData.resident_phone || localPHIData.resident_phone.trim() === ''">Save</a-checkbox>
+              </a-form-item-rest>
             </a-space>
           </a-form-item>
         </a-col>
@@ -430,7 +434,15 @@ const handleEmailBlur = () => {
 
 // Expose method to get current PHI data (called by parent on save)
 const getPHIData = async () => {
+  // Start with a clean object, explicitly remove email/phone to avoid old values interfering
   const dataToEmit: any = { ...localPHIData.value }
+  delete dataToEmit.resident_email
+  delete dataToEmit.resident_phone
+  delete dataToEmit.email_hash
+  delete dataToEmit.phone_hash
+  delete dataToEmit.resident_id
+  delete dataToEmit.phi_id
+  delete dataToEmit.tenant_id
   
   // Calculate and send email_hash and phone_hash (for login in residents table)
   // Always calculate hash if email/phone has value (for login)
@@ -488,11 +500,11 @@ const getPHIData = async () => {
       // Don't send phone_hash - backend will keep existing hash
       // Explicitly delete phone_hash from dataToEmit to ensure it's not sent
       delete dataToEmit.phone_hash
-    } else {
-      // Empty: clear both phone and hash
-      dataToEmit.phone_hash = null
-      dataToEmit.resident_phone = null
-    }
+  } else {
+    // Empty: clear both phone and hash
+    dataToEmit.phone_hash = null
+    dataToEmit.resident_phone = null
+  }
   }
   
   return dataToEmit
