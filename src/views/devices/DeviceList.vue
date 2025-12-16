@@ -131,7 +131,6 @@
           <a-switch
             v-model:checked="record.monitoring_enabled"
             @change="handleMonitoringChange(record, $event)"
-            :checked="record.monitoring_enabled || false"
           />
         </template>
 
