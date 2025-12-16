@@ -121,13 +121,69 @@
               Details
             </a-button>
             <a-button size="small" @click="handleResetPassword(record)">
-              ResetPW
+              Passwd
             </a-button>
           </a-space>
         </template>
       </template>
     </a-table>
 
+    <!-- Reset Password Modal -->
+    <a-modal
+      v-model:visible="isResetPasswordModalVisible"
+      title="Reset Password"
+      width="500px"
+      @ok="handleResetPasswordConfirm"
+      @cancel="handleCancelResetPassword"
+    >
+      <template #footer>
+        <div style="padding: 10px 16px">
+          <a-button key="back" @click="handleCancelResetPassword" style="margin-right: 30px">Cancel</a-button>
+          <a-button key="submit" type="primary" @click="handleResetPasswordConfirm" style="margin-right: 20px">
+            Confirm
+          </a-button>
+        </div>
+      </template>
+      <a-form
+        layout="horizontal"
+        :model="resetPasswordData"
+        ref="resetPasswordFormRef"
+        :rules="resetPasswordRules"
+        :labelCol="{ span: 8 }"
+        :wrapperCol="{ span: 16 }"
+        style="padding: 20px"
+      >
+        <div style="margin-bottom: 16px; word-wrap: break-word; white-space: normal;">
+          Password: At least 8 characters, including uppercase, lowercase, number, and special character
+        </div>
+        <a-form-item label="New Password" name="new_password" style="margin-bottom: 12px;">
+          <a-input-password 
+            placeholder="Please enter new password" 
+            v-model:value="resetPasswordData.new_password"
+            @input="handleResetPasswordInput"
+            @blur="handleResetPasswordBlur"
+            :status="resetPasswordErrorMessage ? 'error' : ''"
+          />
+        </a-form-item>
+        <a-form-item label="Confirm Password" name="confirm_password">
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <a-input-password 
+              placeholder="Please confirm new password" 
+              v-model:value="resetPasswordData.confirm_password"
+              @input="handleResetPasswordConfirmInput"
+              @blur="handleResetPasswordConfirmBlur"
+              :status="resetPasswordErrorMessage ? 'error' : ''"
+            />
+            <a-button type="primary" @click="generateResetPassword" style="align-self: flex-start;">
+              Generate PW
+            </a-button>
+            <span v-if="resetPasswordErrorMessage" style="color: #ff4d4f; font-size: 12px;">
+              {{ resetPasswordErrorMessage }}
+            </span>
+          </div>
+        </a-form-item>
+      </a-form>
+    </a-modal>
 
   </div>
 </template>
@@ -137,9 +193,11 @@ import { ref, computed, onMounted, h } from 'vue'
 import { useRouter } from 'vue-router'
 import { FilterOutlined, HomeOutlined, ArrowLeftOutlined, ReloadOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
+import type { Rule } from 'ant-design-vue/es/form'
 import {
   getResidentsApi,
   updateResidentApi,
+  resetResidentPasswordApi,
 } from '@/api/resident/resident'
 import type {
   Resident,
@@ -188,6 +246,20 @@ const loading = ref(false)
 const dataSource = ref<Resident[]>([])
 const filteredDataSource = ref<Resident[]>([])
 const saving = ref(false)
+
+// Reset Password Modal state
+const isResetPasswordModalVisible = ref(false)
+const resetPasswordFormRef = ref()
+const resetPasswordResidentId = ref('')
+const resetPasswordErrorMessage = ref('')
+const resetPasswordData = ref({
+  new_password: '',
+  confirm_password: '',
+})
+
+// Password validation constants
+const PASSWORD_MIN_LENGTH = 8
+const PASSWORD_SPECIAL_CHARS = '!@#$%^&*(),.?":{}|<>'
 
 // Pagination
 const pagination = ref({
@@ -391,50 +463,219 @@ const handleToggleAccess = async (record: Resident, checked: boolean) => {
   }
 }
 
-// Generate random password (HIPAA compliant: at least 8 chars, uppercase, lowercase, number, special char)
-const generateRandomPassword = (): string => {
+// Validate reset password strength
+const validateResetPasswordStrength = (password: string): { isValid: boolean; errorMessage: string } => {
+  if (!password) {
+    return { isValid: false, errorMessage: '' }
+  }
+
+  if (password.length < PASSWORD_MIN_LENGTH) {
+    return {
+      isValid: false,
+      errorMessage: 'Password must be at least 8 characters',
+    }
+  }
+
+  const hasUpperCase = /[A-Z]/.test(password)
+  const hasLowerCase = /[a-z]/.test(password)
+  const hasNumber = /[0-9]/.test(password)
+  const hasSpecialChar = new RegExp(`[${PASSWORD_SPECIAL_CHARS.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}]`).test(password)
+
+  if (!hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecialChar) {
+    return {
+      isValid: false,
+      errorMessage: 'Password must include uppercase, lowercase, number, and special character',
+    }
+  }
+
+  return { isValid: true, errorMessage: '' }
+}
+
+// Validate reset password confirmation
+const validateResetPasswordConfirm = (): boolean => {
+  if (!resetPasswordData.value.new_password || !resetPasswordData.value.confirm_password) {
+    if (!resetPasswordData.value.confirm_password) {
+      if (resetPasswordData.value.new_password) {
+        resetPasswordErrorMessage.value = 'Please confirm your password'
+      } else {
+        resetPasswordErrorMessage.value = ''
+      }
+    }
+    return false
+  }
+
+  if (resetPasswordData.value.new_password !== resetPasswordData.value.confirm_password) {
+    resetPasswordErrorMessage.value = 'Passwords do not match'
+    return false
+  }
+
+  const strengthResult = validateResetPasswordStrength(resetPasswordData.value.new_password)
+  resetPasswordErrorMessage.value = strengthResult.errorMessage
+  return strengthResult.isValid
+}
+
+// Handle reset password input
+const handleResetPasswordInput = () => {
+  if (!resetPasswordData.value.new_password) {
+    resetPasswordErrorMessage.value = ''
+    return
+  }
+  if (!resetPasswordErrorMessage.value.includes('match')) {
+    const result = validateResetPasswordStrength(resetPasswordData.value.new_password)
+    resetPasswordErrorMessage.value = result.errorMessage
+  } else {
+    validateResetPasswordConfirm()
+  }
+}
+
+// Handle reset password blur
+const handleResetPasswordBlur = () => {
+  if (resetPasswordData.value.new_password) {
+    const result = validateResetPasswordStrength(resetPasswordData.value.new_password)
+    resetPasswordErrorMessage.value = result.errorMessage
+
+    // If password is valid, also check confirmation if it exists
+    if (result.isValid && resetPasswordData.value.confirm_password) {
+      validateResetPasswordConfirm()
+    }
+  }
+}
+
+// Handle reset password confirm input
+const handleResetPasswordConfirmInput = () => {
+  if (!resetPasswordData.value.confirm_password) {
+    if (!resetPasswordData.value.new_password) {
+      resetPasswordErrorMessage.value = ''
+    }
+    return
+  }
+  validateResetPasswordConfirm()
+}
+
+// Handle reset password confirm blur
+const handleResetPasswordConfirmBlur = () => {
+  if (resetPasswordData.value.confirm_password) {
+    validateResetPasswordConfirm()
+  }
+}
+
+// Check if reset password is valid
+const isResetPasswordValid = computed(() => {
+  if (!resetPasswordData.value.new_password || !resetPasswordData.value.confirm_password) {
+    return false
+  }
+  const strengthResult = validateResetPasswordStrength(resetPasswordData.value.new_password)
+  const confirmResult = resetPasswordData.value.new_password === resetPasswordData.value.confirm_password
+  return strengthResult.isValid && confirmResult
+})
+
+// Generate random password for reset
+const generateResetPassword = () => {
   const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
   const lowercase = 'abcdefghijklmnopqrstuvwxyz'
   const numbers = '0123456789'
-  const special = '!@#$%^&*(),.?":{}|<>'
+  const special = PASSWORD_SPECIAL_CHARS
   const allChars = uppercase + lowercase + numbers + special
-  
+
   // Ensure at least one of each required type
   let password = ''
   password += uppercase[Math.floor(Math.random() * uppercase.length)]
   password += lowercase[Math.floor(Math.random() * lowercase.length)]
   password += numbers[Math.floor(Math.random() * numbers.length)]
   password += special[Math.floor(Math.random() * special.length)]
-  
-  // Fill the rest randomly (minimum 8 chars total as per HIPAA)
-  const minLength = 8
-  for (let i = password.length; i < minLength; i++) {
+
+  // Fill the rest randomly (minimum 8 chars total)
+  for (let i = password.length; i < PASSWORD_MIN_LENGTH; i++) {
     password += allChars[Math.floor(Math.random() * allChars.length)]
   }
-  
+
   // Shuffle the password
-  return password.split('').sort(() => Math.random() - 0.5).join('')
+  const randomPassword = password.split('').sort(() => Math.random() - 0.5).join('')
+  
+  resetPasswordData.value.new_password = randomPassword
+  resetPasswordData.value.confirm_password = randomPassword
+  resetPasswordErrorMessage.value = ''
 }
 
-// Handle reset password - auto-generate random password
-const handleResetPassword = async (record: Resident) => {
-  const { Modal } = await import('ant-design-vue')
-  
-  Modal.confirm({
-    title: `Reset Password for ${record.nickname || record.resident_account}`,
-    content: 'A random password will be generated and set for this resident. Continue?',
-    onOk: async () => {
+// Reset password form validation rules
+const resetPasswordRules: Record<string, Rule[]> = {
+  new_password: [
+    { required: true, message: 'Please enter new password', trigger: 'blur' },
+    { min: 8, message: 'Password must be at least 8 characters', trigger: 'blur' },
+    {
+      validator: (_rule: any, value: string) => {
+        if (!value) return Promise.resolve()
+        const result = validateResetPasswordStrength(value)
+        if (!result.isValid) {
+          return Promise.reject(result.errorMessage)
+        }
+        return Promise.resolve()
+      },
+      trigger: 'blur',
+    },
+  ],
+  confirm_password: [
+    { required: true, message: 'Please confirm password', trigger: 'blur' },
+    {
+      validator: (_rule: any, value: string) => {
+        if (!value) return Promise.resolve()
+        if (value !== resetPasswordData.value.new_password) {
+          return Promise.reject('Passwords do not match')
+        }
+        return Promise.resolve()
+      },
+      trigger: 'blur',
+    },
+  ],
+}
+
+// Handle reset password - open modal
+const handleResetPassword = (record: Resident) => {
+  resetPasswordResidentId.value = record.resident_id
+  resetPasswordData.value = {
+    new_password: '',
+    confirm_password: '',
+  }
+  resetPasswordErrorMessage.value = ''
+  isResetPasswordModalVisible.value = true
+}
+
+// Handle reset password confirm
+const handleResetPasswordConfirm = async () => {
+  // Validate password strength first
+  if (!isResetPasswordValid.value) {
+    message.error(resetPasswordErrorMessage.value || 'Please check password requirements')
+    return
+  }
+
+  resetPasswordFormRef.value
+    .validate()
+    .then(async () => {
       try {
-        const randomPassword = generateRandomPassword()
-        const { resetResidentPasswordApi } = await import('@/api/resident/resident')
-        await resetResidentPasswordApi(record.resident_id, randomPassword)
-        message.success(`Password reset successfully. New password: ${randomPassword}`)
+        await resetResidentPasswordApi(resetPasswordResidentId.value, resetPasswordData.value.new_password)
+        message.success('Password reset successfully')
+        handleCancelResetPassword()
       } catch (error: any) {
+        console.error('Failed to reset password:', error)
         message.error(error?.message || 'Failed to reset password')
-        return Promise.reject()
       }
-    }
-  })
+    })
+    .catch((error: any) => {
+      console.error('Validation failed:', error)
+    })
+}
+
+// Handle cancel reset password
+const handleCancelResetPassword = () => {
+  isResetPasswordModalVisible.value = false
+  resetPasswordResidentId.value = ''
+  resetPasswordFormRef.value?.resetFields()
+  // Clear password fields and error message
+  resetPasswordData.value = {
+    new_password: '',
+    confirm_password: '',
+  }
+  resetPasswordErrorMessage.value = ''
 }
 
 

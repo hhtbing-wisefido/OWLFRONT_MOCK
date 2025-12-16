@@ -310,7 +310,11 @@
         <a-row :gutter="16">
           <a-col :span="12">
             <a-form-item label="Email" name="email">
-              <a-input placeholder="Please enter email" v-model:value="editData.email" />
+              <a-input 
+                placeholder="Please enter email" 
+                v-model:value="editData.email"
+                @blur="handleEmailBlur"
+              />
             </a-form-item>
           </a-col>
           <a-col :span="12">
@@ -319,6 +323,7 @@
                 placeholder="(XXX) XXX-XXXX or XXX-XXX-XXXX" 
                 v-model:value="editData.phone"
                 :maxlength="20"
+                @blur="handlePhoneBlur"
               />
             </a-form-item>
           </a-col>
@@ -1243,9 +1248,45 @@ const validateUSPhoneNumber = (_rule: any, value: string): Promise<void> => {
   return Promise.resolve()
 }
 
+// Validate email format
+const validateEmail = (_rule: any, value: string): Promise<void> => {
+  if (!value || value.trim() === '') {
+    // Email is optional, empty is valid
+    return Promise.resolve()
+  }
+  
+  // Trim the value for validation
+  const trimmedValue = value.trim()
+  
+  // Basic email format validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(trimmedValue)) {
+    return Promise.reject('Please enter a valid email address')
+  }
+  
+  return Promise.resolve()
+}
+
+// Handle email blur - auto trim
+const handleEmailBlur = () => {
+  if (editData.value.email) {
+    editData.value.email = editData.value.email.trim()
+  }
+}
+
+// Handle phone blur - auto trim
+const handlePhoneBlur = () => {
+  if (editData.value.phone) {
+    editData.value.phone = editData.value.phone.trim()
+  }
+}
+
 const rules: Record<string, Rule[]> = {
   user_account: [{ required: true, message: 'Please enter user account', trigger: 'blur' }],
   role: [{ required: true, message: 'Please select role', trigger: 'change' }],
+  email: [
+    { validator: validateEmail, trigger: 'blur' }
+  ],
   phone: [
     { validator: validateUSPhoneNumber, trigger: 'blur' }
   ],
@@ -1560,8 +1601,8 @@ const handleSave = async () => {
           const params: CreateUserParams = {
             user_account: editData.value.user_account!,
             nickname: editData.value.nickname,
-            email: editData.value.email,
-            phone: editData.value.phone,
+            email: editData.value.email ? editData.value.email.trim() : undefined,
+            phone: editData.value.phone ? editData.value.phone.trim() : undefined,
             role: editData.value.role!,
             password: password,
             alarm_levels: editData.value.alarm_levels,

@@ -259,11 +259,14 @@ export interface UpdateResidentContactParams {
   contact_first_name?: string
   contact_last_name?: string
   relationship?: string // Child/Spouse/Friend/Caregiver/Other
-  contact_phone?: string
-  contact_email?: string
+  contact_phone?: string | null
+  contact_email?: string | null
+  phone_hash?: string | null // 手机号哈希，用于登录（前端计算）
+  email_hash?: string | null // 邮箱哈希，用于登录（前端计算）
   contact_family_tag?: string
   receive_sms?: boolean // 是否接收短信
   receive_email?: boolean // 是否接收邮件
+  contact_password?: string // 密码（用于更新 password_hash）
   // Legacy fields for backward compatibility
   contact_name?: string
   phone?: string

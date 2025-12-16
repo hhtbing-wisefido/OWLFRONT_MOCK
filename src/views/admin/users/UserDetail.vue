@@ -56,6 +56,7 @@
                 v-model:value="userData.email"
                 :disabled="!canEditEmail"
                 placeholder="Please enter email"
+                @blur="handleEmailBlur"
               />
               <span v-if="!canEditEmail && isCurrentUser" class="field-hint">
                 You can edit your own email
@@ -68,6 +69,7 @@
                 :disabled="!canEditPhone"
                 placeholder="(XXX) XXX-XXXX or XXX-XXX-XXXX"
                 :maxlength="20"
+                @blur="handlePhoneBlur"
               />
               <span v-if="!canEditPhone && isCurrentUser" class="field-hint">
                 You can edit your own phone
@@ -586,9 +588,45 @@ const validateUSPhoneNumber = (_rule: any, value: string): Promise<void> => {
   return Promise.resolve()
 }
 
+// Validate email format
+const validateEmail = (_rule: any, value: string): Promise<void> => {
+  if (!value || value.trim() === '') {
+    // Email is optional, empty is valid
+    return Promise.resolve()
+  }
+  
+  // Trim the value for validation
+  const trimmedValue = value.trim()
+  
+  // Basic email format validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(trimmedValue)) {
+    return Promise.reject('Please enter a valid email address')
+  }
+  
+  return Promise.resolve()
+}
+
+// Handle email blur - auto trim
+const handleEmailBlur = () => {
+  if (userData.value.email) {
+    userData.value.email = userData.value.email.trim()
+  }
+}
+
+// Handle phone blur - auto trim
+const handlePhoneBlur = () => {
+  if (userData.value.phone) {
+    userData.value.phone = userData.value.phone.trim()
+  }
+}
+
 const rules: Record<string, Rule[]> = {
   user_account: [{ required: true, message: 'Account is required', trigger: 'blur' }],
   role: [{ required: true, message: 'Please select role', trigger: 'change' }],
+  email: [
+    { validator: validateEmail, trigger: 'blur' }
+  ],
   phone: [
     { validator: validateUSPhoneNumber, trigger: 'blur' }
   ],
@@ -703,6 +741,7 @@ const fetchUser = async () => {
       tags: user.tags || [],
       branch_tag: user.branch_tag || '',
     }
+    // Users (staff) are not subject to HIPAA restrictions, so email/phone are always saved directly
     // Initialize all tags list (from tags_catalog API)
     await initializeTagsList()
     // Initialize branch tags list
@@ -824,11 +863,9 @@ const handleSave = async () => {
     .then(async () => {
       saving.value = true
       try {
-        const params: UpdateUserParams = {
+        const { hashAccount } = await import('@/utils/crypto')
+        const params: any = {
           nickname: userData.value.nickname,
-          // Send empty string to delete email/phone (backend will convert to NULL)
-          email: userData.value.email !== undefined ? (userData.value.email.trim() || '') : undefined,
-          phone: userData.value.phone !== undefined ? (userData.value.phone.trim() || '') : undefined,
           role: hasManagePermission.value ? userData.value.role : undefined,
           status: hasManagePermission.value ? userData.value.status : undefined,
           alarm_levels: hasManagePermission.value ? userData.value.alarm_levels : undefined,
@@ -837,6 +874,35 @@ const handleSave = async () => {
           tags: hasManagePermission.value ? userData.value.tags : undefined,
           branch_tag: hasManagePermission.value ? userData.value.branch_tag : undefined,
         }
+        
+        // Handle email: Users (staff) are not subject to HIPAA restrictions, so email is always saved directly
+        // Always calculate hash if has value (for login)
+        if (userData.value.email !== undefined) {
+          const emailTrimmed = userData.value.email.trim()
+          if (emailTrimmed) {
+            params.email = emailTrimmed
+            params.email_hash = await hashAccount(emailTrimmed)
+          } else {
+            // Empty: clear both email and hash
+            params.email = null
+            params.email_hash = null
+          }
+        }
+        
+        // Handle phone: Users (staff) are not subject to HIPAA restrictions, so phone is always saved directly
+        // Always calculate hash if has value (for login)
+        if (userData.value.phone !== undefined) {
+          const phoneTrimmed = userData.value.phone.trim()
+          if (phoneTrimmed) {
+            params.phone = phoneTrimmed
+            params.phone_hash = await hashAccount(phoneTrimmed)
+          } else {
+            // Empty: clear both phone and hash
+            params.phone = null
+            params.phone_hash = null
+          }
+        }
+        
         await updateUserApi(userId.value, params)
         message.success('User updated successfully')
         fetchUser() // Refresh data

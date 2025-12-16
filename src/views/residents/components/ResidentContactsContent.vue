@@ -119,11 +119,11 @@
                   :disabled="readonly"
                   :maxlength="255"
                 style="width: 180px"
-                  @blur="handleContactChange(slot)"
+                  @blur="handleContactEmailBlur(slot)"
                 />
                 <a-checkbox
                   v-model:checked="getContactBySlot(slot).save_email"
-                  :disabled="readonly"
+                  :disabled="readonly || !getContactBySlot(slot).contact_email || getContactBySlot(slot).contact_email.trim() === ''"
                   @change="handleContactChange(slot)"
                 style="margin-left: 20px"
                 >
@@ -146,11 +146,11 @@
                   :disabled="readonly"
                   :maxlength="25"
                   style="width: 150px"
-                  @blur="handleContactChange(slot)"
+                  @blur="handleContactPhoneBlur(slot)"
                 />
                 <a-checkbox
                   v-model:checked="getContactBySlot(slot).save_phone"
-                  :disabled="readonly"
+                  :disabled="readonly || !getContactBySlot(slot).contact_phone || getContactBySlot(slot).contact_phone.trim() === ''"
                   @change="handleContactChange(slot)"
                 style="margin-left: 20px"
                 >
@@ -182,6 +182,7 @@ import { ref, watch } from 'vue'
 import { message } from 'ant-design-vue'
 import type { ResidentContact, UpdateResidentContactParams } from '@/api/resident/model/residentModel'
 import { updateResidentContactApi } from '@/api/resident/resident'
+import { hashAccount } from '@/utils/crypto'
 
 interface Props {
   residentId: string
@@ -210,7 +211,21 @@ const initializeContacts = () => {
   // Load existing contacts
   props.contacts.forEach(contact => {
     if (contact.slot && slots.includes(contact.slot)) {
-      contactsMap.set(contact.slot, { ...contact })
+      // Initialize save flags based on whether email/phone exists or is placeholder in backend response
+      const contactWithSaveFlags = {
+        ...contact,
+        // If contact_email is placeholder "***@***", save_email should be true (hash exists but not saved)
+        // If contact_email is real value, save_email should be true
+        // If contact_email is empty/null, save_email should be false
+        save_email: !!(contact.contact_email && contact.contact_email.trim()),
+        // If contact_phone is placeholder "xxx-xxx-xxxx", save_phone should be true (hash exists but not saved)
+        // If contact_phone is real value, save_phone should be true
+        // If contact_phone is empty/null, save_phone should be false
+        save_phone: !!(contact.contact_phone && contact.contact_phone.trim()),
+      }
+      // Keep placeholder for display (shows that hash exists but email/phone is not saved)
+      // Placeholder will be displayed in input field, but when saving, if it's still placeholder, send null
+      contactsMap.set(contact.slot, contactWithSaveFlags)
     }
   })
   
@@ -438,12 +453,108 @@ const getContactBySlot = (slot: string): ResidentContact => {
   return contactsMap.value.get(slot)!
 }
 
+// Validate US phone number
+const validateUSPhoneNumber = (value: string): { isValid: boolean; errorMessage: string } => {
+  if (!value || value.trim() === '') {
+    return { isValid: true, errorMessage: '' }
+  }
+  
+  // Skip validation for placeholder
+  if (value === 'xxx-xxx-xxxx') {
+    return { isValid: true, errorMessage: '' }
+  }
+  
+  // Remove all non-digit characters
+  const digitsOnly = value.replace(/\D/g, '')
+  
+  // Check if it's exactly 10 digits
+  if (digitsOnly.length !== 10) {
+    return { isValid: false, errorMessage: 'Phone number must be 10 digits' }
+  }
+  
+  // Check area code: first digit must be 2-9
+  const areaCode = digitsOnly.substring(0, 3)
+  const areaCodeFirst = areaCode.charAt(0)
+  if (areaCodeFirst && (areaCodeFirst < '2' || areaCodeFirst > '9')) {
+    return { isValid: false, errorMessage: 'Area code must start with 2-9' }
+  }
+  
+  // Check exchange code (middle 3 digits): first digit must be 2-9
+  const exchangeCode = digitsOnly.substring(3, 6)
+  const exchangeCodeFirst = exchangeCode.charAt(0)
+  if (exchangeCodeFirst && (exchangeCodeFirst < '2' || exchangeCodeFirst > '9')) {
+    return { isValid: false, errorMessage: 'Exchange code must start with 2-9' }
+  }
+  
+  return { isValid: true, errorMessage: '' }
+}
+
+// Validate email format
+const validateEmail = (value: string): { isValid: boolean; errorMessage: string } => {
+  if (!value || value.trim() === '') {
+    return { isValid: true, errorMessage: '' }
+  }
+  
+  // Skip validation for placeholder
+  if (value === '***@***') {
+    return { isValid: true, errorMessage: '' }
+  }
+  
+  // Trim the value for validation
+  const trimmedValue = value.trim()
+  
+  // Basic email format validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(trimmedValue)) {
+    return { isValid: false, errorMessage: 'Please enter a valid email address' }
+  }
+  
+  return { isValid: true, errorMessage: '' }
+}
+
+// Handle contact email blur - trim and validate
+const handleContactEmailBlur = (slot: string) => {
+  const contact = getContactBySlot(slot)
+  if (contact.contact_email) {
+    // Trim the email
+    const trimmedEmail = contact.contact_email.trim()
+    contact.contact_email = trimmedEmail
+    
+    // Validate email format
+    const validation = validateEmail(trimmedEmail)
+    if (!validation.isValid) {
+      message.error(`Contact ${slot} Email: ${validation.errorMessage}`)
+    }
+  }
+  // Trigger save
+  handleContactChange(slot)
+}
+
+// Handle contact phone blur - trim and validate
+const handleContactPhoneBlur = (slot: string) => {
+  const contact = getContactBySlot(slot)
+  if (contact.contact_phone) {
+    // Trim the phone
+    const trimmedPhone = contact.contact_phone.trim()
+    contact.contact_phone = trimmedPhone
+    
+    // Validate phone format
+    const validation = validateUSPhoneNumber(trimmedPhone)
+    if (!validation.isValid) {
+      message.error(`Contact ${slot} Phone: ${validation.errorMessage}`)
+    }
+  }
+  // Trigger save
+  handleContactChange(slot)
+}
+
 // Handle contact change
 const handleContactChange = async (slot: string) => {
   const contact = getContactBySlot(slot)
   
-  // 如果 save_phone 或 save_email 为 false，不发送 phone/email 到后端
-  const contactToSave: Partial<ResidentContact> = {
+  // Calculate and send email_hash and phone_hash (for login)
+  // If email/phone has value, calculate hash; if empty/null, send null to delete
+  const contactToSave: any = {
     slot: contact.slot,
     is_enabled: contact.is_enabled,
     contact_first_name: contact.contact_first_name,
@@ -451,12 +562,62 @@ const handleContactChange = async (slot: string) => {
     relationship: contact.relationship,
   }
   
-  // 只有勾选了 save 才保存 phone/email
-  if (contact.save_phone && contact.contact_phone) {
-    contactToSave.contact_phone = contact.contact_phone
+  // Handle contact_phone: always calculate hash if has value (for login)
+  // If save_phone is checked, send contact_phone; if not checked, send null to delete
+  // If placeholder "xxx-xxx-xxxx", treat as empty (hash exists but phone not saved)
+  const phoneValue = contact.contact_phone && contact.contact_phone.trim() && contact.contact_phone !== 'xxx-xxx-xxxx' 
+    ? contact.contact_phone.trim() 
+    : ''
+  if (phoneValue) {
+    contactToSave.phone_hash = await hashAccount(phoneValue)
+    // If save_phone is checked, send contact_phone; if not, send null to delete existing phone
+    if (contact.save_phone) {
+      contactToSave.contact_phone = phoneValue
+    } else {
+      contactToSave.contact_phone = null // Explicitly delete phone when save is unchecked
+    }
+  } else {
+    // Empty or placeholder: send null to delete/clear, but keep hash if it was placeholder (hash already exists in DB)
+    // If it was placeholder, we don't send phone_hash (let backend keep existing hash)
+    // If it was empty, send null hash to clear
+    if (contact.contact_phone === 'xxx-xxx-xxxx') {
+      // Placeholder: hash exists in DB, don't send phone_hash (backend will keep existing hash)
+      contactToSave.contact_phone = null
+      // Don't send phone_hash - backend will keep existing hash
+    } else {
+      // Empty: clear both phone and hash
+      contactToSave.contact_phone = null
+      contactToSave.phone_hash = null
+    }
   }
-  if (contact.save_email && contact.contact_email) {
-    contactToSave.contact_email = contact.contact_email
+  
+  // Handle contact_email: always calculate hash if has value (for login)
+  // If save_email is checked, send contact_email; if not checked, send null to delete
+  // If placeholder "***@***", treat as empty (hash exists but email not saved)
+  const emailValue = contact.contact_email && contact.contact_email.trim() && contact.contact_email !== '***@***' 
+    ? contact.contact_email.trim() 
+    : ''
+  if (emailValue) {
+    contactToSave.email_hash = await hashAccount(emailValue)
+    // If save_email is checked, send contact_email; if not, send null to delete existing email
+    if (contact.save_email) {
+      contactToSave.contact_email = emailValue
+    } else {
+      contactToSave.contact_email = null // Explicitly delete email when save is unchecked
+    }
+  } else {
+    // Empty or placeholder: send null to delete/clear, but keep hash if it was placeholder (hash already exists in DB)
+    // If it was placeholder, we don't send email_hash (let backend keep existing hash)
+    // If it was empty, send null hash to clear
+    if (contact.contact_email === '***@***') {
+      // Placeholder: hash exists in DB, don't send email_hash (backend will keep existing hash)
+      contactToSave.contact_email = null
+      // Don't send email_hash - backend will keep existing hash
+    } else {
+      // Empty: clear both email and hash
+      contactToSave.contact_email = null
+      contactToSave.email_hash = null
+    }
   }
   
   // 保存接收告警设置

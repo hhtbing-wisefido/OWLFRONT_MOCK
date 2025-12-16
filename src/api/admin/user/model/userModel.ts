@@ -71,8 +71,10 @@ export interface CreateUserResult {
  */
 export interface UpdateUserParams {
   nickname?: string
-  email?: string
-  phone?: string
+  email?: string | null
+  phone?: string | null
+  email_hash?: string | null // Email hash for login (frontend calculated)
+  phone_hash?: string | null // Phone hash for login (frontend calculated)
   role?: string
   status?: 'active' | 'disabled' | 'left'
   alarm_levels?: string[]
