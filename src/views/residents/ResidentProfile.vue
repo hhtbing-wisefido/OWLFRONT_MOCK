@@ -43,8 +43,8 @@
         @change="handleTabChange"
         class="resident-tabs"
       >
-        <!-- Profile Tab -->
-        <a-tab-pane key="profile" tab="Profile">
+        <!-- Profile Tab (only for Manager, Admin, Nurse, Caregiver, IT) -->
+        <a-tab-pane v-if="canViewProfile" key="profile" tab="Profile">
           <ResidentProfileContent 
             ref="profileContentRef"
             :resident-data="residentData"
@@ -68,8 +68,8 @@
           />
         </a-tab-pane>
 
-        <!-- Contacts Tab -->
-        <a-tab-pane key="contacts" tab="Contacts">
+        <!-- Contacts Tab (only for Manager, Admin, Nurse, Caregiver, Resident) -->
+        <a-tab-pane v-if="canViewContacts" key="contacts" tab="Contacts">
           <ResidentContactsContent 
             :resident-id="residentId || 'new'"
             :contacts="residentData.contacts || []"
@@ -118,7 +118,6 @@ const residentId = computed(() => {
   return route.params.id as string
 })
 
-const activeTab = ref<string>((route.params.tab as string) || (route.query.tab as string) || 'profile')
 const residentData = ref<Resident>({} as Resident)
 const saving = ref(false)
 // Store original data for cancel functionality
@@ -134,34 +133,63 @@ const isNurse = computed(() => hasRole(['Nurse']))
 const isResident = computed(() => userType.value === 'resident' && userRole.value === 'Resident')
 const isFamily = computed(() => userRole.value === 'Family')
 
-// 权限判断
+// Initialize activeTab based on permissions
+const initialTab = (route.params.tab as string) || (route.query.tab as string) || 'profile'
+// Check user permissions to determine default tab
+const userInfoForTab = userStore.getUserInfo
+const canViewProfileForTab = hasManagePermission.value || hasRole(['Manager', 'Nurse', 'Caregiver', 'IT'])
+const canViewContactsForTab = hasManagePermission.value || hasRole(['Manager', 'Nurse', 'Caregiver']) || (userInfoForTab?.userType === 'resident' && userInfoForTab?.role === 'Resident')
+const canViewPHIForTab = hasManagePermission.value || hasRole(['Manager', 'Nurse', 'Caregiver'])
+
+// Determine default tab based on permissions
+let defaultTab = initialTab
+if (initialTab === 'profile' && !canViewProfileForTab) {
+  // If profile not allowed, use first available tab
+  defaultTab = canViewContactsForTab ? 'contacts' : (canViewPHIForTab ? 'phi' : 'profile')
+} else if (initialTab === 'contacts' && !canViewContactsForTab) {
+  // If contacts not allowed, use first available tab
+  defaultTab = canViewProfileForTab ? 'profile' : (canViewPHIForTab ? 'phi' : 'contacts')
+}
+const activeTab = ref<string>(defaultTab)
+
+// 权限判断 - 明确允许的角色列表
+const canViewProfile = computed(() => {
+  // 明确允许的角色：Manager, Admin, Nurse, Caregiver, IT
+  return isManager.value || isNurse.value || hasRole(['Caregiver', 'IT'])
+})
+
 const canViewPHI = computed(() => {
-  // Manager/Admin/Nurse/Caregiver 可以查看
-  // Resident/Family 不能查看
-  return userType.value === 'staff'
+  // 明确允许的角色：Manager, Admin, Nurse, Caregiver
+  return isManager.value || isNurse.value || hasRole(['Caregiver'])
 })
 
 const canEditPHI = computed(() => {
-  // 只有 Manager/Admin 可以编辑
+  // 明确允许的角色：只有 Manager/Admin 可以编辑
   return isManager.value
 })
 
 const canEditProfile = computed(() => {
-  // Manager/Admin 可以编辑所有字段
-  // Nurse 可以编辑 note
+  // 明确允许的角色：Manager/Admin 可以编辑所有字段，Nurse 可以编辑 note
   return isManager.value || isNurse.value
 })
 
+const canViewContacts = computed(() => {
+  // 明确允许的角色：Manager, Admin, Nurse, Caregiver, Resident
+  return isManager.value || isNurse.value || hasRole(['Caregiver']) || isResident.value
+})
+
 const canEditContacts = computed(() => {
-  // Manager/Admin/Nurse 可以编辑
-  // Resident 可以编辑自己的 contacts
-  // Family 可以编辑关联住户的 contacts
-  return isManager.value || isNurse.value || isResident.value || isFamily.value
+  // 明确允许的角色：Manager, Admin, Nurse, Resident
+  return isManager.value || isNurse.value || isResident.value
 })
 
 const canEdit = computed(() => {
   if (mode.value === 'create') {
     return isManager.value // 只有 Manager/Admin 可以创建
+  }
+  // Family 不能编辑任何内容
+  if (isFamily.value) {
+    return false
   }
   return canEditProfile.value || canEditNote.value || canEditContacts.value
 })
@@ -173,7 +201,35 @@ const canEditNote = computed(() => {
 
 // Handle tab change
 const handleTabChange = (key: string) => {
-  activeTab.value = key
+  // Check permissions before allowing tab change
+  if (key === 'profile' && !canViewProfile.value) {
+    message.warning('You do not have permission to access Profile tab')
+    // Redirect to first available tab
+    if (canViewContacts.value) {
+      activeTab.value = 'contacts'
+      key = 'contacts'
+    } else if (canViewPHI.value) {
+      activeTab.value = 'phi'
+      key = 'phi'
+    } else {
+      return // No tabs available
+    }
+  } else if (key === 'contacts' && !canViewContacts.value) {
+    message.warning('You do not have permission to access Contacts tab')
+    // Redirect to first available tab
+    if (canViewProfile.value) {
+      activeTab.value = 'profile'
+      key = 'profile'
+    } else if (canViewPHI.value) {
+      activeTab.value = 'phi'
+      key = 'phi'
+    } else {
+      return // No tabs available
+    }
+  } else {
+    activeTab.value = key
+  }
+  
   // 更新 URL（可选，用于支持直接访问特定 Tab）
   if (mode.value === 'create') {
     // Create 模式下，使用 query 参数而不是 params
@@ -417,10 +473,9 @@ const handleSave = async () => {
       // 4. Update Contacts if exists (save each contact individually)
       if (residentData.value.contacts && residentData.value.contacts.length > 0) {
         const { hashAccount } = await import('@/utils/crypto')
-        const contactPromises = await Promise.all(
-          residentData.value.contacts
-            .filter(contact => contact.is_enabled || contact.contact_first_name || contact.contact_last_name)
-            .map(async (contact) => {
+        const contactPromises = residentData.value.contacts
+          .filter(contact => contact.is_enabled || contact.contact_first_name || contact.contact_last_name)
+          .map(async (contact) => {
               const params: any = {
                 slot: contact.slot,
                 is_enabled: contact.is_enabled || false,
@@ -467,7 +522,6 @@ const handleSave = async () => {
               }
               return updateResidentContactApi(residentId.value, params)
             })
-        )
         updatePromises.push(...contactPromises)
       }
       
@@ -526,7 +580,44 @@ const goHome = () => {
 // Watch route params/query for tab changes
 watch(() => route.params.tab || route.query.tab, (newTab) => {
   if (newTab && newTab !== activeTab.value) {
-    activeTab.value = newTab as string
+    // Check permissions before allowing tab change
+    if (newTab === 'profile' && !canViewProfile.value) {
+      // Redirect to first available tab
+      if (canViewContacts.value) {
+        router.replace({
+          name: 'ResidentProfile',
+          params: { id: residentId.value },
+          query: { tab: 'contacts' },
+        })
+        activeTab.value = 'contacts'
+      } else if (canViewPHI.value) {
+        router.replace({
+          name: 'ResidentProfile',
+          params: { id: residentId.value },
+          query: { tab: 'phi' },
+        })
+        activeTab.value = 'phi'
+      }
+    } else if (newTab === 'contacts' && !canViewContacts.value) {
+      // Redirect to first available tab
+      if (canViewProfile.value) {
+        router.replace({
+          name: 'ResidentProfile',
+          params: { id: residentId.value },
+          query: { tab: 'profile' },
+        })
+        activeTab.value = 'profile'
+      } else if (canViewPHI.value) {
+        router.replace({
+          name: 'ResidentProfile',
+          params: { id: residentId.value },
+          query: { tab: 'phi' },
+        })
+        activeTab.value = 'phi'
+      }
+    } else {
+      activeTab.value = newTab as string
+    }
   }
 })
 
@@ -555,13 +646,55 @@ onMounted(async () => {
     return
   }
 
+  // Ensure activeTab is valid based on permissions
+  if (activeTab.value === 'profile' && !canViewProfile.value) {
+    // Redirect to first available tab
+    if (canViewContacts.value) {
+      activeTab.value = 'contacts'
+      router.replace({
+        name: 'ResidentProfile',
+        params: { id: residentId.value },
+        query: { tab: 'contacts' },
+      })
+    } else if (canViewPHI.value) {
+      activeTab.value = 'phi'
+      router.replace({
+        name: 'ResidentProfile',
+        params: { id: residentId.value },
+        query: { tab: 'phi' },
+      })
+    }
+  } else if (activeTab.value === 'contacts' && !canViewContacts.value) {
+    // Redirect to first available tab
+    if (canViewProfile.value) {
+      activeTab.value = 'profile'
+      router.replace({
+        name: 'ResidentProfile',
+        params: { id: residentId.value },
+        query: { tab: 'profile' },
+      })
+    } else if (canViewPHI.value) {
+      activeTab.value = 'phi'
+      router.replace({
+        name: 'ResidentProfile',
+        params: { id: residentId.value },
+        query: { tab: 'phi' },
+      })
+    }
+  }
+
   // Load initial data - Profile tab also needs PHI data for first_name/last_name display
-  await fetchResident({ include_phi: true })
-  
-  // If URL has tab parameter, load corresponding data
-  const tab = (route.params.tab || route.query.tab) as string
-  if (tab === 'contacts') {
+  // For resident users, only load contacts data
+  if (isResident.value) {
     await fetchResident({ include_contacts: true })
+  } else {
+    await fetchResident({ include_phi: true })
+    
+    // If URL has tab parameter, load corresponding data
+    const tab = (route.params.tab || route.query.tab) as string
+    if (tab === 'contacts') {
+      await fetchResident({ include_contacts: true })
+    }
   }
 })
 </script>

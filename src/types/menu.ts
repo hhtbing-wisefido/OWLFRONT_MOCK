@@ -36,7 +36,7 @@ export const menuItems: MenuItem[] = [
     label: 'Resident Management',
     icon: 'svg:resident',
     path: '/residents',
-    permission: ['Admin', 'Manager', 'Nurse', 'Caregiver', 'Resident', 'Family'],
+    permission: ['Admin', 'Manager', 'Nurse', 'Caregiver', 'Resident'], // Family removed - contacts cannot access
     divider: true,
   },
   {

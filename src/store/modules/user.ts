@@ -16,6 +16,7 @@ import {
   getAuthCache,
   setAuthCache,
   clearAuthCache,
+  clearAllAuthData,
   getInstitutionInfo,
   setInstitutionInfo,
   clearInstitutionInfo,
@@ -111,7 +112,8 @@ export const useUserStore = defineStore('user', {
       // Only enable this when explicitly running in mock mode; otherwise it will
       // override real backend role (e.g. sysadmin -> SystemAdmin) and break routing.
       if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true' && userInfo) {
-        const testRole = localStorage.getItem('dev_test_role')
+        // Use sessionStorage for HIPAA compliance
+        const testRole = sessionStorage.getItem('dev_test_role')
         if (testRole) {
           return {
             ...userInfo,
@@ -151,11 +153,11 @@ export const useUserStore = defineStore('user', {
     
     // Get login type (selected in login form)
     getLoginType(): 'staff' | 'resident' | null {
-      // Try to get from state first, then from localStorage
+      // Try to get from state first, then from sessionStorage
       if (this.loginType) {
         return this.loginType
       }
-      const saved = localStorage.getItem('LOGIN_TYPE')
+      const saved = sessionStorage.getItem('LOGIN_TYPE')
       if (saved === 'staff' || saved === 'resident') {
         return saved
       }
@@ -341,7 +343,7 @@ export const useUserStore = defineStore('user', {
       if (token) {
         setToken(token)
       } else {
-        localStorage.removeItem('ACCESS_TOKEN')
+        sessionStorage.removeItem('ACCESS_TOKEN')
       }
     },
 
@@ -351,7 +353,7 @@ export const useUserStore = defineStore('user', {
       if (refreshToken) {
         setRefreshToken(refreshToken)
       } else {
-        localStorage.removeItem('REFRESH_TOKEN')
+        sessionStorage.removeItem('REFRESH_TOKEN')
       }
     },
 
@@ -362,7 +364,7 @@ export const useUserStore = defineStore('user', {
       if (userInfo) {
         setAuthCache(USER_INFO_KEY, userInfo)
       } else {
-        localStorage.removeItem(USER_INFO_KEY)
+        sessionStorage.removeItem(USER_INFO_KEY)
       }
     },
 
@@ -382,20 +384,21 @@ export const useUserStore = defineStore('user', {
       if (roleList.length > 0) {
         setAuthCache(ROLES_KEY, roleList)
       } else {
-        localStorage.removeItem(ROLES_KEY)
+        sessionStorage.removeItem(ROLES_KEY)
       }
     },
     
     // Set page access permissions
     setPagePermissions(permissions: Record<string, string[]>) {
       this.pagePermissions = permissions
-      // Page permissions can be stored in localStorage, but usually don't need persistence (reset on each login)
+      // Page permissions don't need persistence (reset on each login)
     },
     
     // Set login type (selected in login form)
     setLoginType(loginType: 'staff' | 'resident') {
       this.loginType = loginType
-      localStorage.setItem('LOGIN_TYPE', loginType)
+      // Store in sessionStorage for HIPAA compliance
+      sessionStorage.setItem('LOGIN_TYPE', loginType)
     },
     
     // Initialize page access permissions (based on role configuration)
@@ -418,11 +421,11 @@ export const useUserStore = defineStore('user', {
         '/alarm/cloud': ['SystemAdmin', 'SystemOperator', 'Admin', 'Manager', 'IT', 'Nurse', 'Caregiver', 'Resident', 'Family'],
 
         // ==================== 【数据管理区域】 ====================
-        '/residents': ['Admin', 'Manager', 'Nurse', 'Caregiver', 'Resident', 'Family'],
+        '/residents': ['Admin', 'Manager', 'Nurse', 'Caregiver', 'Resident'], // Family removed - cannot access
         '/residents/create': ['Admin', 'Manager', 'Nurse', 'Caregiver'], // Same as /residents
-        '/resident/:id/profile': ['Admin', 'Manager', 'IT', 'Nurse', 'Caregiver', 'Resident', 'Family'],
+        '/resident/:id/profile': ['Admin', 'Manager', 'IT', 'Nurse', 'Caregiver'], // Resident and Family removed - cannot access
         '/resident/:id/phi': ['Admin', 'Manager', 'Nurse', 'Caregiver'],
-        '/resident/:id/contacts': ['Admin', 'Manager', 'Nurse', 'Caregiver', 'Resident', 'Family'],
+        '/resident/:id/contacts': ['Admin', 'Manager', 'Nurse', 'Caregiver', 'Resident'], // Family removed - cannot access
         '/care-coordination/card-overview': ['Admin', 'Manager', 'IT', 'Nurse'],
 
         // ==================== 【系统设置区域】 ====================
@@ -462,6 +465,10 @@ export const useUserStore = defineStore('user', {
 
     // Login
     async login(params: LoginParams): Promise<LoginResult> {
+      // HIPAA Compliance: Clear all authentication data before login
+      // This ensures no data leakage when multiple users share the same PC
+      clearAllAuthData()
+      
       const result = await loginApi(params)
       
       // Save token
@@ -620,8 +627,9 @@ export const useUserStore = defineStore('user', {
       this.pagePermissions = {}
       this.lastUpdateTime = 0
       this.loginType = null
-      localStorage.removeItem('LOGIN_TYPE')
-      clearAuthCache()
+      sessionStorage.removeItem('LOGIN_TYPE')
+      // HIPAA Compliance: Clear all authentication data on logout
+      clearAllAuthData()
     },
   },
 })

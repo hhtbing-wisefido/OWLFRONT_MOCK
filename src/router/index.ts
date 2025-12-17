@@ -364,6 +364,28 @@ router.beforeEach((to, _from, next) => {
       })
       return
     }
+    
+    // Special handling for resident users
+    const userInfo = userStore.getUserInfo
+    // Resident users accessing /residents should be redirected to their own contact tab
+    if (routePath === '/residents' && userInfo?.userType === 'resident' && userInfo?.role === 'Resident') {
+      // Redirect resident to their own contact tab
+      const residentId = userInfo.userId
+      next({
+        path: `/resident/${residentId}/contacts`,
+        query: { tab: 'contacts' },
+      })
+      return
+    }
+    // Resident users accessing /resident/:id/profile should be redirected to contacts tab
+    if (routePath.match(/^\/resident\/[^/]+\/profile/) && userInfo?.userType === 'resident' && userInfo?.role === 'Resident') {
+      const residentId = routePath.split('/')[2]
+      next({
+        path: `/resident/${residentId}/contacts`,
+        query: { tab: 'contacts' },
+      })
+      return
+    }
   }
   
   next()

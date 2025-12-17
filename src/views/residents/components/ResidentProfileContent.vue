@@ -1158,16 +1158,16 @@ const handleCaregiverGroupModalCancel = () => {
 
 // 字段权限配置
 const fieldPermissions = {
-  nickname: { view: ['Manager', 'Admin', 'Nurse', 'Caregiver', 'Resident', 'Family'], edit: ['Manager', 'Admin'] },
-  resident_account: { view: ['Manager', 'Admin', 'Nurse', 'Caregiver', 'Resident', 'Family'], edit: ['Manager', 'Admin'] },
+  nickname: { view: ['Manager', 'Admin', 'Nurse', 'Caregiver'], edit: ['Manager', 'Admin'] },
+  resident_account: { view: ['Manager', 'Admin', 'Nurse', 'Caregiver'], edit: ['Manager', 'Admin'] },
   first_name: { view: ['Manager', 'Admin', 'Nurse', 'Caregiver'], edit: ['Manager', 'Admin'] },
   last_name: { view: ['Manager', 'Admin', 'Nurse', 'Caregiver'], edit: ['Manager', 'Admin'] },
-  status: { view: ['Manager', 'Admin', 'Nurse', 'Caregiver', 'Resident', 'Family'], edit: ['Manager', 'Admin'] },
-  service_level: { view: ['Manager', 'Admin', 'Nurse', 'Caregiver', 'Resident', 'Family'], edit: ['Manager', 'Admin'] },
-  admission_date: { view: ['Manager', 'Admin', 'Nurse', 'Caregiver', 'Resident', 'Family'], edit: ['Manager', 'Admin'] },
-  discharge_date: { view: ['Manager', 'Admin', 'Nurse', 'Caregiver', 'Resident', 'Family'], edit: ['Manager', 'Admin'] },
-  family_tag: { view: ['Manager', 'Admin', 'Nurse', 'Caregiver', 'Resident', 'Family'], edit: ['Manager', 'Admin'] },
-  note: { view: ['Manager', 'Admin', 'Nurse', 'Caregiver', 'Resident', 'Family'], edit: ['Manager', 'Admin', 'Nurse'] },
+  status: { view: ['Manager', 'Admin', 'Nurse', 'Caregiver'], edit: ['Manager', 'Admin'] },
+  service_level: { view: ['Manager', 'Admin', 'Nurse', 'Caregiver'], edit: ['Manager', 'Admin'] },
+  admission_date: { view: ['Manager', 'Admin', 'Nurse', 'Caregiver'], edit: ['Manager', 'Admin'] },
+  discharge_date: { view: ['Manager', 'Admin', 'Nurse', 'Caregiver'], edit: ['Manager', 'Admin'] },
+  family_tag: { view: ['Manager', 'Admin', 'Nurse', 'Caregiver'], edit: ['Manager', 'Admin'] },
+  note: { view: ['Manager', 'Admin', 'Nurse', 'Caregiver'], edit: ['Manager', 'Admin', 'Nurse'] },
   is_access_enabled: { view: ['Manager', 'Admin'], edit: ['Manager', 'Admin'] },
 }
 
@@ -1178,22 +1178,8 @@ const canViewField = (fieldName: string) => {
     return isManager.value
   }
   
-  // Resident 只能查看自己的信息
-  // 注意：后端已经做了权限控制，Resident 只能看到自己的数据
-  // 如果 isResident 为 true 且 residentData 存在，就认为是在查看自己的信息
-  if (isResident.value) {
-    // 如果 residentData 不存在，说明数据还没加载，先返回 true 让字段显示（等待数据加载）
-    if (!props.residentData?.resident_id) {
-      return true
-    }
-    // 如果 residentData 存在，检查是否是自己的数据
-    if (!isViewingSelf.value) {
-      return false
-    }
-  }
-  
-  // Family 只能查看关联住户的信息（后端已过滤，这里只做前端显示控制）
-  if (isFamily.value && !isViewingLinkedResident.value) {
+  // Resident 和 Family 不能查看 Profile Tab
+  if (isResident.value || isFamily.value) {
     return false
   }
   
@@ -1201,9 +1187,7 @@ const canViewField = (fieldName: string) => {
   if (!permission) return true // 默认可见（对于没有配置的字段，如 unit_id, room_id, bed_id 等）
   
   return permission.view.some(role => 
-    role.toLowerCase() === userRole.value?.toLowerCase() ||
-    (role === 'Resident' && isResident.value) ||
-    (role === 'Family' && isFamily.value)
+    role.toLowerCase() === userRole.value?.toLowerCase()
   )
 }
 
@@ -1216,8 +1200,8 @@ const canEditField = (fieldName: string) => {
   
   if (props.readonly) return false
   
-  // Resident 和 Family 不能编辑基本信息，只能编辑 contacts（在 Contacts Tab 中）
-  if ((isResident.value || isFamily.value) && fieldName !== 'note') {
+  // Resident 和 Family 不能编辑基本信息
+  if (isResident.value || isFamily.value) {
     return false
   }
   

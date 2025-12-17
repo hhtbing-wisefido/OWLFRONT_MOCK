@@ -212,8 +212,10 @@ const debouncedSearchInstitutions = debounce(async (account: string, password: s
   // DB constraints: user_account VARCHAR(100), resident_account VARCHAR(100)
   // Validation rules: 1 <= account length <= 100, 4 <= password length <= 100
   // Note: Detailed security validation is handled by backend/DB
+  // IMPORTANT: Account is trimmed for normalization, but password is NOT trimmed
+  // Password hash should only depend on password itself (no trim, no modification)
   const accountTrimmed = account.trim()
-  const passwordTrimmed = password.trim()
+  const passwordOriginal = password // Use original password (no trim)
   
   if (!accountTrimmed || accountTrimmed.length < 1) {
     console.log('%c[LoginForm] Account is empty or too short, skipping search', 'color: #ff4d4f; font-weight: bold', {
@@ -239,9 +241,10 @@ const debouncedSearchInstitutions = debounce(async (account: string, password: s
 
   // Frontend basic validation: Check length range
   // Note: Detailed password strength validation is handled by backend/DB
-  if (!passwordTrimmed || passwordTrimmed.length < 4) {
+  // Password is NOT trimmed - use original password for validation
+  if (!passwordOriginal || passwordOriginal.length < 4) {
     console.log('%c[LoginForm] Password is empty or too short, skipping search', 'color: #ff4d4f; font-weight: bold', {
-      passwordLength: passwordTrimmed.length,
+      passwordLength: passwordOriginal.length,
       minimum: 4,
     })
     matchedInstitutions.value = []
@@ -250,9 +253,9 @@ const debouncedSearchInstitutions = debounce(async (account: string, password: s
     return
   }
 
-  if (passwordTrimmed.length > 100) {
+  if (passwordOriginal.length > 100) {
     console.log('%c[LoginForm] Password too long, skipping search', 'color: #ff4d4f; font-weight: bold', {
-      passwordLength: passwordTrimmed.length,
+      passwordLength: passwordOriginal.length,
       maximum: 100,
     })
     matchedInstitutions.value = []
@@ -274,7 +277,7 @@ const debouncedSearchInstitutions = debounce(async (account: string, password: s
       userType,
     })
     
-    const institutions = await searchInstitutionsApi(accountTrimmed, passwordTrimmed, userType)
+    const institutions = await searchInstitutionsApi(accountTrimmed, passwordOriginal, userType)
     
     console.log('%c[LoginForm] Organizes found', 'color: #52c41a; font-weight: bold', {
       count: institutions.length,
@@ -334,7 +337,7 @@ const debouncedSearchInstitutions = debounce(async (account: string, password: s
 const handleAccountInput = () => {
   accountError.value = ''
   const account = formData.account?.trim()
-  const password = formData.password?.trim()
+  const password = formData.password // Password is NOT trimmed
   
   console.log('%c[LoginForm] Account input triggered', 'color: #722ed1; font-weight: bold', {
     account,
@@ -358,7 +361,7 @@ const handleAccountInput = () => {
 const handlePasswordInput = () => {
   accountError.value = ''
   const account = formData.account?.trim()
-  const password = formData.password?.trim()
+  const password = formData.password // Password is NOT trimmed
   
   console.log('%c[LoginForm] Password input triggered', 'color: #722ed1; font-weight: bold', {
     account,
@@ -526,16 +529,16 @@ const handleLogin = async () => {
     await formRef.value?.validate()
 
     // IMPORTANT:
-    // - Institution search uses trimmed account/password.
-    // - If user copies password from a modal, it may include trailing spaces/newlines.
-    //   That would make institution search succeed (trimmed), but login fail (untrimmed).
+    // - Account is trimmed for normalization (account_hash = SHA256(lower(trim(account))))
+    // - Password is NOT trimmed - password hash should only depend on password itself
+    //   Backend: password_hash = SHA256(password) - no trim, no modification
     const accountTrimmed = (formData.account || '').trim()
-    const passwordTrimmed = (formData.password || '').trim()
+    const password = formData.password || ''
 
     // Submit tenant_id (not name) to backend
     const result = await userStore.login({
       account: accountTrimmed,
-      password: passwordTrimmed,
+      password: password, // Use original password (no trim)
       userType: formData.userType,
       tenant_id: formData.tenant_id || undefined, // Send ID to backend (e.g., "tenant-001")
     })

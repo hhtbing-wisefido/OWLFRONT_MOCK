@@ -19,19 +19,20 @@ const urlPrefix = import.meta.env.VITE_URL_PREFIX || ''
 // Get token from store (synchronous function, because store getter is synchronous)
 function getToken(): string | null {
   try {
-    // Try to get from localStorage directly (avoid circular dependency)
-    // Store will synchronously update localStorage when setting token
-    return localStorage.getItem('ACCESS_TOKEN')
+    // Try to get from sessionStorage directly (HIPAA compliant: cleared when tab closes)
+    // Store will synchronously update sessionStorage when setting token
+    return sessionStorage.getItem('ACCESS_TOKEN')
   } catch (error) {
     return null
   }
 }
 
-// Get user info from localStorage (synchronous function)
+// Get user info from sessionStorage (synchronous function)
 // Note: Uses USER_INFO_KEY constant from auth utils
+// HIPAA Compliance: Uses sessionStorage instead of localStorage
 function getUserInfo(): { userId?: string; role?: string; tenant_id?: string } | null {
   try {
-    const userInfoStr = localStorage.getItem('USER_INFO')
+    const userInfoStr = sessionStorage.getItem('USER_INFO')
     if (userInfoStr) {
       const userInfo = JSON.parse(userInfoStr)
       return {
@@ -206,8 +207,18 @@ const transform: AxiosTransform = {
         ;(config as any).headers['X-User-Role'] = userInfo.role
       }
       // Multi-tenant: let backend resolve tenant without requiring tenant_id query param on every POST/PUT
-      if ((userInfo as any).tenant_id) {
-        ;(config as any).headers['X-Tenant-Id'] = (userInfo as any).tenant_id
+      // Ensure tenant_id is always sent if available in userInfo
+      if (userInfo.tenant_id) {
+        ;(config as any).headers['X-Tenant-Id'] = userInfo.tenant_id
+      } else {
+        // Log warning if tenant_id is missing (for debugging)
+        if (import.meta.env.DEV) {
+          console.warn('[Axios Interceptor] Missing tenant_id in userInfo', { userInfo })
+        }
+      }
+      // Add X-User-Type header for backend permission filtering
+      if (userInfo.userType) {
+        ;(config as any).headers['X-User-Type'] = userInfo.userType
       }
     }
     
