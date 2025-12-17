@@ -208,8 +208,10 @@ export interface UpdateResidentPHIParams {
   last_name?: string
   gender?: string
   date_of_birth?: string
-  resident_phone?: string
-  resident_email?: string
+  resident_phone?: string | null
+  resident_email?: string | null
+  phone_hash?: string | null // 手机号哈希，用于登录（前端计算）
+  email_hash?: string | null // 邮箱哈希，用于登录（前端计算）
   
   // Biometric PHI
   weight_lb?: number
