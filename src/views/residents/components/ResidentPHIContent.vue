@@ -201,7 +201,7 @@
                 @blur="handleEmailBlur"
               />
               <a-form-item-rest>
-                <a-checkbox v-model:checked="saveEmail" :disabled="readonly || !localPHIData.resident_email || localPHIData.resident_email.trim() === ''">Save</a-checkbox>
+                <a-checkbox v-model:checked="saveEmail" :disabled="readonly || !isValidEmailFormat(localPHIData.resident_email)">Save</a-checkbox>
               </a-form-item-rest>
             </a-space>
           </a-form-item>
@@ -216,7 +216,7 @@
                 style="width: 150px"
               />
               <a-form-item-rest>
-                <a-checkbox v-model:checked="savePhone" :disabled="readonly || !localPHIData.resident_phone || localPHIData.resident_phone.trim() === ''">Save</a-checkbox>
+                <a-checkbox v-model:checked="savePhone" :disabled="readonly || !isValidPhoneFormat(localPHIData.resident_phone)">Save</a-checkbox>
               </a-form-item-rest>
             </a-space>
           </a-form-item>
@@ -424,6 +424,50 @@ const validateEmail = (_rule: any, value: string): Promise<void> => {
 const emailRules: Rule[] = [
   { validator: validateEmail, trigger: 'blur' }
 ]
+
+// Synchronous email format validation (for disabled condition)
+const isValidEmailFormat = (value: string | undefined): boolean => {
+  if (!value || value.trim() === '') {
+    return false // Empty is not valid for save checkbox
+  }
+  // Skip validation for placeholder
+  if (value === '***@***') {
+    return false // Placeholder is not valid for save checkbox
+  }
+  const trimmedValue = value.trim()
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return emailRegex.test(trimmedValue)
+}
+
+// Synchronous phone format validation (for disabled condition)
+const isValidPhoneFormat = (value: string | undefined): boolean => {
+  if (!value || value.trim() === '') {
+    return false // Empty is not valid for save checkbox
+  }
+  // Skip validation for placeholder
+  if (value === 'xxx-xxx-xxxx') {
+    return false // Placeholder is not valid for save checkbox
+  }
+  // Remove all non-digit characters
+  const digitsOnly = value.replace(/\D/g, '')
+  // Check if it's exactly 10 digits
+  if (digitsOnly.length !== 10) {
+    return false
+  }
+  // Check area code: first digit must be 2-9
+  const areaCode = digitsOnly.substring(0, 3)
+  const areaCodeFirst = areaCode.charAt(0)
+  if (areaCodeFirst && (areaCodeFirst < '2' || areaCodeFirst > '9')) {
+    return false
+  }
+  // Check exchange code (middle 3 digits): first digit must be 2-9
+  const exchangeCode = digitsOnly.substring(3, 6)
+  const exchangeCodeFirst = exchangeCode.charAt(0)
+  if (exchangeCodeFirst && (exchangeCodeFirst < '2' || exchangeCodeFirst > '9')) {
+    return false
+  }
+  return true
+}
 
 // Handle email blur - auto trim
 const handleEmailBlur = () => {

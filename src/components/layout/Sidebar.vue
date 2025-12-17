@@ -42,59 +42,114 @@
       </div>
     </div>
 
-    <!-- Change Password Modal (in-app, authenticated) -->
+    <!-- Account Settings Modal (in-app, authenticated) -->
     <a-modal
       v-model:visible="passwordModalVisible"
-      title="Change Password"
-      width="500px"
-      @ok="submitPasswordChange"
+      title="Account Settings"
+      width="550px"
+      @ok="submitAccountSettings"
       @cancel="closePasswordModal"
     >
       <template #footer>
         <div style="padding: 10px 16px">
           <a-button key="back" @click="closePasswordModal" style="margin-right: 30px">Cancel</a-button>
-          <a-button key="submit" type="primary" @click="submitPasswordChange" :loading="changingPassword" style="margin-right: 20px">
+          <a-button key="submit" type="primary" @click="submitAccountSettings" :loading="changingPassword" style="margin-right: 20px">
             Update
           </a-button>
         </div>
       </template>
       <a-form
         layout="horizontal"
-        :model="sidebarPasswordData"
+        :model="accountSettingsData"
         ref="sidebarPasswordFormRef"
-        :labelCol="{ span: 8 }"
-        :wrapperCol="{ span: 16 }"
+        :labelCol="{ span: 6 }"
+        :wrapperCol="{ span: 18 }"
         style="padding: 20px"
       >
-        <div style="margin-bottom: 16px; word-wrap: break-word; white-space: normal;">
-          Password: At least 8 characters, including uppercase, lowercase, number, and special character
+        <!-- Basic Information Display -->
+        <div style="margin-bottom: 16px;">
+          <div style="margin-bottom: 8px;">
+            <span style="margin-right: 16px;"><strong>NickName:</strong> {{ accountInfo.nickname || '-' }}</span>
+            <span><strong>Account:</strong> {{ accountInfo.account || '-' }}</span>
+          </div>
+          <div style="margin-bottom: 8px;">
+            <span v-if="accountInfo.branch" style="margin-right: 16px;"><strong>Branch:</strong> {{ accountInfo.branch }}</span>
+            <span v-if="accountInfo.floor" style="margin-right: 16px;"><strong>Floor:</strong> {{ accountInfo.floor }}</span>
+            <span v-if="accountInfo.unit && accountInfo.unit !== '-'" style="margin-right: 16px;"><strong>Unit:</strong> {{ accountInfo.unit }}</span>
+            <span v-if="accountInfo.room && accountInfo.room !== '-'"><strong>Room:</strong> {{ accountInfo.room }}</span>
+          </div>
         </div>
-        <a-form-item label="New Password" name="new_password" style="margin-bottom: 12px;">
-          <a-input-password 
-            placeholder="Please enter new password" 
-            v-model:value="sidebarPassword"
-            @input="handleSidebarPasswordInput"
-            @blur="handleSidebarPasswordBlur"
-            :status="sidebarPasswordErrorMessage ? 'error' : ''"
-          />
-        </a-form-item>
-        <a-form-item label="Confirm Password" name="confirm_password">
-          <div style="display: flex; flex-direction: column; gap: 12px;">
-            <a-input-password 
-              placeholder="Please confirm new password" 
-              v-model:value="sidebarPasswordConfirm"
-              @input="handleSidebarPasswordConfirmInput"
-              @blur="handleSidebarPasswordConfirmBlur"
-              :status="sidebarPasswordErrorMessage ? 'error' : ''"
-            />
-            <a-button type="primary" @click="generateSidebarPassword" style="align-self: flex-start;">
+
+        <!-- Password Section -->
+        <div style="margin-bottom: 16px;">
+          <div style="margin-bottom: 8px;">
+            <a-space align="center">
+              <strong>Passwd:</strong>
+              <a-input-password 
+                placeholder="Please enter new password" 
+                v-model:value="sidebarPassword"
+                @input="handleSidebarPasswordInput"
+                @blur="handleSidebarPasswordBlur"
+                :status="sidebarPasswordErrorMessage ? 'error' : ''"
+                style="width: 200px"
+              />
+              <a-input-password 
+                placeholder="Please confirm new password" 
+                v-model:value="sidebarPasswordConfirm"
+                @input="handleSidebarPasswordConfirmInput"
+                @blur="handleSidebarPasswordConfirmBlur"
+                :status="sidebarPasswordErrorMessage ? 'error' : ''"
+                style="width: 200px"
+              />
+            </a-space>
+          </div>
+          <div style="margin-bottom: 8px; text-align: right;">
+            <a-button type="primary" @click="generateSidebarPassword" size="small">
               Generate PW
             </a-button>
-            <span v-if="sidebarPasswordErrorMessage" style="color: #ff4d4f; font-size: 12px;">
-              {{ sidebarPasswordErrorMessage }}
-            </span>
           </div>
-        </a-form-item>
+          <span v-if="sidebarPasswordErrorMessage" style="color: #ff4d4f; font-size: 12px; display: block; margin-top: 4px;">
+            {{ sidebarPasswordErrorMessage }}
+          </span>
+        </div>
+
+        <!-- Email Section -->
+        <div style="margin-bottom: 16px;">
+          <a-space>
+            <strong>Email:</strong>
+            <a-input
+              v-model:value="sidebarEmail"
+              placeholder="Enter email"
+              @blur="handleEmailBlur"
+              style="width: 200px"
+            />
+            <a-checkbox
+              v-model:checked="saveEmail"
+              :disabled="isStaffUser || !isValidEmailFormat(sidebarEmail)"
+            >
+              Save
+            </a-checkbox>
+          </a-space>
+        </div>
+
+        <!-- Phone Section -->
+        <div style="margin-bottom: 16px;">
+          <a-space>
+            <strong>Phone:</strong>
+            <a-input
+              v-model:value="sidebarPhone"
+              placeholder="Enter phone"
+              @blur="handlePhoneBlur"
+              style="width: 200px"
+            />
+            <a-checkbox
+              v-model:checked="savePhone"
+              :disabled="isStaffUser || !isValidPhoneFormat(sidebarPhone)"
+            >
+              Save
+            </a-checkbox>
+          </a-space>
+        </div>
       </a-form>
     </a-modal>
     
@@ -112,8 +167,8 @@ import Menu from './Menu.vue'
 import { MenuFoldOutlined, MenuUnfoldOutlined, LogoutOutlined, LockOutlined } from '@ant-design/icons-vue'
 import { useUserStore } from '@/store/modules/user'
 import { message } from 'ant-design-vue'
-import { resetPasswordApi } from '@/api/admin/user/user'
-import { resetResidentPasswordApi, resetContactPasswordApi } from '@/api/resident/resident'
+import { resetPasswordApi, getUserApi, updateUserApi } from '@/api/admin/user/user'
+import { resetResidentPasswordApi, resetContactPasswordApi, getResidentApi, updateResidentPHIApi, updateResidentContactApi } from '@/api/resident/resident'
 defineProps<{
   collapsed: boolean
 }>()
@@ -131,13 +186,41 @@ const handleLogout = () => {
   router.push('/login')
 }
 
-const handlePasswordChange = () => {
+const handlePasswordChange = async () => {
   // In-app change password (for logged-in user)
   passwordModalVisible.value = true
+  // Load account info when modal opens
+  await loadAccountInfo()
 }
 
 const passwordModalVisible = ref(false)
 const changingPassword = ref(false)
+
+// Account info state
+const accountInfo = ref<{
+  nickname: string
+  account: string
+  branch: string
+  floor: string
+  unit: string
+  room: string
+}>({
+  nickname: '',
+  account: '',
+  branch: '',
+  floor: '',
+  unit: '',
+  room: '',
+})
+
+// Email/Phone state
+const sidebarEmail = ref('')
+const sidebarPhone = ref('')
+const saveEmail = ref(true)
+const savePhone = ref(true)
+
+// Check if current user is staff
+const isStaffUser = computed(() => userInfo.value?.userType === 'staff')
 
 // Password state for sidebar password change (independent implementation)
 const sidebarPassword = ref('')
@@ -145,11 +228,219 @@ const sidebarPasswordConfirm = ref('')
 const sidebarPasswordErrorMessage = ref('')
 const sidebarPasswordFormRef = ref()
 
-// Form data for sidebar password change
-const sidebarPasswordData = computed(() => ({
+// Form data for account settings
+const accountSettingsData = computed(() => ({
   new_password: sidebarPassword.value,
   confirm_password: sidebarPasswordConfirm.value,
+  email: sidebarEmail.value,
+  phone: sidebarPhone.value,
+  save_email: saveEmail.value,
+  save_phone: savePhone.value,
 }))
+
+// Load account information
+const loadAccountInfo = async () => {
+  const uid = userInfo.value?.userId
+  if (!uid) return
+
+  const userType = userInfo.value?.userType
+  const userRole = userInfo.value?.role
+
+  try {
+    if (userType === 'staff') {
+      // For staff: get from users table
+      const user = await getUserApi(uid)
+      accountInfo.value = {
+        nickname: user.nickname || '-',
+        account: user.user_account || '-',
+        branch: user.branch_tag || '',
+        floor: '',
+        unit: '-',
+        room: '-',
+      }
+      sidebarEmail.value = user.email || ''
+      sidebarPhone.value = user.phone || ''
+      // For staff, save checkboxes are disabled and always true
+      saveEmail.value = true
+      savePhone.value = true
+    } else {
+      // For resident/contact: get from residents table
+      // userId could be resident_id (for resident) or contact_id (for contact)
+      // For Family users (contact), userId is contact_id
+      // Backend GET /admin/api/v1/residents/:id now supports contact_id directly
+      // It will automatically find the associated resident_id and return the resident details
+      if (userType === 'resident' && userRole === 'Family') {
+        // Family user: userId is contact_id, backend will handle the lookup
+        try {
+          // Backend now supports passing contact_id directly - it will find the associated resident_id
+          const resident = await getResidentApi(uid, { include_phi: true, include_contacts: true })
+          // Find the contact matching our contact_id
+          const contact = resident.contacts?.find((c: any) => c.contact_id === uid)
+          
+          if (contact) {
+            // This is a contact - show linked resident's info, but contact's email/phone
+            accountInfo.value = {
+              nickname: resident.nickname || '-',
+              account: resident.resident_account || '-',
+              branch: resident.branch_tag || '',
+              floor: '', // Floor info not in resident data, would need to fetch from unit
+              unit: resident.unit_name || '-',
+              room: resident.room_name || '-',
+            }
+            // Get email/phone from contact
+            sidebarEmail.value = contact.contact_email || ''
+            sidebarPhone.value = contact.contact_phone || ''
+            // Initialize save flags: if email/phone exists and is not placeholder, save flag is true
+            const emailValue = contact.contact_email && contact.contact_email.trim()
+            saveEmail.value = !!(emailValue && emailValue !== '***@***')
+            const phoneValue = contact.contact_phone && contact.contact_phone.trim()
+            savePhone.value = !!(phoneValue && phoneValue !== 'xxx-xxx-xxxx')
+          } else {
+            // Contact not found, show resident info only
+            accountInfo.value = {
+              nickname: resident.nickname || '-',
+              account: resident.resident_account || '-',
+              branch: resident.branch_tag || '',
+              floor: '',
+              unit: resident.unit_name || '-',
+              room: resident.room_name || '-',
+            }
+          }
+        } catch (err: any) {
+          // If error, show basic info from userInfo
+          accountInfo.value = {
+            nickname: userInfo.value?.nickName || '-',
+            account: userInfo.value?.user_account || '-',
+            branch: '',
+            floor: '',
+            unit: '-',
+            room: '-',
+          }
+        }
+      } else {
+        // Resident user: userId is resident_id
+        try {
+          const resident = await getResidentApi(uid, { include_phi: true, include_contacts: true })
+          // This is a resident - show resident's info and PHI email/phone
+          accountInfo.value = {
+            nickname: resident.nickname || '-',
+            account: resident.resident_account || '-',
+            branch: resident.branch_tag || '',
+            floor: '', // Floor info not returned in resident API, would need separate query
+            unit: resident.unit_name || '-',
+            room: resident.room_name || '-',
+          }
+          // Get email/phone from PHI
+          if (resident.phi) {
+            // Keep placeholder if it exists (for display), otherwise use actual value or empty
+            sidebarEmail.value = resident.phi.resident_email || ''
+            sidebarPhone.value = resident.phi.resident_phone || ''
+            // Initialize save flags: matches ResidentPHIContent.vue logic
+            // If email/phone exists and is not placeholder, save flag is true
+            const emailValue = resident.phi.resident_email && resident.phi.resident_email.trim()
+            saveEmail.value = !!(emailValue && emailValue !== '***@***')
+            const phoneValue = resident.phi.resident_phone && resident.phi.resident_phone.trim()
+            savePhone.value = !!(phoneValue && phoneValue !== 'xxx-xxx-xxxx')
+          }
+        } catch (err: any) {
+          // If not found, show basic info from userInfo
+          accountInfo.value = {
+            nickname: userInfo.value?.nickName || '-',
+            account: userInfo.value?.user_account || '-',
+            branch: '',
+            floor: '',
+            unit: '-',
+            room: '-',
+          }
+        }
+      }
+    }
+  } catch (error: any) {
+    console.error('Failed to load account info:', error)
+    message.error('Failed to load account information')
+  }
+}
+
+// Email/Phone validation and trim
+const validateEmail = (email: string): boolean => {
+  if (!email || email.trim() === '') return true // Empty is valid
+  // Skip validation for placeholder
+  if (email === '***@***') return true
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return emailRegex.test(email.trim())
+}
+
+const validateUSPhoneNumber = (phone: string): boolean => {
+  if (!phone || phone.trim() === '') return true // Empty is valid
+  // Skip validation for placeholder
+  if (phone === 'xxx-xxx-xxxx') return true
+  // Remove all non-digit characters
+  const digitsOnly = phone.replace(/\D/g, '')
+  // Check if it's 10 digits
+  if (digitsOnly.length !== 10) return false
+  // Check area code and exchange code (first and fourth digits should be 2-9)
+  const areaCode = parseInt(digitsOnly[0] || '0')
+  const exchangeCode = parseInt(digitsOnly[3] || '0')
+  return areaCode >= 2 && areaCode <= 9 && exchangeCode >= 2 && exchangeCode <= 9
+}
+
+// Synchronous email format validation (for disabled condition)
+const isValidEmailFormat = (value: string | undefined): boolean => {
+  if (!value || value.trim() === '') {
+    return false // Empty is not valid for save checkbox
+  }
+  // Skip validation for placeholder
+  if (value === '***@***') {
+    return false // Placeholder is not valid for save checkbox
+  }
+  const trimmedValue = value.trim()
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return emailRegex.test(trimmedValue)
+}
+
+// Synchronous phone format validation (for disabled condition)
+const isValidPhoneFormat = (value: string | undefined): boolean => {
+  if (!value || value.trim() === '') {
+    return false // Empty is not valid for save checkbox
+  }
+  // Skip validation for placeholder
+  if (value === 'xxx-xxx-xxxx') {
+    return false // Placeholder is not valid for save checkbox
+  }
+  // Remove all non-digit characters
+  const digitsOnly = value.replace(/\D/g, '')
+  // Check if it's exactly 10 digits
+  if (digitsOnly.length !== 10) {
+    return false
+  }
+  // Check area code: first digit must be 2-9
+  const areaCode = parseInt(digitsOnly[0] || '0')
+  // Check exchange code (fourth digit): must be 2-9
+  const exchangeCode = parseInt(digitsOnly[3] || '0')
+  return areaCode >= 2 && areaCode <= 9 && exchangeCode >= 2 && exchangeCode <= 9
+}
+
+const handleEmailBlur = () => {
+  sidebarEmail.value = sidebarEmail.value.trim()
+  if (sidebarEmail.value && !validateEmail(sidebarEmail.value)) {
+    message.error('Invalid email format')
+  }
+  // Update save checkbox state
+  if (!sidebarEmail.value || sidebarEmail.value === '') {
+    saveEmail.value = false
+  }
+}
+
+const handlePhoneBlur = () => {
+  sidebarPhone.value = sidebarPhone.value.trim()
+  if (sidebarPhone.value && !validateUSPhoneNumber(sidebarPhone.value)) {
+    message.error('Invalid phone number format (US format required)')
+  }
+  // Update save checkbox state
+  if (!sidebarPhone.value || sidebarPhone.value === '') {
+    savePhone.value = false
+  }
+}
 
 // Password validation constants
 const PASSWORD_MIN_LENGTH = 8
@@ -291,69 +582,191 @@ const isSidebarPasswordValid = computed(() => {
 const closePasswordModal = () => {
   passwordModalVisible.value = false
   changingPassword.value = false
-  // Clear password fields
+  // Clear all fields
   sidebarPassword.value = ''
   sidebarPasswordConfirm.value = ''
   sidebarPasswordErrorMessage.value = ''
+  sidebarEmail.value = ''
+  sidebarPhone.value = ''
+  saveEmail.value = true
+  savePhone.value = true
   sidebarPasswordFormRef.value?.resetFields()
 }
 
-const submitPasswordChange = async () => {
+const submitAccountSettings = async () => {
   const uid = userInfo.value?.userId
   if (!uid) {
     message.error('User is not loaded')
     return
   }
 
-  // Validate password
-  if (!isSidebarPasswordValid.value) {
-    message.error(sidebarPasswordErrorMessage.value || 'Please check password requirements')
-    return
-  }
-
-  if (!sidebarPassword.value || !sidebarPasswordConfirm.value) {
-    message.error('Please enter a valid password')
-    return
-  }
-  if (sidebarPassword.value !== sidebarPasswordConfirm.value) {
-    message.error('Passwords do not match')
-    return
-  }
-  const strengthResult = validateSidebarPasswordStrength(sidebarPassword.value)
-  if (!strengthResult.isValid) {
-    message.error(strengthResult.errorMessage || 'Please enter a valid password')
-    return
-  }
-
-  const password = sidebarPassword.value
   const userType = userInfo.value?.userType
+  const userRole = userInfo.value?.role
+  const promises: Promise<any>[] = []
 
-  changingPassword.value = true
-  try {
-    if (userType === 'resident') {
-      // For resident type, userId could be either contact_id (for resident_contact) or resident_id (for resident)
-      // Try contact_id first (since each slot is independent with its own contact_id)
-      // If it fails, fall back to resident_id
-      try {
-        await resetContactPasswordApi(uid, password)
-      } catch (contactError: any) {
-        // If contact not found, try as resident_id
-        if (contactError?.message?.includes('not found') || contactError?.message?.includes('contact')) {
-          await resetResidentPasswordApi(uid, password)
-        } else {
+  // Update password if provided
+  if (sidebarPassword.value && sidebarPasswordConfirm.value) {
+    // Validate password
+    if (!isSidebarPasswordValid.value) {
+      message.error(sidebarPasswordErrorMessage.value || 'Please check password requirements')
+      return
+    }
+
+    if (sidebarPassword.value !== sidebarPasswordConfirm.value) {
+      message.error('Passwords do not match')
+      return
+    }
+    const strengthResult = validateSidebarPasswordStrength(sidebarPassword.value)
+    if (!strengthResult.isValid) {
+      message.error(strengthResult.errorMessage || 'Please enter a valid password')
+      return
+    }
+
+    // Use password as-is (no trim) - password hash should only depend on password itself
+    const password = sidebarPassword.value
+    // Check if this is a Family user (contact) - Family users have role === 'Family' and userType === 'resident'
+    if (userType === 'resident' && userRole === 'Family') {
+      // Family user: userId is contact_id, use contact password reset API
+      promises.push(resetContactPasswordApi(uid, password))
+    } else if (userType === 'resident') {
+      // Resident user: userId could be either contact_id (for resident_contact) or resident_id (for resident)
+      // Try contact first (most common case), then fall back to resident
+      promises.push(
+        resetContactPasswordApi(uid, password).catch((contactError: any) => {
+          // If contact not found, try as resident_id
+          if (contactError?.message?.includes('not found') || contactError?.message?.includes('contact') || contactError?.response?.status === 404) {
+            return resetResidentPasswordApi(uid, password)
+          }
           throw contactError
-        }
-      }
+        })
+      )
     } else {
       // This is a staff login - use user password reset API
-      await resetPasswordApi(uid, { new_password: password })
+      promises.push(resetPasswordApi(uid, { new_password: password }))
     }
-    message.success('Password updated')
-    closePasswordModal()
-  } catch (e: any) {
-    message.error(e?.message || 'Failed to update password')
-  } finally {
-    changingPassword.value = false
+  }
+
+  // Update email/phone
+  if (userType === 'staff') {
+    // For staff: always save email/phone (no save checkbox, always true)
+    const updateParams: any = {}
+    if (sidebarEmail.value) {
+      updateParams.email = sidebarEmail.value.trim()
+    } else {
+      updateParams.email = null
+    }
+    if (sidebarPhone.value) {
+      updateParams.phone = sidebarPhone.value.trim()
+    } else {
+      updateParams.phone = null
+    }
+    if (Object.keys(updateParams).length > 0) {
+      promises.push(updateUserApi(uid, updateParams))
+    }
+  } else {
+    // For resident/contact: update PHI or contact based on save flags
+    // Need to determine if this is a resident or contact
+    try {
+      // Try to get resident info to determine if userId is resident_id or contact_id
+      const resident = await getResidentApi(uid, { include_phi: true, include_contacts: true })
+      const residentId = resident.resident_id
+
+      // Check if this is a contact by checking if userId matches any contact_id
+      const contact = resident.contacts?.find(c => c.contact_id === uid)
+      
+      if (contact) {
+        // This is a contact - update contact email/phone
+        const { hashAccount } = await import('@/utils/crypto')
+        const updateParams: any = {
+          slot: contact.slot,
+        }
+        
+        // Email handling
+        if (sidebarEmail.value && sidebarEmail.value.trim()) {
+          const emailHash = hashAccount(sidebarEmail.value.trim().toLowerCase())
+          updateParams.email_hash = emailHash
+          if (saveEmail.value) {
+            updateParams.contact_email = sidebarEmail.value.trim()
+          } else {
+            updateParams.contact_email = null
+          }
+        } else {
+          updateParams.contact_email = null
+          // Don't update email_hash if email is cleared (keep existing hash)
+        }
+
+        // Phone handling
+        if (sidebarPhone.value && sidebarPhone.value.trim()) {
+          const phoneHash = hashAccount(sidebarPhone.value.trim().replace(/\D/g, ''))
+          updateParams.phone_hash = phoneHash
+          if (savePhone.value) {
+            updateParams.contact_phone = sidebarPhone.value.trim()
+          } else {
+            updateParams.contact_phone = null
+          }
+        } else {
+          updateParams.contact_phone = null
+          // Don't update phone_hash if phone is cleared (keep existing hash)
+        }
+
+        promises.push(updateResidentContactApi(residentId, updateParams))
+      } else {
+        // This is a resident - update PHI email/phone
+        const { hashAccount } = await import('@/utils/crypto')
+        const updateParams: any = {}
+        
+        // Email handling
+        if (sidebarEmail.value && sidebarEmail.value.trim()) {
+          const emailHash = hashAccount(sidebarEmail.value.trim().toLowerCase())
+          updateParams.email_hash = emailHash
+          if (saveEmail.value) {
+            updateParams.resident_email = sidebarEmail.value.trim()
+          } else {
+            updateParams.resident_email = null
+          }
+        } else {
+          updateParams.resident_email = null
+          // Don't update email_hash if email is cleared (keep existing hash)
+        }
+
+        // Phone handling
+        if (sidebarPhone.value && sidebarPhone.value.trim()) {
+          const phoneHash = hashAccount(sidebarPhone.value.trim().replace(/\D/g, ''))
+          updateParams.phone_hash = phoneHash
+          if (savePhone.value) {
+            updateParams.resident_phone = sidebarPhone.value.trim()
+          } else {
+            updateParams.resident_phone = null
+          }
+        } else {
+          updateParams.resident_phone = null
+          // Don't update phone_hash if phone is cleared (keep existing hash)
+        }
+
+        if (Object.keys(updateParams).length > 0) {
+          promises.push(updateResidentPHIApi(residentId, updateParams))
+        }
+      }
+    } catch (err: any) {
+      console.error('Failed to determine user type:', err)
+      // If can't determine, skip email/phone update
+    }
+  }
+
+  // Execute all updates
+  if (promises.length > 0) {
+    changingPassword.value = true
+    try {
+      await Promise.all(promises)
+      message.success('Account settings updated')
+      closePasswordModal()
+    } catch (e: any) {
+      message.error(e?.message || 'Failed to update account settings')
+    } finally {
+      changingPassword.value = false
+    }
+  } else {
+    message.warning('No changes to save')
   }
 }
 

@@ -123,7 +123,7 @@
                 />
                 <a-checkbox
                   v-model:checked="getContactBySlot(slot).save_email"
-                  :disabled="readonly || !getContactBySlot(slot).contact_email || getContactBySlot(slot).contact_email.trim() === ''"
+                  :disabled="readonly || !isValidEmailFormat(getContactBySlot(slot).contact_email)"
                   @change="handleContactChange(slot)"
                 style="margin-left: 20px"
                 >
@@ -150,7 +150,7 @@
                 />
                 <a-checkbox
                   v-model:checked="getContactBySlot(slot).save_phone"
-                  :disabled="readonly || !getContactBySlot(slot).contact_phone || getContactBySlot(slot).contact_phone.trim() === ''"
+                  :disabled="readonly || !isValidPhoneFormat(getContactBySlot(slot).contact_phone)"
                   @change="handleContactChange(slot)"
                 style="margin-left: 20px"
                 >
@@ -214,14 +214,14 @@ const initializeContacts = () => {
       // Initialize save flags based on whether email/phone exists or is placeholder in backend response
       const contactWithSaveFlags = {
         ...contact,
-        // If contact_email is placeholder "***@***", save_email should be true (hash exists but not saved)
+        // If contact_email is placeholder "***@***", save_email should be false (hash exists but not saved)
         // If contact_email is real value, save_email should be true
         // If contact_email is empty/null, save_email should be false
-        save_email: !!(contact.contact_email && contact.contact_email.trim()),
-        // If contact_phone is placeholder "xxx-xxx-xxxx", save_phone should be true (hash exists but not saved)
+        save_email: !!(contact.contact_email && contact.contact_email.trim() && contact.contact_email !== '***@***'),
+        // If contact_phone is placeholder "xxx-xxx-xxxx", save_phone should be false (hash exists but not saved)
         // If contact_phone is real value, save_phone should be true
         // If contact_phone is empty/null, save_phone should be false
-        save_phone: !!(contact.contact_phone && contact.contact_phone.trim()),
+        save_phone: !!(contact.contact_phone && contact.contact_phone.trim() && contact.contact_phone !== 'xxx-xxx-xxxx'),
       }
       // Keep placeholder for display (shows that hash exists but email/phone is not saved)
       // Placeholder will be displayed in input field, but when saving, if it's still placeholder, send null
@@ -510,6 +510,50 @@ const validateEmail = (value: string): { isValid: boolean; errorMessage: string 
   }
   
   return { isValid: true, errorMessage: '' }
+}
+
+// Synchronous email format validation (for disabled condition)
+const isValidEmailFormat = (value: string | undefined): boolean => {
+  if (!value || value.trim() === '') {
+    return false // Empty is not valid for save checkbox
+  }
+  // Skip validation for placeholder
+  if (value === '***@***') {
+    return false // Placeholder is not valid for save checkbox
+  }
+  const trimmedValue = value.trim()
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return emailRegex.test(trimmedValue)
+}
+
+// Synchronous phone format validation (for disabled condition)
+const isValidPhoneFormat = (value: string | undefined): boolean => {
+  if (!value || value.trim() === '') {
+    return false // Empty is not valid for save checkbox
+  }
+  // Skip validation for placeholder
+  if (value === 'xxx-xxx-xxxx') {
+    return false // Placeholder is not valid for save checkbox
+  }
+  // Remove all non-digit characters
+  const digitsOnly = value.replace(/\D/g, '')
+  // Check if it's exactly 10 digits
+  if (digitsOnly.length !== 10) {
+    return false
+  }
+  // Check area code: first digit must be 2-9
+  const areaCode = digitsOnly.substring(0, 3)
+  const areaCodeFirst = areaCode.charAt(0)
+  if (areaCodeFirst && (areaCodeFirst < '2' || areaCodeFirst > '9')) {
+    return false
+  }
+  // Check exchange code (middle 3 digits): first digit must be 2-9
+  const exchangeCode = digitsOnly.substring(3, 6)
+  const exchangeCodeFirst = exchangeCode.charAt(0)
+  if (exchangeCodeFirst && (exchangeCodeFirst < '2' || exchangeCodeFirst > '9')) {
+    return false
+  }
+  return true
 }
 
 // Handle contact email blur - trim and validate
