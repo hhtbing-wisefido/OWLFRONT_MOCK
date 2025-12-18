@@ -292,6 +292,7 @@ const fetchResident = async (params?: { include_phi?: boolean; include_contacts?
         entitiesStore.setResidentDetail(residentId.value, residentData.value)
       }
     } else {
+      // Always fetch to get caregivers data (even if no specific params)
       const result = await getResidentApi(residentId.value, params)
       residentData.value = { ...result }
       originalResidentData.value = { ...result } // Store original for cancel
@@ -395,6 +396,19 @@ const handleSave = async () => {
       
       // Contacts are already included in createParams above (if provided)
       
+      // Save caregivers if provided (after resident is created)
+      const caregiversData = profileContentRef.value?.getCaregiversData?.()
+      if (caregiversData && (caregiversData.userList?.length > 0 || caregiversData.groupList?.length > 0)) {
+        try {
+          await updateResidentApi(result.resident_id, {
+            caregivers: caregiversData,
+          })
+        } catch (error: any) {
+          console.error('Failed to save caregivers:', error)
+          message.warning('Resident created successfully, but caregivers assignment failed. You can add it later.')
+        }
+      }
+      
       message.success('Resident created successfully')
       
       // 跳转到详情页面，并自动转为 edit 模式
@@ -416,20 +430,26 @@ const handleSave = async () => {
         )
       } else {
         // Manager/Admin 可以更新所有字段
-        updatePromises.push(
-          updateResidentApi(residentId.value, {
-            nickname: profileData.nickname,
-            resident_account: profileData.resident_account,
-            email: profileData.email,
-            phone: profileData.phone,
-            status: profileData.status,
-            service_level: profileData.service_level,
-            admission_date: profileData.admission_date,
-            discharge_date: profileData.discharge_date,
-            family_tag: profileData.family_tag,
-            note: profileData.note,
-          })
-        )
+        const updateParams: any = {
+          nickname: profileData.nickname,
+          resident_account: profileData.resident_account,
+          email: profileData.email,
+          phone: profileData.phone,
+          status: profileData.status,
+          service_level: profileData.service_level,
+          admission_date: profileData.admission_date,
+          discharge_date: profileData.discharge_date,
+          family_tag: profileData.family_tag,
+          note: profileData.note,
+        }
+        
+        // Add caregivers data if available
+        const caregiversData = profileContentRef.value?.getCaregiversData?.()
+        if (caregiversData) {
+          updateParams.caregivers = caregiversData
+        }
+        
+        updatePromises.push(updateResidentApi(residentId.value, updateParams))
       }
       
       // 2. Update password if provided

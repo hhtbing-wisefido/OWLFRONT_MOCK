@@ -1755,17 +1755,23 @@ const handleCancelResetPin = () => {
 const fetchRoles = async () => {
   try {
     const data = await getRolesApi()
+    // Get current user's role
+    const currentUserRole = userStore.getUserInfo?.role
+    
     // Role dropdown is for creating/updating *users*:
     // - Always hide Resident/Family (they belong to residents flow, not staff users)
     // - Never allow assigning SystemAdmin here
     // - Only SystemAdmin within System tenant can assign SystemOperator
+    // - Manager/IT cannot assign Admin role (security: prevent privilege escalation)
     availableRoles.value = data.items.filter(
       (role) =>
         role.is_active &&
         role.role_code !== 'Resident' &&
         role.role_code !== 'Family' &&
         role.role_code !== 'SystemAdmin' &&
-        (role.role_code !== 'SystemOperator' || (isSystemTenant.value && isSystemAdmin.value))
+        (role.role_code !== 'SystemOperator' || (isSystemTenant.value && isSystemAdmin.value)) &&
+        // Manager/IT cannot assign Admin role
+        !(role.role_code === 'Admin' && (currentUserRole === 'Manager' || currentUserRole === 'IT'))
     )
   } catch (error: any) {
     console.error('Failed to fetch roles:', error)

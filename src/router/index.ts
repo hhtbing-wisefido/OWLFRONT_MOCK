@@ -386,6 +386,26 @@ router.beforeEach((to, _from, next) => {
       })
       return
     }
+    
+    // IT 角色限制：不能访问 Create Resident 和 Detail 页面
+    if (userInfo?.role === 'IT') {
+      // 阻止访问 Create Resident 页面
+      if (routePath === '/residents/create') {
+        console.warn('[Router] IT role cannot access Create Resident page')
+        next({
+          path: '/residents',
+        })
+        return
+      }
+      // 阻止访问 Resident Detail 页面
+      if (routePath.match(/^\/resident\/[^/]+\/profile/)) {
+        console.warn('[Router] IT role cannot access Resident Detail page')
+        next({
+          path: '/residents',
+        })
+        return
+      }
+    }
   }
   
   next()

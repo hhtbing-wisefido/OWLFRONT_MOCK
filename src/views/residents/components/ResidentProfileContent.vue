@@ -1169,6 +1169,7 @@ const fieldPermissions = {
   family_tag: { view: ['Manager', 'Admin', 'Nurse', 'Caregiver'], edit: ['Manager', 'Admin'] },
   note: { view: ['Manager', 'Admin', 'Nurse', 'Caregiver'], edit: ['Manager', 'Admin', 'Nurse'] },
   is_access_enabled: { view: ['Manager', 'Admin'], edit: ['Manager', 'Admin'] },
+  unit_id: { view: ['Manager', 'Admin', 'Nurse', 'Caregiver'], edit: ['Manager', 'Admin'] }, // Allocation Unit and Caregiver assignment
 }
 
 // 检查字段是否可见
@@ -1379,11 +1380,49 @@ const getPassword = () => {
   return undefined
 }
 
+const getCaregiversData = () => {
+  return {
+    userList: selectedCaregiverIds.value,
+    groupList: selectedCaregiverTagIds.value,
+  }
+}
+
 defineExpose({
   getResidentData,
   getPHIData,
-  getPassword
+  getPassword,
+  getCaregiversData,
 })
+
+// Watch for residentData changes to initialize caregivers
+watch(
+  () => props.residentData,
+  (newData) => {
+    if (newData?.caregivers) {
+      const caregivers = newData.caregivers as { userList?: string[]; groupList?: string[] }
+      if (caregivers.userList) {
+        selectedCaregiverIds.value = [...caregivers.userList]
+        updateCaregiversDisplay()
+      }
+      if (caregivers.groupList) {
+        selectedCaregiverTagIds.value = [...caregivers.groupList]
+        const selectedTags = availableCaregiverTags.value.filter(
+          tag => selectedCaregiverTagIds.value.includes(tag.tag_id)
+        )
+        selectedCaregiverGroupDisplay.value = selectedTags
+          .map(tag => tag.tag_name)
+          .join(', ')
+      }
+    } else {
+      // Reset if no caregivers data
+      selectedCaregiverIds.value = []
+      selectedCaregiverTagIds.value = []
+      selectedCaregiversDisplay.value = ''
+      selectedCaregiverGroupDisplay.value = ''
+    }
+  },
+  { immediate: true, deep: true }
+)
 
 // Handle nickname change - sync to first_name if checkbox is checked
 const handleNicknameChange = () => {

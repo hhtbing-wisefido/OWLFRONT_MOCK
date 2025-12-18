@@ -96,7 +96,11 @@
       </template>
       <template #bodyCell="{ column, record }">
         <template v-if="column.dataIndex === 'nickname'">
-          <span @dblclick="handleRowDoubleClick(record)" style="cursor: pointer; color: #1890ff;">
+          <!-- IT 角色禁用双击查看详情 -->
+          <span 
+            @dblclick="!hasRole('IT') && handleRowDoubleClick(record)" 
+            :style="hasRole('IT') ? 'color: #000;' : 'cursor: pointer; color: #1890ff;'"
+          >
             {{ record.nickname || '-' }}
           </span>
         </template>
@@ -117,7 +121,12 @@
         </template>
         <template v-else-if="column.key === 'operation'">
           <a-space>
-            <a-button size="small" @click="viewResident(record)">
+            <!-- IT 角色隐藏 Details 按钮 -->
+            <a-button 
+              v-if="!hasRole('IT')" 
+              size="small" 
+              @click="viewResident(record)"
+            >
               Details
             </a-button>
             <a-button size="small" @click="handleResetPassword(record)">
@@ -206,9 +215,11 @@ import type {
 } from '@/api/resident/model/residentModel'
 import { useEntitiesStore } from '@/store/modules/entities'
 import { usePermission } from '@/hooks/usePermission'
+import { useUserStore } from '@/store/modules/user'
 
 const router = useRouter()
 const entitiesStore = useEntitiesStore()
+const userStore = useUserStore()
 const { hasManagePermission, hasRole } = usePermission()
 
 // Navigate to home page
@@ -228,8 +239,12 @@ const handleRefresh = async () => {
   message.success('Data refreshed from database')
 }
 
-// 权限控制：只有 Manager/Admin 可以创建住户
+// 权限控制：只有 Manager/Admin 可以创建住户（IT 不能创建）
 const canCreateResident = computed(() => {
+  // IT 角色不能创建住户
+  if (hasRole('IT')) {
+    return false
+  }
   return hasManagePermission.value || hasRole(['Manager'])
 })
 
@@ -295,6 +310,20 @@ const locationSorter = (a: Resident, b: Resident) => {
   const aUnitName = a.unit_name || ''
   const bUnitName = b.unit_name || ''
   return aUnitName.localeCompare(bUnitName)
+}
+
+// Multi-column sorter for account: resident_account > family_tag
+const accountSorter = (a: Resident, b: Resident) => {
+  // Priority 1: resident_account
+  const aAccount = a.resident_account || ''
+  const bAccount = b.resident_account || ''
+  const accountCompare = aAccount.localeCompare(bAccount)
+  if (accountCompare !== 0) return accountCompare
+
+  // Priority 2: family_tag
+  const aFamilyTag = a.family_tag || ''
+  const bFamilyTag = b.family_tag || ''
+  return aFamilyTag.localeCompare(bFamilyTag)
 }
 
 const columns = [
@@ -372,6 +401,7 @@ const columns = [
     ellipsis: true,
     align: 'left',
     width: 100,
+    sorter: accountSorter,
   },
   {
     title: 'Family_tag',
@@ -716,21 +746,11 @@ const fetchResidents = async () => {
       // Don't pass status to API, filter on frontend
     }
     
-    // Always fetch from API when there are search params
-    // Store cache is useful for initial load without filters
-    const hasSearch = searchText.value
-    if (!hasSearch && !entitiesStore.shouldRefreshResidents && entitiesStore.residents.length > 0) {
-      // Use store cache if no search and cache is valid
-      dataSource.value = entitiesStore.residents
-    } else {
-      // Fetch from API
-      const result = await getResidentsApi(params)
-      // Update store with fetched data
-      if (!hasSearch) {
-        entitiesStore.setResidents(result.items)
-      }
-      dataSource.value = result.items
-    }
+    // Always fetch from API to ensure data matches current user's permissions
+    // Cache is not used here because different users (even with same role) may see different data
+    // based on assigned_only and branch_only permissions
+    const result = await getResidentsApi(params)
+    dataSource.value = result.items
     
     // Filter by status on frontend
     filteredDataSource.value = dataSource.value.filter((resident) => 

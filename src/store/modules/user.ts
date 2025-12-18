@@ -630,6 +630,12 @@ export const useUserStore = defineStore('user', {
       sessionStorage.removeItem('LOGIN_TYPE')
       // HIPAA Compliance: Clear all authentication data on logout
       clearAllAuthData()
+      // Clear entities store cache when user logs out/switches
+      // This prevents showing cached data from previous user
+      import('@/store/modules/entities').then(({ useEntitiesStore }) => {
+        const entitiesStore = useEntitiesStore()
+        entitiesStore.clearCache()
+      })
     },
   },
 })
