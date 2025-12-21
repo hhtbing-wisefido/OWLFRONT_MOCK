@@ -795,6 +795,12 @@ const deleteTagName = async (record: TagCatalogItem) => {
       return
     }
 
+    // Validate tag_name
+    if (!record.tag_name || record.tag_name.trim() === '') {
+      message.error('Tag name is required')
+      return
+    }
+
     const userInfo = userStore.getUserInfo
     const tenantId = userInfo?.tenant_id
 
@@ -805,7 +811,7 @@ const deleteTagName = async (record: TagCatalogItem) => {
 
     const params: DeleteTagParams = {
       tenant_id: tenantId,
-      tag_name: record.tag_name,
+      tag_name: record.tag_name.trim(),
     }
 
     await deleteTagApi(params)

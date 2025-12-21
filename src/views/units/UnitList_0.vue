@@ -1342,24 +1342,25 @@ const handleSelectFloorWrapper = async (building: Building, floor: string) => {
 }
 
 // Get Building display name - simple format: branch_tag-building_name
-// When branch_tag is null/undefined, use empty string (keep the '-' separator)
-// Filter out buildings where both branch_tag and building_name are empty
+// Both branch_tag and building_name default to '-' when empty
+// Filter out buildings where both branch_tag and building_name are '-' (should not exist per business rule)
 const buildingsWithDisplayName = computed(() => {
   const buildingList = buildings.value
     .filter((building) => {
-      // Filter out buildings where both branch_tag and building_name are empty
+      // Filter out buildings where both branch_tag and building_name are '-'
       // Per business rule: branch_tag or building_name must have at least one non-empty value
-      const tagName = building.branch_tag ?? ''
-      const buildingName = building.building_name || ''
-      return !(tagName === '' && buildingName === '')
+      // When branch_tag is null, treat it as '-' for filtering purposes
+      const tagName = building.branch_tag ?? '-'
+      const buildingName = building.building_name || '-'
+      return !(tagName === '-' && buildingName === '-')
     })
     .map((building) => {
-      // When branch_tag is null/undefined, use empty string (keep the '-' separator)
-      // Display format: branch_tag-building_name (always show '-' separator)
-      const tagName = building.branch_tag ?? ''
+      // When branch_tag is null/undefined, use '-' as placeholder
+      // Display format: branch_tag-building_name (always use '-' as separator)
+      const tagName = building.branch_tag ?? '-'
       const buildingName = building.building_name || '-'
       
-      // Display name: always show branch_tag-building_name format (keep '-' separator even if branch_tag is empty)
+      // Display name: always show branch_tag-building_name format
       const displayName = `${tagName}-${buildingName}`
       
       return {

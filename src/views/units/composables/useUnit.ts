@@ -1,6 +1,6 @@
 import { ref, nextTick } from 'vue'
 import { message, Modal } from 'ant-design-vue'
-import type { Unit, RoomWithBeds } from '@/api/units/model/unitModel'
+import type { Unit, RoomWithBeds, CreateUnitParams, UpdateUnitParams } from '@/api/units/model/unitModel'
 import {
   createUnitApi,
   getUnitsApi,
@@ -31,7 +31,7 @@ export function useUnit() {
     branch_tag: undefined as string | undefined,
     area_tag: undefined as string | undefined,
     building: '',
-    floor: '',
+    floor: undefined as string | undefined, // Can be undefined to allow selection from dropdown
     is_multi_person_room: true,
     is_public_space: false,
     timezone: 'America/Denver' as string | undefined, // Default to Mountain Time
@@ -154,7 +154,7 @@ export function useUnit() {
 
   // Create unit
   const handleCreateUnit = async (
-    selectedBuilding: { building_name?: string } | null,
+    selectedBuilding: { building_name?: string; branch_tag?: string; floors?: number } | null,
     selectedFloor: string
   ) => {
     try {
@@ -171,13 +171,25 @@ export function useUnit() {
         return
       }
 
-      // Determine building value: form > selectedBuilding > default
-      const buildingValue: string = createUnitForm.value.building?.trim() || selectedBuilding?.building_name || '-'
-      // Determine floor value: form > selectedFloor > default
-      const floorValue: string = createUnitForm.value.floor?.trim() || selectedFloor || '1F'
-      // Determine branch_tag: form > selectedBuilding > default '-'
-      // branch_tag defaults to '-' when empty
-      const branchTagValue = createUnitForm.value.branch_tag?.trim() || selectedBuilding?.branch_tag || '-'
+      // 自动使用 selectedBuilding 和 selectedFloor（不再从表单获取）
+      if (!selectedBuilding || !selectedFloor) {
+        message.error('Please select a building and floor first')
+        return
+      }
+      
+      // 验证 building 的 floors：如果为空或为 0，设置为 1
+      const buildingFloors = selectedBuilding.floors || 0
+      if (buildingFloors <= 0) {
+        // 如果 floors 为空或为 0，设置为 1
+        if (selectedBuilding && 'floors' in selectedBuilding) {
+          (selectedBuilding as any).floors = 1
+        }
+      }
+      
+      // 直接从 selectedBuilding 和 selectedFloor 获取值
+      const buildingValue: string = selectedBuilding.building_name || '-'
+      const floorValue: string = selectedFloor
+      const branchTagValue = selectedBuilding.branch_tag || '-'
       // area_tag from form
       const areaTagValue = createUnitForm.value.area_tag || undefined
       
@@ -224,7 +236,6 @@ export function useUnit() {
         floor: result?.floor,
         branch_tag: result?.branch_tag,
         area_tag: result?.area_tag,
-        is_active: result?.is_active,
       })
 
       if (!result) {
@@ -252,7 +263,7 @@ export function useUnit() {
       branch_tag: undefined,
       area_tag: undefined,
       building: '',
-      floor: '',
+      floor: undefined, // Reset to undefined so it can be selected from dropdown
       is_public_space: false,
       is_multi_person_room: true,
       timezone: 'America/Denver', // Default to Mountain Time
@@ -317,7 +328,7 @@ export function useUnit() {
         const updateParams: UpdateUnitParams = {
           unit_name: editUnitForm.value.unit_name,
           unit_number: editUnitForm.value.unit_number,
-          unit_type: editUnitForm.value.unit_type,
+          // unit_type is not in UpdateUnitParams, so we don't include it
           area_tag: editUnitForm.value.area_tag,
           is_public_space: editUnitForm.value.is_public_space,
           is_multi_person_room: editUnitForm.value.is_multi_person_room,

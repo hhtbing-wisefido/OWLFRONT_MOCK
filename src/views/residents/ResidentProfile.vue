@@ -431,16 +431,16 @@ const handleSave = async () => {
       } else {
         // Manager/Admin 可以更新所有字段
         const updateParams: any = {
-          nickname: profileData.nickname,
-          resident_account: profileData.resident_account,
-          email: profileData.email,
-          phone: profileData.phone,
-          status: profileData.status,
-          service_level: profileData.service_level,
-          admission_date: profileData.admission_date,
-          discharge_date: profileData.discharge_date,
-          family_tag: profileData.family_tag,
-          note: profileData.note,
+            nickname: profileData.nickname,
+            resident_account: profileData.resident_account,
+            email: profileData.email,
+            phone: profileData.phone,
+            status: profileData.status,
+            service_level: profileData.service_level,
+            admission_date: profileData.admission_date,
+            discharge_date: profileData.discharge_date,
+            family_tag: profileData.family_tag,
+            note: profileData.note,
         }
         
         // Add caregivers data if available

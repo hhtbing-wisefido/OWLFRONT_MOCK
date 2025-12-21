@@ -23,7 +23,7 @@
         <a-select
           id="create-building-location-tag"
           name="create-building-location-tag"
-          v-model:value="createBuildingForm.branch_tag"
+          v-model:value="createBuildingForm.location_tag"
           placeholder="Select Branch"
           allow-clear
           show-search
@@ -31,7 +31,7 @@
           style="width: 150px"
         >
           <a-select-option
-            v-for="tag in branchTagOptions"
+            v-for="tag in locationTagOptions"
             :key="tag.tag_name"
             :value="tag.tag_name"
           >
@@ -91,7 +91,7 @@
                 <a-select
                   :id="`edit-building-location-tag-${building.building_id}`"
                   :name="`edit-building-location-tag-${building.building_id}`"
-                  v-model:value="editingBuildingForm.branch_tag"
+                  v-model:value="editingBuildingForm.location_tag"
                   placeholder="Select Branch"
                   size="small"
                   allow-clear
@@ -101,7 +101,7 @@
                   @pressEnter="handleSaveBuilding(building)"
                 >
                   <a-select-option
-                    v-for="tag in branchTagOptions"
+                    v-for="tag in locationTagOptions"
                     :key="tag.tag_name"
                     :value="tag.tag_name"
                   >
@@ -184,7 +184,7 @@
                 <a-select
                   :id="`edit-building-location-tag-card-${building.building_id}`"
                   :name="`edit-building-location-tag-card-${building.building_id}`"
-                  v-model:value="editingBuildingForm.branch_tag"
+                  v-model:value="editingBuildingForm.location_tag"
                   placeholder="Select Branch"
                   size="small"
                   allow-clear
@@ -194,7 +194,7 @@
                   @pressEnter="handleSaveBuilding(building)"
                 >
                   <a-select-option
-                    v-for="tag in branchTagOptions"
+                    v-for="tag in locationTagOptions"
                     :key="tag.tag_name"
                     :value="tag.tag_name"
                   >
@@ -244,8 +244,8 @@
 
       <!-- Right: Unit Grid -->
       <div class="unit-grid-container">
-        <div v-if="!selectedBuilding" class="empty-state">
-              <p>Please select a building</p>
+        <div v-if="!selectedBuilding || !selectedFloor" class="empty-state">
+              <p>Please select a floor</p>
         </div>
         <div v-else class="unit-grid-wrapper">
           <div class="unit-grid">
@@ -316,33 +316,24 @@
             </a-radio-group>
           </div>
         </a-form-item>
-        <a-form-item label="Branch" v-if="selectedBuilding">
-          <a-input
-            :value="selectedBuilding.branch_tag ?? ''"
-            disabled
-            style="background: #f5f5f5;"
-          />
-        </a-form-item>
-        <a-form-item label="Building" v-if="selectedBuilding">
-          <a-input
-            :value="selectedBuilding.building_name || '-'"
-            disabled
-            style="background: #f5f5f5;"
-          />
-        </a-form-item>
-        <a-form-item label="Floor" v-if="selectedBuilding && selectedFloor">
-          <a-input
-            :value="selectedFloor"
-            disabled
-            style="background: #f5f5f5;"
-          />
-        </a-form-item>
-        <a-form-item v-if="!selectedBuilding || !selectedFloor" style="margin-bottom: 16px;">
-          <a-alert
-            message="Please select a building and floor first"
-            type="warning"
-            show-icon
-          />
+        <a-form-item label="Location Tag">
+          <a-select
+            id="create-location-location-tag"
+            name="create-location-location-tag"
+            v-model:value="createUnitForm.location_tag"
+            placeholder="Select Branch"
+            allow-clear
+            show-search
+            :filter-option="false"
+          >
+            <a-select-option
+              v-for="tag in locationTagOptions"
+              :key="tag.tag_name"
+              :value="tag.tag_name"
+            >
+              {{ tag.tag_name }}
+            </a-select-option>
+          </a-select>
         </a-form-item>
         <a-form-item label="Area Tag">
           <a-select
@@ -356,25 +347,21 @@
             <a-select-option value="West">West</a-select-option>
           </a-select>
         </a-form-item>
-        <a-form-item label="Time Zone">
-          <a-select
-            id="create-location-timezone"
-            name="create-location-timezone"
-            v-model:value="createUnitForm.timezone"
-            placeholder="Select time zone"
-            allow-clear
-            show-search
-            :filter-option="filterTimeZoneOption"
-            style="width: 100%"
-          >
-            <a-select-option
-              v-for="tz in usTimeZones"
-              :key="tz.value"
-              :value="tz.value"
-            >
-              {{ tz.label }}
-            </a-select-option>
-          </a-select>
+        <a-form-item label="Building">
+          <a-input
+            id="create-location-building"
+            name="create-location-building"
+            v-model:value="createUnitForm.building"
+            placeholder="Enter building (optional)"
+          />
+        </a-form-item>
+        <a-form-item label="Floor">
+          <a-input
+            id="create-location-floor"
+            name="create-location-floor"
+            v-model:value="createUnitForm.floor"
+            placeholder="Enter floor (optional)"
+          />
         </a-form-item>
       </a-form>
     </a-modal>
@@ -1026,7 +1013,7 @@ const deviceComposable = useDevice()
 const {
   buildings,
   selectedFloor,
-  selectedBranchTag,
+  selectedLocationTag,
   expandedBuildings,
   selectedBuilding,
   currentBuildingForGrid,
@@ -1158,41 +1145,7 @@ const toggleBedDevices = (bedId: string) => {
 }
 
 // Location Tag Options (从 store 获取)
-// For branch_tag, branch names are stored in tag_objects JSONB (tag_name = "Branch")
-// If tag_objects.branch is empty, fallback to extract from buildings
-const branchTagOptions = computed(() => {
-  const branchTags = tagsStore.branchTags
-  const branchNames: Array<{ tag_name: string }> = []
-  
-  // First, try to get branch names from tag_name = "Branch" tag's tag_objects.branch
-  const branchTag = branchTags.find(tag => tag.tag_name === 'Branch')
-  if (branchTag && branchTag.tag_objects && branchTag.tag_objects.branch) {
-    // Extract all branch names from tag_objects.branch
-    Object.values(branchTag.tag_objects.branch).forEach(branchName => {
-      if (typeof branchName === 'string' && branchName) {
-        // Check if branch name already exists
-        if (!branchNames.find(b => b.tag_name === branchName)) {
-          branchNames.push({ tag_name: branchName })
-        }
-      }
-    })
-  }
-  
-  // If tag_objects.branch is empty, fallback to extract from buildings
-  if (branchNames.length === 0) {
-    const branchTagSet = new Set<string>()
-    buildings.value.forEach(building => {
-      if (building.branch_tag && building.branch_tag !== '-') {
-        branchTagSet.add(building.branch_tag)
-      }
-    })
-    branchTagSet.forEach(branchTag => {
-      branchNames.push({ tag_name: branchTag })
-    })
-  }
-  
-  return branchNames.sort((a, b) => a.tag_name.localeCompare(b.tag_name))
-})
+const locationTagOptions = computed(() => tagsStore.locationTags)
 
 // Area Tag Options (从 store 获取)
 const areaTagOptions = computed(() => tagsStore.areaTags)
@@ -1220,47 +1173,32 @@ const filterTimeZoneOption = (input: string, option: any) => {
   return value.includes(searchText) || label.includes(searchText)
 }
 
-// Unit grid calculation - sort by Floor and UnitNumber numerically
-// Display all units belonging to the selected building, regardless of floor
+// Unit grid calculation - sort by UnitNumber numerically
 const unitGrid = computed(() => {
   const building = currentBuildingForGrid.value
 
-  if (!building) {
+  if (!building || !selectedFloor.value) {
     return []
   }
 
-  // All units have branch_tag, building, floor (no null values)
-  // Filter: match building and branch_tag (show all floors for the building)
-  // Exclude placeholder units (unit_name starting with __BUILDING__)
+  // All units have location_tag, building, floor (no null values)
+  // Simple filter: match all three fields
   const filteredUnits = units.value.filter((unit) => {
-    // Exclude placeholder units used for building representation
-    if (unit.unit_name && unit.unit_name.startsWith('__BUILDING__')) {
-      return false
-    }
-    return (
+      return (
       unit.building === building.building_name &&
-      unit.branch_tag === building.branch_tag
+      unit.floor === selectedFloor.value &&
+      unit.location_tag === building.location_tag
     )
   })
 
-  // Sort by floor first (extract number from "1F", "2F", etc.), then by unit_number
+  // Sort by unit_number: try numeric sort first, fallback to string sort
   const sortedUnits = [...filteredUnits].sort((a, b) => {
-    // Extract floor number
-    const floorNumA = parseInt((a.floor || '1F').replace(/[^0-9]/g, '')) || 0
-    const floorNumB = parseInt((b.floor || '1F').replace(/[^0-9]/g, '')) || 0
-    
-    // First sort by floor
-    if (floorNumA !== floorNumB) {
-      return floorNumA - floorNumB
-    }
-    
-    // Then sort by unit_number: try numeric sort first, fallback to string sort
     const numA = parseInt(a.unit_number)
     const numB = parseInt(b.unit_number)
     
     // If both are valid numbers, sort numerically
     if (!isNaN(numA) && !isNaN(numB)) {
-      return numA - numB
+    return numA - numB
     }
     
     // Otherwise, sort alphabetically
@@ -1275,7 +1213,7 @@ const unitGrid = computed(() => {
 
 // Fetch functions are now in composables, but we need wrapper functions for some cases
 
-// Get Unit list - fetch all units for the selected building (all floors)
+// Get Unit list
 const fetchUnits = async () => {
   try {
     const userInfo = userStore.getUserInfo
@@ -1290,29 +1228,28 @@ const fetchUnits = async () => {
     // According to DB schema (05_units.sql):
     // - building: VARCHAR(50) NOT NULL DEFAULT '-' (always has value)
     // - floor: VARCHAR(50) NOT NULL DEFAULT '1F' (always has value)
-    // - branch_tag: VARCHAR(255) (can be NULL)
-    // - Unique constraint: (tenant_id, branch_tag, building, floor, unit_name)
+    // - location_tag: VARCHAR(255) (can be NULL)
+    // - Unique constraint: (tenant_id, location_tag, unit_name) if location_tag IS NOT NULL
+    //                      (tenant_id, unit_name) if location_tag IS NULL
     
-    // All units have branch_tag, building, floor (no null values)
-    const building = currentBuildingForGrid.value
+    // All units have location_tag, building, floor (no null values)
+  const building = currentBuildingForGrid.value
   
-    if (!building) {
-      units.value = []
-      return
-    }
+    if (!building || !selectedFloor.value) {
+    units.value = []
+    return
+  }
 
-    // Build query parameters - fetch all units for the building (all floors)
-    // When branch_tag is null, pass empty string to match NULL in database
+    // Build query parameters - simple and direct
     const queryParams: any = {
       tenant_id: tenantId,
       building: building.building_name,
-      // Pass empty string if branch_tag is null/undefined to match NULL in database
-      branch_tag: building.branch_tag ?? '',
-      // Don't filter by floor - get all floors for the building
+      floor: selectedFloor.value,
+      location_tag: building.location_tag,
     }
     
-    const result = await getUnitsApi(queryParams)
-    units.value = result.items
+      const result = await getUnitsApi(queryParams)
+      units.value = result.items
   } catch (error: any) {
     console.error('[Fetch Units] Error:', error)
     message.error('Failed to fetch units: ' + (error.message || 'Unknown error'))
@@ -1341,36 +1278,49 @@ const handleSelectFloorWrapper = async (building: Building, floor: string) => {
   await fetchUnits()
 }
 
-// Get Building display name - simple format: branch_tag-building_name
-// When branch_tag is null/undefined, use empty string (keep the '-' separator)
-// Filter out buildings where both branch_tag and building_name are empty
+// Get Building display name - simple format: location_tag-building_name
+// Both location_tag and building_name default to '-' when empty
 const buildingsWithDisplayName = computed(() => {
-  const buildingList = buildings.value
-    .filter((building) => {
-      // Filter out buildings where both branch_tag and building_name are empty
-      // Per business rule: branch_tag or building_name must have at least one non-empty value
-      const tagName = building.branch_tag ?? ''
-      const buildingName = building.building_name || ''
-      return !(tagName === '' && buildingName === '')
-    })
-    .map((building) => {
-      // When branch_tag is null/undefined, use empty string (keep the '-' separator)
-      // Display format: branch_tag-building_name (always show '-' separator)
-      const tagName = building.branch_tag ?? ''
-      const buildingName = building.building_name || '-'
-      
-      // Display name: always show branch_tag-building_name format (keep '-' separator even if branch_tag is empty)
-      const displayName = `${tagName}-${buildingName}`
-      
-      return {
-        ...building,
-        tag_name: tagName,
-        displayName,
+  const buildingList = buildings.value.map((building) => {
+    // Default to '-' if empty (consistent with DB defaults)
+    const tagName = building.location_tag || '-'
+    const buildingName = building.building_name || '-'
+    
+    // Simple display name: always show location_tag-building_name
+    // If both are '-', it will display '---'
+    const displayName = `${tagName}-${buildingName}`
+    
+    return {
+      ...building,
+      tag_name: tagName,
+      displayName,
+    }
+  })
+  
+  // Add virtual "-" building for units with building = "-"
+  const hasUnitsWithoutBuilding = allUnits.value.some((unit) => unit.building === '-')
+  if (hasUnitsWithoutBuilding) {
+    // Group by location_tag (default to '-' if empty)
+    const locationTags = new Set<string>()
+    allUnits.value.forEach((unit) => {
+      if (unit.building === '-') {
+        const locationTag = unit.location_tag || '-'
+        locationTags.add(locationTag)
       }
     })
-  
-  // Building 已改为实体，不再从 units 表虚拟获取
-  // 所有 buildings 都从 buildings 表获取，不再需要虚拟 building 逻辑
+    
+    locationTags.forEach((locationTag) => {
+      buildingList.push({
+        building_id: `na-building-${locationTag}`,
+        building_name: '-',
+        floors: 1,
+        tenant_id: 'tenant-1',
+        location_tag: locationTag,
+        displayName: `${locationTag}--`, // location_tag + '-' + '-' (building_name is always '-')
+        tag_name: locationTag,
+      } as any)
+    })
+  }
   
   return buildingList
 })
@@ -1412,50 +1362,52 @@ const handleCreateUnit = async () => {
       return
     }
 
-    // 自动使用 selectedBuilding 和 selectedFloor（不再从表单获取）
-    const finalBuilding = selectedBuilding.value?.building_name || '-'
-    const finalFloor = selectedFloor.value || '1F'
-    const finalBranchTag = selectedBuilding.value?.branch_tag || '-'
+    // Calculate the values that will be used for creation (same logic as in handleCreateUnitBase)
+    const formBuilding = createUnitForm.value.building?.trim() || ''
+    const formFloor = createUnitForm.value.floor?.trim() || ''
+    // Both location_tag and building_name default to '-' when empty
+    const formLocationTag = createUnitForm.value.location_tag?.trim() || '-'
+    
+    // Final values that will be sent to API (same logic as in handleCreateUnitBase)
+    const finalBuilding = formBuilding || selectedBuilding.value?.building_name || '-'
+    const finalFloor = formFloor || selectedFloor.value || '1F'
+    const finalLocationTag = formLocationTag !== '-' ? formLocationTag : (selectedBuilding.value?.location_tag || '-')
     
     // According to DB schema (05_units.sql):
     // - building: VARCHAR(50) NOT NULL DEFAULT '-' (always has value)
     // - floor: VARCHAR(50) NOT NULL DEFAULT '1F' (always has value)
-    // - branch_tag: VARCHAR(255) (can be NULL)
-    // - Unique constraint: (tenant_id, branch_tag, unit_name) if branch_tag IS NOT NULL
-    //                      (tenant_id, unit_name) if branch_tag IS NULL
+    // - location_tag: VARCHAR(255) (can be NULL)
+    // - Unique constraint: (tenant_id, location_tag, unit_name) if location_tag IS NOT NULL
+    //                      (tenant_id, unit_name) if location_tag IS NULL
     
     // Update query parameters to match creation parameters
-    // Both branch_tag and building_name default to '-' when empty
+    // Both location_tag and building_name default to '-' when empty
     
-    // 1. Update selectedBranchTag (defaults to '-')
-    selectedBranchTag.value = finalBranchTag || '-'
+    // 1. Update selectedLocationTag (defaults to '-')
+    selectedLocationTag.value = finalLocationTag || '-'
     
     // 2. Update currentBuildingForGrid to match the building that will be used for creation
-    const branchTagForBuilding = finalBranchTag || '-'
+    const locationTagForBuilding = finalLocationTag || '-'
     
     if (finalBuilding === '-') {
-      // For "-" building, create/find virtual building with branch_tag
+      // For "-" building, create/find virtual building with location_tag
       const virtualBuilding = buildings.value.find(b => 
-        b.building_name === '-' && b.branch_tag === branchTagForBuilding
+        b.building_name === '-' && b.location_tag === locationTagForBuilding
       ) || {
-        building_id: `na-building-${branchTagForBuilding}`,
+        building_id: `na-building-${locationTagForBuilding}`,
         building_name: '-',
-        branch_tag: branchTagForBuilding,
-        floors: 1, // Default to 1 if empty
+        location_tag: locationTagForBuilding,
+        floors: 0,
       } as Building
       
       currentBuildingForGrid.value = virtualBuilding
     } else {
-      // For real building, find building with matching building_name and branch_tag
+      // For real building, find building with matching building_name and location_tag
       const matchingBuilding = buildings.value.find(b => 
-        b.building_name === finalBuilding && b.branch_tag === branchTagForBuilding
+        b.building_name === finalBuilding && b.location_tag === locationTagForBuilding
       )
       
       if (matchingBuilding) {
-        // Ensure floors is at least 1
-        if (!matchingBuilding.floors || matchingBuilding.floors <= 0) {
-          matchingBuilding.floors = 1
-        }
         currentBuildingForGrid.value = matchingBuilding
         // Also update selectedBuilding if it doesn't match
         if (!selectedBuilding.value || selectedBuilding.value.building_id !== matchingBuilding.building_id) {
@@ -1463,19 +1415,16 @@ const handleCreateUnit = async () => {
         }
       } else if (selectedBuilding.value && 
                  selectedBuilding.value.building_name === finalBuilding &&
-                 selectedBuilding.value.branch_tag === branchTagForBuilding) {
-        // selectedBuilding matches, ensure floors is at least 1
-        if (!selectedBuilding.value.floors || selectedBuilding.value.floors <= 0) {
-          selectedBuilding.value.floors = 1
-        }
+                 selectedBuilding.value.location_tag === locationTagForBuilding) {
+        // selectedBuilding matches, use it
         currentBuildingForGrid.value = selectedBuilding.value
       } else {
         // Building not found in list - create temporary building object for querying
         currentBuildingForGrid.value = {
-          building_id: `temp-${finalBuilding}-${branchTagForBuilding}`,
+          building_id: `temp-${finalBuilding}-${locationTagForBuilding}`,
           building_name: finalBuilding,
-          branch_tag: branchTagForBuilding,
-          floors: 1, // Default to 1 if empty
+          location_tag: locationTagForBuilding,
+          floors: 0,
         } as Building
       }
     }
@@ -1490,19 +1439,19 @@ const handleCreateUnit = async () => {
     }
 
     // Verify created unit has correct values
-    const createdBranchTag = createdUnit.branch_tag || '-'
-    if (createdUnit.building !== finalBuilding || createdUnit.floor !== finalFloor || createdBranchTag !== finalBranchTag) {
+    const createdLocationTag = createdUnit.location_tag || '-'
+    if (createdUnit.building !== finalBuilding || createdUnit.floor !== finalFloor || createdLocationTag !== finalLocationTag) {
       console.error('[Create Unit] Mismatch!', {
-        created: { building: createdUnit.building, floor: createdUnit.floor, branch_tag: createdBranchTag },
-        expected: { building: finalBuilding, floor: finalFloor, branch_tag: finalBranchTag },
+        created: { building: createdUnit.building, floor: createdUnit.floor, location_tag: createdLocationTag },
+        expected: { building: finalBuilding, floor: finalFloor, location_tag: finalLocationTag },
         currentBuildingForGrid: currentBuildingForGrid.value,
       })
       message.warning('Unit created but with different values. Please refresh.')
     }
     
-    // Ensure currentBuildingForGrid has correct branch_tag before fetching
+    // Ensure currentBuildingForGrid has correct location_tag before fetching
     if (currentBuildingForGrid.value) {
-      currentBuildingForGrid.value.branch_tag = finalBranchTag
+      currentBuildingForGrid.value.location_tag = finalLocationTag
     }
     
     // Wait a bit to ensure backend has processed the creation
@@ -1647,7 +1596,7 @@ const handleToggleAddDevice = async () => {
 
 // Wrapper for handleSaveUnit that calls fetchUnits and handleCellClick
 const handleSaveUnit = async () => {
-  const newUnit = await handleSaveUnitBase(currentBuildingForGrid.value, selectedBranchTag.value)
+  const newUnit = await handleSaveUnitBase(currentBuildingForGrid.value, selectedLocationTag.value)
   if (newUnit) {
       await fetchUnits()
       await handleCellClick(newUnit, -1)

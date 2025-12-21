@@ -29,7 +29,7 @@
         {{ getFirstWord(userInfo?.tenant_name) || '' }}
       </div>
       <div class="action-buttons">
-        <a-button v-if="!collapsed" type="text" class="action-btn" @click="handlePasswordChange" title="Change Password">
+        <a-button v-if="!collapsed" type="text" class="action-btn" @click="handlePasswordChange" title="Account Setting">
           <template #icon>
             <LockOutlined />
           </template>
@@ -149,6 +149,11 @@
               Save
             </a-checkbox>
           </a-space>
+        </div>
+
+        <!-- HIPAA Hint for Resident/Contact -->
+        <div v-if="!isStaffUser" style="font-size: 12px; color: #999; margin-top: 8px; margin-bottom: 8px;">
+          Email/Phone is used to reset password. Don't save by default. If save, please check [Save].
         </div>
       </a-form>
     </a-modal>
@@ -291,10 +296,11 @@ const loadAccountInfo = async () => {
             sidebarEmail.value = contact.contact_email || ''
             sidebarPhone.value = contact.contact_phone || ''
             // Initialize save flags: if email/phone exists and is not placeholder, save flag is true
+            // For HIPAA compliance: default to false (don't save) if email/phone is empty
             const emailValue = contact.contact_email && contact.contact_email.trim()
-            saveEmail.value = !!(emailValue && emailValue !== '***@***')
+            saveEmail.value = !!(emailValue && emailValue !== '***@***' && emailValue !== '')
             const phoneValue = contact.contact_phone && contact.contact_phone.trim()
-            savePhone.value = !!(phoneValue && phoneValue !== 'xxx-xxx-xxxx')
+            savePhone.value = !!(phoneValue && phoneValue !== 'xxx-xxx-xxxx' && phoneValue !== '')
           } else {
             // Contact not found, show resident info only
             accountInfo.value = {
@@ -305,6 +311,11 @@ const loadAccountInfo = async () => {
               unit: resident.unit_name || '-',
               room: resident.room_name || '-',
             }
+            // No contact data: initialize to empty and don't save
+            sidebarEmail.value = ''
+            sidebarPhone.value = ''
+            saveEmail.value = false
+            savePhone.value = false
           }
         } catch (err: any) {
           // If error, show basic info from userInfo
@@ -316,6 +327,11 @@ const loadAccountInfo = async () => {
             unit: '-',
             room: '-',
           }
+          // No data: initialize to empty and don't save
+          sidebarEmail.value = ''
+          sidebarPhone.value = ''
+          saveEmail.value = false
+          savePhone.value = false
         }
       } else {
         // Resident user: userId is resident_id
@@ -337,10 +353,17 @@ const loadAccountInfo = async () => {
             sidebarPhone.value = resident.phi.resident_phone || ''
             // Initialize save flags: matches ResidentPHIContent.vue logic
             // If email/phone exists and is not placeholder, save flag is true
+            // For HIPAA compliance: default to false (don't save) if email/phone is empty
             const emailValue = resident.phi.resident_email && resident.phi.resident_email.trim()
-            saveEmail.value = !!(emailValue && emailValue !== '***@***')
+            saveEmail.value = !!(emailValue && emailValue !== '***@***' && emailValue !== '')
             const phoneValue = resident.phi.resident_phone && resident.phi.resident_phone.trim()
-            savePhone.value = !!(phoneValue && phoneValue !== 'xxx-xxx-xxxx')
+            savePhone.value = !!(phoneValue && phoneValue !== 'xxx-xxx-xxxx' && phoneValue !== '')
+          } else {
+            // No PHI data: initialize to empty and don't save
+            sidebarEmail.value = ''
+            sidebarPhone.value = ''
+            saveEmail.value = false
+            savePhone.value = false
           }
         } catch (err: any) {
           // If not found, show basic info from userInfo
@@ -352,6 +375,11 @@ const loadAccountInfo = async () => {
             unit: '-',
             room: '-',
           }
+          // No data: initialize to empty and don't save
+          sidebarEmail.value = ''
+          sidebarPhone.value = ''
+          saveEmail.value = false
+          savePhone.value = false
         }
       }
     }

@@ -288,12 +288,24 @@ function initMockRoomsAndBeds() {
 initMockRoomsAndBeds()
 
 export function mockCreateBuilding(params: CreateBuildingParams & { tag_name?: string }): Building {
+  // 验证：branch_tag 或 building_name 必须有一个不为空
+  const branchTag = params.branch_tag || (params as any).tag_name || ''
+  const buildingName = params.building_name || ''
+  
+  if ((branchTag === '' || branchTag === '-') && (buildingName === '' || buildingName === '-')) {
+    throw new Error('branch_tag or building_name must be provided (at least one must not be empty)')
+  }
+  
+  // 设置默认值（与实际实现一致）
+  const finalBranchTag = branchTag || '-'
+  const finalBuildingName = buildingName || '-'
+  
   const newBuilding: Building = {
     building_id: `building-${buildingIdCounter++}`,
-    building_name: params.building_name || '',
+    building_name: finalBuildingName,
     floors: params.floors,
     tenant_id: 'tenant-1',
-    location_tag: params.location_tag || params.tag_name || undefined,
+    branch_tag: finalBranchTag,  // 使用 branch_tag，与实际 API 一致
   }
   buildings.push(newBuilding)
   return newBuilding
@@ -308,11 +320,31 @@ export function mockUpdateBuilding(id: string, params: UpdateBuildingParams & { 
   if (index === -1) {
     throw new Error(`Building with id ${id} not found`)
   }
-  // Mock层：将前端的 tag_name 转换为 location_tag
+  
+  // 获取旧值
+  const oldBranchTag = buildings[index].branch_tag || '-'
+  const oldBuildingName = buildings[index].building_name || '-'
+  
+  // 获取新值
+  const newBranchTag = params.branch_tag || (params as any).tag_name || ''
+  const newBuildingName = params.building_name || ''
+  
+  // 验证：如果提供了新值，必须至少有一个不为空
+  if (newBranchTag !== '' || newBuildingName !== '') {
+    if ((newBranchTag === '' || newBranchTag === '-') && (newBuildingName === '' || newBuildingName === '-')) {
+      throw new Error('branch_tag or building_name must be provided (at least one must not be empty)')
+    }
+  }
+  
+  // 使用新值或保持旧值
+  const finalBranchTag = newBranchTag || oldBranchTag
+  const finalBuildingName = newBuildingName || oldBuildingName
+  
+  // Mock层：将前端的 tag_name 转换为 branch_tag（与实际 API 一致）
   const updateData: UpdateBuildingParams = {
-    building_name: params.building_name,
+    building_name: finalBuildingName,
     floors: params.floors,
-    location_tag: (params as any).tag_name || params.location_tag, // 前端传入 tag_name，转换为 location_tag
+    branch_tag: finalBranchTag,  // 使用 branch_tag，与实际 API 一致
   }
   const updated = {
     ...buildings[index],
@@ -339,7 +371,7 @@ export function mockCreateUnit(params: CreateUnitParams): Unit {
     unit_type: params.unit_type,
     building: params.building,
     floor: params.floor,
-    location_tag: params.location_tag,
+    branch_tag: params.branch_tag,  // 改为 branch_tag，与实际 API 一致
     area_tag: params.area_tag,
     is_active: true,
     created_at: new Date().toISOString(),
@@ -359,8 +391,8 @@ export function mockGetUnits(params: GetUnitsParams): GetUnitsResult {
   if (params.floor) {
     filtered = filtered.filter((unit) => unit.floor === params.floor)
   }
-  if (params.location_tag) {
-    filtered = filtered.filter((unit) => unit.location_tag === params.location_tag)
+  if (params.branch_tag) {
+    filtered = filtered.filter((unit) => unit.branch_tag === params.branch_tag)
   }
   if (params.area_tag) {
     filtered = filtered.filter((unit) => unit.area_tag === params.area_tag)
