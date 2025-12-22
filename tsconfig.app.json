@@ -19,5 +19,10 @@
     "noUncheckedSideEffectImports": true
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue", "types/**/*.d.ts", "test/**/*.ts"],
-  "exclude": ["src/views/admin/permissions/components/RoleCategoryCard.vue"]
+  "exclude": [
+    "src/views/admin/permissions/components/RoleCategoryCard.vue",
+    "**/*.bak.vue",
+    "**/*.bak.ts",
+    "**/*.bak.txt"
+  ]
 }

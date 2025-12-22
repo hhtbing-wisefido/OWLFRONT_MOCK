@@ -28,23 +28,24 @@ export function useUnit() {
     unit_number: '',
     unit_name: '',
     unit_type: 'Facility' as 'Facility' | 'Home',
-    branch_tag: undefined as string | undefined,
-    area_tag: undefined as string | undefined,
-    building: '',
+    branch_name: undefined as string | undefined,
+    area_name: undefined as string | undefined,
+    building: undefined as string | undefined,  // 不再使用，实际创建时使用 selectedBuilding.building_name
     floor: undefined as string | undefined, // Can be undefined to allow selection from dropdown
     is_multi_person_room: true,
     is_public_space: false,
-    timezone: 'America/Denver' as string | undefined, // Default to Mountain Time
+    timezone: 'America/Denver' as string | undefined, // Default to Mountain Time (with DST)
   })
 
   const editUnitForm = ref({
     unit_number: '',
     unit_name: '',
     unit_type: 'Facility' as 'Facility' | 'Home',
-    area_tag: undefined as string | undefined,
+    area_name: undefined as string | undefined,
+    floor: '1' as string, // Floor number as string, default '1'
     is_multi_person_room: true,
     is_public_space: false,
-    timezone: 'America/Denver' as string | undefined, // Default to Mountain Time
+    timezone: 'America/Denver' as string | undefined, // Default to Mountain Time (with DST)
   })
 
   // Fetch all units
@@ -120,14 +121,23 @@ export function useUnit() {
 
       if (unit) {
         editingUnit.value = unit
+        // Extract floor number from unit.floor (e.g., "1F" -> 1)
+        let floorNum = 1
+        if (unit.floor) {
+          const floorMatch = unit.floor.match(/\d+/)
+          if (floorMatch) {
+            floorNum = parseInt(floorMatch[0]) || 1
+          }
+        }
         editUnitForm.value = {
-          area_tag: unit.area_tag,
+          area_name: unit.area_name,
           unit_name: unit.unit_name,
           unit_number: unit.unit_number,
           unit_type: (unit as any).unit_type || 'Facility',
+          floor: floorNum,
           is_multi_person_room: unit.is_multi_person_room ?? true,
           is_public_space: unit.is_public_space ?? false,
-          timezone: unit.timezone || 'America/Denver', // Default to Mountain Time if not set
+          timezone: unit.timezone || 'America/Denver', // Default to Mountain Time (with DST) if not set
         }
         await fetchRoomsWithBedsFn(unit.unit_id)
         showEditUnitModal.value = true
@@ -136,13 +146,14 @@ export function useUnit() {
         editingUnit.value = null
         roomsWithBeds.value = []
         editUnitForm.value = {
-          area_tag: undefined,
+          area_name: undefined,
           unit_name: '',
           unit_number: '',
           unit_type: 'Facility',
+          floor: 1, // Default to 1
           is_public_space: false,
           is_multi_person_room: false,
-          timezone: undefined,
+          timezone: 'America/Denver', // Default to Mountain Time (with DST, UTC-7/-6)
         }
         showEditUnitModal.value = true
         await nextTick()
@@ -154,7 +165,7 @@ export function useUnit() {
 
   // Create unit
   const handleCreateUnit = async (
-    selectedBuilding: { building_name?: string; branch_tag?: string; floors?: number } | null,
+    selectedBuilding: { building_name?: string; branch_name?: string; floors?: number } | null,
     selectedFloor: string
   ) => {
     try {
@@ -177,33 +188,18 @@ export function useUnit() {
         return
       }
       
-      // 验证 building 的 floors：如果为空或为 0，设置为 1
-      const buildingFloors = selectedBuilding.floors || 0
-      if (buildingFloors <= 0) {
-        // 如果 floors 为空或为 0，设置为 1
-        if (selectedBuilding && 'floors' in selectedBuilding) {
-          (selectedBuilding as any).floors = 1
-        }
-      }
-      
-      // 直接从 selectedBuilding 和 selectedFloor 获取值
-      const buildingValue: string = selectedBuilding.building_name || '-'
-      const floorValue: string = selectedFloor
-      const branchTagValue = selectedBuilding.branch_tag || '-'
-      // area_tag from form
-      const areaTagValue = createUnitForm.value.area_tag || undefined
-      
+      // 直接传递用户输入，不做默认值处理和格式转换（后端统一处理）
       const createParams: CreateUnitParams = {
         unit_number: createUnitForm.value.unit_number,
         unit_name: createUnitForm.value.unit_name,
-        unit_type: createUnitForm.value.unit_type,
-        building: buildingValue,
-        floor: floorValue,
-        branch_tag: branchTagValue,
-        area_tag: areaTagValue,
+        unit_type: createUnitForm.value.unit_type,  // 可能是 'Facility'（默认值），后端会处理
+        building: selectedBuilding.building_name,  // 可能为 undefined，后端会处理
+        floor: selectedFloor,  // 可能是 "1F" 或 number，后端会处理格式转换
+        branch_name: selectedBuilding.branch_name,  // 可能为 undefined，后端会处理
+        area_name: createUnitForm.value.area_name,  // 可能为 undefined
         is_public_space: createUnitForm.value.is_public_space,
         is_multi_person_room: createUnitForm.value.is_multi_person_room,
-        timezone: createUnitForm.value.timezone || 'America/Denver', // Default to Mountain Time if not set
+        timezone: createUnitForm.value.timezone,  // 可能是 'America/Denver'（默认值），后端会处理
         // Optional fields (not in form, can be added later if needed):
         // layout_config: undefined,
         // primary_resident_id: undefined,
@@ -215,15 +211,15 @@ export function useUnit() {
       console.log('[Create Unit API] Source values:', {
         form_building: createUnitForm.value.building,
         form_floor: createUnitForm.value.floor,
-        form_branch_tag: createUnitForm.value.branch_tag,
-        form_area_tag: createUnitForm.value.area_tag,
+        form_branch_name: createUnitForm.value.branch_name,
+        form_area_name: createUnitForm.value.area_name,
         selectedBuilding_name: selectedBuilding?.building_name,
-        selectedBuilding_branch_tag: selectedBuilding?.branch_tag,
+        selectedBuilding_branch_name: selectedBuilding?.branch_name,
         selectedFloor: selectedFloor,
         final_building: buildingValue,
         final_floor: floorValue,
-        final_branch_tag: branchTagValue,
-        final_area_tag: areaTagValue,
+        final_branch_name: branchTagValue,
+        final_area_name: areaTagValue,
       })
       
       const result = await createUnitApi(createParams)
@@ -234,8 +230,8 @@ export function useUnit() {
         unit_name: result?.unit_name,
         building: result?.building,
         floor: result?.floor,
-        branch_tag: result?.branch_tag,
-        area_tag: result?.area_tag,
+        branch_name: result?.branch_name,
+        area_name: result?.area_name,
       })
 
       if (!result) {
@@ -260,13 +256,13 @@ export function useUnit() {
       unit_number: '',
       unit_name: '',
       unit_type: 'Facility',
-      branch_tag: undefined,
-      area_tag: undefined,
-      building: '',
+      branch_name: undefined,
+      area_name: undefined,
+      building: undefined as string | undefined,  // 不再使用，实际创建时使用 selectedBuilding.building_name
       floor: undefined, // Reset to undefined so it can be selected from dropdown
       is_public_space: false,
       is_multi_person_room: true,
-      timezone: 'America/Denver', // Default to Mountain Time
+      timezone: 'America/Denver', // Default to Mountain Time (no DST)
     }
   }
 
@@ -278,18 +274,19 @@ export function useUnit() {
       unit_number: '',
       unit_name: '',
       unit_type: 'Facility',
-      area_tag: undefined,
+      area_name: undefined,
+      floor: 1, // Default to 1
       is_public_space: false,
       is_multi_person_room: true,
-      timezone: 'America/Denver', // Default to Mountain Time
+      timezone: 'America/Denver', // Default to Mountain Time (no DST)
     }
     showEditUnitModal.value = false
   }
 
   // Save unit
   const handleSaveUnit = async (
-    currentBuildingForGrid: { branch_tag?: string } | null,
-    selectedBranchTag: string
+    selectedBuilding: { building_name?: string; branch_name?: string } | null,
+    selectedFloor: string
   ) => {
     try {
       if (!editUnitForm.value.unit_name || !editUnitForm.value.unit_number) {
@@ -297,44 +294,50 @@ export function useUnit() {
         return
       }
 
-      // branch_tag defaults to '-' when empty
-      const branchTagValue = currentBuildingForGrid?.branch_tag || selectedBranchTag || '-'
-
       if (!editingUnit.value) {
-        // Create new unit
-        const buildingValue: string = '-'
-        const floorValue: string = '1F'
-
+        // Create new unit - 直接传递用户输入，不做默认值处理和格式转换（后端统一处理）
+        // 确保 building 或 branch_name 至少有一个不为空
+        const buildingValue = selectedBuilding?.building_name
+        const branchTagValue = selectedBuilding?.branch_name
+        
+        if (!buildingValue && !branchTagValue) {
+          message.error('Building or Branch Tag must be provided')
+          return
+        }
+        
+        // 直接使用 editUnitForm.floor（Vue 已负责从 Div 填入 input，用户可能已修改）
+        const floorValue = editUnitForm.value.floor 
+          ? (typeof editUnitForm.value.floor === 'number' ? String(editUnitForm.value.floor) : editUnitForm.value.floor)
+          : undefined
+        
         const newUnit = await createUnitApi({
           unit_number: editUnitForm.value.unit_number,
           unit_name: editUnitForm.value.unit_name,
-          unit_type: editUnitForm.value.unit_type || 'Facility',
-          building: buildingValue,
-          floor: floorValue,
-          branch_tag: branchTagValue,
-          area_tag: editUnitForm.value.area_tag,
+          unit_type: editUnitForm.value.unit_type,  // 可能是 'Facility'（默认值），后端会处理
+          building: buildingValue,  // 可能为 undefined，后端会处理
+          floor: floorValue,  // 直接使用表单中的 floor（Vue 已负责从 Div 填入 input）
+          branch_name: branchTagValue,  // 可能为 undefined，后端会处理
+          area_name: editUnitForm.value.area_name,  // 可能为 undefined
           is_public_space: editUnitForm.value.is_public_space,
           is_multi_person_room: editUnitForm.value.is_multi_person_room,
-          timezone: editUnitForm.value.timezone || 'America/Denver', // Default to Mountain Time if not set
+          timezone: editUnitForm.value.timezone,  // 可能是 'America/Denver'（默认值），后端会处理
         })
 
         message.success('Unit created successfully')
         resetEditUnitForm()
         return newUnit
       } else {
-        // Update existing unit
-        // Note: building, floor, branch_tag, unit_number, unit_type are typically not changed after creation
-        // But we include them in case they need to be updated
+        // Update existing unit - 直接传递用户输入，不做默认值处理和格式转换（后端统一处理）
         const updateParams: UpdateUnitParams = {
           unit_name: editUnitForm.value.unit_name,
           unit_number: editUnitForm.value.unit_number,
           // unit_type is not in UpdateUnitParams, so we don't include it
-          area_tag: editUnitForm.value.area_tag,
+          // building 和 branch_name 不传递（保持原值）
+          floor: editUnitForm.value.floor,  // 可能是 number 或 string，后端会处理格式转换
+          area_name: editUnitForm.value.area_name,  // 可能为 undefined
           is_public_space: editUnitForm.value.is_public_space,
           is_multi_person_room: editUnitForm.value.is_multi_person_room,
-          timezone: editUnitForm.value.timezone || 'America/Denver', // Default to Mountain Time if not set
-          // Preserve existing values for fields not in edit form
-          // building, floor, branch_tag should remain unchanged unless explicitly needed
+          timezone: editUnitForm.value.timezone,  // 可能是 'America/Denver'（默认值），后端会处理
           // Optional fields (not in form, can be added later if needed):
           // layout_config: editingUnit.value.layout_config,
           // primary_resident_id: editingUnit.value.primary_resident_id,

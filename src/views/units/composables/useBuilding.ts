@@ -23,16 +23,10 @@ export function useBuilding() {
   
   // Forms
   const createBuildingForm = ref({
-    branch_tag: undefined as string | undefined,
+    branch_name: undefined as string | undefined,
     building_name: '',
-    floors: 1,
   })
   
-  const editingBuildingId = ref<string | null>(null)
-  const editingBuildingForm = ref({
-    branch_tag: undefined as string | undefined,
-    building_name: '',
-  })
 
   // Fetch buildings
   const fetchBuildings = async () => {
@@ -50,7 +44,7 @@ export function useBuilding() {
       selectedBranchTag.value = ''
     } else {
       currentBuildingForGrid.value = building
-      selectedBranchTag.value = building.branch_tag || '-'
+      selectedBranchTag.value = building.branch_name || '-'
     }
   }
 
@@ -59,9 +53,11 @@ export function useBuilding() {
     if (selectedBuilding.value?.building_id === building.building_id) {
       selectedBuilding.value = null
       selectedFloor.value = ''
+      currentBuildingForGrid.value = null
     } else {
       selectedBuilding.value = building
       selectedFloor.value = ''
+      currentBuildingForGrid.value = building // Set currentBuildingForGrid for fetchUnits
     }
   }
 
@@ -75,24 +71,18 @@ export function useBuilding() {
   // Create building
   const handleCreateBuilding = async () => {
     try {
-      if (!createBuildingForm.value.branch_tag && !createBuildingForm.value.building_name) {
-        message.error('Please provide either branch_tag or Building name')
-        return
-      }
-      
-      if (!createBuildingForm.value.floors) {
-        message.error('Please fill in floors')
+      if (!createBuildingForm.value.branch_name && !createBuildingForm.value.building_name) {
+        message.error('Please provide either branch_name or Building name')
         return
       }
 
-      // Both branch_tag and building_name default to '-' when empty
+      // Both branch_name and building_name default to '-' when empty
       const buildingName = createBuildingForm.value.building_name?.trim() || '-'
-      const branchTag = createBuildingForm.value.branch_tag?.trim() || '-'
+      const branchTag = createBuildingForm.value.branch_name?.trim() || '-'
 
       await createBuildingApi({
         building_name: buildingName,
-        floors: createBuildingForm.value.floors,
-        branch_tag: branchTag,
+        branch_name: branchTag,
       } as any)
 
       message.success('Building created successfully')
@@ -106,54 +96,32 @@ export function useBuilding() {
   // Reset create building form
   const resetCreateBuildingForm = () => {
     createBuildingForm.value = {
-      branch_tag: undefined,
+      branch_name: undefined,
       building_name: '',
-      floors: 1,
     }
   }
 
-  // Edit building
-  const handleEditBuilding = (building: Building) => {
-    editingBuildingId.value = building.building_id || null
-    editingBuildingForm.value = {
-      branch_tag: building.branch_tag || undefined,
-      building_name: building.building_name || '',
-    }
-  }
-
-  // Save building
-  const handleSaveBuilding = async (building: Building) => {
-    try {
-      if (!building.building_id) {
-        message.error('Building ID is missing')
-        editingBuildingId.value = null
-        return
-      }
-
-      // Both branch_tag and building_name default to '-' when empty
-      const buildingName = editingBuildingForm.value.building_name?.trim() || '-'
-      const branchTag = editingBuildingForm.value.branch_tag?.trim() || '-'
-
-      await updateBuildingApi(building.building_id, {
-        building_name: buildingName,
-        branch_tag: branchTag,
-      } as any)
-
-      message.success('Building updated successfully')
-      editingBuildingId.value = null
-      await fetchBuildings()
-    } catch (error: any) {
-      message.error('Failed to update building: ' + (error.message || 'Unknown error'))
-    }
-  }
 
   // Delete floor
+  // Note: Since floors field is removed from buildings table, 
+  // deleting a floor means checking if there are units on that floor
+  // If no units exist, the floor is effectively "deleted" (no action needed)
   const handleDeleteFloor = async (building: Building, floorNum: number) => {
     try {
       const floorStr = `${floorNum}F`
+      const userInfo = userStore.getUserInfo
+      const tenantId = userInfo?.tenant_id
+
+      if (!tenantId) {
+        message.error('Unable to get tenant ID')
+        return
+      }
+
       const unitParams = {
+        tenant_id: tenantId,
         building: building.building_name,
         floor: floorStr,
+        branch_name: building.branch_name ?? '',
       }
       const unitResult = await getUnitsApi(unitParams)
 
@@ -162,22 +130,12 @@ export function useBuilding() {
         return
       }
 
-      if (!building.building_id) {
-        message.error('Building ID is missing')
-        return
-      }
-
       if (selectedBuilding.value?.building_id === building.building_id && selectedFloor.value === floorStr) {
         selectedFloor.value = ''
       }
 
-      const newFloors = building.floors - 1
-      if (newFloors < 1) {
-        message.error('Building must have at least one floor')
-        return
-      }
-
-      await updateBuildingApi(building.building_id, { floors: newFloors })
+      // Since floors is no longer stored in buildings table,
+      // we just need to refresh the building list to reflect the change
       message.success('Floor deleted successfully')
       await fetchBuildings()
     } catch (error: any) {
@@ -240,17 +198,12 @@ export function useBuilding() {
     selectedBuilding,
     currentBuildingForGrid,
     createBuildingForm,
-    editingBuildingId,
-    editingBuildingForm,
     // Methods
     fetchBuildings,
-    handleToggleBuildingTag,
     handleToggleBuildingCard,
     handleSelectFloor,
     handleCreateBuilding,
     resetCreateBuildingForm,
-    handleEditBuilding,
-    handleSaveBuilding,
     handleDeleteFloor,
     handleDeleteBuilding,
   }

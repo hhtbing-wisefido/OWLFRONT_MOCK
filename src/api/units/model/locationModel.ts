@@ -5,14 +5,13 @@
 export interface Unit {
   unit_id: string
   tenant_id: string
-  address_id?: string // Associated Address ID (new)
   unit_number: string // Unit number (digitalized, accurate)
   unit_name: string // Unit name (colloquial, memorable)
   unit_type: 'Facility' | 'Home' // Facility / Home scenario types (replaces location_type)
   building?: string // Building tag
   floor?: string // Floor tag
-  branch_tag?: string // Location tag
-  area_tag?: string // Area tag
+  branch_name?: string // Location tag
+  area_name?: string // Area tag
   is_active: boolean // Status (active/disabled)
   created_at?: string
   updated_at?: string
@@ -23,39 +22,37 @@ export interface Building {
   building_name: string
   floors: number // Number of floors
   tenant_id?: string
-  branch_tag?: string // API layer uses branch_tag
+  branch_name?: string // API layer uses branch_tag
 }
 
 export interface CreateBuildingParams {
   building_name: string
   floors: number
-  branch_tag?: string // API layer uses branch_tag
+  branch_name?: string // API layer uses branch_tag
 }
 
 export interface UpdateBuildingParams {
   building_name?: string
   floors?: number
-  branch_tag?: string // API layer uses branch_tag
+  branch_name?: string // API layer uses branch_tag
 }
 
 export interface CreateUnitParams {
-  address_id?: string // Associated Address ID (new)
   unit_number: string
   unit_name: string
   unit_type: 'Facility' | 'Home' // Facility / Home scenario types (replaces location_type)
   building?: string
   floor?: string
-  branch_tag?: string
-  area_tag?: string
+  branch_name?: string
+  area_name?: string
 }
 
 export interface GetUnitsParams {
   tenant_id?: string
-  address_id?: string // Filter by Address ID (new)
   building?: string
   floor?: string
-  branch_tag?: string
-  area_tag?: string
+  branch_name?: string
+  area_name?: string
   unit_number?: string
   unit_name?: string
   is_active?: boolean
@@ -72,8 +69,8 @@ export interface UpdateUnitParams {
   unit_name?: string
   building?: string
   floor?: string
-  branch_tag?: string
-  area_tag?: string
+  branch_name?: string
+  area_name?: string
 }
 
 export interface Room {

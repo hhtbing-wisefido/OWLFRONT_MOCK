@@ -5,11 +5,11 @@
 export interface Unit {
   unit_id: string
   tenant_id: string
-  branch_tag?: string // Location tag (e.g., "AreaA MainBuild", "Spring SP")
+  branch_name?: string // Location name (e.g., "AreaA MainBuild", "Spring SP")
   unit_name: string // Unit name (colloquial, memorable, e.g., "E203", "201", "Home-001")
-  building?: string // Building (Facility scenario, default: "-")
+  building?: string // Building (Facility scenario, 允许 NULL/undefined)
   floor?: string // Floor (Facility scenario, default: "1F")
-  area_tag?: string // Area tag (Facility scenario, uses tags_catalog)
+  area_name?: string // Area name (Facility scenario, uses tags_catalog)
   unit_number: string // Unit number (Facility scenario, e.g., "201", "E203")
   layout_config?: Record<string, any> // Layout configuration (JSONB)
   unit_type: 'Facility' | 'Home' // Facility / Home scenario types
@@ -24,28 +24,25 @@ export interface Unit {
 
 export interface Building {
   building_id?: string
-  building_name: string
-  floors: number // Number of floors
+  building_name?: string  // 允许 undefined/null（不再使用 '-' 作为默认值）
   tenant_id?: string
-  branch_tag?: string // API layer uses branch_tag
+  branch_name?: string // API layer uses branch_name
 }
 
 export interface CreateBuildingParams {
   building_name: string
-  floors: number
-  branch_tag?: string // API layer uses branch_tag
+  branch_name?: string // API layer uses branch_name
 }
 
 export interface UpdateBuildingParams {
   building_name?: string
-  floors?: number
-  branch_tag?: string // API layer uses branch_tag
+  branch_name?: string // API layer uses branch_name
 }
 
 export interface CreateUnitParams {
   branch_tag?: string
   unit_name: string
-  building?: string // Default: "-"
+  building?: string // 允许 NULL/undefined（如果为 NULL，保存为 NULL）
   floor?: string // Default: "1F"
   area_tag?: string
   unit_number: string

@@ -23,7 +23,7 @@
         <a-select
           id="create-building-location-tag"
           name="create-building-location-tag"
-          v-model:value="createBuildingForm.branch_tag"
+          v-model:value="createBuildingForm.branch_name"
           placeholder="Select Branch"
           allow-clear
           show-search
@@ -48,105 +48,7 @@
           style="width: 100px"
           @pressEnter="handleCreateBuilding"
         />
-        <span class="separator">:</span>
-        <span class="create-label">Total Floors:</span>
-        <a-input-number
-          id="create-building-floors"
-          name="create-building-floors"
-          v-model:value="createBuildingForm.floors"
-          :min="1"
-          :max="99"
-          placeholder="Number of floors"
-          style="width: 80px"
-          @pressEnter="handleCreateBuilding"
-        />
         <a-button type="primary" @click="handleCreateBuilding">Create Building</a-button>
-        <div class="building-tags">
-          <div
-            v-for="building in buildingsWithDisplayName"
-            :key="building.building_id"
-            class="building-tag-card"
-            :class="{
-              active: selectedBuilding?.building_id === building.building_id,
-              expanded: expandedBuildings.has(building.building_id || ''),
-            }"
-          >
-            <div class="building-tag-header" @click="handleToggleBuildingTagWrapper(building)">
-              <EditOutlined
-                v-if="editingBuildingId !== building.building_id"
-                class="building-tag-edit-icon"
-                @click.stop="handleEditBuilding(building)"
-              />
-              <span
-                v-if="editingBuildingId !== building.building_id"
-                class="building-tag-name"
-              >
-                {{ building.displayName }}
-              </span>
-              <div
-                v-else
-                class="building-tag-edit"
-                @click.stop
-              >
-                <a-select
-                  :id="`edit-building-location-tag-${building.building_id}`"
-                  :name="`edit-building-location-tag-${building.building_id}`"
-                  v-model:value="editingBuildingForm.branch_tag"
-                  placeholder="Select Branch"
-                  size="small"
-                  allow-clear
-                  show-search
-                  :filter-option="false"
-                  style="width: 72px"
-                  @pressEnter="handleSaveBuilding(building)"
-                >
-                  <a-select-option
-                    v-for="tag in branchTagOptions"
-                    :key="tag.tag_name"
-                    :value="tag.tag_name"
-                  >
-                    {{ tag.tag_name }}
-                  </a-select-option>
-                </a-select>
-                <span class="separator">:</span>
-                <a-input
-                  :id="`edit-building-name-tag-${building.building_id}`"
-                  :name="`edit-building-name-tag-${building.building_id}`"
-                  v-model:value="editingBuildingForm.building_name"
-                  placeholder="Building"
-                  size="small"
-                  style="width: 55px"
-                  @pressEnter="handleSaveBuilding(building)"
-                  @blur="handleSaveBuilding(building)"
-                />
-              </div>
-              <DeleteOutlined
-                v-if="editingBuildingId !== building.building_id"
-                class="building-tag-delete-icon"
-                @click.stop="handleDeleteBuildingWrapper(building)"
-              />
-            </div>
-            <div class="building-tag-floors" v-if="expandedBuildings.has(building.building_id || '')" @click.stop>
-              <div
-                v-for="floorNum in building.floors"
-                :key="floorNum"
-                class="floor-item-small"
-              >
-                <a-button
-                  :type="selectedFloor === `${floorNum}F` ? 'primary' : 'default'"
-                  class="floor-button-small"
-                  @click.stop="handleSelectFloorWrapper(building, `${floorNum}F`)"
-                >
-                  floor{{ floorNum }}
-                </a-button>
-                <DeleteOutlined
-                  class="floor-delete-icon"
-                  @click.stop="handleDeleteFloorWrapper(building, floorNum)"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -165,63 +67,20 @@
             }"
           >
             <div class="building-header" @click="handleToggleBuildingCardWrapper(building)">
-              <EditOutlined
-                v-if="editingBuildingId !== building.building_id"
-                class="building-edit-icon"
-                @click.stop="handleEditBuilding(building)"
-              />
-              <span
-                v-if="editingBuildingId !== building.building_id"
-                class="building-name"
-              >
-                {{ building.displayName }}
-              </span>
-              <div
-                v-else
-                class="building-edit"
-                @click.stop
-              >
-                <a-select
-                  :id="`edit-building-location-tag-card-${building.building_id}`"
-                  :name="`edit-building-location-tag-card-${building.building_id}`"
-                  v-model:value="editingBuildingForm.branch_tag"
-                  placeholder="Select Branch"
-                  size="small"
-                  allow-clear
-                  show-search
-                  :filter-option="false"
-                  style="width: 72px"
-                  @pressEnter="handleSaveBuilding(building)"
-                >
-                  <a-select-option
-                    v-for="tag in branchTagOptions"
-                    :key="tag.tag_name"
-                    :value="tag.tag_name"
-                  >
-                    {{ tag.tag_name }}
-                  </a-select-option>
-                </a-select>
-                <span class="separator">:</span>
-                <a-input
-                  :id="`edit-building-name-card-${building.building_id}`"
-                  :name="`edit-building-name-card-${building.building_id}`"
-                  v-model:value="editingBuildingForm.building_name"
-                  placeholder="Building"
-                  size="small"
-                  style="width: 55px"
-                  @pressEnter="handleSaveBuilding(building)"
-                  @blur="handleSaveBuilding(building)"
-                />
+              <div class="building-name-wrapper">
+                <BankOutlined class="building-icon" />
+                <span class="building-name">
+                  {{ building.displayName }}
+                </span>
               </div>
               <DeleteOutlined
-                v-if="editingBuildingId !== building.building_id"
                 class="building-delete-icon"
                 @click.stop="handleDeleteBuildingWrapper(building)"
               />
             </div>
-            <div class="floors" v-if="selectedBuilding?.building_id === building.building_id" @click.stop>
+            <div class="floors" v-if="selectedBuilding?.building_id === building.building_id && getBuildingFloors(building).length > 0" @click.stop>
               <div
-                v-for="floorNum in building.floors"
+                v-for="floorNum in getBuildingFloors(building)"
                 :key="floorNum"
                 class="floor-item"
               >
@@ -249,27 +108,38 @@
         </div>
         <div v-else class="unit-grid-wrapper">
           <div class="unit-grid">
-            <!-- Display all sorted units -->
-            <div
-              v-for="unit in unitGrid"
-              :key="unit.unit_id"
-              class="unit-cell has-unit"
-              @click="handleCellClick(unit, -1)"
-            >
-              <div class="unit-content">
-                {{ unit.unit_number }} Unit
+            <!-- Display units grouped by floor with dividers -->
+            <template v-for="(item, index) in unitGrid" :key="item.type === 'floor-divider' ? `floor-${item.floor}` : item.type === 'add-button' ? `add-${item.floor}` : item.unit?.unit_id || index">
+              <!-- Floor divider -->
+              <div
+                v-if="item.type === 'floor-divider'"
+                class="floor-divider"
+              >
+                <span class="floor-label">{{ item.floor }}</span>
               </div>
-            </div>
-            
-            <!-- Add an empty cell for creating a new Unit -->
-            <div
-              class="unit-cell"
-              @click="handleCellClick(null, -1)"
-            >
-              <div class="empty-cell">
-                <PlusOutlined />
+              
+              <!-- Unit cell -->
+              <div
+                v-else-if="item.type === 'unit' && item.unit"
+                class="unit-cell has-unit"
+                @click="handleCellClick(item.unit, -1)"
+              >
+                <div class="unit-content">
+                  {{ item.unit.unit_number }}{{ item.unit.area_name ? `(${item.unit.area_name})` : '' }}
+                </div>
               </div>
-            </div>
+              
+              <!-- Add Unit button for this floor -->
+              <div
+                v-else-if="item.type === 'add-button'"
+                class="unit-cell add-unit-cell"
+                @click="handleAddUnitForFloor(item.floor || '1F')"
+              >
+                <div class="empty-cell">
+                  <PlusOutlined />
+                </div>
+              </div>
+            </template>
           </div>
         </div>
       </div>
@@ -318,7 +188,7 @@
         </a-form-item>
         <a-form-item label="Branch" v-if="selectedBuilding">
           <a-input
-            :value="selectedBuilding.branch_tag ?? ''"
+            :value="selectedBuilding.branch_name ?? ''"
             disabled
             style="background: #f5f5f5;"
           />
@@ -348,12 +218,19 @@
           <a-select
             id="create-location-area-tag"
             name="create-location-area-tag"
-            v-model:value="createUnitForm.area_tag"
+            v-model:value="createUnitForm.area_name"
             placeholder="Select area tag"
             allow-clear
+            show-search
+            :filter-option="false"
           >
-            <a-select-option value="East">East</a-select-option>
-            <a-select-option value="West">West</a-select-option>
+            <a-select-option
+              v-for="tag in areaTagOptions"
+              :key="tag.tag_name"
+              :value="tag.tag_name"
+            >
+              {{ tag.tag_name }}
+            </a-select-option>
           </a-select>
         </a-form-item>
         <a-form-item label="Time Zone">
@@ -395,35 +272,29 @@
         >
           <!-- Unit Basic Information -->
         <div class="unit-fields">
-          <div class="unit-field full-row">
-            <label>UnitName<span class="required-star">*</span>:</label>
-            <div style="display: flex; align-items: center; gap: 0">
-              <a-input
-                v-model:value="editUnitForm.unit_name"
-                placeholder="Unit name"
-                style="width: 120px; margin-right: 0"
-              />
-              <a-radio-group 
-                v-model:value="editUnitForm.unit_type"
-                style="margin-left: 8px"
-              >
-                <a-radio value="Facility">Facility</a-radio>
-                <a-radio value="Home">Home</a-radio>
-              </a-radio-group>
-            </div>
-          </div>
           <div class="unit-field inline-row">
             <div class="inline-field">
-              <label>area_tag:</label>
+              <label>Floor:</label>
+              <a-input-number
+                v-model:value="editUnitForm.floor"
+                :min="1"
+                :max="99"
+                placeholder="Floor number"
+                style="width: 80px; margin-right: 24px"
+              />
+            </div>
+            <div class="inline-field area-tag-field">
+              <label>area_name:</label>
               <a-select
-                v-model:value="editUnitForm.area_tag"
+                v-model:value="editUnitForm.area_name"
                 placeholder="Input or select"
                 allow-clear
                 show-search
                 :filter-option="false"
                 @search="handleAreaTagSearch"
                 @blur="handleAreaTagBlur"
-                style="width: 120px"
+                @keydown.enter.prevent="handleAreaTagEnter"
+                style="width: 100%"
               >
                 <a-select-option
                   v-for="tag in areaTagOptions"
@@ -433,6 +304,17 @@
                   {{ tag.tag_name }}
                 </a-select-option>
               </a-select>
+            </div>
+          </div>
+          <div class="unit-field inline-row">
+            <div class="inline-field">
+              <label>UnitName<span class="required-star">*</span>:</label>
+              <a-input
+                v-model:value="editUnitForm.unit_name"
+                placeholder="Unit name"
+                style="width: 100px"
+                @blur="handleUnitNameBlur"
+              />
             </div>
             <div class="inline-field unitnumber-field">
               <label>UnitNumber<span class="required-star">*</span>:</label>
@@ -447,13 +329,22 @@
           <!-- DB fields (editable) -->
           <div class="unit-field inline-row">
             <div class="inline-field">
+              <a-radio-group 
+                v-model:value="editUnitForm.unit_type"
+                size="small"
+              >
+                <a-radio value="Facility">Facility</a-radio>
+                <a-radio value="Home">Home</a-radio>
+              </a-radio-group>
+            </div>
+            <div class="inline-field">
               <a-checkbox v-model:checked="editUnitForm.is_multi_person_room">
                 SharedUnit
               </a-checkbox>
             </div>
             <div class="inline-field">
               <a-checkbox v-model:checked="editUnitForm.is_public_space">
-                Public Space
+                PublicSpace
               </a-checkbox>
             </div>
           </div>
@@ -981,10 +872,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed, nextTick, watch } from 'vue'
+import { ref, onMounted, computed, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
-import { EditOutlined, DeleteOutlined, PlusOutlined, EyeOutlined, CheckCircleOutlined, CloseCircleOutlined, AppstoreAddOutlined, HomeOutlined, ArrowLeftOutlined } from '@ant-design/icons-vue'
+import { EditOutlined, DeleteOutlined, PlusOutlined, EyeOutlined, CheckCircleOutlined, CloseCircleOutlined, AppstoreAddOutlined, HomeOutlined, ArrowLeftOutlined, BankOutlined } from '@ant-design/icons-vue'
 import bedIconBlue from '@/assets/svg/Bed-blue.svg'
 import bedIconGreen from '@/assets/svg/Bed-green.svg'
 import bedIconSvg from '@/assets/svg/bed_icon.svg'
@@ -1031,15 +922,10 @@ const {
   selectedBuilding,
   currentBuildingForGrid,
   createBuildingForm,
-  editingBuildingId,
-  editingBuildingForm,
   fetchBuildings,
-  handleToggleBuildingTag,
   handleToggleBuildingCard,
   handleSelectFloor,
   handleCreateBuilding,
-  handleEditBuilding,
-  handleSaveBuilding,
   handleDeleteFloor,
   handleDeleteBuilding,
 } = buildingComposable
@@ -1158,7 +1044,7 @@ const toggleBedDevices = (bedId: string) => {
 }
 
 // Location Tag Options (从 store 获取)
-// For branch_tag, branch names are stored in tag_objects JSONB (tag_name = "Branch")
+// For branch_name, branch names are stored in tag_objects JSONB (tag_name = "Branch")
 // If tag_objects.branch is empty, fallback to extract from buildings
 const branchTagOptions = computed(() => {
   const branchTags = tagsStore.branchTags
@@ -1182,8 +1068,8 @@ const branchTagOptions = computed(() => {
   if (branchNames.length === 0) {
     const branchTagSet = new Set<string>()
     buildings.value.forEach(building => {
-      if (building.branch_tag && building.branch_tag !== '-') {
-        branchTagSet.add(building.branch_tag)
+      if (building.branch_name && building.branch_name !== '-') {
+        branchTagSet.add(building.branch_name)
       }
     })
     branchTagSet.forEach(branchTag => {
@@ -1194,22 +1080,45 @@ const branchTagOptions = computed(() => {
   return branchNames.sort((a, b) => a.tag_name.localeCompare(b.tag_name))
 })
 
-// Area Tag Options (从 store 获取)
-const areaTagOptions = computed(() => tagsStore.areaTags)
+// Area Tag Options (从 tag_objects 中获取 area 成员)
+const areaTagOptions = computed(() => {
+  // 找到 tag_type = 'area_tag' 且 tag_name = 'Area' 的 tag
+  const areaTag = tagsStore.allTags.find(
+    (tag) => tag.tag_type === 'area_tag' && tag.tag_name === 'Area'
+  )
+  
+  if (!areaTag || !areaTag.tag_objects || !areaTag.tag_objects.area) {
+    return []
+  }
+  
+  // 从 tag_objects.area 中获取所有 area 成员
+  // tag_objects.area 的格式是 { [area_name]: area_name }
+  const areaNames = Object.keys(areaTag.tag_objects.area)
+  
+  // 转换为选项格式
+  return areaNames.map((areaName) => ({
+    tag_name: areaName,
+    tag_type: 'area_tag',
+  }))
+})
 const areaTagSearchValue = ref('')
 
-// Simplified timezone list (IANA format)
+// Timezone list: Display user-friendly names, store IANA identifiers
+// 前端显示用户友好的名称，但存储和传递 IANA 标识符（自动处理夏令时）
 const usTimeZones = [
   // Asia timezones
-  { value: 'Asia/Shanghai', label: 'China (Shanghai, UTC+8)' },
-  { value: 'Asia/Tokyo', label: 'Japan (Tokyo, UTC+9)' },
-  // US timezones
-  { value: 'America/New_York', label: 'US Eastern Time (UTC-5/-4)' },
-  { value: 'America/Chicago', label: 'US Central Time (UTC-6/-5)' },
-  { value: 'America/Denver', label: 'US Mountain Time (UTC-7/-6)' },
-  { value: 'America/Los_Angeles', label: 'US Pacific Time (UTC-8/-7)' },
-  { value: 'America/Anchorage', label: 'US Alaska Time (UTC-9/-8)' },
-  { value: 'Pacific/Honolulu', label: 'US Hawaii Time (UTC-10/-9)' },
+  { value: 'Asia/Shanghai', label: 'Asia/Shanghai (CST, UTC+8)' },
+  { value: 'Asia/Tokyo', label: 'Asia/Tokyo (JST, UTC+9)' },
+  // US timezones - Display IANA identifier with timezone info
+  { value: 'America/Los_Angeles', label: 'America/Los_Angeles (PST/PDT, UTC-8/-7)' },
+  { value: 'America/Denver', label: 'America/Denver (MST/MDT, UTC-7/-6)' },
+  { value: 'America/Phoenix', label: 'America/Phoenix (MST, UTC-7, No DST)' },
+  { value: 'America/Chicago', label: 'America/Chicago (CST/CDT, UTC-6/-5)' },
+  { value: 'America/New_York', label: 'America/New_York (EST/EDT, UTC-5/-4)' },
+  { value: 'America/Anchorage', label: 'America/Anchorage (AKST/AKDT, UTC-9/-8)' },
+  { value: 'America/Adak', label: 'America/Adak (HAST/HADT, UTC-10/-9)' },
+  { value: 'Pacific/Honolulu', label: 'Pacific/Honolulu (HST, UTC-10, No DST)' },
+  { value: 'Pacific/Pago_Pago', label: 'Pacific/Pago_Pago (SST, UTC-11, No DST)' },
 ]
 
 // Timezone selector filter function
@@ -1220,8 +1129,31 @@ const filterTimeZoneOption = (input: string, option: any) => {
   return value.includes(searchText) || label.includes(searchText)
 }
 
-// Unit grid calculation - sort by Floor and UnitNumber numerically
-// Display all units belonging to the selected building, regardless of floor
+// Get distinct floors for a building from units
+const getBuildingFloors = (building: Building | null): number[] => {
+  if (!building) return []
+  
+  const buildingUnits = units.value.filter((unit) => {
+    return (
+      unit.building === building.building_name &&
+      unit.branch_name === (building.branch_name ?? '')
+    )
+  })
+  
+  // Extract unique floor numbers from units
+  const floorSet = new Set<number>()
+  buildingUnits.forEach((unit) => {
+    const floorStr = unit.floor || '1F'
+    const floorNum = parseInt(floorStr.replace(/[^0-9]/g, '')) || 1
+    floorSet.add(floorNum)
+  })
+  
+  // Sort and return
+  return Array.from(floorSet).sort((a, b) => a - b)
+}
+
+// Unit grid calculation - group by floor, sort by Floor and UnitNumber numerically
+// Display all units belonging to the selected building, with floor dividers
 const unitGrid = computed(() => {
   const building = currentBuildingForGrid.value
 
@@ -1229,8 +1161,8 @@ const unitGrid = computed(() => {
     return []
   }
 
-  // All units have branch_tag, building, floor (no null values)
-  // Filter: match building and branch_tag (show all floors for the building)
+  // All units have branch_name, building, floor (no null values)
+  // Filter: match building and branch_name (show all floors for the building)
   // Exclude placeholder units (unit_name starting with __BUILDING__)
   const filteredUnits = units.value.filter((unit) => {
     // Exclude placeholder units used for building representation
@@ -1239,36 +1171,78 @@ const unitGrid = computed(() => {
     }
     return (
       unit.building === building.building_name &&
-      unit.branch_tag === building.branch_tag
+      unit.branch_name === building.branch_name
     )
   })
 
-  // Sort by floor first (extract number from "1F", "2F", etc.), then by unit_number
-  const sortedUnits = [...filteredUnits].sort((a, b) => {
-    // Extract floor number
-    const floorNumA = parseInt((a.floor || '1F').replace(/[^0-9]/g, '')) || 0
-    const floorNumB = parseInt((b.floor || '1F').replace(/[^0-9]/g, '')) || 0
+  // Group units by floor
+  const unitsByFloor = new Map<string, typeof filteredUnits>()
+  filteredUnits.forEach((unit) => {
+    // Normalize floor: ensure it has "F" suffix (e.g., "1" -> "1F", "1F" -> "1F")
+    const normalizedFloor = unit.floor 
+      ? (unit.floor.match(/^\d+$/) ? `${unit.floor}F` : unit.floor)
+      : '1F'
     
-    // First sort by floor
-    if (floorNumA !== floorNumB) {
-      return floorNumA - floorNumB
+    if (!unitsByFloor.has(normalizedFloor)) {
+      unitsByFloor.set(normalizedFloor, [])
     }
-    
-    // Then sort by unit_number: try numeric sort first, fallback to string sort
-    const numA = parseInt(a.unit_number)
-    const numB = parseInt(b.unit_number)
-    
-    // If both are valid numbers, sort numerically
-    if (!isNaN(numA) && !isNaN(numB)) {
-      return numA - numB
-    }
-    
-    // Otherwise, sort alphabetically
-    return a.unit_number.localeCompare(b.unit_number, undefined, { numeric: true, sensitivity: 'base' })
+    unitsByFloor.get(normalizedFloor)!.push(unit)
   })
 
-  // Return sorted array directly, CSS Grid will arrange from left to right, top to bottom automatically
-  return sortedUnits
+  // Get all possible floors for this building (from existing units or from getBuildingFloors)
+  // If building has no units, show at least floor 1F
+  const allFloors = new Set<string>()
+  
+  // Add floors from existing units
+  unitsByFloor.forEach((_, floor) => {
+    allFloors.add(floor)
+  })
+  
+  // If no units exist, add at least 1F
+  if (allFloors.size === 0) {
+    allFloors.add('1F')
+  }
+  
+  // Sort floors by number (extract number from "1F", "2F", etc.)
+  const sortedFloors = Array.from(allFloors).sort((a, b) => {
+    const floorNumA = parseInt(a.replace(/[^0-9]/g, '')) || 0
+    const floorNumB = parseInt(b.replace(/[^0-9]/g, '')) || 0
+    return floorNumA - floorNumB
+  })
+
+  // Build result array with floor dividers, units, and add buttons
+  const result: Array<{ type: 'floor-divider' | 'unit' | 'add-button', floor?: string, unit?: typeof filteredUnits[0] }> = []
+  
+  sortedFloors.forEach((floor) => {
+    // Add floor divider
+    result.push({ type: 'floor-divider', floor })
+    
+    // Get units for this floor and sort by unit_number
+    const unitsInFloor = unitsByFloor.get(floor) || []
+    const sortedUnits = [...unitsInFloor].sort((a, b) => {
+      // Sort by unit_number: try numeric sort first, fallback to string sort
+      const numA = parseInt(a.unit_number)
+      const numB = parseInt(b.unit_number)
+      
+      // If both are valid numbers, sort numerically
+      if (!isNaN(numA) && !isNaN(numB)) {
+        return numA - numB
+      }
+      
+      // Otherwise, sort alphabetically
+      return a.unit_number.localeCompare(b.unit_number, undefined, { numeric: true, sensitivity: 'base' })
+    })
+    
+    // Add units for this floor
+    sortedUnits.forEach((unit) => {
+      result.push({ type: 'unit', unit })
+    })
+    
+    // Add "Add Unit" button at the end of each floor
+    result.push({ type: 'add-button', floor })
+  })
+
+  return result
 })
 
 // allUnits is now from composable
@@ -1290,10 +1264,10 @@ const fetchUnits = async () => {
     // According to DB schema (05_units.sql):
     // - building: VARCHAR(50) NOT NULL DEFAULT '-' (always has value)
     // - floor: VARCHAR(50) NOT NULL DEFAULT '1F' (always has value)
-    // - branch_tag: VARCHAR(255) (can be NULL)
-    // - Unique constraint: (tenant_id, branch_tag, building, floor, unit_name)
-    
-    // All units have branch_tag, building, floor (no null values)
+    // - branch_name: VARCHAR(255) (can be NULL)
+    // - Unique constraint: (tenant_id, branch_name, building, floor, unit_name)
+
+    // All units have branch_name, building, floor (no null values)
     const building = currentBuildingForGrid.value
   
     if (!building) {
@@ -1302,16 +1276,20 @@ const fetchUnits = async () => {
     }
 
     // Build query parameters - fetch all units for the building (all floors)
-    // When branch_tag is null, pass empty string to match NULL in database
+    // When building is selected, must pass both branch_name and building:
+    // - If branch_name is null/undefined, pass empty string '' (backend will query branch_name IS NULL)
+    // - If branch_name has value, pass the value (backend will query branch_name = X)
     const queryParams: any = {
       tenant_id: tenantId,
-      building: building.building_name,
-      // Pass empty string if branch_tag is null/undefined to match NULL in database
-      branch_tag: building.branch_tag ?? '',
+      building: building.building_name || undefined, // Only pass if building_name exists
+      // Always pass branch_name: null/undefined → '' (empty string), otherwise pass the value
+      branch_name: building.branch_name != null && building.branch_name !== '' ? building.branch_name : '',
       // Don't filter by floor - get all floors for the building
     }
     
+    console.log('[UnitList] Fetching units with params:', queryParams)
     const result = await getUnitsApi(queryParams)
+    console.log('[UnitList] Fetched units:', result.items.length, result.items)
     units.value = result.items
   } catch (error: any) {
     console.error('[Fetch Units] Error:', error)
@@ -1321,12 +1299,6 @@ const fetchUnits = async () => {
 }
 
 // Wrapper functions for building handlers that need to call fetchUnits
-const handleToggleBuildingTagWrapper = (building: Building) => {
-  handleToggleBuildingTag(building)
-    units.value = []
-  fetchUnits()
-}
-
 const handleToggleBuildingCardWrapper = (building: Building) => {
   handleToggleBuildingCard(building)
     units.value = []
@@ -1341,25 +1313,25 @@ const handleSelectFloorWrapper = async (building: Building, floor: string) => {
   await fetchUnits()
 }
 
-// Get Building display name - simple format: branch_tag-building_name
-// When branch_tag is null/undefined, use empty string (keep the '-' separator)
-// Filter out buildings where both branch_tag and building_name are empty
+// Get Building display name - simple format: branch_name-building_name
+// When branch_name is null/undefined, use empty string (keep the '-' separator)
+// Filter out buildings where both branch_name and building_name are empty
 const buildingsWithDisplayName = computed(() => {
   const buildingList = buildings.value
     .filter((building) => {
-      // Filter out buildings where both branch_tag and building_name are empty
-      // Per business rule: branch_tag or building_name must have at least one non-empty value
-      const tagName = building.branch_tag ?? ''
+      // Filter out buildings where both branch_name and building_name are empty
+      // Per business rule: branch_name or building_name must have at least one non-empty value
+      const tagName = building.branch_name ?? ''
       const buildingName = building.building_name || ''
       return !(tagName === '' && buildingName === '')
     })
     .map((building) => {
-      // When branch_tag is null/undefined, use empty string (keep the '-' separator)
-      // Display format: branch_tag-building_name (always show '-' separator)
-      const tagName = building.branch_tag ?? ''
+      // When branch_name is null/undefined, use empty string (keep the '-' separator)
+      // Display format: branch_name-building_name (always show '-' separator)
+      const tagName = building.branch_name ?? ''
       const buildingName = building.building_name || '-'
       
-      // Display name: always show branch_tag-building_name format (keep '-' separator even if branch_tag is empty)
+      // Display name: always show branch_name-building_name format (keep '-' separator even if branch_name is empty)
       const displayName = `${tagName}-${buildingName}`
       
       return {
@@ -1397,6 +1369,61 @@ const handleCellClick = async (unit: Unit | null, _index: number) => {
   await handleCellClickBase(unit, _index, fetchRoomsWithBedsWrapper)
 }
 
+// Handle add unit button for a specific floor
+const handleAddUnitForFloor = async (floor: string) => {
+  console.log('[UnitList] handleAddUnitForFloor called with floor:', floor)
+  
+  // Set selectedFloor to the floor value
+  selectedFloor.value = floor
+  
+  // Ensure selectedBuilding is set (use currentBuildingForGrid if available)
+  if (!selectedBuilding.value && currentBuildingForGrid.value) {
+    selectedBuilding.value = currentBuildingForGrid.value
+  }
+  
+  // Check if building is selected
+  if (!selectedBuilding.value) {
+    message.error('Please select a building first')
+    return
+  }
+  
+  // Extract floor number from floor string (e.g., "1F" -> 1)
+  let floorNum = 1
+  if (floor) {
+    const floorMatch = floor.match(/\d+/)
+    if (floorMatch) {
+      floorNum = parseInt(floorMatch[0]) || 1
+    }
+  }
+  
+  console.log('[UnitList] Opening edit unit modal for new unit, selectedBuilding:', selectedBuilding.value, 'selectedFloor:', selectedFloor.value, 'floorNum:', floorNum)
+  
+  // Reset header button state and device mode
+  activeHeaderButton.value = null
+  isDeviceMode.value = false
+  devContainerTarget.value = null
+  expandedRooms.value.clear()
+  showAddRoomForm.value = false
+  
+  // Use the same logic as handleCellClick(null, -1) - open edit modal with null unit
+  editingUnit.value = null
+  roomsWithBeds.value = []
+  editUnitForm.value = {
+    area_name: undefined,
+    unit_name: '',
+    unit_number: '',
+    unit_type: 'Facility',
+    floor: floorNum as any, // Use the floor number from the button (editUnitForm expects number for input-number)
+    is_public_space: false,
+    is_multi_person_room: false,
+    timezone: 'America/Denver', // Default to Mountain Time (with DST, UTC-7/-6)
+  }
+  showEditUnitModal.value = true
+  await nextTick()
+  
+  console.log('[UnitList] showEditUnitModal.value:', showEditUnitModal.value)
+}
+
 // Wrapper for handleCreateUnit that calls fetchUnits after creation
 const handleCreateUnit = async () => {
   try {
@@ -1413,49 +1440,36 @@ const handleCreateUnit = async () => {
     }
 
     // 自动使用 selectedBuilding 和 selectedFloor（不再从表单获取）
-    const finalBuilding = selectedBuilding.value?.building_name || '-'
+    // Note: 以下逻辑仅用于设置 currentBuildingForGrid（UI 显示目的）
+    // 实际创建 unit 时，handleCreateUnitBase 传递的是 selectedBuilding.building_name（可能为 undefined）
+    const finalBuilding = selectedBuilding.value?.building_name  // 可能为 undefined（不再使用 '-' 作为默认值）
     const finalFloor = selectedFloor.value || '1F'
-    const finalBranchTag = selectedBuilding.value?.branch_tag || '-'
+    const finalBranchName = selectedBuilding.value?.branch_name  // 可能为 undefined（不再使用 '-' 作为默认值）
     
-    // According to DB schema (05_units.sql):
-    // - building: VARCHAR(50) NOT NULL DEFAULT '-' (always has value)
-    // - floor: VARCHAR(50) NOT NULL DEFAULT '1F' (always has value)
-    // - branch_tag: VARCHAR(255) (can be NULL)
-    // - Unique constraint: (tenant_id, branch_tag, unit_name) if branch_tag IS NOT NULL
-    //                      (tenant_id, unit_name) if branch_tag IS NULL
-    
-    // Update query parameters to match creation parameters
-    // Both branch_tag and building_name default to '-' when empty
-    
-    // 1. Update selectedBranchTag (defaults to '-')
-    selectedBranchTag.value = finalBranchTag || '-'
+    // 1. Update selectedBranchTag (保持 undefined，不再使用 '-' 作为默认值)
+    selectedBranchTag.value = finalBranchName || ''
     
     // 2. Update currentBuildingForGrid to match the building that will be used for creation
-    const branchTagForBuilding = finalBranchTag || '-'
+    const branchNameForBuilding = finalBranchName || ''
     
-    if (finalBuilding === '-') {
-      // For "-" building, create/find virtual building with branch_tag
+    if (!finalBuilding) {
+      // Building 为 undefined/null - 使用 branch_name 创建临时 building 对象（仅用于 UI 显示）
       const virtualBuilding = buildings.value.find(b => 
-        b.building_name === '-' && b.branch_tag === branchTagForBuilding
+        !b.building_name && b.branch_name === branchNameForBuilding
       ) || {
-        building_id: `na-building-${branchTagForBuilding}`,
-        building_name: '-',
-        branch_tag: branchTagForBuilding,
-        floors: 1, // Default to 1 if empty
+        building_id: `na-building-${branchNameForBuilding || 'none'}`,
+        building_name: undefined as string | undefined,
+        branch_name: branchNameForBuilding || undefined,
       } as Building
       
       currentBuildingForGrid.value = virtualBuilding
     } else {
-      // For real building, find building with matching building_name and branch_tag
+      // For real building, find building with matching building_name and branch_name
       const matchingBuilding = buildings.value.find(b => 
-        b.building_name === finalBuilding && b.branch_tag === branchTagForBuilding
+        b.building_name === finalBuilding && b.branch_name === branchNameForBuilding
       )
       
       if (matchingBuilding) {
-        // Ensure floors is at least 1
-        if (!matchingBuilding.floors || matchingBuilding.floors <= 0) {
-          matchingBuilding.floors = 1
-        }
         currentBuildingForGrid.value = matchingBuilding
         // Also update selectedBuilding if it doesn't match
         if (!selectedBuilding.value || selectedBuilding.value.building_id !== matchingBuilding.building_id) {
@@ -1463,19 +1477,14 @@ const handleCreateUnit = async () => {
         }
       } else if (selectedBuilding.value && 
                  selectedBuilding.value.building_name === finalBuilding &&
-                 selectedBuilding.value.branch_tag === branchTagForBuilding) {
-        // selectedBuilding matches, ensure floors is at least 1
-        if (!selectedBuilding.value.floors || selectedBuilding.value.floors <= 0) {
-          selectedBuilding.value.floors = 1
-        }
+                 selectedBuilding.value.branch_name === branchNameForBuilding) {
         currentBuildingForGrid.value = selectedBuilding.value
       } else {
         // Building not found in list - create temporary building object for querying
         currentBuildingForGrid.value = {
-          building_id: `temp-${finalBuilding}-${branchTagForBuilding}`,
+          building_id: `temp-${finalBuilding}-${branchNameForBuilding || 'none'}`,
           building_name: finalBuilding,
-          branch_tag: branchTagForBuilding,
-          floors: 1, // Default to 1 if empty
+          branch_name: branchNameForBuilding || undefined,
         } as Building
       }
     }
@@ -1490,19 +1499,19 @@ const handleCreateUnit = async () => {
     }
 
     // Verify created unit has correct values
-    const createdBranchTag = createdUnit.branch_tag || '-'
-    if (createdUnit.building !== finalBuilding || createdUnit.floor !== finalFloor || createdBranchTag !== finalBranchTag) {
+    const createdBranchName = createdUnit.branch_name || '-'
+    if (createdUnit.building !== finalBuilding || createdUnit.floor !== finalFloor || createdBranchName !== finalBranchName) {
       console.error('[Create Unit] Mismatch!', {
-        created: { building: createdUnit.building, floor: createdUnit.floor, branch_tag: createdBranchTag },
-        expected: { building: finalBuilding, floor: finalFloor, branch_tag: finalBranchTag },
+        created: { building: createdUnit.building, floor: createdUnit.floor, branch_name: createdBranchName },
+        expected: { building: finalBuilding, floor: finalFloor, branch_name: finalBranchName },
         currentBuildingForGrid: currentBuildingForGrid.value,
       })
       message.warning('Unit created but with different values. Please refresh.')
     }
     
-    // Ensure currentBuildingForGrid has correct branch_tag before fetching
+    // Ensure currentBuildingForGrid has correct branch_name before fetching
     if (currentBuildingForGrid.value) {
-      currentBuildingForGrid.value.branch_tag = finalBranchTag
+      currentBuildingForGrid.value.branch_name = finalBranchName
     }
     
     // Wait a bit to ensure backend has processed the creation
@@ -1549,19 +1558,45 @@ const handleAreaTagSearch = (value: string) => {
   areaTagSearchValue.value = value
 }
 
+// 处理 Area Tag 回车键（当用户输入新值并按回车时）
+const handleAreaTagEnter = async (e: KeyboardEvent) => {
+  e.stopPropagation() // 阻止事件冒泡（preventDefault 已在 @keydown.enter.prevent 中处理）
+  const value = areaTagSearchValue.value.trim()
+  if (value) {
+    // 直接设置为表单值，无论是否存在
+    editUnitForm.value.area_name = value
+    // 清空搜索值，但保留输入框中的文本（这样用户可以看到输入的值）
+    // areaTagSearchValue.value = '' // 不立即清空，让用户看到输入的值
+    
+    // 保持输入框焦点，光标在输入后面
+    await nextTick()
+    // 使用更精确的选择器
+    const selectElement = document.querySelector('.area-tag-field .ant-select .ant-select-selector input') as HTMLInputElement
+    if (selectElement) {
+      // 先设置值到输入框（如果 Select 组件还没有更新）
+      selectElement.value = value
+      // 设置光标位置到输入末尾
+      const length = value.length
+      selectElement.setSelectionRange(length, length)
+      // 确保焦点
+      selectElement.focus()
+    }
+  }
+}
+
 // 处理 Area Tag 失焦（当用户输入新值并离开输入框时）
 // 注意：不再立即创建 tag，而是等到点击 OK 时与 Unit 一起创建
 const handleAreaTagBlur = async () => {
   const value = areaTagSearchValue.value.trim()
-  if (value && value !== editUnitForm.value.area_tag) {
+  if (value && value !== editUnitForm.value.area_name) {
     // 检查是否是新建的 tag（不在选项中）
     const exists = areaTagOptions.value.some((tag) => tag.tag_name === value)
     if (exists) {
       // 如果 tag 已存在，直接设置为选中值
-      editUnitForm.value.area_tag = value
+      editUnitForm.value.area_name = value
     } else {
       // 如果 tag 不存在，先设置为表单值，等点击 OK 时再创建
-      editUnitForm.value.area_tag = value
+      editUnitForm.value.area_name = value
     }
     // 清空搜索值
     areaTagSearchValue.value = ''
@@ -1571,7 +1606,7 @@ const handleAreaTagBlur = async () => {
 // 获取 Edit Unit 标题
 const getEditUnitTitle = () => {
   if (editingUnit.value) {
-    const areaTag = editUnitForm.value.area_tag || editingUnit.value.area_tag || ''
+    const areaTag = editUnitForm.value.area_name || editingUnit.value.area_name || ''
     const unitName = editUnitForm.value.unit_name || editingUnit.value.unit_name || ''
     if (areaTag && unitName) {
       return `Edit Unit:  ${areaTag} - ${unitName}`
@@ -1647,7 +1682,7 @@ const handleToggleAddDevice = async () => {
 
 // Wrapper for handleSaveUnit that calls fetchUnits and handleCellClick
 const handleSaveUnit = async () => {
-  const newUnit = await handleSaveUnitBase(currentBuildingForGrid.value, selectedBranchTag.value)
+  const newUnit = await handleSaveUnitBase(selectedBuilding.value, selectedFloor.value)
   if (newUnit) {
       await fetchUnits()
       await handleCellClick(newUnit, -1)
@@ -1794,6 +1829,37 @@ const handleEditBedWrapper = (bed: Bed) => {
 // 保存 Bed 名称（验证格式：BedA-BedZ）
 // Functions are now in composables, using wrapper functions
 
+// Track if user has manually edited unit_number
+const unitNumberManuallyEdited = ref(false)
+
+// Auto-fill unit_number from unit_name when unit_name input loses focus
+const handleUnitNameBlur = () => {
+  // Only auto-fill if:
+  // 1. User hasn't manually edited unit_number
+  // 2. unit_number is currently empty
+  // 3. unit_name contains numbers
+  if (!unitNumberManuallyEdited.value && editUnitForm.value.unit_name && !editUnitForm.value.unit_number) {
+    // Extract all numbers from unit_name (remove all non-digit characters)
+    const numbers = editUnitForm.value.unit_name.replace(/[^0-9]/g, '')
+    if (numbers) {
+      editUnitForm.value.unit_number = numbers
+    }
+  }
+}
+
+// Track manual edits to unit_number
+watch(() => editUnitForm.value.unit_number, () => {
+  unitNumberManuallyEdited.value = true
+})
+
+// Reset the flag when modal opens/closes
+watch(showEditUnitModal, (isOpen) => {
+  if (isOpen) {
+    // Reset flag when opening modal
+    unitNumberManuallyEdited.value = false
+  }
+})
+
 // 监听 showEditUnitModal 的变化，在打开 Modal 时立即设置位置为 10%
 watch(showEditUnitModal, async (newShowModal) => {
   if (!newShowModal) return
@@ -1835,40 +1901,11 @@ watch(showEditUnitModal, async (newShowModal) => {
   }, 0)
 }, { immediate: true })
 
-// 处理点击空白处退出 Building 编辑模式
-const handleClickOutside = (event: MouseEvent) => {
-  if (editingBuildingId.value) {
-    // 检查点击的目标是否在编辑区域内
-    const target = event.target as HTMLElement
-    const editElements = document.querySelectorAll('.building-tag-edit, .building-edit')
-    let isInsideEdit = false
-    
-    editElements.forEach((el) => {
-      if (el.contains(target)) {
-        isInsideEdit = true
-      }
-    })
-    
-    // 如果点击在编辑区域外，退出编辑模式
-    if (!isInsideEdit) {
-      editingBuildingId.value = null
-    }
-  }
-}
-
 // 初始化
 onMounted(() => {
   fetchBuildings()
   tagsStore.fetchAllTags() // 一次性加载所有 tags 到 store
   fetchAllUnits()
-  // 添加全局点击监听器
-  document.addEventListener('click', handleClickOutside)
-})
-
-// 清理
-onUnmounted(() => {
-  // 移除全局点击监听器
-  document.removeEventListener('click', handleClickOutside)
 })
 </script>
 
@@ -1958,6 +1995,19 @@ onUnmounted(() => {
   margin-bottom: 12px;
 }
 
+.building-name-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.building-icon {
+  color: #1890ff;
+  font-size: 16px;
+  flex-shrink: 0;
+  margin-right: 8px;
+}
+
 .building-name {
   font-weight: 600;
   font-size: 16px;
@@ -2011,135 +2061,6 @@ onUnmounted(() => {
   color: #40a9ff;
 }
 
-.building-tags {
-  display: flex;
-  gap: 8px;
-  margin-left: 16px;
-  flex-wrap: wrap;
-  align-items: flex-start;
-}
-
-.building-tag-card {
-  position: relative;
-  border: 1px solid #e8e8e8;
-  border-radius: 8px;
-  padding: 8px 12px;
-  background: #fff;
-  cursor: pointer;
-  transition: border-color 0.15s, background-color 0.15s;
-  min-width: 120px;
-}
-
-.building-tag-card:hover {
-  border-color: #1890ff;
-  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.1);
-}
-
-.building-tag-card.active {
-  border-color: #1890ff;
-  background: #f0f9ff;
-}
-
-.building-tag-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-}
-
-.building-tag-name {
-  font-weight: 600;
-  font-size: 14px;
-  white-space: nowrap;
-}
-
-.building-tag-edit-icon {
-  color: #1890ff;
-  cursor: pointer;
-  font-size: 14px;
-  flex-shrink: 0;
-}
-
-.building-tag-edit-icon:hover {
-  color: #40a9ff;
-}
-
-.building-tag-delete-icon {
-  color: #1890ff;
-  cursor: pointer;
-  font-size: 14px;
-  flex-shrink: 0;
-  margin-left: auto;
-}
-
-.building-tag-delete-icon:hover {
-  color: #40a9ff;
-}
-
-.building-tag-edit {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  flex: 1;
-}
-
-.building-tag-edit .separator {
-  color: #999;
-  font-size: 11px;
-  margin: 0 2px;
-}
-
-.building-tag-actions {
-  display: flex;
-  gap: 6px;
-  color: #1890ff;
-  cursor: pointer;
-  flex-shrink: 0;
-  font-size: 14px;
-  opacity: 1;
-  visibility: visible;
-}
-
-.building-tag-actions :hover {
-  color: #40a9ff;
-}
-
-.building-tag-actions .anticon {
-  font-size: 14px;
-  display: inline-block;
-}
-
-.building-tag-floors {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  margin-top: 4px;
-  padding: 8px;
-  background: #fff;
-  border: 1px solid #e8e8e8;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 100;
-  min-width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.floor-item-small {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  width: 100%;
-}
-
-.floor-button-small {
-  flex: 1;
-  text-align: left;
-  font-size: 12px;
-  padding: 2px 8px;
-  height: auto;
-}
 
 .floor-delete-icon {
   color: #ff4d4f;
@@ -2211,6 +2132,24 @@ onUnmounted(() => {
   gap: 12px;
   overflow-y: auto;
   padding: 8px;
+}
+
+.floor-divider {
+  grid-column: 1 / -1; /* Span all columns */
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+  margin: 8px 0;
+  border-top: 2px solid #e8e8e8;
+  border-bottom: 1px solid #e8e8e8;
+  background-color: #f5f5f5;
+}
+
+.floor-label {
+  font-weight: 600;
+  font-size: 14px;
+  color: #1890ff;
+  padding: 0 12px;
 }
 
 .location-cell {
@@ -2646,7 +2585,7 @@ onUnmounted(() => {
 .unit-fields {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   margin-top: 0;
   margin-bottom: 8px;
   width: 100%;
@@ -2676,16 +2615,22 @@ onUnmounted(() => {
 .unit-field.inline-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 8px;
   width: 100%;
   max-width: 100%;
-  overflow: hidden;
+  flex-wrap: wrap;
 }
 
 .inline-field {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.inline-field.area-tag-field {
+  flex: 1;
+  min-width: 0;
 }
 
 .inline-field label {
@@ -3093,7 +3038,6 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  margin-top: 8px;
 }
 
 .modal-actions-left {

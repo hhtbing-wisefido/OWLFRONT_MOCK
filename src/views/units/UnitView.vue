@@ -68,7 +68,7 @@
           </template>
         </template>
         <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'branch_tag'">
+          <template v-if="column.key === 'branch_name'">
             <div style="display: flex; align-items: center; gap: 8px;">
               <span 
                 v-if="record.hasChildren"
@@ -79,7 +79,7 @@
                 <MinusOutlined v-if="expandedKeys.has(record.key)" />
                 <PlusOutlined v-else />
               </span>
-              <span v-if="record.branch_tag">{{ record.branch_tag }}</span>
+              <span v-if="record.branch_name">{{ record.branch_name }}</span>
             </div>
           </template>
           <template v-else-if="column.key === 'Building'">
@@ -88,8 +88,8 @@
           <template v-else-if="column.key === 'Floor'">
             <span v-if="record.Floor">{{ record.Floor }}</span>
           </template>
-          <template v-else-if="column.key === 'area_tag'">
-            <span v-if="record.area_tag">{{ record.area_tag }}</span>
+          <template v-else-if="column.key === 'area_name'">
+            <span v-if="record.area_name">{{ record.area_name }}</span>
           </template>
           <template v-else-if="column.key === 'UnitName'">
             <span v-if="record.UnitName">{{ record.UnitName }}</span>
@@ -147,10 +147,10 @@ const isAllExpanded = computed(() => {
 
 // Table columns
 const tableColumns = ref([
-  { title: 'Branch', key: 'branch_tag', dataIndex: 'branch_tag', width: 100 },
+  { title: 'Branch', key: 'branch_name', dataIndex: 'branch_name', width: 100 },
   { title: 'Building', key: 'Building', dataIndex: 'Building', width: 80 },
   { title: 'Floor', key: 'Floor', dataIndex: 'Floor', width: 70 },
-  { title: 'area_tag', key: 'area_tag', dataIndex: 'area_tag', width: 100 },
+  { title: 'area_name', key: 'area_name', dataIndex: 'area_name', width: 100 },
   { title: 'UnitName', key: 'UnitName', dataIndex: 'UnitName', width: 100 },
   { 
     title: 'UnitNumb', 
@@ -292,10 +292,10 @@ const updateTableData = () => {
 // Get minimum width for each column
 const getMinWidthForColumn = (columnKey: string): number => {
   const minWidths: Record<string, number> = {
-    branch_tag: 50,  // Short values like DV1, SPR
+    branch_name: 50,  // Short values like DV1, SPR
     Building: 20,      // Single characters like A, B
     Floor: 20,         // Short values like 1F, 2F
-    area_tag: 50,      // Values like East, West, MemaryCare
+    area_name: 50,      // Values like East, West, MemaryCare
     UnitName: 50,      // Values like E101, W201, M110
     UnitNumb: 50,      // Numbers like 101, 201, 110
     UnitType: 50,      // Values like Facility, Home
@@ -371,15 +371,33 @@ const transformToTableData = (
 ): any[] => {
   const rows: any[] = []
 
-  // Separate units with and without buildings
-  // DB guarantees building is non-null, default value is "-"
-  const unitsWithBuilding = units.filter((unit) => unit.building && unit.building !== '-')
-  const unitsWithoutBuilding = units.filter((unit) => unit.building === '-')
+  // Helper function to extract building value (handle both string and object format)
+  const getBuildingValue = (building: any): string | null => {
+    if (building == null) return null
+    if (typeof building === 'string') return building
+    if (typeof building === 'object' && building.String) {
+      // Handle sql.NullString format: {"String": "A", "Valid": true}
+      return building.Valid ? building.String : null
+    }
+    return null
+  }
 
-  // Group Buildings by branch_tag
+  // Separate units with and without buildings
+  // Handle undefined/null/'' cases: building can be undefined (NULL in DB), or a string value
+  const unitsWithBuilding = units.filter((unit) => {
+    const building = getBuildingValue(unit.building)
+    return building != null && building !== '' && building !== '-'
+  })
+  const unitsWithoutBuilding = units.filter((unit) => {
+    const building = getBuildingValue(unit.building)
+    return building == null || building === '' || building === '-'
+  })
+
+  // Group Buildings by branch_name
   const buildingsByBranchTag = new Map<string, Building[]>()
   buildings.forEach((building) => {
-    const branchTag = building.branch_tag || 'N/A'
+    // Use empty string instead of 'N/A' for null/undefined branch_name
+    const branchTag = building.branch_name || ''
     if (!buildingsByBranchTag.has(branchTag)) {
       buildingsByBranchTag.set(branchTag, [])
     }
@@ -389,17 +407,25 @@ const transformToTableData = (
   // Group Units by Building and Floor (only for units with building)
   const unitsByBuildingAndFloor = new Map<string, typeof unitsWithBuilding>()
   unitsWithBuilding.forEach((unit) => {
-    const key = `${unit.building || 'N/A'}-${unit.floor || 'N/A'}`
+    // Normalize floor: ensure it has "F" suffix (e.g., "1" -> "1F", "1F" -> "1F")
+    const normalizedFloor = unit.floor 
+      ? (unit.floor.match(/^\d+$/) ? `${unit.floor}F` : unit.floor)
+      : '1F'
+    // Extract building value (handle both string and object format)
+    const buildingValue = getBuildingValue(unit.building)
+    const buildingName = (buildingValue != null && buildingValue !== '' && buildingValue !== '-') ? String(buildingValue) : ''
+    const key = `${buildingName}-${normalizedFloor}`
     if (!unitsByBuildingAndFloor.has(key)) {
       unitsByBuildingAndFloor.set(key, [])
     }
     unitsByBuildingAndFloor.get(key)!.push(unit)
   })
 
-  // Group units without building by branch_tag
+  // Group units without building by branch_name
   const unitsWithoutBuildingByBranchTag = new Map<string, typeof unitsWithoutBuilding>()
   unitsWithoutBuilding.forEach((unit) => {
-    const branchTag = unit.branch_tag || 'N/A'
+    // Use empty string instead of 'N/A' for null/undefined branch_name
+    const branchTag = unit.branch_name || ''
     if (!unitsWithoutBuildingByBranchTag.has(branchTag)) {
       unitsWithoutBuildingByBranchTag.set(branchTag, [])
     }
@@ -415,17 +441,18 @@ const transformToTableData = (
   ) => {
     if (unitsToProcess.length === 0) return
 
-    // Group Units by area_tag
-    const unitsByAreaTag = new Map<string, typeof unitsToProcess>()
-    unitsToProcess.forEach((unit) => {
-      const areaTag = unit.area_tag || 'N/A'
-      if (!unitsByAreaTag.has(areaTag)) {
-        unitsByAreaTag.set(areaTag, [])
-      }
-      unitsByAreaTag.get(areaTag)!.push(unit)
-    })
+      // Group Units by area_name
+      const unitsByAreaTag = new Map<string, typeof unitsToProcess>()
+      unitsToProcess.forEach((unit) => {
+        // Use empty string instead of 'N/A' for null/undefined area_name
+        const areaTag = unit.area_name || ''
+        if (!unitsByAreaTag.has(areaTag)) {
+          unitsByAreaTag.set(areaTag, [])
+        }
+        unitsByAreaTag.get(areaTag)!.push(unit)
+      })
 
-    // Sort area_tags alphabetically
+    // Sort area_names alphabetically
     const sortedAreaTags = Array.from(unitsByAreaTag.keys()).sort()
 
     sortedAreaTags.forEach((areaTag) => {
@@ -492,59 +519,57 @@ const transformToTableData = (
           })
         }
 
-        // Only add unit row if there are rooms or beds
-        if (roomBedRows.length > 0 || roomsWithoutBed.length > 0) {
-          const unitKey = `row-${rowIndex++}`
-          const children: any[] = []
-          
-          // Combine and sort: unit_room first, then others
-          const allChildren: Array<{ room: string; bed?: string; isUnitRoom: boolean }> = []
-          
-          // Add rooms with beds (already have isUnitRoom flag)
-          allChildren.push(...roomBedRows)
-          
-          // Add rooms without beds (already have isUnitRoom flag)
-          allChildren.push(...roomsWithoutBed.map(({ room, isUnitRoom }) => ({ room, isUnitRoom })))
-          
-          // Sort: unit_room first, then others
-          allChildren.sort((a, b) => {
-            if (a.isUnitRoom && !b.isUnitRoom) return -1
-            if (!a.isUnitRoom && b.isUnitRoom) return 1
-            return 0
+        // Always add unit row, even if it has no rooms or beds
+        const unitKey = `row-${rowIndex++}`
+        const children: any[] = []
+        
+        // Combine and sort: unit_room first, then others
+        const allChildren: Array<{ room: string; bed?: string; isUnitRoom: boolean }> = []
+        
+        // Add rooms with beds (already have isUnitRoom flag)
+        allChildren.push(...roomBedRows)
+        
+        // Add rooms without beds (already have isUnitRoom flag)
+        allChildren.push(...roomsWithoutBed.map(({ room, isUnitRoom }) => ({ room, isUnitRoom })))
+        
+        // Sort: unit_room first, then others
+        allChildren.sort((a, b) => {
+          if (a.isUnitRoom && !b.isUnitRoom) return -1
+          if (!a.isUnitRoom && b.isUnitRoom) return 1
+          return 0
+        })
+        
+        // Add sorted children
+        allChildren.forEach(({ room, bed }) => {
+          children.push({
+            key: `row-${rowIndex++}`,
+            branch_name: '',
+            Building: '',
+            Floor: '',
+            area_name: '',
+            UnitName: '',
+            UnitNumb: '',
+            UnitType: '',
+            room: room,
+            bed: bed,
+            isChild: true,
           })
-          
-          // Add sorted children
-          allChildren.forEach(({ room, bed }) => {
-            children.push({
-              key: `row-${rowIndex++}`,
-              branch_tag: '',
-              Building: '',
-              Floor: '',
-              area_tag: '',
-              UnitName: '',
-              UnitNumb: '',
-              UnitType: '',
-              room: room,
-              bed: bed,
-              isChild: true,
-            })
-          })
-          
-          // Unit row with children
-          rows.push({
-            key: unitKey,
-            branch_tag: branchTag,
-            Building: buildingName,
-            Floor: floor,
-            area_tag: areaTag,
-            UnitName: unit.unit_name || '',
-            UnitNumb: unit.unit_number,
-            UnitType: unit.unit_type || '',
-            hasChildren: true,
-            children: children,
-            isExpanded: false, // Default collapsed
-          })
-        }
+        })
+        
+        // Unit row (with or without children)
+        rows.push({
+          key: unitKey,
+          branch_name: branchTag || '',
+          Building: buildingName || '',
+          Floor: floor || '',
+          area_name: areaTag || '',
+          UnitName: unit.unit_name || '',
+          UnitNumb: unit.unit_number || '',
+          UnitType: unit.unit_type || '',
+          hasChildren: children.length > 0, // Only has children if there are rooms/beds
+          children: children.length > 0 ? children : undefined,
+          isExpanded: false, // Default collapsed
+        })
       })
     })
   }
@@ -557,7 +582,7 @@ const transformToTableData = (
   buildingsByBranchTag.forEach((_, branchTag) => allBranchTags.add(branchTag))
   unitsWithoutBuildingByBranchTag.forEach((_, branchTag) => allBranchTags.add(branchTag))
   
-  // Sort branch_tags alphabetically
+  // Sort branch_names alphabetically
   const sortedBranchTags = Array.from(allBranchTags).sort()
 
   sortedBranchTags.forEach((branchTag) => {
@@ -565,34 +590,63 @@ const transformToTableData = (
     
     // Sort Buildings by name (alphabetical)
     const sortedBuildings = [...buildingsInTag].sort((a, b) => 
-      a.building_name.localeCompare(b.building_name)
+      (a.building_name || '').localeCompare(b.building_name || '')
     )
 
     sortedBuildings.forEach((building) => {
-      // Generate floors (sorted by number: 1F, 2F, 3F...)
-      for (let floorNum = 1; floorNum <= building.floors; floorNum++) {
-        const floor = `${floorNum}F`
-        const key = `${building.building_name}-${floor}`
+      // Get all floors from units in this building
+      const floorsInBuilding = new Set<string>()
+      const buildingName = building.building_name || ''
+      unitsWithBuilding.forEach((unit) => {
+        // Extract building value (handle both string and object format)
+        const unitBuildingValue = getBuildingValue(unit.building)
+        const unitBuilding = (unitBuildingValue != null && unitBuildingValue !== '' && unitBuildingValue !== '-') ? String(unitBuildingValue) : ''
+        if (unitBuilding === buildingName) {
+          // Normalize floor: ensure it has "F" suffix (e.g., "1" -> "1F", "1F" -> "1F")
+          const normalizedFloor = unit.floor 
+            ? (unit.floor.match(/^\d+$/) ? `${unit.floor}F` : unit.floor)
+            : '1F'
+          floorsInBuilding.add(normalizedFloor)
+        }
+      })
+      
+      // Sort floors by number (extract number from "1F", "2F", etc.)
+      const sortedFloors = Array.from(floorsInBuilding).sort((a, b) => {
+        const floorNumA = parseInt(a.replace(/[^0-9]/g, '')) || 0
+        const floorNumB = parseInt(b.replace(/[^0-9]/g, '')) || 0
+        return floorNumA - floorNumB
+      })
+      
+      // If no units, show at least one floor row
+      if (sortedFloors.length === 0) {
+        sortedFloors.push('1F')
+      }
+      
+      sortedFloors.forEach((floor) => {
+        // Use same logic as key generation: ensure buildingName is normalized
+        // Use empty string instead of 'N/A' for null/undefined building
+        const normalizedBuildingName = (buildingName != null && buildingName !== '' && buildingName !== '-') ? String(buildingName) : ''
+        const key = `${normalizedBuildingName}-${floor}`
         const unitsInFloor = unitsByBuildingAndFloor.get(key) || []
 
         if (unitsInFloor.length === 0) {
-          // No Units, only show branch_tag, Building, Floor
+          // No Units, only show branch_name, Building, Floor
           rows.push({
             key: `row-${rowIndex++}`,
-            branch_tag: branchTag,
-            Building: building.building_name,
+            branch_name: branchTag || '',
+            Building: buildingName || '',
             Floor: floor,
           })
         } else {
-          processUnits(unitsInFloor, branchTag, building.building_name, floor)
+          processUnits(unitsInFloor, branchTag || '', buildingName || '', floor)
         }
-      }
+      })
     })
 
-    // Process units without building for this branch_tag
-    const unitsWithoutBuildingInTag = unitsWithoutBuildingByBranchTag.get(branchTag) || []
+    // Process units without building for this branch_name
+    const unitsWithoutBuildingInTag = unitsWithoutBuildingByBranchTag.get(branchTag || '') || []
     if (unitsWithoutBuildingInTag.length > 0) {
-      processUnits(unitsWithoutBuildingInTag, branchTag, '-', '1F')
+      processUnits(unitsWithoutBuildingInTag, branchTag || '', '', '1F')
     }
   })
 

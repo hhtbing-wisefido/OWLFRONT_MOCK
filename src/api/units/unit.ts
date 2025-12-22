@@ -66,7 +66,7 @@ export async function createBuildingApi(
     const mockParams: CreateBuildingParams = {
       building_name: params.building_name,
       floors: params.floors,
-      branch_tag: (params as any).tag_name || params.branch_tag,
+      branch_name: (params as any).tag_name || params.branch_tag,
     }
     return unit.mock.mockCreateBuilding(mockParams)
   }
@@ -75,7 +75,7 @@ export async function createBuildingApi(
   const apiParams: CreateBuildingParams = {
     building_name: params.building_name,
     floors: params.floors,
-    branch_tag: (params as any).tag_name || params.branch_tag,
+    branch_name: (params as any).tag_name || params.branch_tag,
   }
 
   return defHttp.post<Building>(
@@ -122,7 +122,7 @@ export async function updateBuildingApi(
     const mockParams: UpdateBuildingParams = {
       building_name: params.building_name,
       floors: params.floors,
-      branch_tag: (params as any).tag_name || params.branch_tag,
+      branch_name: (params as any).tag_name || params.branch_tag,
     }
     return unit.mock.mockUpdateBuilding(id, mockParams)
   }
@@ -131,7 +131,7 @@ export async function updateBuildingApi(
   const apiParams: UpdateBuildingParams = {
     building_name: params.building_name,
     floors: params.floors,
-    branch_tag: (params as any).tag_name || params.branch_tag,
+    branch_name: (params as any).tag_name || params.branch_tag,
   }
 
   return defHttp.put<Building>(
