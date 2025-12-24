@@ -34,8 +34,8 @@
             <a-button type="primary" @click="onSearch">Search</a-button>
           </a-form-item>
 
-          <!-- Create Role Button -->
-          <a-form-item>
+          <!-- Create Role Button: Only SystemAdmin has Create permission -->
+          <a-form-item v-if="canCreateRole">
             <a-button type="primary" @click="addRole">Create Role</a-button>
           </a-form-item>
         </a-form>
@@ -198,6 +198,12 @@ const router = useRouter()
 const userStore = useUserStore()
 const currentUserRole = computed(() => userStore.getUserInfo?.role || '')
 const isSystemAdmin = computed(() => currentUserRole.value === 'SystemAdmin')
+
+// 检查是否有 Create 权限：只有 SystemAdmin 有 roles 资源的 C 权限
+// 根据数据库配置：SystemAdmin 有 RCDU，Admin/Manager 只有 RU（没有 C）
+const canCreateRole = computed(() => {
+  return isSystemAdmin.value
+})
 
 // Navigate to home page
 // Go back

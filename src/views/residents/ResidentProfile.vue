@@ -71,6 +71,7 @@
         <!-- Contacts Tab (only for Manager, Admin, Nurse, Caregiver, Resident) -->
         <a-tab-pane v-if="canViewContacts" key="contacts" tab="Contacts">
           <ResidentContactsContent 
+            ref="contactsContentRef"
             :resident-id="residentId || 'new'"
             :contacts="residentData.contacts || []"
             :readonly="!canEditContacts"
@@ -179,8 +180,8 @@ const canViewContacts = computed(() => {
 })
 
 const canEditContacts = computed(() => {
-  // 明确允许的角色：Manager, Admin, Nurse, Resident
-  return isManager.value || isNurse.value || isResident.value
+  // 明确允许的角色：Manager, Admin, Resident（仅此三个角色可以修改）
+  return isManager.value || isResident.value
 })
 
 const canEdit = computed(() => {
@@ -257,6 +258,7 @@ const handleTabChange = (key: string) => {
 // Refs to child components (to read data on save)
 const profileContentRef = ref<InstanceType<typeof ResidentProfileContent> | null>(null)
 const phiContentRef = ref<InstanceType<typeof ResidentPHIContent> | null>(null)
+const contactsContentRef = ref<InstanceType<typeof ResidentContactsContent> | null>(null)
 
 
 // Fetch resident data
@@ -338,7 +340,7 @@ const handleSave = async () => {
     const phiDataFromProfile = profileContentRef.value?.getPHIData?.() || {}
     const phiDataFromPHI = await phiContentRef.value?.getPHIData?.() || {}
     const phiData = { ...phiDataFromProfile, ...phiDataFromPHI }
-    const password = profileContentRef.value?.getPassword?.()
+    const passwordHash = await profileContentRef.value?.getPassword?.()
     
     if (mode.value === 'create') {
       // Validate required fields
@@ -364,6 +366,13 @@ const handleSave = async () => {
         family_tag: profileData.family_tag,
         note: profileData.note,
       }
+      
+      // 规则：前端禁止发送明文密码，Server 只接收 passwordHash
+      // 如果用户输入了密码，发送 password_hash（hash 后的 hex 字符串）
+      if (passwordHash) {
+        (createParams as any).password_hash = passwordHash  // passwordHash 已经是 hash（hex 字符串）
+      }
+      
       const result = await createResidentApi(createParams)
       
       // Save PHI data if provided
@@ -430,16 +439,18 @@ const handleSave = async () => {
         )
       } else {
         // Manager/Admin 可以更新所有字段
+        // 注意：email 和 phone 用于计算 hash（如果提供了），但实际保存到 resident_phi 表通过 PHI 更新处理
         const updateParams: any = {
             nickname: profileData.nickname,
             resident_account: profileData.resident_account,
-            email: profileData.email,
-            phone: profileData.phone,
+            email: profileData.email, // 用于计算 email_hash（如果提供了）
+            phone: profileData.phone, // 用于计算 phone_hash（如果提供了）
             status: profileData.status,
             service_level: profileData.service_level,
             admission_date: profileData.admission_date,
             discharge_date: profileData.discharge_date,
             family_tag: profileData.family_tag,
+            is_access_enabled: profileData.is_access_enabled,
             note: profileData.note,
         }
         
@@ -453,10 +464,12 @@ const handleSave = async () => {
       }
       
       // 2. Update password if provided
-      if (password) {
+      // 注意：getPassword() 已经返回 hash（hex 字符串），不需要再次 hash
+      if (passwordHash) {
         try {
-          const { resetResidentPasswordApi } = await import('@/api/resident/resident')
-          await resetResidentPasswordApi(residentId.value, password)
+          const { resetResidentPasswordApi: resetApi } = await import('@/api/resident/resident')
+          // passwordHash 已经是 hash（hex 字符串），直接使用
+          await resetApi(residentId.value, passwordHash)
         } catch (error: any) {
           console.error('Failed to reset password:', error)
           message.warning('Resident updated successfully, but password reset failed.')
@@ -491,10 +504,25 @@ const handleSave = async () => {
       }
       
       // 4. Update Contacts if exists (save each contact individually)
-      if (residentData.value.contacts && residentData.value.contacts.length > 0) {
+      // slot fun 只管依次处理给值，不管 Slot 中的任何参数
+      // 从子组件读取所有 contacts 数据，依次处理 Slot A, B, C, D
+      const allContacts = contactsContentRef.value 
+        ? contactsContentRef.value.getAllContacts() 
+        : []
+      
+      if (allContacts && allContacts.length > 0) {
         const { hashAccount } = await import('@/utils/crypto')
-        const contactPromises = residentData.value.contacts
-          .filter(contact => contact.is_enabled || contact.contact_first_name || contact.contact_last_name)
+        // Get all password hashes from contactsContentRef
+        const passwordHashes = contactsContentRef.value 
+          ? await contactsContentRef.value.getAllContactPasswordHashes() 
+          : {}
+        
+        const contactPromises = allContacts
+          .filter(contact => {
+            // 如果 contact 有 contact_id，说明已存在，需要更新（包括 disable 的情况）
+            // 如果 contact 没有 contact_id 但 is_enabled 或有 first_name/last_name，需要创建
+            return contact.contact_id || contact.is_enabled || contact.contact_first_name || contact.contact_last_name
+          })
           .map(async (contact) => {
               const params: any = {
                 slot: contact.slot,
@@ -506,6 +534,14 @@ const handleSave = async () => {
                 receive_sms: contact.receive_sms || false,
                 receive_email: contact.receive_email || false,
               }
+              
+              // Handle password_hash: if user entered password for this slot, include it
+              // 规则：passwd 是不回显的，没有从密码改为无密码的状态转换，所以不能发送 ""
+              // vue 要么发送有效 password 的 hash，要么不发送该字段，表示 passwd 未修改
+              if (contact.slot && passwordHashes[contact.slot]) {
+                params.password_hash = passwordHashes[contact.slot]
+              }
+              // 如果用户未输入密码，不发送 password_hash 字段（不包含在 params 中）
               
               // Handle contact_phone: always calculate hash if has value (for login)
               // If save_phone is checked, send contact_phone; if not checked, send null to delete

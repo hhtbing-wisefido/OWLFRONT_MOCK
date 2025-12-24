@@ -29,6 +29,8 @@ export enum Api {
   Delete = '/admin/api/v1/users/:id',
   ResetPassword = '/admin/api/v1/users/:id/reset-password',
   ResetPin = '/admin/api/v1/users/:id/reset-pin',
+  GetAccountSettings = '/admin/api/v1/users/:id/account-settings',
+  UpdateAccountSettings = '/admin/api/v1/users/:id/account-settings',
 }
 
 // Mock mode: In development, use mock data instead of real API calls
@@ -230,4 +232,89 @@ export function resetPinApi(userId: string, params: Omit<ResetPinParams, 'user_i
     { errorMessageMode: mode },
   )
 }
+
+/**
+ * @deprecated 已迁移到 /api/account/accountSettings.ts
+ * 此函数仅 Sidebar.vue 使用，Sidebar 迁移到新 API 后将被删除
+ * 
+ * @description: Get account settings
+ * @param userId - User ID
+ * @param mode - Error message mode
+ */
+/*
+export function getAccountSettingsApi(userId: string, mode: ErrorMessageMode = 'modal') {
+  // In development with mock enabled, return mock data directly
+  if (useMock) {
+    return import('@test/index').then(({ users }) => {
+      console.log('%c[Mock] Get Account Settings API Request', 'color: #1890ff; font-weight: bold', { userId })
+      return users.mockGetAccountSettings(userId).then((result) => {
+        console.log('%c[Mock] Get Account Settings API - Success', 'color: #52c41a; font-weight: bold', { result })
+        return result
+      }).catch((error: any) => {
+        console.log('%c[Mock] Get Account Settings API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
+        throw error
+      })
+    })
+  }
+
+  // Production: Call real backend API
+  return defHttp.get<{
+    user_account: string
+    nickname: string
+    email?: string
+    phone?: string
+  }>(
+    {
+      url: Api.GetAccountSettings.replace(':id', userId),
+    },
+    { errorMessageMode: mode },
+  )
+}
+*/
+
+/**
+ * @deprecated 已迁移到 /api/account/accountSettings.ts
+ * 此函数仅 Sidebar.vue 使用，Sidebar 迁移到新 API 后将被删除
+ * 
+ * @description: Update account settings (unified API)
+ * @param userId - User ID
+ * @param params - Update account settings parameters
+ * @param mode - Error message mode
+ */
+/*
+export function updateAccountSettingsApi(
+  userId: string,
+  params: {
+    password_hash?: string
+    email?: string | null
+    email_hash?: string
+    phone?: string | null
+    phone_hash?: string
+  },
+  mode: ErrorMessageMode = 'modal',
+) {
+  // In development with mock enabled, return mock data directly
+  if (useMock) {
+    return import('@test/index').then(({ users }) => {
+      console.log('%c[Mock] Update Account Settings API Request', 'color: #1890ff; font-weight: bold', { userId, params })
+      return users.mockUpdateAccountSettings(userId, params).then((result) => {
+        console.log('%c[Mock] Update Account Settings API - Success', 'color: #52c41a; font-weight: bold', { result })
+        return result
+      }).catch((error: any) => {
+        console.log('%c[Mock] Update Account Settings API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
+        throw error
+      })
+    })
+  }
+
+  // Production: Call real backend API
+  return defHttp.put<{ success: boolean; message?: string }>(
+    {
+      url: Api.UpdateAccountSettings.replace(':id', userId),
+      data: params,
+    },
+    { errorMessageMode: mode },
+  )
+}
+*/
 

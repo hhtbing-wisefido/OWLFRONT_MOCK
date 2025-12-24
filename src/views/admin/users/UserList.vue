@@ -1598,13 +1598,17 @@ const handleSave = async () => {
             return
           }
           
+          // Hash password before sending (consistent with login flow)
+          const { hashPassword } = await import('@/utils/crypto')
+          const passwordHash = await hashPassword(password)
+          
           const params: CreateUserParams = {
             user_account: editData.value.user_account!,
             nickname: editData.value.nickname,
             email: editData.value.email ? editData.value.email.trim() : undefined,
             phone: editData.value.phone ? editData.value.phone.trim() : undefined,
             role: editData.value.role!,
-            password: password,
+            password: passwordHash,
             alarm_levels: editData.value.alarm_levels,
             alarm_channels: editData.value.alarm_channels,
             alarm_scope: editData.value.alarm_scope,
@@ -1680,8 +1684,11 @@ const handleResetPassword = async () => {
     .validate()
     .then(async () => {
       try {
+        // Hash password before sending (consistent with login flow)
+        const { hashPassword } = await import('@/utils/crypto')
+        const passwordHash = await hashPassword(resetPasswordData.value.new_password)
         const params: Omit<ResetPasswordParams, 'user_id'> = {
-          new_password: resetPasswordData.value.new_password,
+          password_hash: passwordHash,
         }
         await resetPasswordApi(resetPasswordUserId.value, params)
         message.success('Password reset successfully')

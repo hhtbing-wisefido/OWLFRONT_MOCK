@@ -196,6 +196,10 @@ export interface UpdateResidentParams {
   is_access_enabled?: boolean // Whether resident and family access is enabled
   family_tag?: string // Family identifier (VARCHAR(100), same family_tag for family members, e.g., 'F0001', 'F0002')
   note?: string
+  caregivers?: {
+    userList?: string[] // Array of user IDs (Nurse or Caregiver role)
+    groupList?: string[] // Array of tag IDs (user_tag type)
+  }
 }
 
 /**

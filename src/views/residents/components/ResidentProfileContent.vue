@@ -226,7 +226,7 @@
                 v-model:value="selectedUnitDisplay"
                 :disabled="true"
                 style="width: 300px"
-                placeholder="branch_tag-Building-Floor-Unit_name"
+                placeholder="branch_name-Building-Floor-Unit_name"
               />
               <a-select
                 v-model:value="localResidentData.room_id"
@@ -370,19 +370,19 @@
             </div>
           </template>
           <!-- Sortable columns -->
-          <template v-else-if="column.key === 'branch_tag'">
+          <template v-else-if="column.key === 'branch_name'">
             <div 
               style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;" 
-              @click="toggleSort('branch_tag')"
-              :style="{ color: sortConfig.key === 'branch_tag' && sortConfig.order ? '#1890ff' : 'inherit' }"
+              @click="toggleSort('branch_name')"
+              :style="{ color: sortConfig.key === 'branch_name' && sortConfig.order ? '#1890ff' : 'inherit' }"
             >
               <span>Unit_tag</span>
               <SortAscendingOutlined 
-                v-if="sortConfig.key === 'branch_tag' && sortConfig.order === 'asc'" 
+                v-if="sortConfig.key === 'branch_name' && sortConfig.order === 'asc'" 
                 style="font-size: 14px; color: #1890ff;"
               />
               <SortDescendingOutlined 
-                v-else-if="sortConfig.key === 'branch_tag' && sortConfig.order === 'desc'" 
+                v-else-if="sortConfig.key === 'branch_name' && sortConfig.order === 'desc'" 
                 style="font-size: 14px; color: #1890ff;"
               />
               <span v-else style="color: #d9d9d9; font-size: 12px;">⇅</span>
@@ -424,19 +424,19 @@
               <span v-else style="color: #d9d9d9; font-size: 12px;">⇅</span>
             </div>
           </template>
-          <template v-else-if="column.key === 'area_tag'">
+          <template v-else-if="column.key === 'area_name'">
             <div 
               style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;" 
-              @click="toggleSort('area_tag')"
-              :style="{ color: sortConfig.key === 'area_tag' && sortConfig.order ? '#1890ff' : 'inherit' }"
+              @click="toggleSort('area_name')"
+              :style="{ color: sortConfig.key === 'area_name' && sortConfig.order ? '#1890ff' : 'inherit' }"
             >
               <span>Area_tag</span>
               <SortAscendingOutlined 
-                v-if="sortConfig.key === 'area_tag' && sortConfig.order === 'asc'" 
+                v-if="sortConfig.key === 'area_name' && sortConfig.order === 'asc'" 
                 style="font-size: 14px; color: #1890ff;"
               />
               <SortDescendingOutlined 
-                v-else-if="sortConfig.key === 'area_tag' && sortConfig.order === 'desc'" 
+                v-else-if="sortConfig.key === 'area_name' && sortConfig.order === 'desc'" 
                 style="font-size: 14px; color: #1890ff;"
               />
               <span v-else style="color: #d9d9d9; font-size: 12px;">⇅</span>
@@ -466,8 +466,8 @@
           </template>
         </template>
         <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'branch_tag'">
-            {{ record.branch_tag || '-' }}
+          <template v-if="column.key === 'branch_name'">
+            {{ record.branch_name || '-' }}
           </template>
           <template v-else-if="column.key === 'building'">
             {{ record.building || '-' }}
@@ -475,8 +475,8 @@
           <template v-else-if="column.key === 'floor'">
             {{ record.floor || '-' }}
           </template>
-          <template v-else-if="column.key === 'area_tag'">
-            {{ record.area_tag || '-' }}
+          <template v-else-if="column.key === 'area_name'">
+            {{ record.area_name || '-' }}
           </template>
           <template v-else-if="column.key === 'unit_name'">
             {{ record.unit_name || '-' }}
@@ -605,24 +605,6 @@ const isNurse = computed(() => hasRole(['Nurse']))
 const isResident = computed(() => userType.value === 'resident' && userRole.value === 'Resident')
 const isFamily = computed(() => userRole.value === 'Family')
 
-// 判断是否是查看自己的信息（Resident 角色）
-// 注意：后端已经做了权限控制，Resident 只能看到自己的数据
-// 所以如果 isResident 为 true 且 residentData 存在，就认为是在查看自己的信息
-const isViewingSelf = computed(() => {
-  if (!isResident.value) return false
-  // 后端已过滤，如果能看到数据说明是自己的
-  // 如果 userId 和 resident_id 匹配，或者 residentData 存在（后端已过滤，默认认为是自己的）
-  if (props.residentData?.resident_id) {
-    // 优先检查 userId 是否匹配
-    if (currentUserId.value && currentUserId.value === props.residentData.resident_id) {
-      return true
-    }
-    // 如果 userId 为空或不匹配，但 residentData 存在，后端已过滤，认为是自己的
-    return true
-  }
-  return false
-})
-
 // 判断是否是查看关联住户的信息（Family 角色）
 // 注意：后端已过滤，如果能看到数据说明有权限
 const isViewingLinkedResident = computed(() => {
@@ -682,10 +664,10 @@ const sortConfig = ref<{ key: string | null; order: 'asc' | 'desc' | null }>({
 
 // Unit table columns
 const unitTableColumns = [
-  { title: 'Branch', key: 'branch_tag', dataIndex: 'branch_tag', width: 120 },
+  { title: 'Branch', key: 'branch_name', dataIndex: 'branch_name', width: 120 },
   { title: 'Building', key: 'building', dataIndex: 'building', width: 100 },
   { title: 'Floor', key: 'floor', dataIndex: 'floor', width: 80 },
-  { title: 'Area_tag', key: 'area_tag', dataIndex: 'area_tag', width: 100 },
+  { title: 'Area_tag', key: 'area_name', dataIndex: 'area_name', width: 100 },
   { title: 'UnitName', key: 'unit_name', dataIndex: 'unit_name', width: 120 },
   { title: 'unit_type', key: 'unit_type', dataIndex: 'unit_type', width: 100 },
   { title: 'Shared Room', key: 'is_multi_person_room', dataIndex: 'is_multi_person_room', width: 120 },
@@ -754,9 +736,9 @@ const sortedAndFilteredUnits = computed(() => {
       let valueB: any = ''
       
       switch (key) {
-        case 'branch_tag':
-          valueA = (a.branch_tag || '').toLowerCase()
-          valueB = (b.branch_tag || '').toLowerCase()
+        case 'branch_name':
+          valueA = (a.branch_name || '').toLowerCase()
+          valueB = (b.branch_name || '').toLowerCase()
           break
         case 'building':
           valueA = (a.building || '').toLowerCase()
@@ -766,9 +748,9 @@ const sortedAndFilteredUnits = computed(() => {
           valueA = (a.floor || '').toLowerCase()
           valueB = (b.floor || '').toLowerCase()
           break
-        case 'area_tag':
-          valueA = (a.area_tag || '').toLowerCase()
-          valueB = (b.area_tag || '').toLowerCase()
+        case 'area_name':
+          valueA = (a.area_name || '').toLowerCase()
+          valueB = (b.area_name || '').toLowerCase()
           break
         case 'unit_name':
           valueA = (a.unit_name || '').toLowerCase()
@@ -784,9 +766,9 @@ const sortedAndFilteredUnits = computed(() => {
   } else {
     // 默认排序：Unit_tag > building > floor > Area_tag > unitName
     units.sort((a, b) => {
-      // 1. Unit_tag (branch_tag)
-      const tagA = (a.branch_tag || '').toLowerCase()
-      const tagB = (b.branch_tag || '').toLowerCase()
+      // 1. Unit_tag (branch_name)
+      const tagA = (a.branch_name || '').toLowerCase()
+      const tagB = (b.branch_name || '').toLowerCase()
       if (tagA !== tagB) {
         return tagA.localeCompare(tagB)
       }
@@ -806,8 +788,8 @@ const sortedAndFilteredUnits = computed(() => {
       }
       
       // 4. Area_tag
-      const areaTagA = (a.area_tag || '').toLowerCase()
-      const areaTagB = (b.area_tag || '').toLowerCase()
+      const areaTagA = (a.area_name || '').toLowerCase()
+      const areaTagB = (b.area_name || '').toLowerCase()
       if (areaTagA !== areaTagB) {
         return areaTagA.localeCompare(areaTagB)
       }
@@ -822,12 +804,12 @@ const sortedAndFilteredUnits = computed(() => {
   return units
 })
 
-// 获取选中的 unit 显示文本：branch_tag-Building-Floor-Area_tag-Unit_name
+// 获取选中的 unit 显示文本：branch_name-Building-Floor-Area_name-Unit_name
 const selectedUnitDisplay = computed(() => {
   if (!selectedUnit.value) return ''
   const parts = []
-  if (selectedUnit.value.branch_tag) {
-    parts.push(selectedUnit.value.branch_tag)
+  if (selectedUnit.value.branch_name) {
+    parts.push(selectedUnit.value.branch_name)
   }
   if (selectedUnit.value.building) {
     parts.push(selectedUnit.value.building)
@@ -835,8 +817,8 @@ const selectedUnitDisplay = computed(() => {
   if (selectedUnit.value.floor) {
     parts.push(selectedUnit.value.floor)
   }
-  if (selectedUnit.value.area_tag) {
-    parts.push(selectedUnit.value.area_tag)
+  if (selectedUnit.value.area_name) {
+    parts.push(selectedUnit.value.area_name)
   }
   if (selectedUnit.value.unit_name) {
     parts.push(selectedUnit.value.unit_name)
@@ -1372,12 +1354,15 @@ const getPHIData = () => {
   return { ...localPHIData.value }
 }
 
-const getPassword = () => {
-  // Get password if valid
-  if (isResidentPasswordValid.value) {
-    return residentPassword.value || undefined
+const getPassword = async () => {
+  // Get password hash if valid (consistent with login flow)
+  // 规则：passwd 是不回显的，没有从密码改为无密码的状态转换，所以不能发送 ""
+  // vue 要么发送有效 password 的 hash，要么不发送该字段（返回 undefined），表示 passwd 未修改
+  if (isResidentPasswordValid.value && residentPassword.value) {
+    const { hashPassword } = await import('@/utils/crypto')
+    return await hashPassword(residentPassword.value)
   }
-  return undefined
+  return undefined  // 如果用户未输入密码，返回 undefined（不发送该字段）
 }
 
 const getCaregiversData = () => {
@@ -1398,8 +1383,9 @@ defineExpose({
 watch(
   () => props.residentData,
   (newData) => {
-    if (newData?.caregivers) {
-      const caregivers = newData.caregivers as { userList?: string[]; groupList?: string[] }
+    const residentDataWithCaregivers = newData as Resident & { caregivers?: { userList?: string[]; groupList?: string[] } }
+    if (residentDataWithCaregivers?.caregivers) {
+      const caregivers = residentDataWithCaregivers.caregivers
       if (caregivers.userList) {
         selectedCaregiverIds.value = [...caregivers.userList]
         updateCaregiversDisplay()
@@ -1477,9 +1463,9 @@ const initializeFromProps = () => {
   localResidentData.value = { ...props.residentData }
   localPHIData.value = { ...(props.residentData.phi || {}) }
   
-  // 初始化 is_access_enabled 为 false（默认 disable）
+  // 初始化 is_access_enabled 为 true（默认 enable）
   if (localResidentData.value.is_access_enabled === undefined) {
-    localResidentData.value.is_access_enabled = false
+    localResidentData.value.is_access_enabled = true
   }
   
   // 如果已有 unit_id，设置选中的 unit 并加载 rooms

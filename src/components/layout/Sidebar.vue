@@ -174,6 +174,7 @@ import { useUserStore } from '@/store/modules/user'
 import { message } from 'ant-design-vue'
 import { resetPasswordApi, getUserApi, updateUserApi } from '@/api/admin/user/user'
 import { resetResidentPasswordApi, resetContactPasswordApi, getResidentApi, updateResidentPHIApi, updateResidentContactApi } from '@/api/resident/resident'
+import { getAccountSettingsApi, updateAccountSettingsApi } from '@/api/account/accountSettings'
 defineProps<{
   collapsed: boolean
 }>()
@@ -224,6 +225,12 @@ const sidebarPhone = ref('')
 const saveEmail = ref(true)
 const savePhone = ref(true)
 
+// Original values (loaded from API) - used to detect changes
+const originalEmail = ref('')
+const originalPhone = ref('')
+const originalSaveEmail = ref(true)
+const originalSavePhone = ref(true)
+
 // Check if current user is staff
 const isStaffUser = computed(() => userInfo.value?.userType === 'staff')
 
@@ -248,144 +255,64 @@ const loadAccountInfo = async () => {
   const uid = userInfo.value?.userId
   if (!uid) return
 
-  const userType = userInfo.value?.userType
-  const userRole = userInfo.value?.role
-
   try {
-    if (userType === 'staff') {
-      // For staff: get from users table
-      const user = await getUserApi(uid)
-      accountInfo.value = {
-        nickname: user.nickname || '-',
-        account: user.user_account || '-',
-        branch: user.branch_tag || '',
-        floor: '',
-        unit: '-',
-        room: '-',
-      }
-      sidebarEmail.value = user.email || ''
-      sidebarPhone.value = user.phone || ''
-      // For staff, save checkboxes are disabled and always true
+    // Use unified GetAccountSettings API (automatically routes based on role)
+    const accountSettings = await getAccountSettingsApi(uid)
+    accountInfo.value = {
+      nickname: accountSettings.nickname || '-',
+      account: accountSettings.account || '-',
+      branch: '', // Branch info not in account settings, would need separate query
+      floor: '',
+      unit: '-',
+      room: '-',
+    }
+    // Email/Phone 显示逻辑：Contact 和 Resident 一样（处理占位符）
+    // 如果后端返回 email/phone 为空，说明是占位符（hash 存在但未保存）
+    sidebarEmail.value = accountSettings.email || ''
+    sidebarPhone.value = accountSettings.phone || ''
+    
+    // Save original values for change detection
+    originalEmail.value = accountSettings.email || ''
+    originalPhone.value = accountSettings.phone || ''
+    
+    // Initialize save flags based on role
+    const staffRoles = ['Admin', 'Nurse', 'Caregiver', 'IT', 'Manager']
+    const isStaff = accountSettings.role && staffRoles.includes(accountSettings.role)
+    if (isStaff) {
+      // Staff: always save (不可改)
       saveEmail.value = true
       savePhone.value = true
+      originalSaveEmail.value = true
+      originalSavePhone.value = true
     } else {
-      // For resident/contact: get from residents table
-      // userId could be resident_id (for resident) or contact_id (for contact)
-      // For Family users (contact), userId is contact_id
-      // Backend GET /admin/api/v1/residents/:id now supports contact_id directly
-      // It will automatically find the associated resident_id and return the resident details
-      if (userType === 'resident' && userRole === 'Family') {
-        // Family user: userId is contact_id, backend will handle the lookup
-        try {
-          // Backend now supports passing contact_id directly - it will find the associated resident_id
-          const resident = await getResidentApi(uid, { include_phi: true, include_contacts: true })
-          // Find the contact matching our contact_id
-          const contact = resident.contacts?.find((c: any) => c.contact_id === uid)
-          
-          if (contact) {
-            // This is a contact - show linked resident's info, but contact's email/phone
-            accountInfo.value = {
-              nickname: resident.nickname || '-',
-              account: resident.resident_account || '-',
-              branch: resident.branch_tag || '',
-              floor: '', // Floor info not in resident data, would need to fetch from unit
-              unit: resident.unit_name || '-',
-              room: resident.room_name || '-',
-            }
-            // Get email/phone from contact
-            sidebarEmail.value = contact.contact_email || ''
-            sidebarPhone.value = contact.contact_phone || ''
-            // Initialize save flags: if email/phone exists and is not placeholder, save flag is true
-            // For HIPAA compliance: default to false (don't save) if email/phone is empty
-            const emailValue = contact.contact_email && contact.contact_email.trim()
-            saveEmail.value = !!(emailValue && emailValue !== '***@***' && emailValue !== '')
-            const phoneValue = contact.contact_phone && contact.contact_phone.trim()
-            savePhone.value = !!(phoneValue && phoneValue !== 'xxx-xxx-xxxx' && phoneValue !== '')
-          } else {
-            // Contact not found, show resident info only
-            accountInfo.value = {
-              nickname: resident.nickname || '-',
-              account: resident.resident_account || '-',
-              branch: resident.branch_tag || '',
-              floor: '',
-              unit: resident.unit_name || '-',
-              room: resident.room_name || '-',
-            }
-            // No contact data: initialize to empty and don't save
-            sidebarEmail.value = ''
-            sidebarPhone.value = ''
-            saveEmail.value = false
-            savePhone.value = false
-          }
-        } catch (err: any) {
-          // If error, show basic info from userInfo
-          accountInfo.value = {
-            nickname: userInfo.value?.nickName || '-',
-            account: userInfo.value?.user_account || '-',
-            branch: '',
-            floor: '',
-            unit: '-',
-            room: '-',
-          }
-          // No data: initialize to empty and don't save
-          sidebarEmail.value = ''
-          sidebarPhone.value = ''
-          saveEmail.value = false
-          savePhone.value = false
-        }
-      } else {
-        // Resident user: userId is resident_id
-        try {
-          const resident = await getResidentApi(uid, { include_phi: true, include_contacts: true })
-          // This is a resident - show resident's info and PHI email/phone
-          accountInfo.value = {
-            nickname: resident.nickname || '-',
-            account: resident.resident_account || '-',
-            branch: resident.branch_tag || '',
-            floor: '', // Floor info not returned in resident API, would need separate query
-            unit: resident.unit_name || '-',
-            room: resident.room_name || '-',
-          }
-          // Get email/phone from PHI
-          if (resident.phi) {
-            // Keep placeholder if it exists (for display), otherwise use actual value or empty
-            sidebarEmail.value = resident.phi.resident_email || ''
-            sidebarPhone.value = resident.phi.resident_phone || ''
-            // Initialize save flags: matches ResidentPHIContent.vue logic
-            // If email/phone exists and is not placeholder, save flag is true
-            // For HIPAA compliance: default to false (don't save) if email/phone is empty
-            const emailValue = resident.phi.resident_email && resident.phi.resident_email.trim()
-            saveEmail.value = !!(emailValue && emailValue !== '***@***' && emailValue !== '')
-            const phoneValue = resident.phi.resident_phone && resident.phi.resident_phone.trim()
-            savePhone.value = !!(phoneValue && phoneValue !== 'xxx-xxx-xxxx' && phoneValue !== '')
-          } else {
-            // No PHI data: initialize to empty and don't save
-            sidebarEmail.value = ''
-            sidebarPhone.value = ''
-            saveEmail.value = false
-            savePhone.value = false
-          }
-        } catch (err: any) {
-          // If not found, show basic info from userInfo
-          accountInfo.value = {
-            nickname: userInfo.value?.nickName || '-',
-            account: userInfo.value?.user_account || '-',
-            branch: '',
-            floor: '',
-            unit: '-',
-            room: '-',
-          }
-          // No data: initialize to empty and don't save
-          sidebarEmail.value = ''
-          sidebarPhone.value = ''
-          saveEmail.value = false
-          savePhone.value = false
-        }
-      }
+      // Resident 和 Contact: 使用 API 返回的 save 标志（处理占位符）
+      saveEmail.value = accountSettings.save_email ?? false
+      savePhone.value = accountSettings.save_phone ?? false
+      originalSaveEmail.value = accountSettings.save_email ?? false
+      originalSavePhone.value = accountSettings.save_phone ?? false
     }
   } catch (error: any) {
     console.error('Failed to load account info:', error)
     message.error('Failed to load account information')
+    // If error, show basic info from userInfo
+    accountInfo.value = {
+      nickname: userInfo.value?.nickName || '-',
+      account: userInfo.value?.user_account || '-',
+      branch: '',
+      floor: '',
+      unit: '-',
+      room: '-',
+    }
+    // No data: initialize to empty and don't save
+    sidebarEmail.value = ''
+    sidebarPhone.value = ''
+    saveEmail.value = false
+    savePhone.value = false
+    // Set original values to empty as well (so no changes detected)
+    originalEmail.value = ''
+    originalPhone.value = ''
+    originalSaveEmail.value = false
+    originalSavePhone.value = false
   }
 }
 
@@ -628,18 +555,14 @@ const submitAccountSettings = async () => {
     return
   }
 
-  const userType = userInfo.value?.userType
   const userRole = userInfo.value?.role
-  const promises: Promise<any>[] = []
 
-  // Update password if provided
+  // Validate password if provided
   if (sidebarPassword.value && sidebarPasswordConfirm.value) {
-    // Validate password
     if (!isSidebarPasswordValid.value) {
       message.error(sidebarPasswordErrorMessage.value || 'Please check password requirements')
       return
     }
-
     if (sidebarPassword.value !== sidebarPasswordConfirm.value) {
       message.error('Passwords do not match')
       return
@@ -649,152 +572,174 @@ const submitAccountSettings = async () => {
       message.error(strengthResult.errorMessage || 'Please enter a valid password')
       return
     }
-
-    // Use password as-is (no trim) - password hash should only depend on password itself
-    const password = sidebarPassword.value
-    // Check if this is a Family user (contact) - Family users have role === 'Family' and userType === 'resident'
-    if (userType === 'resident' && userRole === 'Family') {
-      // Family user: userId is contact_id, use contact password reset API
-      promises.push(resetContactPasswordApi(uid, password))
-    } else if (userType === 'resident') {
-      // Resident user: userId could be either contact_id (for resident_contact) or resident_id (for resident)
-      // Try contact first (most common case), then fall back to resident
-      promises.push(
-        resetContactPasswordApi(uid, password).catch((contactError: any) => {
-          // If contact not found, try as resident_id
-          if (contactError?.message?.includes('not found') || contactError?.message?.includes('contact') || contactError?.response?.status === 404) {
-            return resetResidentPasswordApi(uid, password)
-          }
-          throw contactError
-        })
-      )
-    } else {
-      // This is a staff login - use user password reset API
-      promises.push(resetPasswordApi(uid, { new_password: password }))
-    }
   }
-
-  // Update email/phone
-  if (userType === 'staff') {
-    // For staff: always save email/phone (no save checkbox, always true)
-    const updateParams: any = {}
-    if (sidebarEmail.value) {
-      updateParams.email = sidebarEmail.value.trim()
-    } else {
-      updateParams.email = null
-    }
-    if (sidebarPhone.value) {
-      updateParams.phone = sidebarPhone.value.trim()
-    } else {
-      updateParams.phone = null
-    }
-    if (Object.keys(updateParams).length > 0) {
-      promises.push(updateUserApi(uid, updateParams))
-    }
-  } else {
-    // For resident/contact: update PHI or contact based on save flags
-    // Need to determine if this is a resident or contact
-    try {
-      // Try to get resident info to determine if userId is resident_id or contact_id
-      const resident = await getResidentApi(uid, { include_phi: true, include_contacts: true })
-      const residentId = resident.resident_id
-
-      // Check if this is a contact by checking if userId matches any contact_id
-      const contact = resident.contacts?.find(c => c.contact_id === uid)
+  
+  const { hashAccount, hashPassword } = await import('@/utils/crypto')
+  const updateParams: any = {}
+  
+  // Password: only add password_hash if user entered a new password
+  // Password field is always empty in UI (for security), so if user enters something, it's a new password
+  if (sidebarPassword.value && sidebarPasswordConfirm.value) {
+    const passwordHash = await hashPassword(sidebarPassword.value)
+    updateParams.password_hash = passwordHash
+  }
+  
+  // Email/Phone 提交逻辑：Contact 和 Resident 一样
+  const isStaff = userRole && ['Admin', 'Nurse', 'Caregiver', 'IT', 'Manager'].includes(userRole)
+  const isContact = userRole === 'Family'
+  
+  // Email 处理
+  const currentEmail = sidebarEmail.value.trim()
+  const currentEmailNormalized = currentEmail.toLowerCase()
+  const originalEmailNormalized = (originalEmail.value || '').toLowerCase()
+  const emailChanged = currentEmailNormalized !== originalEmailNormalized
+  
+  // 检查 email 是否合规（占位符和空值都是不合规的）
+  const isEmailValid = isValidEmailFormat(sidebarEmail.value)
+  const isOriginalEmailValid = originalEmail.value && originalEmail.value !== '***@***' && isValidEmailFormat(originalEmail.value)
+  
+  if (emailChanged) {
+    // Email 改变了
+    if (isEmailValid) {
+      // 输入有效：发送 hash
+      updateParams.email_hash = hashAccount(currentEmailNormalized)
       
-      if (contact) {
-        // This is a contact - update contact email/phone
-        const { hashAccount } = await import('@/utils/crypto')
-        const updateParams: any = {
-          slot: contact.slot,
-        }
-        
-        // Email handling
-        if (sidebarEmail.value && sidebarEmail.value.trim()) {
-          const emailHash = hashAccount(sidebarEmail.value.trim().toLowerCase())
-          updateParams.email_hash = emailHash
-          if (saveEmail.value) {
-            updateParams.contact_email = sidebarEmail.value.trim()
-          } else {
-            updateParams.contact_email = null
-          }
-        } else {
-          updateParams.contact_email = null
-          // Don't update email_hash if email is cleared (keep existing hash)
-        }
-
-        // Phone handling
-        if (sidebarPhone.value && sidebarPhone.value.trim()) {
-          const phoneHash = hashAccount(sidebarPhone.value.trim().replace(/\D/g, ''))
-          updateParams.phone_hash = phoneHash
-          if (savePhone.value) {
-            updateParams.contact_phone = sidebarPhone.value.trim()
-          } else {
-            updateParams.contact_phone = null
-          }
-        } else {
-          updateParams.contact_phone = null
-          // Don't update phone_hash if phone is cleared (keep existing hash)
-        }
-
-        promises.push(updateResidentContactApi(residentId, updateParams))
+      // 再进一步判断 save 标志
+      if (isStaff) {
+        // Staff: 总是保存（后端自动处理）
+        updateParams.email = currentEmail
       } else {
-        // This is a resident - update PHI email/phone
-        const { hashAccount } = await import('@/utils/crypto')
-        const updateParams: any = {}
-        
-        // Email handling
-        if (sidebarEmail.value && sidebarEmail.value.trim()) {
-          const emailHash = hashAccount(sidebarEmail.value.trim().toLowerCase())
-          updateParams.email_hash = emailHash
-          if (saveEmail.value) {
-            updateParams.resident_email = sidebarEmail.value.trim()
-          } else {
-            updateParams.resident_email = null
-          }
+        // Resident/Contact: 根据 save 标志决定（save 复选框只有在输入合规时才可选）
+        if (saveEmail.value) {
+          // Save=true: 同步发送 save=true 的 email，并发送标志位
+          updateParams.email = currentEmail
+          updateParams.save_email = true
         } else {
-          updateParams.resident_email = null
-          // Don't update email_hash if email is cleared (keep existing hash)
-        }
-
-        // Phone handling
-        if (sidebarPhone.value && sidebarPhone.value.trim()) {
-          const phoneHash = hashAccount(sidebarPhone.value.trim().replace(/\D/g, ''))
-          updateParams.phone_hash = phoneHash
-          if (savePhone.value) {
-            updateParams.resident_phone = sidebarPhone.value.trim()
-          } else {
-            updateParams.resident_phone = null
-          }
-        } else {
-          updateParams.resident_phone = null
-          // Don't update phone_hash if phone is cleared (keep existing hash)
-        }
-
-        if (Object.keys(updateParams).length > 0) {
-          promises.push(updateResidentPHIApi(residentId, updateParams))
+          // Save=false: 发送空字符串表示删除, save=false
+          updateParams.email = ''
+          updateParams.save_email = false
         }
       }
-    } catch (err: any) {
-      console.error('Failed to determine user type:', err)
-      // If can't determine, skip email/phone update
-    }
-  }
-
-  // Execute all updates
-  if (promises.length > 0) {
-    changingPassword.value = true
-    try {
-      await Promise.all(promises)
-      message.success('Account settings updated')
-      closePasswordModal()
-    } catch (e: any) {
-      message.error(e?.message || 'Failed to update account settings')
-    } finally {
-      changingPassword.value = false
+    } else {
+      // 输入不合规（包括占位符、空值、格式错误）：不发送任何更新
+      // 如果原始值是占位符（空值），且用户没有输入有效值，不应该发送任何更新
+      // 只有在原始值有效，用户清空或输入不合规时，才发送 nil 来删除
+      if (isOriginalEmailValid) {
+        // 原始值有效，用户清空或输入不合规：发送空字符串来删除
+        updateParams.email = ''
+        updateParams.email_hash = ''
+        if (!isStaff) {
+          updateParams.save_email = false
+        }
+      }
+      // 如果原始值就是占位符（空值），且用户没有输入有效值，不发送任何更新（不处理）
     }
   } else {
+    // Email 未改变，但 save 标志可能改变了（仅 Resident/Contact，且当前值必须合规）
+    if (!isStaff && isEmailValid && saveEmail.value !== originalSaveEmail.value) {
+      // Save 标志改变了，且当前值合规，需要更新
+      if (saveEmail.value) {
+        // 如果 save 从 false 改为 true：发送 email 和 hash（保存明文）
+        updateParams.email = currentEmail
+        updateParams.email_hash = hashAccount(currentEmailNormalized)
+        updateParams.save_email = true
+      } else {
+        // 如果 save 从 true 改为 false：删除明文，但保留 hash（hash 用于登录，不应该删除）
+        // 不发送 email_hash，保留现有的 hash
+        updateParams.email = ''
+        updateParams.save_email = false
+      }
+    }
+  }
+  
+  // Phone 处理（逻辑与 Email 相同）
+  const currentPhone = sidebarPhone.value.trim().replace(/\D/g, '')
+  const originalPhoneNormalized = (originalPhone.value || '').replace(/\D/g, '')
+  const phoneChanged = currentPhone !== originalPhoneNormalized
+  
+  // 检查 phone 是否合规（占位符和空值都是不合规的）
+  const isPhoneValid = isValidPhoneFormat(sidebarPhone.value)
+  const isOriginalPhoneValid = originalPhone.value && originalPhone.value !== 'xxx-xxx-xxxx' && isValidPhoneFormat(originalPhone.value)
+  
+  if (phoneChanged) {
+    // Phone 改变了
+    if (isPhoneValid) {
+      // 输入有效：发送 hash
+      updateParams.phone_hash = hashAccount(currentPhone)
+      
+      // 再进一步判断 save 标志
+      if (isStaff) {
+        // Staff: 总是保存（后端自动处理）
+        updateParams.phone = sidebarPhone.value.trim()
+      } else {
+        // Resident/Contact: 根据 save 标志决定（save 复选框只有在输入合规时才可选）
+        if (savePhone.value) {
+          // Save=true: 同步发送 save=true 的 phone，并发送标志位
+          updateParams.phone = sidebarPhone.value.trim()
+          updateParams.save_phone = true
+        } else {
+          // Save=false: 发送空字符串表示删除, save=false
+          updateParams.phone = ''
+          updateParams.save_phone = false
+        }
+      }
+    } else {
+      // 输入不合规（包括占位符、空值、格式错误）：不发送任何更新
+      // 如果原始值是占位符（空值），且用户没有输入有效值，不应该发送任何更新
+      // 只有在原始值有效，用户清空或输入不合规时，才发送 nil 来删除
+      if (isOriginalPhoneValid) {
+        // 原始值有效，用户清空或输入不合规：发送空字符串来删除
+        updateParams.phone = ''
+        updateParams.phone_hash = ''
+        if (!isStaff) {
+          updateParams.save_phone = false
+        }
+      }
+      // 如果原始值就是占位符（空值），且用户没有输入有效值，不发送任何更新（不处理）
+    }
+  } else {
+    // Phone 未改变，但 save 标志可能改变了（仅 Resident/Contact，且当前值必须合规）
+    if (!isStaff && isPhoneValid && savePhone.value !== originalSavePhone.value) {
+      // Save 标志改变了，且当前值合规，需要更新
+      if (savePhone.value) {
+        // 如果 save 从 false 改为 true：发送 phone 和 hash（保存明文）
+        updateParams.phone = sidebarPhone.value.trim()
+        updateParams.phone_hash = hashAccount(currentPhone)
+        updateParams.save_phone = true
+      } else {
+        // 如果 save 从 true 改为 false：删除明文，但保留 hash（hash 用于登录，不应该删除）
+        // 不发送 phone_hash，保留现有的 hash
+        updateParams.phone = ''
+        updateParams.save_phone = false
+      }
+    }
+  }
+  
+  // Use unified API (handles password, email, phone in one transaction, automatically routes based on role)
+  if (Object.keys(updateParams).length === 0) {
     message.warning('No changes to save')
+    return
+  }
+
+  changingPassword.value = true
+  try {
+    const result = await updateAccountSettingsApi(uid, updateParams)
+    
+    // Verify that the operation actually succeeded
+    if (result && result.success === true) {
+      message.success('Account settings updated')
+      // Reload account info to show updated values immediately
+      await loadAccountInfo()
+      closePasswordModal()
+    } else {
+      message.error(result?.message || 'Failed to update account settings')
+    }
+  } catch (e: any) {
+    // Extract error message from response if available
+    const errorMsg = e?.response?.data?.message || e?.message || 'Failed to update account settings'
+    message.error(errorMsg)
+  } finally {
+    changingPassword.value = false
   }
 }
 

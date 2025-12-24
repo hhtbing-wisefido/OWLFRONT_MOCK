@@ -90,7 +90,7 @@ export interface UpdateUserParams {
  */
 export interface ResetPasswordParams {
   user_id: string
-  new_password: string
+  password_hash: string
 }
 
 /**

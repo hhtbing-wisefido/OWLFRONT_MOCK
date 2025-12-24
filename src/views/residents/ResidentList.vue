@@ -682,7 +682,10 @@ const handleResetPasswordConfirm = async () => {
     .validate()
     .then(async () => {
       try {
-        await resetResidentPasswordApi(resetPasswordResidentId.value, resetPasswordData.value.new_password)
+        // Hash password before sending (consistent with login flow)
+        const { hashPassword } = await import('@/utils/crypto')
+        const passwordHash = await hashPassword(resetPasswordData.value.new_password)
+        await resetResidentPasswordApi(resetPasswordResidentId.value, passwordHash)
         message.success('Password reset successfully')
         handleCancelResetPassword()
       } catch (error: any) {
@@ -737,7 +740,7 @@ const handleTableChange = (pag: any) => {
 }
 
 // Fetch residents
-const fetchResidents = async () => {
+const fetchResidents = async (forceRefresh?: boolean) => {
   loading.value = true
   try {
     // Fetch all residents (no status filter in API call, filter on frontend)

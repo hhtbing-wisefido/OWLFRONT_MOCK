@@ -129,44 +129,59 @@ export function clearAuthCache(): void {
 
 /**
  * Clear all authentication data (both localStorage and sessionStorage)
- * HIPAA Compliance: Called on login to ensure no data leakage between users
+ * HIPAA Compliance: Called on logout to ensure complete data isolation between users
  * This ensures complete isolation when multiple users share the same PC
+ * 
+ * IMPORTANT: This function completely clears ALL localStorage data for HIPAA compliance.
+ * All user-related data (authentication tokens, user preferences, layout data, etc.)
+ * will be removed to prevent data leakage between users.
  */
 export function clearAllAuthData(): void {
   // Clear sessionStorage (current tab's auth data)
   clearAuthCache()
   
-  // Also clear localStorage (legacy data and other tabs' data)
-  // This ensures no data leakage when a new user logs in
-  localStorage.removeItem(TOKEN_KEY)
-  localStorage.removeItem(REFRESH_TOKEN_KEY)
-  localStorage.removeItem(USER_INFO_KEY)
-  localStorage.removeItem(INSTITUTION_INFO_KEY)
-  localStorage.removeItem(ROLES_KEY)
-  localStorage.removeItem('LOGIN_TYPE')
-  
-  // Clear any other potential auth-related keys
-  // Note: This is a safety measure to ensure complete cleanup
+  // HIPAA Compliance: Completely clear ALL localStorage data on logout
+  // This ensures no data leakage when a new user logs in on the same device
   try {
-    const keysToRemove: string[] = []
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i)
-      if (key && (
-        key.startsWith('ACCESS_TOKEN') ||
-        key.startsWith('REFRESH_TOKEN') ||
-        key.startsWith('USER_INFO') ||
-        key.startsWith('INSTITUTION_INFO') ||
-        key.startsWith('ROLES') ||
-        key === 'LOGIN_TYPE'
-      )) {
-        keysToRemove.push(key)
-      }
-    }
-    keysToRemove.forEach(key => localStorage.removeItem(key))
+    localStorage.clear()
+    console.log('✅ All localStorage data cleared for HIPAA compliance')
   } catch (error) {
-    console.error('Error clearing localStorage:', error)
+    console.error('❌ Error clearing localStorage:', error)
+    // Fallback: Try to remove known keys individually
+    try {
+      localStorage.removeItem(TOKEN_KEY)
+      localStorage.removeItem(REFRESH_TOKEN_KEY)
+      localStorage.removeItem(USER_INFO_KEY)
+      localStorage.removeItem(INSTITUTION_INFO_KEY)
+      localStorage.removeItem(ROLES_KEY)
+      localStorage.removeItem('LOGIN_TYPE')
+      
+      // Clear any other potential auth-related keys
+      const keysToRemove: string[] = []
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key && (
+          key.startsWith('ACCESS_TOKEN') ||
+          key.startsWith('REFRESH_TOKEN') ||
+          key.startsWith('USER_INFO') ||
+          key.startsWith('INSTITUTION_INFO') ||
+          key.startsWith('ROLES') ||
+          key.startsWith('canvas_') ||
+          key.startsWith('FOCUS_SELECTED_CARDS') ||
+          key === 'LOGIN_TYPE' ||
+          key === 'dev_test_role' ||
+          key === 'language'
+        )) {
+          keysToRemove.push(key)
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key))
+    } catch (fallbackError) {
+      console.error('❌ Fallback localStorage cleanup also failed:', fallbackError)
+    }
   }
   
+  // Clear sessionStorage (already done by clearAuthCache, but ensure complete cleanup)
   try {
     const keysToRemove: string[] = []
     for (let i = 0; i < sessionStorage.length; i++) {

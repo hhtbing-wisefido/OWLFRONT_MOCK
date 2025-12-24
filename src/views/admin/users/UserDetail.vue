@@ -944,8 +944,11 @@ const handleResetPasswordConfirm = async () => {
     .validate()
     .then(async () => {
       try {
+        // Hash password before sending (consistent with login flow)
+        const { hashPassword } = await import('@/utils/crypto')
+        const passwordHash = await hashPassword(resetPasswordData.value.new_password)
         const params: Omit<ResetPasswordParams, 'user_id'> = {
-          new_password: resetPasswordData.value.new_password,
+          password_hash: passwordHash,
         }
         await resetPasswordApi(userId.value, params)
         message.success('Password reset successfully')

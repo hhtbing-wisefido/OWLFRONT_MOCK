@@ -170,9 +170,10 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch, computed } from 'vue'
+import { ref, watch, nextTick } from 'vue'
 import { message } from 'ant-design-vue'
 import type { ResidentContact } from '@/api/resident/model/residentModel'
+import { hashAccount } from '@/utils/crypto'
 
 interface Props {
   residentId: string
@@ -404,34 +405,22 @@ const generateContactPassword = (slot: string) => {
   contactPasswordErrors.value[slot] = ''
 }
 
-// Password validation for each slot - using computed (same pattern as Profile Tab)
-// 为每个 slot 创建 computed 属性，统一验证逻辑
-const isContactPasswordValid = computed(() => {
-  const result: Record<string, boolean> = {}
-  for (const slot of SLOTS) {
-    const password = contactPasswords.value[slot]
-    const confirm = contactPasswordConfirms.value[slot]
-    if (!password || !confirm) {
-      result[slot] = false
-    } else {
-      const strengthResult = validatePasswordStrength(password)
-      const confirmResult = password === confirm
-      result[slot] = strengthResult.isValid && confirmResult
-    }
+// Check if password is valid for a specific slot
+const isContactPasswordValid = (slot: string): boolean => {
+  if (!contactPasswords.value[slot] || !contactPasswordConfirms.value[slot]) {
+    return false
   }
-  return result
-})
+  const strengthResult = validatePasswordStrength(contactPasswords.value[slot])
+  const confirmResult = contactPasswords.value[slot] === contactPasswordConfirms.value[slot]
+  return strengthResult.isValid && confirmResult
+}
 
-// Get password hash for a specific slot (same pattern as Profile Tab's getPassword)
-// 统一的 slot 处理逻辑：相对于 Profile Tab，只是多了一个 slot 参数
-const getContactPassword = async (slot: string): Promise<string | undefined> => {
-  // 规则：passwd 是不回显的，没有从密码改为无密码的状态转换，所以不能发送 ""
-  // vue 要么发送有效 password 的 hash，要么不发送该字段（返回 undefined），表示 passwd 未修改
-  if (isContactPasswordValid.value[slot] && contactPasswords.value[slot]) {
-    const { hashPassword } = await import('@/utils/crypto')
-    return await hashPassword(contactPasswords.value[slot])
+// Get password for a specific slot (for saving)
+const getContactPasswordValue = (slot: string): string | undefined => {
+  if (!isContactPasswordValid(slot)) {
+    return undefined
   }
-  return undefined
+  return contactPasswords.value[slot] || undefined
 }
 
 // Get contact by slot
@@ -600,6 +589,115 @@ const handleContactPhoneBlur = (slot: string) => {
   // 不再自动保存，只在父组件点击 Save 按钮时保存
 }
 
+// Handle contact change
+const handleContactChange = async (slot: string) => {
+  // 使用 nextTick 确保 v-model 更新后再读取值
+  await nextTick()
+  const contact = getContactBySlot(slot)
+  
+  // Calculate and send email_hash and phone_hash (for login)
+  // If email/phone has value, calculate hash; if empty/null, send null to delete
+  const contactToSave: any = {
+    slot: contact.slot,
+    is_enabled: contact.is_enabled,
+    contact_first_name: contact.contact_first_name,
+    contact_last_name: contact.contact_last_name,
+    relationship: contact.relationship,
+  }
+  
+  // Handle contact_phone: always calculate hash if has value (for login)
+  // 场景 2: 用户输入 phone，未勾选 Save → 发送 contact_phone = "" 且生成 phone_hash
+  // 场景 3: 用户清空 phone → 发送 contact_phone = "" 和 phone_hash = ""
+  // 场景 4: Placeholder → 不发送 phone 和 phone_hash（保持现有值）
+  const phoneValue = contact.contact_phone && contact.contact_phone.trim() && contact.contact_phone !== 'xxx-xxx-xxxx' 
+    ? contact.contact_phone.trim() 
+    : ''
+  if (phoneValue) {
+    // 有值：生成 phone_hash
+    contactToSave.phone_hash = await hashAccount(phoneValue)
+    // 场景 2: 未勾选 Save → 发送 contact_phone = ""（删除明文，保留 hash）
+    if (contact.save_phone) {
+      contactToSave.contact_phone = phoneValue // 勾选 Save：发送实际值
+    } else {
+      contactToSave.contact_phone = "" // 未勾选 Save：发送空字符串（删除明文，保留 hash）
+    }
+  } else {
+    // 场景 4: Placeholder → 不发送 phone 和 phone_hash（保持现有值）
+    if (contact.contact_phone === 'xxx-xxx-xxxx') {
+      // Placeholder: 不发送 phone 和 phone_hash（保持现有 hash）
+      // 不设置 contactToSave.contact_phone 和 contactToSave.phone_hash
+    } else {
+      // 场景 3: 用户清空 phone → 发送 contact_phone = "" 和 phone_hash = ""
+      contactToSave.contact_phone = ""
+      contactToSave.phone_hash = ""
+    }
+  }
+  
+  // Handle contact_email: always calculate hash if has value (for login)
+  // 场景 2: 用户输入 email，未勾选 Save → 发送 contact_email = "" 且生成 email_hash
+  // 场景 3: 用户清空 email → 发送 contact_email = "" 和 email_hash = ""
+  // 场景 4: Placeholder → 不发送 email 和 email_hash（保持现有值）
+  const emailValue = contact.contact_email && contact.contact_email.trim() && contact.contact_email !== '***@***' 
+    ? contact.contact_email.trim() 
+    : ''
+  
+  // 调试日志
+  console.log('[handleContactChange] Email 处理:', {
+    slot,
+    'contact.contact_email': contact.contact_email,
+    emailValue,
+    'contact.save_email': contact.save_email,
+  })
+  
+  if (emailValue) {
+    // 有值：生成 email_hash
+    contactToSave.email_hash = await hashAccount(emailValue)
+    // 场景 2: 未勾选 Save → 发送 contact_email = ""（删除明文，保留 hash）
+    if (contact.save_email) {
+      contactToSave.contact_email = emailValue // 勾选 Save：发送实际值
+      console.log('[handleContactChange] 勾选 Save，发送 contact_email:', emailValue)
+    } else {
+      contactToSave.contact_email = "" // 未勾选 Save：发送空字符串（删除明文，保留 hash）
+      console.log('[handleContactChange] 未勾选 Save，发送 contact_email: ""')
+    }
+  } else {
+    // 场景 4: Placeholder → 不发送 email 和 email_hash（保持现有值）
+    if (contact.contact_email === '***@***') {
+      // Placeholder: 不发送 email 和 email_hash（保持现有 hash）
+      // 不设置 contactToSave.contact_email 和 contactToSave.email_hash
+      console.log('[handleContactChange] Placeholder，不发送 email 和 email_hash')
+    } else {
+      // 场景 3: 用户清空 email → 发送 contact_email = "" 和 email_hash = ""
+      contactToSave.contact_email = ""
+      contactToSave.email_hash = ""
+      console.log('[handleContactChange] 用户清空 email，发送 contact_email: "" 和 email_hash: ""')
+    }
+  }
+  
+  // 保存接收告警设置
+  contactToSave.receive_sms = contact.receive_sms || false
+  contactToSave.receive_email = contact.receive_email || false
+  
+  // 如果密码有效，包含密码 hash（consistent with login flow）
+  // 注意：后端期望的字段名是 password_hash，不是 contact_password
+  // 规则：passwd 是不回显的，没有从密码改为无密码的状态转换，所以不能发送 ""
+  // vue 要么发送有效 password 的 hash，要么不发送该字段，表示 passwd 未修改
+  const password = getContactPasswordValue(slot)  // 明文密码
+  if (password) {
+    const { hashPassword } = await import('@/utils/crypto')
+    const passwordHash = await hashPassword(password)  // hash 后的密码（hex 字符串）
+    contactToSave.password_hash = passwordHash
+  }
+  // 如果用户未输入密码，不发送 password_hash 字段（不包含在 contactToSave 中）
+  
+  // Emit update to parent component (only update local state, don't save to backend)
+  // 父组件的 Save 按钮会统一保存所有数据
+  const allContacts = Array.from(contactsMap.value.values())
+  emit('update:contacts', allContacts)
+  
+  // 不再自动保存到后端，只在父组件点击 Save 按钮时保存
+}
+
 // Watch props changes
 watch(
   () => props.contacts,
@@ -619,28 +717,36 @@ watch(
   }
 )
 
-// Expose methods for parent component
-// 统一的 slot 处理逻辑：依次处理 Slot A, B, C, D，只管依次处理给值，不管 Slot 中的任何参数
+// Expose methods for parent component to get password hash
 defineExpose({
-  // Get all contacts data (依次处理 Slot A, B, C, D)
-  // slot fun 只管依次处理给值，不管 Slot 中的任何参数
-  getAllContacts: (): ResidentContact[] => {
-    return Array.from(contactsMap.value.values())
+  getContactPasswordHash: async (slot: string): Promise<string | undefined> => {
+    const password = getContactPasswordValue(slot)
+    if (password) {
+      const { hashPassword } = await import('@/utils/crypto')
+      return await hashPassword(password)  // 返回 hash 后的密码（hex 字符串）
+    }
+    return undefined
   },
-  // Get password hash for a specific slot (same pattern as Profile Tab)
-  getContactPassword: async (slot: string): Promise<string | undefined> => {
-    return await getContactPassword(slot)
-  },
-  // Get all password hashes for all slots (依次处理 Slot A, B, C, D)
   getAllContactPasswordHashes: async (): Promise<Record<string, string>> => {
     const hashes: Record<string, string> = {}
-    // 依次处理每个 slot（相对于 Profile Tab，只是多了一个循环）
+    const { hashPassword } = await import('@/utils/crypto')
     for (const slot of SLOTS) {
-      const hash = await getContactPassword(slot)
-      if (hash) {
-        hashes[slot] = hash
+      // 检查是否有密码输入（即使确认密码未输入或未匹配，也尝试获取密码）
+      // 因为用户可能只输入了密码，确认密码可能还未输入
+      const password = contactPasswords.value[slot]
+      if (password && password.trim()) {
+        // 如果密码和确认密码都有效，使用验证后的密码
+        // 否则，如果只有密码输入，也尝试使用（但可能验证失败）
+        const validPassword = getContactPasswordValue(slot)
+        if (validPassword) {
+          hashes[slot] = await hashPassword(validPassword)
+        } else {
+          // 如果验证失败，但用户输入了密码，记录警告
+          console.warn(`[getAllContactPasswordHashes] Slot ${slot} password validation failed, but password was entered. Skipping.`)
+        }
       }
     }
+    console.log('[getAllContactPasswordHashes] Returning hashes:', hashes)
     return hashes
   }
 })
