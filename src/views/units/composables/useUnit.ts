@@ -9,11 +9,11 @@ import {
   getRoomsApi,
 } from '@/api/units/unit'
 import { useUserStore } from '@/store/modules/user'
-import { useTagsStore } from '@/store/modules/tags'
+// Note: tags_catalog table has been removed
 
 export function useUnit() {
   const userStore = useUserStore()
-  const tagsStore = useTagsStore()
+  // Note: tags_catalog table has been removed, tagsStore is no longer available
 
   // State
   const units = ref<Unit[]>([])
@@ -25,11 +25,9 @@ export function useUnit() {
   
   // Forms
   const createUnitForm = ref({
-    unit_number: '',
     unit_name: '',
     unit_type: 'Facility' as 'Facility' | 'Home',
     branch_name: undefined as string | undefined,
-    area_name: undefined as string | undefined,
     building: undefined as string | undefined,  // 不再使用，实际创建时使用 selectedBuilding.building_name
     floor: undefined as string | undefined, // Can be undefined to allow selection from dropdown
     is_multi_person_room: true,
@@ -41,7 +39,6 @@ export function useUnit() {
     unit_number: '',
     unit_name: '',
     unit_type: 'Facility' as 'Facility' | 'Home',
-    area_name: undefined as string | undefined,
     floor: '1' as string, // Floor number as string, default '1'
     is_multi_person_room: true,
     is_public_space: false,
@@ -104,19 +101,15 @@ export function useUnit() {
   }
 
   // Fetch location tags
+  // Note: tags_catalog table has been removed, branches should be fetched from branches API
   const fetchBranchTags = async () => {
-    await tagsStore.fetchAllTags()
+    // TODO: Re-implement using branches API
   }
 
-  // Fetch area tags
-  const fetchAreaTags = async () => {
-    await tagsStore.fetchAllTags()
-  }
 
   // Cell click handler
   const handleCellClick = async (unit: Unit | null, _index: number, fetchRoomsWithBedsFn: (id: string) => Promise<void>) => {
     try {
-      await fetchAreaTags()
       await fetchBranchTags()
 
       if (unit) {
@@ -130,7 +123,6 @@ export function useUnit() {
           }
         }
         editUnitForm.value = {
-          area_name: unit.area_name,
           unit_name: unit.unit_name,
           unit_number: unit.unit_number,
           unit_type: (unit as any).unit_type || 'Facility',
@@ -146,7 +138,6 @@ export function useUnit() {
         editingUnit.value = null
         roomsWithBeds.value = []
         editUnitForm.value = {
-          area_name: undefined,
           unit_name: '',
           unit_number: '',
           unit_type: 'Facility',
@@ -169,7 +160,7 @@ export function useUnit() {
     selectedFloor: string
   ) => {
     try {
-      if (!createUnitForm.value.unit_number || !createUnitForm.value.unit_name) {
+      if (!createUnitForm.value.unit_name) {
         message.error('Please fill in all required fields')
         return
       }
@@ -190,13 +181,11 @@ export function useUnit() {
       
       // 直接传递用户输入，不做默认值处理和格式转换（后端统一处理）
       const createParams: CreateUnitParams = {
-        unit_number: createUnitForm.value.unit_number,
         unit_name: createUnitForm.value.unit_name,
         unit_type: createUnitForm.value.unit_type,  // 可能是 'Facility'（默认值），后端会处理
         building: selectedBuilding.building_name,  // 可能为 undefined，后端会处理
         floor: selectedFloor,  // 可能是 "1F" 或 number，后端会处理格式转换
         branch_name: selectedBuilding.branch_name,  // 可能为 undefined，后端会处理
-        area_name: createUnitForm.value.area_name,  // 可能为 undefined
         is_public_space: createUnitForm.value.is_public_space,
         is_multi_person_room: createUnitForm.value.is_multi_person_room,
         timezone: createUnitForm.value.timezone,  // 可能是 'America/Denver'（默认值），后端会处理
@@ -212,14 +201,9 @@ export function useUnit() {
         form_building: createUnitForm.value.building,
         form_floor: createUnitForm.value.floor,
         form_branch_name: createUnitForm.value.branch_name,
-        form_area_name: createUnitForm.value.area_name,
         selectedBuilding_name: selectedBuilding?.building_name,
         selectedBuilding_branch_name: selectedBuilding?.branch_name,
         selectedFloor: selectedFloor,
-        final_building: buildingValue,
-        final_floor: floorValue,
-        final_branch_name: branchTagValue,
-        final_area_name: areaTagValue,
       })
       
       const result = await createUnitApi(createParams)
@@ -231,7 +215,6 @@ export function useUnit() {
         building: result?.building,
         floor: result?.floor,
         branch_name: result?.branch_name,
-        area_name: result?.area_name,
       })
 
       if (!result) {
@@ -253,11 +236,9 @@ export function useUnit() {
   // Reset create unit form
   const resetCreateUnitForm = () => {
     createUnitForm.value = {
-      unit_number: '',
       unit_name: '',
       unit_type: 'Facility',
       branch_name: undefined,
-      area_name: undefined,
       building: undefined as string | undefined,  // 不再使用，实际创建时使用 selectedBuilding.building_name
       floor: undefined, // Reset to undefined so it can be selected from dropdown
       is_public_space: false,
@@ -274,7 +255,6 @@ export function useUnit() {
       unit_number: '',
       unit_name: '',
       unit_type: 'Facility',
-      area_name: undefined,
       floor: 1, // Default to 1
       is_public_space: false,
       is_multi_person_room: true,
@@ -317,7 +297,6 @@ export function useUnit() {
           building: buildingValue,  // 可能为 undefined，后端会处理
           floor: floorValue,  // 直接使用表单中的 floor（Vue 已负责从 Div 填入 input）
           branch_name: branchTagValue,  // 可能为 undefined，后端会处理
-          area_name: editUnitForm.value.area_name,  // 可能为 undefined
           is_public_space: editUnitForm.value.is_public_space,
           is_multi_person_room: editUnitForm.value.is_multi_person_room,
           timezone: editUnitForm.value.timezone,  // 可能是 'America/Denver'（默认值），后端会处理
@@ -334,7 +313,6 @@ export function useUnit() {
           // unit_type is not in UpdateUnitParams, so we don't include it
           // building 和 branch_name 不传递（保持原值）
           floor: editUnitForm.value.floor,  // 可能是 number 或 string，后端会处理格式转换
-          area_name: editUnitForm.value.area_name,  // 可能为 undefined
           is_public_space: editUnitForm.value.is_public_space,
           is_multi_person_room: editUnitForm.value.is_multi_person_room,
           timezone: editUnitForm.value.timezone,  // 可能是 'America/Denver'（默认值），后端会处理
@@ -408,7 +386,6 @@ export function useUnit() {
     fetchRoomsWithBeds,
     ensureUnitRoom,
     fetchBranchTags,
-    fetchAreaTags,
     handleCellClick,
     handleCreateUnit,
     resetCreateUnitForm,

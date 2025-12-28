@@ -9,7 +9,7 @@ export interface Unit {
   unit_name: string // Unit name (colloquial, memorable, e.g., "E203", "201", "Home-001")
   building?: string // Building (Facility scenario, 允许 NULL/undefined)
   floor?: string // Floor (Facility scenario, default: "1F")
-  area_name?: string // Area name (Facility scenario, uses tags_catalog)
+  // Note: area_name field has been removed from units table
   unit_number: string // Unit number (Facility scenario, e.g., "201", "E203")
   layout_config?: Record<string, any> // Layout configuration (JSONB)
   unit_type: 'Facility' | 'Home' // Facility / Home scenario types
@@ -26,12 +26,15 @@ export interface Building {
   building_id?: string
   building_name?: string  // 允许 undefined/null（不再使用 '-' 作为默认值）
   tenant_id?: string
-  branch_name?: string // API layer uses branch_name
+  branch_id?: string // Branch ID (优先使用)
+  branch_name?: string // Branch name (用于显示，API layer uses branch_name)
 }
 
 export interface CreateBuildingParams {
+  building_id?: string // 可选：如果选择已有 building，传递 building_id
   building_name: string
-  branch_name?: string // API layer uses branch_name
+  branch_id?: string // 可选：如果选择已有 branch，传递 branch_id（优先使用）
+  branch_name?: string // 可选：如果新建 branch，传递 branch_name（向后兼容）
 }
 
 export interface UpdateBuildingParams {
@@ -45,7 +48,7 @@ export interface CreateUnitParams {
   building?: string // 允许 NULL/undefined（如果为 NULL，保存为 NULL）
   floor?: string // Default: "1F"
   area_tag?: string
-  unit_number: string
+  unit_number?: string // 已废弃：数据库字段已移除，unit_name 已包含房间号信息
   layout_config?: Record<string, any>
   unit_type: 'Facility' | 'Home'
   primary_resident_id?: string
