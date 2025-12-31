@@ -229,7 +229,9 @@ const goBack = () => {
 }
 
 const goHome = () => {
-  router.push('/monitoring/overview')
+  // 使用用户的homePath而不是硬编码
+  const homePath = userStore.getUserHomePath || '/monitoring/overview'
+  router.push(homePath)
 }
 
 // Handle refresh - force refresh from DB

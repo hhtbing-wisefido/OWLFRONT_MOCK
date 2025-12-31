@@ -7,6 +7,16 @@
     layout="vertical"
     class="login-form"
   >
+    <!-- Mock快速登录按钮区域 -->
+    <div class="mock-quick-login" v-if="showMockButtons">
+      <div class="mock-title">🎯 快速登录 (Mock演示)</div>
+      <div class="mock-buttons">
+        <Button size="small" @click="fillMockAccount('admin')">👨‍💼 管理员</Button>
+        <Button size="small" @click="fillMockAccount('nurse1')">👩‍⚕️ 护士</Button>
+        <Button size="small" @click="fillMockAccount('doctor1')">👨‍⚕️ 医生</Button>
+      </div>
+    </div>
+
     <!-- User Type Selection (without label, with logo icon) -->
     <AFormItem name="userType" class="user-type-item">
       <div class="user-type-with-logo">
@@ -116,6 +126,7 @@ import { useUserStore } from '@/store/modules/user'
 import type { Institution } from '@/api/auth/model/authModel'
 import { debounce } from 'lodash-es'
 import { setCookie, getCookie, deleteCookie } from '@/utils/cookie'
+import { mockAccounts } from '@/mock/mockData'
 
 const router = useRouter()
 
@@ -128,6 +139,21 @@ const ARadioButton = Radio.Button
 const ASelect = Select
 const ASelectOption = Select.Option
 const ACheckbox = Checkbox
+
+// 显示Mock快速登录按钮（开发模式）
+const showMockButtons = ref(true)
+
+// Mock账号填充函数
+const fillMockAccount = (accountType: string) => {
+  const account = mockAccounts.find(acc => acc.username === accountType)
+  if (account) {
+    formData.account = account.username
+    formData.password = account.password
+    formData.tenant_name = 'Mapleview Care Community'
+    formData.tenant_id = 'mapleview-001'
+    message.success(`已填充${account.fullName}的登录信息`)
+  }
+}
 
 // Form data
 const formData = reactive({
@@ -694,6 +720,42 @@ onMounted(() => {
   margin-top: 4px;
 }
 
+.mock-quick-login {
+  margin-bottom: 20px;
+  padding: 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.mock-title {
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.mock-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: space-around;
+}
+
+.mock-buttons button {
+  flex: 1;
+  background: white;
+  border: none;
+  color: #667eea;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.mock-buttons button:hover {
+  background: #f0f0f0;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
 
 .forgot-password {
   float: right;

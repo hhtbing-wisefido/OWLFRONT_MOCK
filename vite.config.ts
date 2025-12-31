@@ -42,7 +42,9 @@ export default defineConfig({
     exclude: [],
   },
   server: {
+    host: '0.0.0.0', // 监听所有网络接口，允许局域网访问
     port: 3100,
+    strictPort: true, // 强制使用3100端口，不自动切换
     proxy: {
       // 让 owlFront 在 dev 环境直接走相对路径（避免 CORS），并把 API 代理到 wisefido-data
       '/admin/api': { target: 'http://localhost:8080', changeOrigin: true },

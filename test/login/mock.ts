@@ -50,6 +50,33 @@ export async function mockSearchInstitutions(
   
   // Staff 用户
   if (userType === 'staff') {
+    // 快速登录账号：admin / admin123
+    if (normalizedAccount === 'admin' && password === 'admin123') {
+      return [{
+        id: 'mapleview-001',
+        name: 'Mapleview Care Community',
+        tenant_id: 'mapleview-001',
+      }]
+    }
+    
+    // 快速登录账号：nurse1 / nurse123
+    if (normalizedAccount === 'nurse1' && password === 'nurse123') {
+      return [{
+        id: 'mapleview-001',
+        name: 'Mapleview Care Community',
+        tenant_id: 'mapleview-001',
+      }]
+    }
+    
+    // 快速登录账号：doctor1 / doctor123
+    if (normalizedAccount === 'doctor1' && password === 'doctor123') {
+      return [{
+        id: 'mapleview-001',
+        name: 'Mapleview Care Community',
+        tenant_id: 'mapleview-001',
+      }]
+    }
+    
     // S1: S1 / 720101101 / s1@test.com | Ts123@123 → Sunset (单个)
     // Note: Username and email are case-insensitive, phone is numeric
     if (
@@ -162,15 +189,48 @@ export async function mockLogin(params: LoginParams): Promise<LoginResult> {
   // Phone numbers are numeric, so toLowerCase() has no effect
   const normalizedAccount = params.account.trim().toLowerCase()
 
-  // Staff 用户登录
+  // Staff 用户
   if (params.userType === 'staff') {
+    // 快速登录账号：admin / admin123
+    if (normalizedAccount === 'admin' && params.password === 'admin123') {
+      return {
+        ...loginSuccessStaff,
+        userId: 'staff-admin',
+        user_account: 'admin',
+        tenant_id: params.tenant_id || 'mapleview-001',
+        tenant_name: params.tenant_name || 'Mapleview Care Community',
+      }
+    }
+    
+    // 快速登录账号：nurse1 / nurse123
+    if (normalizedAccount === 'nurse1' && params.password === 'nurse123') {
+      return {
+        ...loginSuccessStaff,
+        userId: 'staff-nurse1',
+        user_account: 'nurse1',
+        tenant_id: params.tenant_id || 'mapleview-001',
+        tenant_name: params.tenant_name || 'Mapleview Care Community',
+      }
+    }
+    
+    // 快速登录账号：doctor1 / doctor123
+    if (normalizedAccount === 'doctor1' && params.password === 'doctor123') {
+      return {
+        ...loginSuccessStaff,
+        userId: 'staff-doctor1',
+        user_account: 'doctor1',
+        tenant_id: params.tenant_id || 'mapleview-001',
+        tenant_name: params.tenant_name || 'Mapleview Care Community',
+      }
+    }
+
     // S1: S1 / 720101101 / s1@test.com | Ts123@123 → Sunset
     // Note: Username and email are case-insensitive, phone is numeric
     if (
-      (normalizedAccount === testAccounts.staff.s1.username.toLowerCase() ||
-        normalizedAccount === testAccounts.staff.s1.phone ||
-        normalizedAccount === testAccounts.staff.s1.email.toLowerCase() ||
-        normalizedAccount === testAccounts.staff.singleInstitution.toLowerCase())
+      normalizedAccount === testAccounts.staff.s1.username.toLowerCase() ||
+      normalizedAccount === testAccounts.staff.s1.phone ||
+      normalizedAccount === testAccounts.staff.s1.email.toLowerCase() ||
+      normalizedAccount === testAccounts.staff.singleInstitution.toLowerCase()
     ) {
       // 检查密码
       if (params.password !== testAccounts.staff.s1.password) {

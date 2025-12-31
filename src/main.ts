@@ -7,6 +7,8 @@ import router from './router'
 import { store } from './store'
 import { useUserStore } from './store/modules/user'
 
+// Mock适配器已在VAxios实例创建时自动注入（见 src/utils/http/axios/index.ts）
+
 const app = createApp(App)
 
 // Use Pinia Store

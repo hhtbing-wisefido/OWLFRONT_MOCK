@@ -5,6 +5,8 @@
 const L1_alarm = new URL('../../assets/alarms/L1_alarm.mp3', import.meta.url).href;
 const L2_alarm = new URL('../../assets/alarms/L2_alarm.mp3', import.meta.url).href;
 
+console.log('[AlarmSound] Audio files loaded:', { L1: L1_alarm, L2: L2_alarm });
+
 class AlarmSound {
   private l1Audio: HTMLAudioElement;
   private l2Audio: HTMLAudioElement;
@@ -21,11 +23,30 @@ class AlarmSound {
     
     this.l1Audio.preload = 'auto';
     this.l2Audio.preload = 'auto';
+    
+    // 监听加载事件
+    this.l1Audio.addEventListener('canplaythrough', () => {
+      console.log('[AlarmSound] L1 audio ready to play');
+    });
+    this.l2Audio.addEventListener('canplaythrough', () => {
+      console.log('[AlarmSound] L2 audio ready to play');
+    });
+    this.l1Audio.addEventListener('error', (e) => {
+      console.error('[AlarmSound] L1 audio load error:', e);
+    });
+    this.l2Audio.addEventListener('error', (e) => {
+      console.error('[AlarmSound] L2 audio load error:', e);
+    });
   }
 
   // 播放报警声
   playAlarm(level: number = 1) {
-    if (this.isPlaying) return;
+    console.log('[AlarmSound] playAlarm called, level:', level, 'isPlaying:', this.isPlaying);
+    
+    if (this.isPlaying) {
+      console.log('[AlarmSound] Already playing, skipping');
+      return;
+    }
     
     this.isPlaying = true;
     this.currentLevel = level;
@@ -35,14 +56,23 @@ class AlarmSound {
     // 重置播放位置
     audio.currentTime = 0;
     
+    console.log('[AlarmSound] Attempting to play audio...');
+    
     // 播放音频
-    audio.play().catch(err => {
-      console.warn('Alarm sound playback failed:', err);
-      this.isPlaying = false;
-    });
+    audio.play()
+      .then(() => {
+        console.log('[AlarmSound] Audio playback started successfully');
+      })
+      .catch(err => {
+        console.error('[AlarmSound] Playback failed:', err.name, err.message);
+        console.error('[AlarmSound] This is usually caused by browser autoplay policy.');
+        console.error('[AlarmSound] User must interact with the page first (click anywhere).');
+        this.isPlaying = false;
+      });
     
     // 播放结束后重置状态
     audio.onended = () => {
+      console.log('[AlarmSound] Audio playback ended');
       this.isPlaying = false;
     };
   }

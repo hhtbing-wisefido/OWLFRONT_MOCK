@@ -4,7 +4,8 @@ import { defineAsyncComponent } from 'vue'
 
 // Dev-only helper. Disable when running against real backend (non-mock),
 // otherwise it will override real permissions and confuse testing.
-const RoleSwitcher = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true'
+// 🔴 Mock项目中已关闭显示，如需启用请将 false 改为 true
+const RoleSwitcher = false && import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true'
   ? defineAsyncComponent(() => import('@/components/dev/RoleSwitcher.vue'))
   : null
 </script>

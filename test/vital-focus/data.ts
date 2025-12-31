@@ -582,15 +582,10 @@ export const card5_Location_PublicSpace: VitalFocusCard = {
 
 /**
  * 所有测试卡片
+ * 使用 src/mock/mockData.ts 中的100个卡片
  */
-export const allTestCards: VitalFocusCard[] = [
-  card1_ActiveBed_R1,
-  card2_ActiveBed_R2,
-  card3_ActiveBed_R3,
-  card4_Location_MultiPerson,
-  card5_Location_PublicSpace,
-  // 注意：根据card_creation_rules场景A，Radar-012（bathroom）属于Card 1，不创建单独的Location卡片
-]
+import { mockCards } from '@/mock/mockData'
+export const allTestCards: VitalFocusCard[] = mockCards
 
 /**
  * 根据 tenant_id 获取卡片列表

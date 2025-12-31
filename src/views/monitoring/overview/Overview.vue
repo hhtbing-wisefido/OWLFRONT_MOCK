@@ -1,7 +1,28 @@
 <template>
-  <div style="padding: 15px; background-color: #f4f7f9; min-height: 100vh;">
+  <div class="overview-container">
+    <!-- Draggable FDA & HIPAA Compliance Watermark for Marketing Materials -->
+    <div 
+      ref="watermarkRef"
+      class="compliance-watermark"
+      @mousedown="startDrag"
+      @touchstart="startDrag"
+      :style="{
+        top: watermarkPosition.y + 'px',
+        left: watermarkPosition.x + 'px',
+        cursor: isDragging ? 'grabbing' : 'grab'
+      }"
+    >
+      <div class="watermark-title">
+        ✓ DEMO SYSTEM
+      </div>
+      <div class="watermark-text">
+        Simulated data • NOT A MEDICAL DEVICE<br/>
+        For general wellness purposes only
+      </div>
+    </div>
+    
     <!-- Filter Buttons Row -->
-    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 15px; padding: 10px; background-color: #fff; border-radius: 4px;">
+    <div class="filter-buttons-row">
       <!-- Privacy-sensitive status filters: Only visible to staff login (not resident) -->
       <!-- unhandled: display count of unhandled level 0-1 alarms (orange Badge when > 0, gray when = 0) -->
       <a-button
@@ -11,7 +32,6 @@
       >
         unhandled
         <a-badge
-          v-if="!activeFilter || activeFilter === 'unhandled'"
           :count="unhandledCount"
           :show-zero="true"
           :number-style="{ backgroundColor: unhandledCount > 0 ? '#ff9800' : '#a9a9a9' }"
@@ -28,8 +48,7 @@
       >
         OutofRoom
         <a-badge
-          v-if="!activeFilter || activeFilter === 'outofroom'"
-          :count="outofRoomCount === null ? '?' : outofRoomCount"
+          :count="outofRoomCount ?? 0"
           :show-zero="true"
           :number-style="{ backgroundColor: '#a9a9a9' }"
           style="margin-left: 8px"
@@ -45,8 +64,7 @@
       >
         LeftBed
         <a-badge
-          v-if="!activeFilter || activeFilter === 'leftbed'"
-          :count="leftBedCount === null ? '?' : leftBedCount"
+          :count="leftBedCount ?? 0"
           :show-zero="true"
           :number-style="{ backgroundColor: '#a9a9a9' }"
           style="margin-left: 8px"
@@ -62,8 +80,7 @@
       >
         Visitor
         <a-badge
-          v-if="!activeFilter || activeFilter === 'visitor'"
-          :count="visitorCount === null ? '?' : visitorCount"
+          :count="visitorCount ?? 0"
           :show-zero="true"
           :number-style="{ backgroundColor: '#a9a9a9' }"
           style="margin-left: 8px"
@@ -79,8 +96,7 @@
       >
         Awake
         <a-badge
-          v-if="!activeFilter || activeFilter === 'awake'"
-          :count="awakeCount === null ? '?' : awakeCount"
+          :count="awakeCount ?? 0"
           :show-zero="true"
           :number-style="{ backgroundColor: '#a9a9a9' }"
           style="margin-left: 8px"
@@ -96,8 +112,7 @@
       >
         Sleep
         <a-badge
-          v-if="!activeFilter || activeFilter === 'sleep'"
-          :count="sleepCount === null ? '?' : sleepCount"
+          :count="sleepCount ?? 0"
           :show-zero="true"
           :number-style="{ backgroundColor: '#a9a9a9' }"
           style="margin-left: 8px"
@@ -111,6 +126,12 @@
         @click="showSelectCardModal = true"
       >
         Focus
+        <a-badge
+          :count="focusCount"
+          :show-zero="true"
+          :number-style="{ backgroundColor: '#1890ff' }"
+          style="margin-left: 8px"
+        />
       </a-button>
       
       <!-- Ambient Rounds: ambient rounds (only for staff) -->
@@ -121,6 +142,21 @@
       >
         Ambient Rounds
       </a-button>
+      
+      <!-- Sound Toggle: enable/disable alarm sound (right-click to test) -->
+      <a-button
+        v-if="shouldShowStatusFilters"
+        :type="isSoundEnabled ? 'primary' : 'default'"
+        @click="toggleSound"
+        @contextmenu.prevent="testAlarmSound"
+        :style="{ 
+          backgroundColor: isSoundEnabled ? '#52c41a' : undefined,
+          borderColor: isSoundEnabled ? '#52c41a' : undefined
+        }"
+        title="Left-click: toggle sound | Right-click: test sound"
+      >
+        {{ isSoundEnabled ? '🔊 Sound On' : '🔇 Sound Off' }}
+      </a-button>
     </div>
     
     <!-- Focus Modal -->
@@ -129,7 +165,6 @@
       title="Focus"
       :width="600"
       :footer="null"
-      @open="onFocusModalOpen"
       @cancel="onFocusModalCancel"
     >
       <!-- All/Invert/Save buttons -->
@@ -177,9 +212,24 @@
       </div>
     </div>
     
-    <div v-else style="display: flex; flex-wrap: wrap; justify-content: flex-start; align-items: center">
-      <div class="itemFrom" @click="goDetail(item)" v-for="item in filteredCards" :key="item.card_id">
-        <!-- Section 1: Head - Name, Address, Alarm Status -->
+    <div v-else class="cards-container" @dragover.prevent @drop="handleDrop">
+      <div 
+        class="itemFrom" 
+        :class="{ 
+          'dragging': draggedCardId === item.card_id,
+          'drop-target': dropTargetIndex === index && draggedCardId !== item.card_id,
+          'has-alarm-bar': getLatestPopAlarm(item)
+        }"
+        @click="goDetail(item)" 
+        v-for="(item, index) in orderedCards" 
+        :key="item.card_id"
+        draggable="true"
+        @dragstart="handleDragStart($event, item, index)"
+        @dragend="handleDragEnd"
+        @dragover.prevent
+        @dragenter.prevent="handleDragEnter($event, index)"
+      >
+        <!-- Section 1: Head - Name, Address, Alert Status -->
         <div
           style="
             display: flex;
@@ -230,7 +280,7 @@
                 style="margin-right: 10px; width: 20px; height: 20px; border: solid 1px red; border-radius: 50%;"
               />
             </div>
-            <!-- Alarm Status Icon (top-right icon) - click to navigate to detail page -->
+            <!-- Alert Status Icon (top-right icon) - click to navigate to detail page -->
             <div 
               :style="{ fontSize: '20px', color: getIconAlarmColor(item), cursor: 'pointer' }"
               @click.stop="goDetail(item)"
@@ -288,11 +338,9 @@
             >
               <div>
                 <!-- Not in Bed -->
-                <div v-if="item.bed_status === 1" class="status-icon-text">
-                  <div class="status-img">
-                    <img src="@/assets/images/Outofbed.png" style="margin-right: 10px" />
-                  </div>
-                  <div style="font-size: 18px">Not in Bed</div>
+                <div v-if="item.bed_status === 1" style="display: flex; align-items: center;">
+                  <img src="@/assets/images/Outofbed.png" class="status-img" />
+                  <span style="font-size: 18px;">Not in Bed</span>
                 </div>
                 <!-- In Bed: Sleep Status and Vital Signs -->
                 <div v-else style="font-size: 18px">
@@ -306,33 +354,14 @@
                     "
                   >
                     <!-- Sleep Stage (display different states based on sleep_stage, consistent with v1.0) -->
-                    <div>
-                      <div v-if="item.sleep_stage === 1" style="font-size: 30px">
-                        <img src="@/assets/images/awake.gif" style="margin-right: 10px" />
-                      </div>
-                      <div v-else-if="item.sleep_stage === 2" style="font-size: 30px">
-                        <img
-                          src="@/assets/images/light_sleep.gif"
-                          style="margin-right: 10px"
-                        />
-                      </div>
-                      <div v-else-if="item.sleep_stage === 4" style="font-size: 30px">
-                        <img
-                          src="@/assets/images/deep_sleep.gif"
-                          style="margin-right: 10px"
-                        />
-                      </div>
-                      <div v-else style="font-size: 30px">
-                        <img
-                          src="@/assets/images/Analysing_sleep_state.png"
-                          style="margin-right: 10px; width: 72px; height: 72px;"
-                        />
-                      </div>
-                    </div>
+                    <img v-if="item.sleep_stage === 1" src="@/assets/images/awake.gif" class="status-img" />
+                    <img v-else-if="item.sleep_stage === 2" src="@/assets/images/light_sleep.gif" class="status-img" />
+                    <img v-else-if="item.sleep_stage === 4" src="@/assets/images/deep_sleep.gif" class="status-img" />
+                    <img v-else src="@/assets/images/Analysing_sleep_state.png" class="status-img" />
                     <!-- HR and RR (simplified - show if available) -->
-                    <div v-if="needShowDetailNumbers(item.card_id)" style="font-size: 18px; display: flex; flex-direction: column" title="Click to hide details" @click.stop="hideDetailNumbersTemporarily(item.card_id)">
-                      <div class="status-item" style="margin-bottom: -24px">
-                        <img :src="getHeartImgUrl(item?.heart || 0)" style="margin-right: 10px; width: 20px; height: 20px;" />
+                    <div v-if="needShowDetailNumbers(item.card_id)" class="vitals-detail-container" title="Click to hide details" @click.stop="hideDetailNumbersTemporarily(item.card_id)">
+                      <div class="status-item vitals-row-heart">
+                        <img :src="getHeartImgUrl(item?.heart || 0)" class="vitals-icon-small" />
                         <div class="number-container">
                           <span class="status-number">{{
                             item?.heart && item.heart > 0 && item.heart < 255 ? item.heart : '--'
@@ -342,7 +371,7 @@
                         <span> bpm</span>
                       </div>
                       <div class="status-item">
-                        <img :src="getBreathImgUrl(item?.breath || 0)" style="margin-right: 10px; width: 20px; height: 20px;" />
+                        <img :src="getBreathImgUrl(item?.breath || 0)" class="vitals-icon-small" />
                         <div class="number-container">
                           <span class="status-number">{{
                             item?.breath && item.breath > 0 && item.breath < 255 ? item.breath : '--'
@@ -357,10 +386,10 @@
                     </div>
                     <div v-else style="font-size: 18px; display: flex; flex-direction: row; align-items: center;" title="Click to show details" @click.stop="showDetailNumbersTemporarily(item.card_id)">
                       <div class="status-item">
-                        <img :src="getHeartImgUrl(item?.heart || 0)" style="margin-right: 10px; width: 50px; height: 50px;" />
+                        <img :src="getHeartImgUrl(item?.heart || 0)" class="vitals-icon-large" />
                       </div>
                       <div class="status-item">
-                        <img :src="getBreathImgUrl(item?.breath || 0)" style="margin-right: 10px; width: 50px; height: 50px;" />
+                        <img :src="getBreathImgUrl(item?.breath || 0)" class="vitals-icon-large" />
                       </div>
                       <div v-show="usingTemporarySettings(item.card_id)" class="apply-button-bar">
                         <button class="apply-button" @click.stop="applyTemporarySettings(item.card_id)" title="Always hide details">Save change</button>
@@ -418,7 +447,9 @@
             <div class="status-time">
               <div>
                 <div v-if="item.bed_status === 1">Out of bed</div>
-                <div v-else-if="item.bed_status === 0">Awake</div>
+                <div v-else-if="item.bed_status === 0 && item.sleep_stage === 1">Awake</div>
+                <div v-else-if="item.bed_status === 0 && item.sleep_stage === 2">Light Sleep</div>
+                <div v-else-if="item.bed_status === 0 && item.sleep_stage === 4">Deep Sleep</div>
                 <div v-else>Analysing</div>
               </div>
               <div>{{ item.status_duration || '-' }}</div>
@@ -426,11 +457,11 @@
           </div>
         </div>
         <!-- Location Cards: Person Count and Postures (consistent with v1.0) -->
-        <div v-else style="display: flex; flex-direction: column; align-items: center">
+        <div v-else style="display: flex; flex-direction: column; align-items: center;">
           <div style="font-size: 18px">{{ item.person_count ?? 0 }} Person</div>
           <div
             v-if="(item.person_count ?? 0) > 0 && item.postures && item.postures.length > 0"
-            style="display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; max-width: 240px; max-height: 110px; overflow: hidden;"
+            style="display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; max-width: 240px; max-height: 110px; overflow: hidden; margin-top: 20px;"
           >
             <template v-for="(posture, index) in item.postures" :key="index">
               <img v-if="posture === 1" src="@/assets/images/walk.png" style="width: 50px; height: 50px;" />
@@ -452,36 +483,48 @@
           </div>
         </div>
 
-        <!-- Section 3: Event & Alert - Alarm Bar (bottom popup item) -->
+        <!-- Section 3: Event & Notification - Notification Bar (bottom popup item) -->
+        <!-- UL 2560 Compliant: Level 0-1 (Urgent-Red), Level 2-4 (Notice-Yellow/Orange) -->
         <div v-if="getLatestPopAlarm(item)">
           <div
             v-if="getLatestPopAlarmLevel(item) <= 1"
             class="red-floating-bar"
           >
-            <span>{{ getLatestPopAlarmTypeName(item) }} Handle</span>
-            <button class="red-handle-button" @click.stop="handleAlarm(item, getLatestPopAlarm(item))">Handle</button>
+            <span class="alarm-text">🔔 {{ getLatestPopAlarmTypeName(item) }} - Urgent</span>
+            <button class="red-handle-button" @click.stop="handleAlarm(item, getLatestPopAlarm(item))">Respond</button>
           </div>
           <div
             v-else-if="getLatestPopAlarmLevel(item) >= 2 && getLatestPopAlarmLevel(item) <= 4"
             class="yellow-floating-bar"
           >
-            <span>{{ getLatestPopAlarmTypeName(item) }} Handle</span>
-            <button class="yellow-handle-button" @click.stop="handleAlarm(item, getLatestPopAlarm(item))">Handle</button>
+            <span class="alarm-text">📝 {{ getLatestPopAlarmTypeName(item) }} Notice</span>
+            <button class="yellow-handle-button" @click.stop="handleAlarm(item, getLatestPopAlarm(item))">View</button>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Alarm Handle Modal -->
+    <AlarmHandleModal
+      :visible="showAlarmModal"
+      :alarm="currentAlarm"
+      :card="currentCard"
+      :refresh-timestamp="alarmRefreshTimestamp"
+      @update:visible="showAlarmModal = $event"
+      @acknowledge="handleAlarmAcknowledge"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { AlertFilled, ArrowLeftOutlined, HomeOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import { useUserStore } from '@/store/modules/user'
 import type { GetVitalFocusCardsModel, VitalFocusCard } from '@/api/monitors/model/monitorModel'
 import { getVitalFocusCardsApi, saveVitalFocusSelectionApi } from '@/api/monitors/monitor'
+import AlarmHandleModal from '@/components/AlarmHandleModal.vue'
 // Note: API functions still use 'vitalFocus' naming for backend compatibility
 import {
   parseAlarmLevel,
@@ -489,6 +532,7 @@ import {
   getHighestAlarmLevel,
   formatAlarmTypeToString,
 } from '@/utils/alarm'
+import { alarmSound } from '@/utils/radar/alarmSound'
 
 // Import heart and breath images
 import heartRed from '@/assets/images/heartrate-red.png'
@@ -503,9 +547,15 @@ import breathGray from '@/assets/images/breathe-gray.png'
 const router = useRouter()
 const userStore = useUserStore()
 const dataSource = ref<GetVitalFocusCardsModel>()
-const intervalTime = 3 * 1000 // 3 seconds
+// Mock模式：禁用自动刷新，只支持手动刷新页面
+const intervalTime = 0 // 禁用自动刷新
 let timer: ReturnType<typeof setInterval> | null = null
 const isTimerRunning = ref(false)
+
+// 报警声音开关（默认开启）
+const isSoundEnabled = ref(true)
+// 已知的报警ID集合（用于检测新报警）
+const knownAlarmIds = ref<Set<string>>(new Set())
 
 // Check if current user is SystemAdmin
 const isSystemAdmin = computed(() => {
@@ -526,6 +576,19 @@ const shouldShowStatusFilters = computed(() => {
 const activeFilter = ref<string | null>(null) // 'unhandled' | 'outofroom' | 'leftbed' | 'visitor' | 'awake' | 'sleep' | null
 const showSelectCardModal = ref(false)
 
+// Watch for Focus Modal open
+watch(showSelectCardModal, (newVal) => {
+  if (newVal) {
+    onFocusModalOpen()
+  }
+})
+
+// Drag and drop state for card reordering
+const draggedCardId = ref<string | null>(null)
+const draggedFromIndex = ref<number>(-1)
+const dropTargetIndex = ref<number>(-1)  // 拖放目标位置
+const cardOrder = ref<string[]>([])  // 存储卡片顺序的数组
+
 // Lazy calculation state for status counts (null means not calculated yet)
 const outofRoomCount = ref<number | null>(null)
 const leftBedCount = ref<number | null>(null)
@@ -537,6 +600,75 @@ const sleepCount = ref<number | null>(null)
 const selectedCardIds = ref<string[]>([]) // Saved selection (loaded from localStorage)
 const tempSelectedCardIds = ref<string[]>([]) // Temporary selection (selection in Modal, not saved)
 const savingFocus = ref(false) // Saving state
+
+// Alarm Modal state
+const showAlarmModal = ref(false)
+const currentAlarm = ref<any>(null)
+const currentCard = ref<VitalFocusCard | null>(null)
+const alarmRefreshTimestamp = ref<number>(Date.now()) // 用于触发计时器重置
+
+// Draggable watermark state
+const watermarkRef = ref<HTMLElement | null>(null)
+const watermarkPosition = ref({ x: window.innerWidth - 350, y: 10 }) // Initial position (top-right)
+const isDragging = ref(false)
+const dragOffset = ref({ x: 0, y: 0 })
+
+/**
+ * Start dragging watermark (支持鼠标和触摸)
+ */
+const startDrag = (e: MouseEvent | TouchEvent) => {
+  isDragging.value = true
+  const rect = watermarkRef.value?.getBoundingClientRect()
+  if (rect) {
+    let clientX: number, clientY: number
+    if ('touches' in e && e.touches && e.touches[0]) {
+      clientX = e.touches[0].clientX
+      clientY = e.touches[0].clientY
+    } else {
+      clientX = (e as MouseEvent).clientX
+      clientY = (e as MouseEvent).clientY
+    }
+    dragOffset.value = {
+      x: clientX - rect.left,
+      y: clientY - rect.top
+    }
+  }
+  document.addEventListener('mousemove', onDrag)
+  document.addEventListener('mouseup', stopDrag)
+  document.addEventListener('touchmove', onDrag)
+  document.addEventListener('touchend', stopDrag)
+}
+
+/**
+ * Handle dragging (支持鼠标和触摸)
+ */
+const onDrag = (e: MouseEvent | TouchEvent) => {
+  if (isDragging.value) {
+    let clientX: number, clientY: number
+    if ('touches' in e && e.touches && e.touches[0]) {
+      clientX = e.touches[0].clientX
+      clientY = e.touches[0].clientY
+    } else {
+      clientX = (e as MouseEvent).clientX
+      clientY = (e as MouseEvent).clientY
+    }
+    watermarkPosition.value = {
+      x: clientX - dragOffset.value.x,
+      y: clientY - dragOffset.value.y
+    }
+  }
+}
+
+/**
+ * Stop dragging
+ */
+const stopDrag = () => {
+  isDragging.value = false
+  document.removeEventListener('mousemove', onDrag)
+  document.removeEventListener('mouseup', stopDrag)
+  document.removeEventListener('touchmove', onDrag)
+  document.removeEventListener('touchend', stopDrag)
+}
 
 // localStorage key for Focus selection state
 const FOCUS_SELECTED_CARDS_KEY = 'wellnessMonitor_selectedCardIds'
@@ -823,59 +955,141 @@ const getLatestPopAlarmTypeName = (card: VitalFocusCard): string => {
 }
 
 /**
+ * 检测新报警并播放声音
+ * @param cards - 所有卡片数据
+ */
+const checkAndPlayAlarmSound = (cards: VitalFocusCard[]) => {
+  let highestNewAlarmLevel = 999 // 最高（最紧急）报警级别（数字越小越紧急）
+  let newAlarmCount = 0
+  
+  cards.forEach(card => {
+    if (!card.alarms || card.alarms.length === 0) return
+    
+    card.alarms.forEach(alarm => {
+      // 只检查active状态的报警
+      if (alarm.alarm_status !== 'active') return
+      
+      const alarmId = alarm.event_id
+      // 检查是否是新报警
+      if (!knownAlarmIds.value.has(alarmId)) {
+        knownAlarmIds.value.add(alarmId)
+        newAlarmCount++
+        const level = parseAlarmLevel(alarm.alarm_level)
+        console.log('[AlarmSound] New alarm detected:', alarmId, 'level:', level)
+        if (level < highestNewAlarmLevel) {
+          highestNewAlarmLevel = level
+        }
+      }
+    })
+  })
+  
+  // 如果检测到新报警，播放对应级别的声音
+  if (highestNewAlarmLevel <= 4) {
+    console.log('[AlarmSound] Playing alarm sound, highest level:', highestNewAlarmLevel, 'new alarms:', newAlarmCount)
+    if (highestNewAlarmLevel <= 1) {
+      // Level 0-1: 紧急报警 (L1)
+      alarmSound.playL1()
+    } else {
+      // Level 2-4: 一般报警 (L2)
+      alarmSound.playL2()
+    }
+  }
+}
+
+/**
+ * 切换声音开关
+ */
+const toggleSound = () => {
+  isSoundEnabled.value = !isSoundEnabled.value
+  if (!isSoundEnabled.value) {
+    alarmSound.stopAlarm()
+  }
+  message.info(isSoundEnabled.value ? 'Alarm sound enabled' : 'Alarm sound disabled')
+}
+
+/**
+ * 测试报警声音（右键触发）
+ */
+const testAlarmSound = () => {
+  console.log('[AlarmSound] Test sound triggered')
+  alarmSound.playL1()
+  message.success('Testing alarm sound...')
+}
+
+/**
  * Handle alarm
  * 
  * @param {VitalFocusCard} item - Card object
  * @param {any} [alarm] - Optional alarm object, if not provided use latest pop alarm
- * 
- * @description
- * Logic to implement:
- * 1. Open alarm handling modal
- * 2. Display alarm details (event_type, alarm_level, triggered_at, etc.)
- * 3. Provide handling action buttons (e.g., confirm, ignore, transfer, etc.)
- * 4. Call backend API to update alarm status (alarm_status: 'active' -> 'acknowledged')
- * 5. Refresh card data after successful handling
- * 
- * @example
- * // Possible implementation:
- * const showAlarmModal = ref(false)
- * const currentAlarm = ref(null)
- * 
- * const handleAlarm = (item, alarm) => {
- *   currentAlarm.value = alarm || getLatestPopAlarm(item)
- *   showAlarmModal.value = true
- * }
- * 
- * // Call API in Modal:
- * const acknowledgeAlarm = async (eventId) => {
- *   await acknowledgeAlarmApi(eventId)
- *   await refreshData()
- * }
- * 
- * @todo
- * - Create alarm handling Modal component
- * - Implement alarm details display
- * - Implement alarm handling API call (acknowledgeAlarmApi)
- * - Implement data refresh after handling
- * - Add error handling
  */
 const handleAlarm = (item: VitalFocusCard, alarm?: any) => {
-  // TODO: Implement alarm handling modal
   const targetAlarm = alarm || getLatestPopAlarm(item)
-  console.log('Handle alarm for card:', item.card_id, 'alarm:', targetAlarm)
   
-  // Placeholder implementation
-  message.info('Alarm handling feature will be implemented soon')
+  if (!targetAlarm) {
+    message.warning('No active notification found')
+    return
+  }
   
-  // Example implementation (needs adjustment based on actual requirements):
-  // if (!targetAlarm) {
-  //   message.warning('No alarm to handle')
-  //   return
-  // }
-  // 
-  // // Open alarm handling Modal
-  // currentAlarm.value = targetAlarm
-  // showAlarmModal.value = true
+  // 设置当前报警和卡片
+  currentAlarm.value = targetAlarm
+  currentCard.value = item
+  showAlarmModal.value = true
+}
+/**
+ * Handle alarm acknowledgment
+ * 
+ * @param {any} alarm - Alarm object to acknowledge
+ */
+const handleAlarmAcknowledge = (alarm: any) => {
+  if (!alarm || !currentCard.value) return
+  
+  // 在dataSource中找到原始卡片对象（确保响应式更新）
+  const cardId = currentCard.value.card_id
+  const items = dataSource.value?.items || []
+  const cardIndex = items.findIndex(c => c.card_id === cardId)
+  
+  if (cardIndex === -1) {
+    console.warn('Card not found in dataSource')
+    showAlarmModal.value = false
+    currentAlarm.value = null
+    currentCard.value = null
+    return
+  }
+  
+  const card = items[cardIndex]
+  if (!card) {
+    showAlarmModal.value = false
+    currentAlarm.value = null
+    currentCard.value = null
+    return
+  }
+  
+  if (card.alarms && Array.isArray(card.alarms)) {
+    const alarmIndex = card.alarms.findIndex(a => a.event_id === alarm.event_id)
+    if (alarmIndex !== -1 && card.alarms[alarmIndex]) {
+      // 更新报警状态为acknowledged
+      card.alarms[alarmIndex].alarm_status = 'acknowledged'
+      
+      // 更新unhandled计数
+      const level = parseAlarmLevel(alarm.alarm_level)
+      if (level === 0 && card.unhandled_alarm_0 && card.unhandled_alarm_0 > 0) {
+        card.unhandled_alarm_0--
+      } else if (level === 1 && card.unhandled_alarm_1 && card.unhandled_alarm_1 > 0) {
+        card.unhandled_alarm_1--
+      } else if (level === 2 && card.unhandled_alarm_2 && card.unhandled_alarm_2 > 0) {
+        card.unhandled_alarm_2--
+      }
+      
+      if (card.total_unhandled_alarms && card.total_unhandled_alarms > 0) {
+        card.total_unhandled_alarms--
+      }
+    }
+  }
+  
+  // 关闭Modal
+  showAlarmModal.value = false
+  currentAlarm.value = null
+  currentCard.value = null
 }
 
 /**
@@ -927,22 +1141,26 @@ const refreshData = async () => {
     dataSource.value = data
     
     // Initialize selected state:
-    // 1. First try to load from localStorage
-    loadSelectedCardIds()
-    
-    // 2. If no saved selection and currently no cards selected, default to select all cards
-    if (data?.items && selectedCardIds.value.length === 0) {
-      selectedCardIds.value = data.items.map((item: VitalFocusCard) => item.card_id)
-      saveSelectedCardIds() // Save default selection
-    } else if (data?.items) {
-      // If there's a saved selection but data updated (may have new cards), add new cards to selected list
-      const currentCardIds = data.items.map((item: VitalFocusCard) => item.card_id)
-      const newCardIds = currentCardIds.filter((id: string) => !selectedCardIds.value.includes(id))
-      if (newCardIds.length > 0) {
-        selectedCardIds.value = [...selectedCardIds.value, ...newCardIds]
-        saveSelectedCardIds()
+    // Only load from localStorage once on first load (when selectedCardIds is empty)
+    // Don't auto-add new cards to maintain user's focus selection
+    if (selectedCardIds.value.length === 0) {
+      loadSelectedCardIds()
+      
+      // If still no saved selection after loading, default to select all cards
+      if (data?.items && selectedCardIds.value.length === 0) {
+        selectedCardIds.value = data.items.map((item: VitalFocusCard) => item.card_id)
+        saveSelectedCardIds() // Save default selection
       }
     }
+    // Note: If user has a saved selection, we respect it and don't auto-add new cards
+    
+    // 检测新报警并播放声音
+    if (isSoundEnabled.value && data?.items) {
+      checkAndPlayAlarmSound(data.items)
+    }
+    
+    // 更新刷新时间戳，触发AlarmHandleModal中的计时器重置
+    alarmRefreshTimestamp.value = Date.now()
   } catch (error: any) {
     console.error('Failed to fetch wellness monitor cards:', error)
     message.error('Failed to load cards. Please try again.')
@@ -965,8 +1183,14 @@ const refreshTempCardSettings = () => {
 
 /**
  * Start auto-refresh timer
+ * Note: In mock mode, intervalTime=0 disables auto-refresh
  */
 const startTimer = () => {
+  // Mock模式：禁用自动刷新
+  if (intervalTime === 0) {
+    console.log('Auto-refresh disabled in mock mode. Use manual page refresh.')
+    return
+  }
   if (!timer) {
     timer = setInterval(() => {
       refreshTempCardSettings()
@@ -1061,6 +1285,19 @@ const allCards = computed(() => {
 })
 
 /**
+ * Focus count - number of selected cards / total cards
+ */
+const focusCount = computed(() => {
+  const total = allCards.value.length
+  const selected = selectedCardIds.value.length
+  // If all cards are selected or no selection saved, show total
+  if (selected === 0 || selected === total) {
+    return total
+  }
+  return selected
+})
+
+/**
  * Toggle card selection
  * Currently only updates temporary selection, doesn't save immediately
  */
@@ -1103,7 +1340,10 @@ const saveFocusSelectionImmediately = () => {
   selectedCardIds.value = [...tempSelectedCardIds.value]
   saveSelectedCardIds()
   
-  // 2. Asynchronously submit to server (doesn't block UI, no loading display)
+  // 2. Refresh all status counts after focus selection changed
+  refreshAllStatusCounts()
+  
+  // 3. Asynchronously submit to server (doesn't block UI, no loading display)
   saveVitalFocusSelectionApi({
     selected_card_ids: tempSelectedCardIds.value,
   })
@@ -1152,10 +1392,13 @@ const saveFocusSelection = async () => {
     selectedCardIds.value = [...tempSelectedCardIds.value]
     saveSelectedCardIds()
     
+    // 2. Refresh all status counts after focus selection changed
+    refreshAllStatusCounts()
+    
     // Note: After selectedCardIds is updated, filteredCards will automatically update (because it's computed)
     // So the page will immediately display the updated card list
     
-    // 2. Asynchronously submit to server (doesn't block UI)
+    // 3. Asynchronously submit to server (doesn't block UI)
     saveVitalFocusSelectionApi({
       selected_card_ids: tempSelectedCardIds.value,
     })
@@ -1178,10 +1421,23 @@ const saveFocusSelection = async () => {
 }
 
 /**
+ * Get focus-filtered cards (cards selected by Focus)
+ * Used for all status count calculations
+ */
+const getFocusFilteredCards = (): VitalFocusCard[] => {
+  let cards = dataSource.value?.items || []
+  // Apply Focus selection filter
+  if (selectedCardIds.value.length > 0) {
+    cards = cards.filter((card) => selectedCardIds.value.includes(card.card_id))
+  }
+  return cards
+}
+
+/**
  * Calculate outofRoom count
  */
 const calculateOutofRoomCount = (): number => {
-  const cards = dataSource.value?.items || []
+  const cards = getFocusFilteredCards()
   return cards.filter((card) => {
     return card.card_type === 'Location' && (card.person_count ?? 0) === 0
   }).length
@@ -1191,7 +1447,7 @@ const calculateOutofRoomCount = (): number => {
  * Calculate leftBed count
  */
 const calculateLeftBedCount = (): number => {
-  const cards = dataSource.value?.items || []
+  const cards = getFocusFilteredCards()
   return cards.filter((card) => {
     return card.bed_status === 1
   }).length
@@ -1199,20 +1455,20 @@ const calculateLeftBedCount = (): number => {
 
 /**
  * Calculate visitor count
+ * Visitor: ActiveBed卡片且 person_count > 1（房间内人数超过居民数）
  */
 const calculateVisitorCount = (): number => {
-  const cards = dataSource.value?.items || []
-  // TODO: Implement visitor statistics logic
-  // Placeholder implementation: return 0
-  void cards // Avoid unused variable warning
-  return 0
+  const cards = getFocusFilteredCards()
+  return cards.filter((card) => {
+    return card.card_type === 'ActiveBed' && (card.person_count ?? 0) > 1
+  }).length
 }
 
 /**
  * Calculate awake count
  */
 const calculateAwakeCount = (): number => {
-  const cards = dataSource.value?.items || []
+  const cards = getFocusFilteredCards()
   return cards.filter((card) => {
     return card.bed_status === 0 && card.sleep_stage === 1
   }).length
@@ -1222,7 +1478,7 @@ const calculateAwakeCount = (): number => {
  * Calculate sleep count
  */
 const calculateSleepCount = (): number => {
-  const cards = dataSource.value?.items || []
+  const cards = getFocusFilteredCards()
   return cards.filter((card) => {
     return card.bed_status === 0 && (card.sleep_stage === 2 || card.sleep_stage === 4)
   }).length
@@ -1249,36 +1505,10 @@ const toggleFilter = (filterType: string) => {
     activeFilter.value = null // Deselect
   } else {
     activeFilter.value = filterType // Select
-    
-    // Calculate count when filter is clicked (lazy calculation)
-    switch (filterType) {
-      case 'outofroom':
-        if (outofRoomCount.value === null) {
-          outofRoomCount.value = calculateOutofRoomCount()
-        }
-        break
-      case 'leftbed':
-        if (leftBedCount.value === null) {
-          leftBedCount.value = calculateLeftBedCount()
-        }
-        break
-      case 'visitor':
-        if (visitorCount.value === null) {
-          visitorCount.value = calculateVisitorCount()
-        }
-        break
-      case 'awake':
-        if (awakeCount.value === null) {
-          awakeCount.value = calculateAwakeCount()
-        }
-        break
-      case 'sleep':
-        if (sleepCount.value === null) {
-          sleepCount.value = calculateSleepCount()
-        }
-        break
-    }
   }
+  
+  // Always refresh all status counts when any filter is clicked
+  refreshAllStatusCounts()
 }
 
 /**
@@ -1327,16 +1557,9 @@ const filteredCards = computed(() => {
       })
     
     case 'visitor':
-      // Show cards with visitors
-      // TODO: Implement visitor filter logic (use same condition as visitorCount)
-      // Example implementation (needs adjustment based on actual data structure):
-      // return cards.filter((card) => {
-      //   return (card.visitor_count ?? 0) > 0
-      //   // Or: return card.visitors?.length > 0
-      //   // Or: return card.residents?.some(r => r.is_visitor === true)
-      // })
-      return cards.filter((_card) => {
-        return false // Placeholder, to be implemented
+      // Show cards with visitors (ActiveBed cards with person_count > 1)
+      return cards.filter((card) => {
+        return card.card_type === 'ActiveBed' && (card.person_count ?? 0) > 1
       })
     
     case 'awake':
@@ -1357,21 +1580,149 @@ const filteredCards = computed(() => {
 })
 
 /**
+ * Ordered cards based on user drag-drop arrangement
+ * Cards are ordered based on cardOrder array, with new cards added at the end
+ */
+const orderedCards = computed(() => {
+  const cards = filteredCards.value
+  if (cardOrder.value.length === 0) {
+    return cards
+  }
+  
+  // Create a map for quick lookup
+  const cardMap = new Map(cards.map(card => [card.card_id, card]))
+  
+  // Build ordered list based on cardOrder
+  const ordered: VitalFocusCard[] = []
+  const usedIds = new Set<string>()
+  
+  // First add cards in the saved order
+  for (const id of cardOrder.value) {
+    const card = cardMap.get(id)
+    if (card) {
+      ordered.push(card)
+      usedIds.add(id)
+    }
+  }
+  
+  // Then add any new cards not in the order
+  for (const card of cards) {
+    if (!usedIds.has(card.card_id)) {
+      ordered.push(card)
+    }
+  }
+  
+  return ordered
+})
+
+/**
+ * Handle drag start
+ * 使用setDragImage确保拖动时显示整个卡片而不是内部元素
+ */
+const handleDragStart = (event: DragEvent, item: VitalFocusCard, index: number) => {
+  draggedCardId.value = item.card_id
+  draggedFromIndex.value = index
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', item.card_id)
+    
+    // 获取卡片元素作为拖动图像，确保拖动时显示整个卡片
+    const cardElement = (event.target as HTMLElement).closest('.itemFrom') as HTMLElement
+    if (cardElement) {
+      // 计算鼠标在卡片中的位置
+      const rect = cardElement.getBoundingClientRect()
+      const offsetX = event.clientX - rect.left
+      const offsetY = event.clientY - rect.top
+      event.dataTransfer.setDragImage(cardElement, offsetX, offsetY)
+    }
+  }
+}
+
+/**
+ * Handle drag end
+ */
+const handleDragEnd = () => {
+  // 在拖动结束时才真正更新卡片顺序
+  if (draggedFromIndex.value !== -1 && dropTargetIndex.value !== -1 && draggedFromIndex.value !== dropTargetIndex.value) {
+    const cards = [...orderedCards.value]
+    const draggedCard = cards[draggedFromIndex.value]
+    if (draggedCard) {
+      // Remove from old position
+      cards.splice(draggedFromIndex.value, 1)
+      // Calculate the actual insert position
+      const insertIndex = dropTargetIndex.value > draggedFromIndex.value ? dropTargetIndex.value - 1 : dropTargetIndex.value
+      // Insert at new position
+      cards.splice(insertIndex, 0, draggedCard)
+      // Update the order array
+      cardOrder.value = cards.map(c => c.card_id)
+      // Save to localStorage
+      saveCardOrder()
+    }
+  }
+  
+  draggedCardId.value = null
+  draggedFromIndex.value = -1
+  dropTargetIndex.value = -1
+}
+
+/**
+ * Handle drag enter (for visual feedback - only update drop target indicator)
+ */
+const handleDragEnter = (_event: DragEvent, targetIndex: number) => {
+  if (draggedFromIndex.value === -1) return
+  // 只更新放置目标位置，不实际移动卡片
+  dropTargetIndex.value = targetIndex
+}
+
+/**
+ * Handle drop
+ */
+const handleDrop = (event: DragEvent) => {
+  event.preventDefault()
+  handleDragEnd()
+}
+
+/**
+ * Save card order to localStorage
+ */
+const saveCardOrder = () => {
+  try {
+    const userInfo = userStore.getUserInfo
+    const key = `card_order_${userInfo?.tenant_id || 'default'}`
+    localStorage.setItem(key, JSON.stringify(cardOrder.value))
+  } catch (e) {
+    console.warn('Failed to save card order:', e)
+  }
+}
+
+/**
+ * Load card order from localStorage
+ */
+const loadCardOrder = () => {
+  try {
+    const userInfo = userStore.getUserInfo
+    const key = `card_order_${userInfo?.tenant_id || 'default'}`
+    const saved = localStorage.getItem(key)
+    if (saved) {
+      cardOrder.value = JSON.parse(saved)
+    }
+  } catch (e) {
+    console.warn('Failed to load card order:', e)
+  }
+}
+
+/**
  * Count statistics
  */
 const unhandledCount = computed(() => {
-  const cards = dataSource.value?.items || []
+  // Use Focus-filtered cards
+  let cards = dataSource.value?.items || []
+  if (selectedCardIds.value.length > 0) {
+    cards = cards.filter((card) => selectedCardIds.value.includes(card.card_id))
+  }
+  // Count cards with unhandled level 0 or level 1 alarms
   return cards.filter((card) => {
-    const threshold = card.icon_alarm_level ?? 3
-    const unhandledAlarms = {
-      0: card.unhandled_alarm_0 ?? 0,
-      1: card.unhandled_alarm_1 ?? 0,
-      2: card.unhandled_alarm_2 ?? 0,
-      3: card.unhandled_alarm_3 ?? 0,
-      4: card.unhandled_alarm_4 ?? 0,
-    }
-    const highestLevel = getHighestAlarmLevel(unhandledAlarms, threshold)
-    return highestLevel >= 0 && highestLevel <= 1 // 0=EMERG, 1=ALERT (red)
+    return (card.unhandled_alarm_0 ?? 0) > 0 || (card.unhandled_alarm_1 ?? 0) > 0
   }).length
 })
 
@@ -1411,7 +1762,11 @@ const unhandledCount = computed(() => {
 onMounted(async () => {
   // First load saved selection state
   loadSelectedCardIds()
+  // Load saved card order
+  loadCardOrder()
   await refreshData()
+  // Calculate all status counts on load
+  refreshAllStatusCounts()
   startTimer()
 })
 
@@ -1421,22 +1776,151 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* 页面容器 */
+.overview-container {
+  padding: 15px;
+  background-color: #f4f7f9;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* 合规水印 - 放大20% */
+.compliance-watermark {
+  position: fixed;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 8px 16px;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border: 2px solid #1890ff;
+  user-select: none;
+  white-space: nowrap;
+  max-width: none;
+}
+
+.watermark-title {
+  font-size: 14px;
+  font-weight: bold;
+  color: #1890ff;
+  margin-bottom: 3px;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.watermark-text {
+  font-size: 12px;
+  color: #666;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+/* 筛选按钮行 */
+.filter-buttons-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 15px;
+  padding: 10px;
+  background-color: #fff;
+  border-radius: 4px;
+}
+
+/* Cards container with flex layout */
+.cards-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: flex-start;
+  position: relative;
+  min-height: 200px;
+}
+
 .itemFrom {
   padding: 15px;
   background-color: #fff;
   width: 270px;
-  height: 240px;
+  height: 260px;
   color: #909399;
-  cursor: pointer;
+  cursor: grab;
   border-radius: 5px;
   margin: 15px;
-  transition: transform 0.1s, box-shadow 0.2s;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, opacity 0.15s ease;
   position: relative;
+  user-select: none;
 }
 
 .itemFrom:hover {
-  transform: scale(1.01) perspective(0px);
-  box-shadow: 0 0 6px 3px #999;
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.itemFrom:active {
+  cursor: grabbing;
+}
+
+.itemFrom.dragging {
+  opacity: 0.5;
+  transform: scale(1.05);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  z-index: 100;
+}
+
+/* 有报警条时，减少上下间距为报警条腾出空间 */
+.itemFrom.has-alarm-bar {
+  padding-top: 13px;
+  padding-bottom: 40px; /* 给报警条留空间 */
+}
+
+/* 减少头部区域的下边距 */
+.itemFrom.has-alarm-bar > div:first-child {
+  padding-bottom: 5px !important;
+}
+
+/* ActiveBed主内容区域 - 适度压缩高度，保持图标居中 */
+.itemFrom.has-alarm-bar > div:nth-child(2) {
+  height: 73% !important;
+}
+
+/* 减少状态图标容器的间距 */
+.itemFrom.has-alarm-bar .status-icon-text {
+  padding: 5px;
+  margin-top: -5px;
+}
+
+/* 减少主内容区域间距 */
+.itemFrom.has-alarm-bar .status-img {
+  margin-top: -3px;
+  margin-bottom: -3px;
+}
+
+/* 减少姿态图标区域 */
+.itemFrom.has-alarm-bar .posture-img {
+  margin-top: -2px;
+  margin-bottom: -2px;
+}
+
+/* 放置位置指示器 - 显示卡片将被放置的位置 */
+.itemFrom.drop-target {
+  border: 3px dashed #1890ff;
+  background-color: rgba(24, 144, 255, 0.1);
+  box-shadow: 0 0 15px rgba(24, 144, 255, 0.3);
+  transition: all 0.2s ease;
+}
+
+.itemFrom.drop-target::before {
+  content: '↓ Drop Here';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 14px;
+  font-weight: bold;
+  color: #1890ff;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 4px 12px;
+  border-radius: 4px;
+  z-index: 10;
 }
 
 .color-point {
@@ -1465,6 +1949,18 @@ onUnmounted(() => {
   flex-direction: row;
 }
 
+/* 心率呼吸详情容器 */
+.vitals-detail-container {
+  font-size: 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 心率行 - PC端紧凑布局 */
+.vitals-row-heart {
+  margin-bottom: -24px;
+}
+
 .status-number {
   margin-right: 8px;
   font-weight: bold;
@@ -1490,12 +1986,32 @@ onUnmounted(() => {
   margin-right: 4px;
 }
 
+/* 心率呼吸大图标（未展开时显示） */
+.vitals-icon-large {
+  width: 50px;
+  height: 50px;
+  margin-right: 10px;
+}
+
+/* 心率呼吸小图标（展开详情时显示） */
+.vitals-icon-small {
+  width: 20px;
+  height: 20px;
+  margin-right: 10px;
+}
+
+.status-img {
+  width: 72px;
+  height: 72px;
+  margin-right: 10px;
+}
+
 .status-icon-text {
   font-size: 18px;
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   padding: 15px;
 }
 
@@ -1510,19 +2026,19 @@ onUnmounted(() => {
 .red-floating-bar {
   background-color: #ffcccca0;
   color: #d32f2f;
-  border-radius: 10px;
-  padding: 5px 20px;
+  border-radius: 8px;
+  padding: 4px 12px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   position: absolute;
-  bottom: 10px;
-  left: 10px;
-  right: 10px;
-  z-index: 999;
+  bottom: 8px;
+  left: 8px;
+  right: 8px;
+  z-index: 10;
 }
 
-.red-floating-bar span {
+.red-floating-bar .alarm-text {
   font-size: 12px;
   white-space: nowrap;
   overflow: hidden;
@@ -1549,19 +2065,19 @@ onUnmounted(() => {
 .yellow-floating-bar {
   background-color: #f1c591c9;
   color: #f3783f;
-  border-radius: 10px;
-  padding: 5px 20px;
+  border-radius: 8px;
+  padding: 4px 12px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   position: absolute;
-  bottom: 10px;
-  left: 10px;
-  right: 10px;
-  z-index: 999;
+  bottom: 8px;
+  left: 8px;
+  right: 8px;
+  z-index: 10;
 }
 
-.yellow-floating-bar span {
+.yellow-floating-bar .alarm-text {
   font-size: 12px;
   white-space: nowrap;
   overflow: hidden;
@@ -1600,5 +2116,173 @@ onUnmounted(() => {
   cursor: pointer;
   font-size: 12px;
   padding: 0px 10px;
+}
+
+/* ========== 移动端适配 ========== */
+
+/* 平板 (768px - 1024px) - 卡片尺寸与PC端完全一致 */
+@media (max-width: 1024px) {
+  .cards-container {
+    justify-content: center;
+  }
+}
+
+/* 手机横屏 / 小平板 (576px - 768px) - 卡片尺寸与PC端完全一致 */
+@media (max-width: 768px) {
+  .cards-container {
+    justify-content: center;
+    padding: 0 5px;
+  }
+}
+
+/* 手机竖屏 (< 576px) */
+@media (max-width: 576px) {
+  .cards-container {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    padding: 0;
+    width: 100%;
+  }
+  
+  /* 卡片宽度与筛选按钮容器一致，自适应屏幕 */
+  .itemFrom {
+    width: auto;
+    height: auto;
+    min-height: 220px;
+    padding: 15px;
+    margin: 8px 10px;
+    box-sizing: border-box;
+  }
+  
+  /* 禁用拖动 - 手机上拖动体验差 */
+  .itemFrom {
+    cursor: pointer;
+  }
+  
+  .itemFrom.dragging {
+    transform: none;
+    opacity: 1;
+  }
+  
+  .itemFrom.drop-target {
+    border: none;
+    background-color: #fff;
+    box-shadow: none;
+  }
+  
+  .itemFrom.drop-target::before {
+    display: none;
+  }
+  
+  /* 不覆盖任何图标大小，完全使用PC端样式 */
+  
+  .red-floating-bar,
+  .yellow-floating-bar {
+    padding: 4px 8px;
+    left: 5px;
+    right: 5px;
+    bottom: 5px;
+  }
+  
+  .red-floating-bar span,
+  .yellow-floating-bar span {
+    font-size: 11px;
+  }
+  
+  .red-handle-button,
+  .yellow-handle-button {
+    padding: 2px 6px;
+    font-size: 11px;
+  }
+}
+
+/* 超小屏幕 (< 375px) */
+@media (max-width: 375px) {
+  .itemFrom {
+    margin: 6px 8px;
+    padding: 12px;
+  }
+}
+
+/* 移动端全局调整 */
+@media (max-width: 768px) {
+  /* 筛选按钮响应式 */
+  :deep(.ant-btn) {
+    font-size: 12px;
+    padding: 4px 8px;
+    height: 28px;
+  }
+  
+  :deep(.ant-badge) {
+    margin-left: 4px;
+  }
+}
+
+@media (max-width: 576px) {
+  :deep(.ant-btn) {
+    font-size: 11px;
+    padding: 2px 6px;
+    height: 26px;
+  }
+  
+  /* 页面容器 */
+  .overview-container {
+    padding: 10px 8px;
+  }
+  
+  /* 合规水印移动端 - 放大30%，不换行 */
+  .compliance-watermark {
+    padding: 10px 20px;
+    max-width: none;
+    white-space: nowrap;
+    border-radius: 8px;
+  }
+  
+  .watermark-title {
+    font-size: 16px;
+    white-space: nowrap;
+  }
+  
+  .watermark-text {
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  
+  /* 筛选按钮行 */
+  .filter-buttons-row {
+    gap: 6px;
+    padding: 8px;
+    margin-bottom: 10px;
+  }
+}
+
+@media (max-width: 375px) {
+  .overview-container {
+    padding: 8px 5px;
+  }
+  
+  .compliance-watermark {
+    padding: 8px 16px;
+    max-width: none;
+    white-space: nowrap;
+    border-radius: 7px;
+  }
+  
+  .watermark-title {
+    font-size: 14px;
+    white-space: nowrap;
+  }
+  
+  .watermark-text {
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  
+  .filter-buttons-row {
+    gap: 4px;
+    padding: 6px;
+  }
 }
 </style>

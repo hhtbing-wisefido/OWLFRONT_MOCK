@@ -442,23 +442,24 @@ const formatCategory = (category?: string): string => {
 
 const formatSeverity = (level: string | number): string => {
   const levelStr = String(level)
+  // UL 2560 合规术语 - 使用护理系统友好的术语
   const map: Record<string, string> = {
-    '0': 'EMERG',
-    '1': 'ALERT',
-    '2': 'CRIT',
-    '3': 'ERR',
-    '4': 'WARNING',
-    '5': 'NOTICE',
-    '6': 'INFO',
-    '7': 'DEBUG',
-    EMERG: 'EMERG',
-    ALERT: 'ALERT',
-    CRIT: 'CRIT',
-    ERR: 'ERR',
-    WARNING: 'WARNING',
-    NOTICE: 'NOTICE',
+    '0': 'URGENT',      // 紧急 - 需要立即响应
+    '1': 'PRIORITY',    // 优先 - 需要优先响应
+    '2': 'IMPORTANT',   // 重要 - 需要关注
+    '3': 'ATTENTION',   // 注意 - 请查看
+    '4': 'NOTICE',      // 提醒 - 一般通知
+    '5': 'INFO',        // 信息 - 信息性通知
+    '6': 'INFO',        // 信息
+    '7': 'DEBUG',       // 调试
+    EMERG: 'URGENT',
+    ALERT: 'PRIORITY',
+    CRIT: 'IMPORTANT',
+    ERR: 'ATTENTION',
+    WARNING: 'NOTICE',
+    NOTICE: 'INFO',
     INFO: 'INFO',
-    INFORMATION: 'INFO', // Support legacy format
+    INFORMATION: 'INFO',
     DEBUG: 'DEBUG',
   }
   return map[levelStr] || levelStr
@@ -553,23 +554,27 @@ const getCategoryColor = (category?: string): string => {
 const getSeverityColor = (level: string | number): string => {
   if (level === undefined || level === null) return '#000000'
   const levelStr = String(level)
+  // UL 2560 合规配色 - 红/橙/黄/蓝/绿
   const map: Record<string, string> = {
-    '0': '#ff4d4f', // EMERG - red
-    '1': '#ff4d4f', // ALERT - red
-    '2': '#ff7875', // CRIT - volcano
-    '3': '#ffa940', // ERR - orange
-    '4': '#faad14', // WARNING - gold
-    '5': '#52c41a', // NOTICE - green
+    '0': '#ff4d4f', // URGENT - red
+    '1': '#ff4d4f', // PRIORITY - red
+    '2': '#fa8c16', // IMPORTANT - orange
+    '3': '#faad14', // ATTENTION - gold
+    '4': '#faad14', // NOTICE - gold
+    '5': '#52c41a', // INFO - green
     '6': '#1890ff', // INFO - blue
     '7': '#8c8c8c', // DEBUG - gray
     EMERG: '#ff4d4f',
     ALERT: '#ff4d4f',
-    CRIT: '#ff7875',
-    ERR: '#ffa940',
+    PRIORITY: '#ff4d4f',
+    CRIT: '#fa8c16',
+    IMPORTANT: '#fa8c16',
+    ERR: '#faad14',
+    ATTENTION: '#faad14',
     WARNING: '#faad14',
     NOTICE: '#52c41a',
     INFO: '#1890ff',
-    INFORMATION: '#1890ff', // Support legacy format
+    INFORMATION: '#1890ff',
     DEBUG: '#8c8c8c',
   }
   return map[levelStr] || '#000000'

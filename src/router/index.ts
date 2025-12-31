@@ -329,12 +329,17 @@ const router = createRouter({
 
 // Route guard: Check authentication and permissions
 router.beforeEach((to, _from, next) => {
+  console.log('[Router Guard] 导航到:', to.path, { requiresAuth: to.meta.requiresAuth })
+  
   const userStore = useUserStoreWithOut()
   
   // Check if authentication is required
   if (to.meta.requiresAuth) {
+    console.log('[Router Guard] 需要认证，检查token:', { hasToken: !!userStore.getToken })
+    
     // Check if user is logged in
     if (!userStore.getToken) {
+      console.warn('[Router Guard] 没有token，重定向到登录页')
       next({
         path: '/login',
         query: { redirect: to.fullPath },
@@ -344,13 +349,17 @@ router.beforeEach((to, _from, next) => {
     
     // Initialize permissions if not already initialized
     if (Object.keys(userStore.pagePermissions).length === 0) {
+      console.log('[Router Guard] 初始化权限')
       userStore.initPagePermissions()
     }
     
     // Check page access permissions for all routes that require auth
     const routePath = to.path || ''
-    if (!userStore.hasPagePermission(routePath)) {
-      // No permission to access, redirect to user home page
+    const hasPermission = userStore.hasPagePermission(routePath)
+    console.log('[Router Guard] 权限检查:', { path: routePath, hasPermission })
+    
+    if (!hasPermission) {
+      // No permission to access
       const userInfo = userStore.getUserInfo
       console.warn('[Router] Permission denied:', {
         path: routePath,
@@ -358,7 +367,16 @@ router.beforeEach((to, _from, next) => {
         role: userInfo?.role,
         pagePermissions: userStore.pagePermissions,
       })
+      
+      // Prevent infinite redirect: if trying to go to homePath but no permission, go to login
       const homePath = userStore.getUserHomePath
+      if (to.path === homePath) {
+        console.error('[Router] User has no permission to their home page, logout required')
+        next('/login')
+        return
+      }
+      
+      // Otherwise redirect to home page
       next({
         path: homePath,
       })

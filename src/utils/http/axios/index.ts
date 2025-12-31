@@ -11,6 +11,7 @@ import { isString } from '@/utils/is'
 import { setObjToUrlParams, deepMerge } from '@/utils'
 import { joinTimestamp, formatRequestDate } from './helper'
 import { AxiosRetry } from './axiosRetry'
+import { MOCK_ENABLED, createMockAdapter } from '@/mock/interceptor'
 
 // Temporary configuration, should be read from environment variables or config later
 const apiUrl = import.meta.env.VITE_API_URL || ''
@@ -291,50 +292,52 @@ const transform: AxiosTransform = {
 }
 
 function createAxios(opt?: Partial<CreateAxiosOptions>) {
-  return new VAxios(
-    // Deep merge
-    deepMerge(
-      {
-        // Authentication schemes, e.g: Bearer
-        authenticationScheme: '',
-        timeout: 10 * 1000,
-        headers: { 'Content-Type': ContentTypeEnum.JSON },
-        // Data processing method
-        transform: clone(transform),
-        // Configuration options, all options below can be overridden in individual API requests
-        requestOptions: {
-          // Default add prefix to url
-          joinPrefix: true,
-          // Whether to return native response headers
-          isReturnNativeResponse: false,
-          // Need to process returned data
-          isTransformResponse: true,
-          // Add parameters to url when POST request
-          joinParamsToUrl: false,
-          // Format submitted parameter time
-          formatDate: true,
-          // Message prompt type
-          errorMessageMode: 'message',
-          // API address
-          apiUrl: apiUrl,
-          // API concatenation address
-          urlPrefix: urlPrefix,
-          // Whether to add timestamp
-          joinTime: true,
-          // Ignore duplicate requests
-          ignoreCancelToken: true,
-          // Whether to carry token
-          withToken: true,
-          retryRequest: {
-            isOpenRetry: true,
-            count: 0,
-            waitTime: 100,
-          },
-        },
+  const baseConfig = {
+    // Authentication schemes, e.g: Bearer
+    authenticationScheme: '',
+    timeout: 10 * 1000,
+    headers: { 'Content-Type': ContentTypeEnum.JSON },
+    // Data processing method
+    transform: clone(transform),
+    // Configuration options, all options below can be overridden in individual API requests
+    requestOptions: {
+      // Default add prefix to url
+      joinPrefix: true,
+      // Whether to return native response headers
+      isReturnNativeResponse: false,
+      // Need to process returned data
+      isTransformResponse: true,
+      // Add parameters to url when POST request
+      joinParamsToUrl: false,
+      // Format submitted parameter time
+      formatDate: true,
+      // Message prompt type
+      errorMessageMode: 'message',
+      // API address
+      apiUrl: apiUrl,
+      // API concatenation address
+      urlPrefix: urlPrefix,
+      // Whether to add timestamp
+      joinTime: true,
+      // Ignore duplicate requests
+      ignoreCancelToken: true,
+      // Whether to carry token
+      withToken: true,
+      retryRequest: {
+        isOpenRetry: true,
+        count: 0,
+        waitTime: 100,
       },
-      opt || {},
-    ),
-  )
+    },
+  }
+  
+  // 如果启用Mock模式，添加Mock适配器
+  if (MOCK_ENABLED) {
+    console.log('🔧 为VAxios实例配置Mock适配器')
+    ;(baseConfig as any).adapter = createMockAdapter()
+  }
+  
+  return new VAxios(deepMerge(baseConfig, opt || {}))
 }
 export const defHttp = createAxios()
 

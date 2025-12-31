@@ -98,7 +98,14 @@ export const useUserStore = defineStore('user', {
 
   getters: {
     getToken(): string | null {
-      return this.accessToken || getToken()
+      const stateToken = this.accessToken
+      const storageToken = getToken()
+      console.log('[UserStore] getToken getter调用', { 
+        stateToken: stateToken?.substring(0, 20) + '...', 
+        storageToken: storageToken?.substring(0, 20) + '...',
+        result: (stateToken || storageToken)?.substring(0, 20) + '...'
+      })
+      return stateToken || storageToken
     },
     
     getRefreshToken(): string | null {
@@ -339,9 +346,14 @@ export const useUserStore = defineStore('user', {
     
     // Set token
     setToken(token: string | null) {
+      console.log('[UserStore] setToken调用', { token, tokenLength: token?.length })
       this.accessToken = token
       if (token) {
         setToken(token)
+        console.log('[UserStore] Token已保存到sessionStorage')
+        // 验证是否真的保存成功
+        const saved = sessionStorage.getItem('ACCESS_TOKEN')
+        console.log('[UserStore] 验证sessionStorage:', { saved: !!saved, savedLength: saved?.length })
       } else {
         sessionStorage.removeItem('ACCESS_TOKEN')
       }
@@ -543,12 +555,16 @@ export const useUserStore = defineStore('user', {
 
     // Actions after login (load routes, etc., no need to get user info since login already returns complete info)
     async afterLoginAction(goHome = true): Promise<UserInfo | null> {
+      console.log('[afterLoginAction] 开始执行', { goHome, token: this.getToken })
+      
       if (!this.getToken) {
+        console.error('[afterLoginAction] 没有token，返回null')
         return null
       }
       
       // Get user info from store (saved on login)
       const userInfo = this.getUserInfo
+      console.log('[afterLoginAction] 用户信息', { userInfo })
       
       // TODO: Load dynamic routes (if needed)
       // const permissionStore = usePermissionStore()
@@ -562,10 +578,17 @@ export const useUserStore = defineStore('user', {
       // Navigate to home page (if needed)
       // Use getUserHomePath getter to get home page path (prefer backend-returned homePath)
       if (goHome) {
+        const homePath = this.getUserHomePath
+        console.log('[afterLoginAction] 准备导航到:', homePath)
+        
         const router = (await import('@/router')).default
-        router.push(this.getUserHomePath)
+        console.log('[afterLoginAction] Router实例获取成功，执行push')
+        
+        await router.push(homePath)
+        console.log('[afterLoginAction] Router.push完成')
       }
       
+      console.log('[afterLoginAction] 执行完成')
       return userInfo
     },
 

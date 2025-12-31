@@ -1,0 +1,31 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 床的底座 -->
+  <rect x="8" y="42" width="48" height="8" rx="2" fill="#8B9DC3"/>
+  
+  <!-- 床垫 -->
+  <rect x="10" y="32" width="44" height="10" rx="2" fill="#A8B8D8"/>
+  
+  <!-- 床头 -->
+  <rect x="8" y="24" width="4" height="18" rx="1" fill="#7A8AA8"/>
+  
+  <!-- 床尾 -->
+  <rect x="52" y="24" width="4" height="18" rx="1" fill="#7A8AA8"/>
+  
+  <!-- 空床标记 - 虚线圆圈表示"离开" -->
+  <circle cx="32" cy="20" r="10" fill="none" stroke="#FF6B6B" stroke-width="2" stroke-dasharray="4 2"/>
+  
+  <!-- 向上的箭头表示"离床" -->
+  <path d="M32 12 L28 16 L30 16 L30 22 L34 22 L34 16 L36 16 Z" fill="#FF6B6B"/>
+  
+  <!-- 人形图标（离开状态） -->
+  <g transform="translate(26, 4)">
+    <!-- 头部 -->
+    <circle cx="6" cy="4" r="3" fill="#FF8C8C" opacity="0.6"/>
+    
+    <!-- 身体（淡化表示离开） -->
+    <path d="M6 8 L4 12 M6 8 L8 12" stroke="#FF8C8C" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+  </g>
+  
+  <!-- "Not in Bed" 文字 -->
+  <text x="32" y="58" font-family="Arial, sans-serif" font-size="8" fill="#666" text-anchor="middle" font-weight="bold">NOT IN BED</text>
+</svg>

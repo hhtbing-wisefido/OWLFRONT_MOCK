@@ -34,9 +34,9 @@ export async function mockGetVitalFocusCards(
     cards = getCardsByTenant(params.tenant_id)
   }
 
-  // 分页处理
+  // 分页处理（Mock模式默认返回所有卡片，不分页）
   const page = params?.page || 1
-  const pageSize = params?.pageSize || 10
+  const pageSize = params?.pageSize || cards.length // 默认返回所有卡片
 
   return generateCardsResponse(cards, page, pageSize)
 }
