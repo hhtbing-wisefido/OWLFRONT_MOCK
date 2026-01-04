@@ -373,9 +373,6 @@
                       </div>
                       <span class="vitals-unit">rpm</span>
                     </div>
-                    <div v-show="usingTemporarySettings(item.card_id)" class="apply-button-bar">
-                      <button class="apply-button" @click.stop="applyTemporarySettings(item.card_id)" title="Always show details">Save change</button>
-                    </div>
                   </div>
                   <div v-else class="vitals-icons-only" title="Click to show details" @click.stop="showDetailNumbersTemporarily(item.card_id)">
                     <div class="status-item">
@@ -384,10 +381,11 @@
                     <div class="status-item">
                       <img :src="getBreathImgUrl(item?.breath || 0)" class="vitals-icon-large" />
                     </div>
-                    <div v-show="usingTemporarySettings(item.card_id)" class="apply-button-bar">
-                      <button class="apply-button" @click.stop="applyTemporarySettings(item.card_id)" title="Always hide details">Save change</button>
-                    </div>
                   </div>
+                </div>
+                <!-- Save change 按钮独立行 -->
+                <div v-if="item.bed_status !== 1 && usingTemporarySettings(item.card_id)" class="apply-button-bar">
+                  <button class="apply-button" @click.stop="applyTemporarySettings(item.card_id)" :title="needShowDetailNumbers(item.card_id) ? 'Always show details' : 'Always hide details'">Save change</button>
                 </div>
               </div>
               <!-- Postures (posture data) - displayed on right side (consistent with v1.0) -->
@@ -1892,6 +1890,30 @@ onUnmounted(() => {
   margin-bottom: -2px;
 }
 
+/* 有报警条时，压缩心率呼吸详情区域 */
+.itemFrom.has-alarm-bar .vitals-detail-container {
+  transform: scale(0.85);
+  transform-origin: left center;
+  margin-top: -8px;
+  margin-bottom: -8px;
+}
+
+/* 有报警条时，压缩心率呼吸数值 */
+.itemFrom.has-alarm-bar .vitals-row-heart {
+  margin-bottom: -22px;
+}
+
+/* 有报警条时，压缩心率呼吸图标模式 */
+.itemFrom.has-alarm-bar .vitals-icons-only {
+  transform: scale(0.9);
+  transform-origin: left center;
+}
+
+/* 有报警条时，隐藏Save change按钮避免空间不足 */
+.itemFrom.has-alarm-bar .apply-button-bar {
+  display: none;
+}
+
 /* 放置位置指示器 - 显示卡片将被放置的位置 */
 .itemFrom.drop-target {
   border: 3px dashed #1890ff;
@@ -1974,7 +1996,7 @@ onUnmounted(() => {
 
 /* 心率行 - PC端紧凑布局 */
 .vitals-row-heart {
-  margin-bottom: -24px;
+  margin-bottom: -20px;
 }
 
 .status-number {
@@ -2062,15 +2084,15 @@ onUnmounted(() => {
 .red-floating-bar {
   background-color: #ffcccca0;
   color: #d32f2f;
-  border-radius: 8px;
+  border-radius: 5px;
   padding: 4px 12px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   position: absolute;
-  bottom: 8px;
-  left: 8px;
-  right: 8px;
+  bottom: 10px;
+  left: 6px;
+  right: 6px;
   z-index: 10;
 }
 
@@ -2101,15 +2123,15 @@ onUnmounted(() => {
 .yellow-floating-bar {
   background-color: #f1c591c9;
   color: #f3783f;
-  border-radius: 8px;
+  border-radius: 5px;
   padding: 4px 12px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   position: absolute;
-  bottom: 8px;
-  left: 8px;
-  right: 8px;
+  bottom: 10px;
+  left: 6px;
+  right: 6px;
   z-index: 10;
 }
 
@@ -2138,10 +2160,10 @@ onUnmounted(() => {
 }
 
 .apply-button-bar {
-  position: absolute;
-  bottom: 60px;
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
+  margin-left: 72px;
+  margin-top: 2px;
 }
 
 .apply-button-bar button {
