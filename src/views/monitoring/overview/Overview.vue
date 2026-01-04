@@ -343,57 +343,49 @@
                   <span style="font-size: 18px;">Not in Bed</span>
                 </div>
                 <!-- In Bed: Sleep Status and Vital Signs -->
-                <div v-else style="font-size: 18px">
-                  <div
-                    style="
-                      display: flex;
-                      flex-direction: row;
-                      align-items: center;
-                      justify-content: center;
-                      flex-wrap: wrap;
-                    "
-                  >
-                    <!-- Sleep Stage (display different states based on sleep_stage, consistent with v1.0) -->
+                <div v-else class="inbed-vitals-row">
+                  <!-- 左边：睡眠状态图标 -->
+                  <div class="sleep-icon-container">
                     <img v-if="item.sleep_stage === 1" src="@/assets/images/awake.gif" class="status-img" />
                     <img v-else-if="item.sleep_stage === 2" src="@/assets/images/light_sleep.gif" class="status-img" />
                     <img v-else-if="item.sleep_stage === 4" src="@/assets/images/deep_sleep.gif" class="status-img" />
                     <img v-else src="@/assets/images/Analysing_sleep_state.png" class="status-img" />
-                    <!-- HR and RR (simplified - show if available) -->
-                    <div v-if="needShowDetailNumbers(item.card_id)" class="vitals-detail-container" title="Click to hide details" @click.stop="hideDetailNumbersTemporarily(item.card_id)">
-                      <div class="status-item vitals-row-heart">
-                        <img :src="getHeartImgUrl(item?.heart || 0)" class="vitals-icon-small" />
-                        <div class="number-container">
-                          <span class="status-number">{{
-                            item?.heart && item.heart > 0 && item.heart < 255 ? item.heart : '--'
-                          }}</span>
-                          <span v-if="item?.heart_source && item.heart_source !== '-'" class="number-badge">{{ item.heart_source }}</span>
-                        </div>
-                        <span> bpm</span>
+                  </div>
+                  <!-- 中间：心率呼吸数值 -->
+                  <div v-if="needShowDetailNumbers(item.card_id)" class="vitals-detail-container" title="Click to hide details" @click.stop="hideDetailNumbersTemporarily(item.card_id)">
+                    <div class="status-item vitals-row-heart">
+                      <img :src="getHeartImgUrl(item?.heart || 0)" class="vitals-icon-small" />
+                      <div class="number-container">
+                        <span class="status-number">{{
+                          item?.heart && item.heart > 0 && item.heart < 255 ? item.heart : '--'
+                        }}</span>
+                        <span v-if="item?.heart_source && item.heart_source !== '-'" class="number-badge">{{ item.heart_source }}</span>
                       </div>
-                      <div class="status-item">
-                        <img :src="getBreathImgUrl(item?.breath || 0)" class="vitals-icon-small" />
-                        <div class="number-container">
-                          <span class="status-number">{{
-                            item?.breath && item.breath > 0 && item.breath < 255 ? item.breath : '--'
-                          }}</span>
-                          <span v-if="item?.breath_source && item.breath_source !== '-'" class="number-badge">{{ item.breath_source }}</span>
-                        </div>
-                        <span> rpm</span>
-                      </div>
-                      <div v-show="usingTemporarySettings(item.card_id)" class="apply-button-bar">
-                        <button class="apply-button" @click.stop="applyTemporarySettings(item.card_id)" title="Always show details">Save change</button>
-                      </div>
+                      <span class="vitals-unit">bpm</span>
                     </div>
-                    <div v-else style="font-size: 18px; display: flex; flex-direction: row; align-items: center;" title="Click to show details" @click.stop="showDetailNumbersTemporarily(item.card_id)">
-                      <div class="status-item">
-                        <img :src="getHeartImgUrl(item?.heart || 0)" class="vitals-icon-large" />
+                    <div class="status-item">
+                      <img :src="getBreathImgUrl(item?.breath || 0)" class="vitals-icon-small" />
+                      <div class="number-container">
+                        <span class="status-number">{{
+                          item?.breath && item.breath > 0 && item.breath < 255 ? item.breath : '--'
+                        }}</span>
+                        <span v-if="item?.breath_source && item.breath_source !== '-'" class="number-badge">{{ item.breath_source }}</span>
                       </div>
-                      <div class="status-item">
-                        <img :src="getBreathImgUrl(item?.breath || 0)" class="vitals-icon-large" />
-                      </div>
-                      <div v-show="usingTemporarySettings(item.card_id)" class="apply-button-bar">
-                        <button class="apply-button" @click.stop="applyTemporarySettings(item.card_id)" title="Always hide details">Save change</button>
-                      </div>
+                      <span class="vitals-unit">rpm</span>
+                    </div>
+                    <div v-show="usingTemporarySettings(item.card_id)" class="apply-button-bar">
+                      <button class="apply-button" @click.stop="applyTemporarySettings(item.card_id)" title="Always show details">Save change</button>
+                    </div>
+                  </div>
+                  <div v-else class="vitals-icons-only" title="Click to show details" @click.stop="showDetailNumbersTemporarily(item.card_id)">
+                    <div class="status-item">
+                      <img :src="getHeartImgUrl(item?.heart || 0)" class="vitals-icon-large" />
+                    </div>
+                    <div class="status-item">
+                      <img :src="getBreathImgUrl(item?.breath || 0)" class="vitals-icon-large" />
+                    </div>
+                    <div v-show="usingTemporarySettings(item.card_id)" class="apply-button-bar">
+                      <button class="apply-button" @click.stop="applyTemporarySettings(item.card_id)" title="Always hide details">Save change</button>
                     </div>
                   </div>
                 </div>
@@ -1949,11 +1941,35 @@ onUnmounted(() => {
   flex-direction: row;
 }
 
-/* 心率呼吸详情容器 */
+/* 在床状态：睡眠图标+心率呼吸数值 水平排列 */
+.inbed-vitals-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: nowrap;
+  font-size: 18px;
+}
+
+/* 左边：睡眠状态图标容器 */
+.sleep-icon-container {
+  flex-shrink: 0;
+}
+
+/* 中间：心率呼吸详情容器 */
 .vitals-detail-container {
   font-size: 18px;
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
+}
+
+/* 中间：只显示图标时 */
+.vitals-icons-only {
+  font-size: 18px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 /* 心率行 - PC端紧凑布局 */
@@ -1962,22 +1978,49 @@ onUnmounted(() => {
 }
 
 .status-number {
-  margin-right: 8px;
+  margin-right: 0;
   font-weight: bold;
   font-size: 36px;
   color: #313330;
+  flex-shrink: 0;
 }
 
 .number-container {
   position: relative;
+  display: inline-flex;
+  align-items: baseline;
+  margin-right: 2px;
+  flex-shrink: 0;
 }
 
 .number-badge {
   font-size: 14px;
   color: #a2afb58a;
-  position: absolute;
-  right: 3px;
-  bottom: 8px;
+  margin-left: 1px;
+  align-self: flex-end;
+  margin-bottom: 4px;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+}
+
+/* 单位文字 */
+.vitals-unit {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* 心率呼吸小图标（展开详情时显示） */
+.vitals-icon-small {
+  width: 20px;
+  height: 20px;
+  margin-right: 4px;
+  flex-shrink: 0;
 }
 
 .posture-img {
@@ -1990,13 +2033,6 @@ onUnmounted(() => {
 .vitals-icon-large {
   width: 50px;
   height: 50px;
-  margin-right: 10px;
-}
-
-/* 心率呼吸小图标（展开详情时显示） */
-.vitals-icon-small {
-  width: 20px;
-  height: 20px;
   margin-right: 10px;
 }
 
