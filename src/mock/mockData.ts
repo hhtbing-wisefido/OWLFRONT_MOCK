@@ -47,6 +47,12 @@ function generateMockCards(): VitalFocusCard[] {
   const cards: VitalFocusCard[] = []
   const buildings = ['Building A', 'Building B', 'Building C', 'Building D', 'Building E']
   
+  // 前10张卡片的固定场景配置（确保Demo有完整的示例）
+  // 索引: 0=心率过高报警, 1=跌倒报警, 2=3人访客, 3-9=随机
+  const FIXED_HEART_ALARM_INDEX = 0    // 心率过高报警卡片
+  const FIXED_FALL_ALARM_INDEX = 1     // 跌倒报警卡片  
+  const FIXED_VISITOR_3_INDEX = 2      // 3人访客卡片
+  
   // 生成90个ActiveBed卡片
   for (let i = 0; i < 90; i++) {
     const cardId = `card_${String(i + 1).padStart(3, '0')}`
@@ -99,20 +105,52 @@ function generateMockCards(): VitalFocusCard[] {
     let hasAlarm = false
     let alarmLevel = 3
     
-    // 随机分配状态场景 (模拟真实情况,各种状态混合分布)
-    const rand = Math.random()
-    
-    if (rand < 0.45) {
-      // 45%: 正常睡眠 (Deep Sleep / Light Sleep)
-      bedStatus = 0  // 在床
-      sleepStage = Math.random() > 0.6 ? 2 : 4  // 60%浅睡眠, 40%深睡眠
-      heart = randomInt(55, 70)
-      breath = randomInt(12, 16)
+    // ========== 前10张卡片的固定场景 ==========
+    if (i === FIXED_HEART_ALARM_INDEX) {
+      // 卡片1: 心率过高报警（有报警条）
+      hasAlarm = true
+      bedStatus = 0
+      sleepStage = 1
+      alarmLevel = 1  // ALERT level，显示报警条
+      heart = randomInt(120, 139)  // 心率过高
+      breath = randomInt(16, 20)
       personCount = 1
-      // 【测试】睡眠时显示躺姿图标（posture=6）
       postures = [6]
-    } else if (rand < 0.58) {
-      // 13%: 清醒状态 (Awake in bed)
+    } else if (i === FIXED_FALL_ALARM_INDEX) {
+      // 卡片2: 跌倒报警（有报警条）
+      hasAlarm = true
+      bedStatus = 1  // 离床
+      sleepStage = 1
+      alarmLevel = 0  // EMERG level，紧急跌倒
+      heart = randomInt(85, 100)
+      breath = randomInt(18, 24)
+      personCount = 1
+      postures = [5]  // 跌倒姿态
+    } else if (i === FIXED_VISITOR_3_INDEX) {
+      // 卡片3: 3人访客场景
+      hasAlarm = false
+      bedStatus = 0
+      sleepStage = 1  // 清醒
+      heart = randomInt(70, 85)
+      breath = randomInt(14, 18)
+      personCount = 3  // 3个人
+      postures = [3, 4, 1]  // 坐、站、走
+    } else {
+      // ========== 其他卡片随机分配 ==========
+      // 随机分配状态场景 (模拟真实情况,各种状态混合分布)
+      const rand = Math.random()
+    
+      if (rand < 0.45) {
+        // 45%: 正常睡眠 (Deep Sleep / Light Sleep)
+        bedStatus = 0  // 在床
+        sleepStage = Math.random() > 0.6 ? 2 : 4  // 60%浅睡眠, 40%深睡眠
+        heart = randomInt(55, 70)
+        breath = randomInt(12, 16)
+        personCount = 1
+        // 【测试】睡眠时显示躺姿图标（posture=6）
+        postures = [6]
+      } else if (rand < 0.58) {
+        // 13%: 清醒状态 (Awake in bed)
       bedStatus = 0  // 在床
       sleepStage = 1
       heart = randomInt(70, 85)
@@ -205,15 +243,17 @@ function generateMockCards(): VitalFocusCard[] {
       // 🔴 修正: 清醒且在床时,允许少量姿态(躺/坐),不允许跌倒
       postures = Math.random() > 0.5 ? [randomChoice([2, 3])] : []  // 只有躺(2)或坐(3)
     }
+    } // 结束 else 块（非固定场景卡片）
     
-    // 【测试】强制睡眠状态显示躺姿图标
-    if (sleepStage === 2 || sleepStage === 4) {
+    // 【测试】强制睡眠状态显示躺姿图标（固定场景卡片除外）
+    if (i > FIXED_VISITOR_3_INDEX && (sleepStage === 2 || sleepStage === 4)) {
       postures = [6]  // 睡眠时显示lying图标
     }
     
     // 🔴 关键验证: ActiveBed卡片在床时不允许跌倒姿态(5)
     // 跌倒只能发生在Location卡片(公共区域)或离床场景
-    if (bedStatus === 0 && postures.includes(5)) {
+    // 注意：固定跌倒卡片(FIXED_FALL_ALARM_INDEX)是离床的，允许跌倒
+    if (bedStatus === 0 && postures.includes(5) && i !== FIXED_FALL_ALARM_INDEX) {
       postures = postures.filter(p => p !== 5)  // 移除跌倒姿态
     }
     
@@ -360,24 +400,20 @@ function generateMockCards(): VitalFocusCard[] {
       postures = [6] // 躺
       hasAlarm = true
       alarmLevel = 2
-    } else if (rand < 0.40) {
-      // 18%: 无人 - OutofRoom 场景 ⭐ 新增
-      personCount = 0
-      postures = []
-    } else if (rand < 0.60) {
-      // 20%: 1人
+    } else if (rand < 0.45) {
+      // 23%: 1人（增加概率，替代0人场景）
       personCount = 1
       postures = [randomChoice([1, 3, 4, 6])] // 走/坐/站/躺
-    } else if (rand < 0.80) {
-      // 20%: 2人
+    } else if (rand < 0.70) {
+      // 25%: 2人
       personCount = 2
       postures = Array.from({ length: personCount }, () => randomChoice([1, 3, 4]))
-    } else if (rand < 0.92) {
-      // 12%: 3人
+    } else if (rand < 0.88) {
+      // 18%: 3人
       personCount = 3
       postures = Array.from({ length: personCount }, () => randomChoice([1, 3, 4]))
     } else {
-      // 8%: 4人
+      // 12%: 4人
       personCount = 4
       postures = Array.from({ length: personCount }, () => randomChoice([1, 3, 4]))
     }
