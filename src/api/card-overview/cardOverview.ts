@@ -23,29 +23,6 @@ export function getCardOverviewApi(
   params?: GetCardOverviewParams,
   mode: ErrorMessageMode = 'modal',
 ) {
-  // In development: Use mock data if available
-  // DEV 榛樿璧扮湡瀹炲悗绔紱鍙湁鏄惧紡璁剧疆 VITE_USE_MOCK='true' 鎵嶅惎鐢?mock
-  console.log('%c[Mock] Get Card Overview API Request', 'color: #1890ff; font-weight: bold', {
-        params,
-      })
-      return cardOverview.mock.mockGetCardOverview(params).then((result) => {
-        console.log(
-          '%c[Mock] Get Card Overview API - Success',
-          'color: #52c41a; font-weight: bold',
-          { result },
-        )
-        return result
-      }).catch((error: any) => {
-        console.log(
-          '%c[Mock] Get Card Overview API - Failed',
-          'color: #ff4d4f; font-weight: bold',
-          { error: error.message },
-        )
-        throw error
-      })
-    })
-  }
-
   return defHttp.get<GetCardOverviewResult>(
     {
       url: Api.GetList,
@@ -56,4 +33,3 @@ export function getCardOverviewApi(
     },
   )
 }
-
