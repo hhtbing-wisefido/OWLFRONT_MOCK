@@ -254,12 +254,30 @@ export async function mockGetAlarmEvents(params?: any) {
   
   const events = mockCards
     .filter(card => card.alarms && card.alarms.length > 0)
-    .flatMap(card => card.alarms!.map(alarm => ({
-      ...alarm,
-      resident_name: card.resident_name,
-      room_number: card.room_number,
-      card_id: card.card_id
-    })))
+    .flatMap(card => {
+      // 获取居民信息
+      const resident = card.residents && card.residents[0]
+      const residentName = resident ? `${resident.first_name} ${resident.last_name}` : (card.card_name || '-')
+      
+      // 获取设备信息
+      const device = card.devices && card.devices[0]
+      const deviceName = device ? device.device_name : '-'
+      
+      // 构建地址显示
+      const addressDisplay = card.card_address || '-'
+      
+      return card.alarms!.map(alarm => ({
+        ...alarm,
+        // Alarm Records页面需要的字段
+        resident_name: residentName,
+        address_display: addressDisplay,
+        device_name: deviceName,
+        // 其他关联字段
+        card_id: card.card_id,
+        resident_id: resident?.resident_id,
+        device_id: device?.device_id
+      }))
+    })
   
   return {
     code: 2000,
@@ -365,28 +383,54 @@ export async function mockGetAlarmCloudConfig() {
 export async function mockGetCardOverview(params?: any) {
   await delay()
   
+  // 模拟Caregiver Groups和Caregivers数据
+  const caregiverGroupPool = [
+    'Day Shift Team', 'Night Shift Team', 'Weekend Team', 'Emergency Response',
+    'Medical Team A', 'Medical Team B', 'Support Staff'
+  ]
+  const caregiverPool = [
+    { caregiver_id: 'cg-001', caregiver_name: 'Sarah Johnson' },
+    { caregiver_id: 'cg-002', caregiver_name: 'Michael Chen' },
+    { caregiver_id: 'cg-003', caregiver_name: 'Emily Davis' },
+    { caregiver_id: 'cg-004', caregiver_name: 'Robert Wilson' },
+    { caregiver_id: 'cg-005', caregiver_name: 'Lisa Martinez' },
+    { caregiver_id: 'cg-006', caregiver_name: 'David Brown' },
+    { caregiver_id: 'cg-007', caregiver_name: 'Jennifer Lee' },
+    { caregiver_id: 'cg-008', caregiver_name: 'James Taylor' }
+  ]
+  
   // 🔴 修正：Card Overview页面期望的是卡片列表，不是统计数据
   // 从mockCards转换为CardOverviewItem格式
   const cardOverviewItems = mockCards
     .filter(card => card.card_type === 'ActiveBed') // 只包含ActiveBed卡片
-    .map(card => ({
-      card_id: card.card_id,
-      card_name: card.card_name,
-      card_address: card.card_address,
-      unit_type: 'Facility' as const,
-      is_multi_person_room: false,
-      is_public_space: false,
-      family_view: true,
-      devices: card.devices || [],
-      residents: card.residents || [],
-      caregiver_groups: [],
-      caregivers: [],
-      device_count: card.device_count || 0,
-      resident_count: card.resident_count || 1,
-      caregiver_group_count: 0,
-      caregiver_count: 0,
-      tenant_id: card.tenant_id
-    }))
+    .map((card, index) => {
+      // 为每个卡片分配1-3个caregiver groups
+      const groupCount = (index % 3) + 1
+      const groups = caregiverGroupPool.slice(index % caregiverGroupPool.length, (index % caregiverGroupPool.length) + groupCount)
+      
+      // 为每个卡片分配1-4个caregivers
+      const cgCount = (index % 4) + 1
+      const caregivers = caregiverPool.slice(index % caregiverPool.length, (index % caregiverPool.length) + cgCount)
+      
+      return {
+        card_id: card.card_id,
+        card_name: card.card_name,
+        card_address: card.card_address,
+        unit_type: 'Facility' as const,
+        is_multi_person_room: false,
+        is_public_space: false,
+        family_view: true,
+        devices: card.devices || [],
+        residents: card.residents || [],
+        caregiver_groups: groups,
+        caregivers: caregivers,
+        device_count: card.device_count || 0,
+        resident_count: card.resident_count || 1,
+        caregiver_group_count: groups.length,
+        caregiver_count: caregivers.length,
+        tenant_id: card.tenant_id
+      }
+    })
   
   // 应用搜索过滤
   let filteredItems = cardOverviewItems
@@ -447,19 +491,19 @@ export async function mockGetBuildings(params?: any) {
 export async function mockGetBranches(params?: any) {
   await delay()
   
+  // 返回符合Branch接口的数据格式
   const branches = [
-    { id: 'branch_001', name: 'Main Floor', building: 'Building A', floor: 1, units: 30 },
-    { id: 'branch_002', name: 'Second Floor', building: 'Building A', floor: 2, units: 25 },
-    { id: 'branch_003', name: 'Memory Care Unit', building: 'Building B', floor: 1, units: 20 }
+    { branch_id: 'branch-001', branch_name: 'Main', tenant_id: 'demo_tenant_001', description: 'Main branch' },
+    { branch_id: 'branch-002', branch_name: 'West Wing', tenant_id: 'demo_tenant_001', description: 'West Wing branch' },
+    { branch_id: 'branch-003', branch_name: 'East Wing', tenant_id: 'demo_tenant_001', description: 'East Wing branch' },
+    { branch_id: 'branch-004', branch_name: 'North Tower', tenant_id: 'demo_tenant_001', description: 'North Tower branch' }
   ]
   
   return {
     code: 2000,
     result: {
       items: branches,
-      total: branches.length,
-      page: 1,
-      pageSize: 20
+      total: branches.length
     },
     message: 'Branches retrieved successfully'
   }

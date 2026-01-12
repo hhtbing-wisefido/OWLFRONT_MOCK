@@ -240,40 +240,42 @@ function initializeStore(): MockDataStore {
     }
   })
   
-  // 建筑列表（8栋建筑）
+  // 建筑列表（8栋建筑 - 符合Building接口）
+  const branchNames = ['Main', 'West Wing', 'East Wing', 'North Tower']
   const buildings = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map((letter, i) => ({
-    id: `building-${letter}`,
-    name: `Building ${letter}`,
-    code: letter,
-    address: `${letter} Street, City`,
-    floors: 5,
-    rooms: 25, // 5层 x 5房间
-    status: 'active',
-    createdAt: new Date(Date.now() - i * 86400000 * 365).toISOString(),
-    updatedAt: new Date().toISOString()
+    building_id: `building-${letter}`,
+    building_name: `Building ${letter}`,
+    tenant_id: 'demo_tenant_001',
+    branch_id: `branch-${String((i % 4) + 1).padStart(3, '0')}`,
+    branch_name: branchNames[i % branchNames.length]
   }))
   
   // 单元列表（完整版 - 符合Unit接口）
+  const floors = 5 // 每栋楼5层
+  const unitsPerFloor = 5 // 每层5个单元
+  
   const units = buildings.flatMap(building => {
-    const unitCount = building.floors * 5 // 每层5个单元
+    const unitCount = floors * unitsPerFloor
+    const buildingLetter = building.building_name?.split(' ')[1] || 'A' // 从 "Building A" 提取 "A"
+    
     return Array.from({ length: unitCount }, (_, index) => {
-      const floor = Math.floor(index / 5) + 1
-      const unitNumberOnFloor = (index % 5) + 1
+      const floor = Math.floor(index / unitsPerFloor) + 1
+      const unitNumberOnFloor = (index % unitsPerFloor) + 1
       const unitNumber = `${floor}${String(unitNumberOnFloor).padStart(2, '0')}` // 例如: 101, 102, 201, 202
-      const unitId = `unit-${building.code}-${unitNumber}`
+      const unitId = `unit-${buildingLetter}-${unitNumber}`
       
       // 找到该单元的住户
       const resident = residents.find(r => 
-        r.building === building.name && 
+        r.building === building.building_name && 
         r.unit_number === unitNumber
       )
       
       return {
         unit_id: unitId,
         tenant_id: 'demo_tenant_001',
-        branch_name: building.address,
-        unit_name: `${building.name} - ${unitNumber}`,
-        building: building.name,
+        branch_name: building.branch_name,
+        unit_name: `${building.building_name} - ${unitNumber}`,
+        building: building.building_name,
         floor: `${floor}F`,
         unit_number: unitNumber,
         layout_config: {
@@ -291,8 +293,8 @@ function initializeStore(): MockDataStore {
         status: 'active' as const,
         occupancy: resident ? 'occupied' : 'vacant',
         residentName: resident ? resident.nickname : undefined,
-        createdAt: building.createdAt,
-        updatedAt: building.updatedAt
+        createdAt: new Date(Date.now() - index * 86400000).toISOString(),
+        updatedAt: new Date().toISOString()
       }
     })
   })
@@ -390,20 +392,176 @@ function initializeStore(): MockDataStore {
     updated_at: new Date().toISOString()
   }))
   
-  // 标签列表（扩展更多标签 - 使用snake_case以匹配前端）
+  // 标签列表（使用tag_objects格式以匹配前端TagList.vue期望的数据结构）
+  // tag_objects格式: { object_type: { object_id: object_name } }
   const tags = [
-    { tag_id: 'tag-001', tag_name: 'High Risk', tag_type: 'resident_tag', color: '#f5222d', objects: ['Resident 001', 'Resident 005', 'Resident 012'], description: 'High risk patients requiring close monitoring' },
-    { tag_id: 'tag-002', tag_name: 'Fall Prevention', tag_type: 'resident_tag', color: '#fa8c16', objects: ['Resident 002', 'Resident 008', 'Resident 015', 'Resident 022'], description: 'Patients at risk of falling' },
-    { tag_id: 'tag-003', tag_name: 'Night Care', tag_type: 'resident_tag', color: '#1890ff', objects: ['Resident 003', 'Resident 011', 'Resident 019'], description: 'Patients requiring special night care' },
-    { tag_id: 'tag-004', tag_name: 'Dementia', tag_type: 'condition_tag', color: '#722ed1', objects: ['Resident 004', 'Resident 013', 'Resident 021'], description: 'Patients with dementia diagnosis' },
-    { tag_id: 'tag-005', tag_name: 'Diabetes', tag_type: 'condition_tag', color: '#52c41a', objects: ['Resident 006', 'Resident 014', 'Resident 020', 'Resident 025'], description: 'Diabetic patients' },
-    { tag_id: 'tag-006', tag_name: 'VIP', tag_type: 'resident_tag', color: '#faad14', objects: ['Resident 007', 'Resident 018'], description: 'VIP residents' },
-    { tag_id: 'tag-007', tag_name: 'Main', tag_type: 'branch_tag', color: '#eb2f96', objects: ['Building A', 'Building B'], description: 'Main building branch' },
-    { tag_id: 'tag-008', tag_name: 'West Wing', tag_type: 'branch_tag', color: '#13c2c2', objects: ['Building C'], description: 'West Wing branch' },
-    { tag_id: 'tag-009', tag_name: 'Floor 1', tag_type: 'area_tag', color: '#2f54eb', objects: ['Room 101-105'], description: 'First floor area' },
-    { tag_id: 'tag-010', tag_name: 'Floor 2', tag_type: 'area_tag', color: '#a0d911', objects: ['Room 201-205'], description: 'Second floor area' },
-    { tag_id: 'tag-011', tag_name: 'Cardiac', tag_type: 'condition_tag', color: '#ff4d4f', objects: ['Resident 009', 'Resident 016'], description: 'Patients with cardiac conditions' },
-    { tag_id: 'tag-012', tag_name: 'Mobility Issues', tag_type: 'resident_tag', color: '#9254de', objects: ['Resident 010', 'Resident 017', 'Resident 023'], description: 'Patients with mobility limitations' }
+    { 
+      tag_id: 'tag-001', 
+      tag_name: 'High Risk', 
+      tag_type: 'user_tag', 
+      color: '#f5222d', 
+      tag_objects: { 
+        resident: { 
+          'res-001': 'Resident 001', 
+          'res-005': 'Resident 005', 
+          'res-012': 'Resident 012' 
+        } 
+      }, 
+      description: 'High risk patients requiring close monitoring' 
+    },
+    { 
+      tag_id: 'tag-002', 
+      tag_name: 'Fall Prevention', 
+      tag_type: 'user_tag', 
+      color: '#fa8c16', 
+      tag_objects: { 
+        resident: { 
+          'res-002': 'Resident 002', 
+          'res-008': 'Resident 008', 
+          'res-015': 'Resident 015', 
+          'res-022': 'Resident 022' 
+        } 
+      }, 
+      description: 'Patients at risk of falling' 
+    },
+    { 
+      tag_id: 'tag-003', 
+      tag_name: 'Night Care', 
+      tag_type: 'user_tag', 
+      color: '#1890ff', 
+      tag_objects: { 
+        user: { 
+          'user-006': 'Night Nurse 1', 
+          'user-007': 'Night Nurse 2', 
+          'user-008': 'Night Caregiver' 
+        } 
+      }, 
+      description: 'Night shift staff' 
+    },
+    { 
+      tag_id: 'tag-004', 
+      tag_name: 'Group.A', 
+      tag_type: 'family_tag', 
+      color: '#722ed1', 
+      tag_objects: { 
+        resident: { 
+          'res-004': 'Resident A1', 
+          'res-013': 'Resident A2' 
+        } 
+      }, 
+      description: 'Family group A' 
+    },
+    { 
+      tag_id: 'tag-005', 
+      tag_name: 'Management', 
+      tag_type: 'user_tag', 
+      color: '#52c41a', 
+      tag_objects: { 
+        user: { 
+          'user-001': 'Admin User', 
+          'user-002': 'Manager User' 
+        } 
+      }, 
+      description: 'Management staff' 
+    },
+    { 
+      tag_id: 'tag-006', 
+      tag_name: 'VIP', 
+      tag_type: 'user_tag', 
+      color: '#faad14', 
+      tag_objects: { 
+        resident: { 
+          'res-007': 'VIP Resident 1', 
+          'res-018': 'VIP Resident 2' 
+        } 
+      }, 
+      description: 'VIP residents' 
+    },
+    { 
+      tag_id: 'tag-007', 
+      tag_name: 'Main', 
+      tag_type: 'branch_tag', 
+      color: '#eb2f96', 
+      tag_objects: { 
+        location: { 
+          'building-A': 'Building A', 
+          'building-B': 'Building B' 
+        } 
+      }, 
+      description: 'Main building branch' 
+    },
+    { 
+      tag_id: 'tag-008', 
+      tag_name: 'West Wing', 
+      tag_type: 'branch_tag', 
+      color: '#13c2c2', 
+      tag_objects: { 
+        location: { 
+          'building-C': 'Building C' 
+        } 
+      }, 
+      description: 'West Wing branch' 
+    },
+    { 
+      tag_id: 'tag-009', 
+      tag_name: 'Floor 1', 
+      tag_type: 'area_tag', 
+      color: '#2f54eb', 
+      tag_objects: { 
+        location: { 
+          'unit-101': 'Room 101', 
+          'unit-102': 'Room 102', 
+          'unit-103': 'Room 103', 
+          'unit-104': 'Room 104', 
+          'unit-105': 'Room 105' 
+        } 
+      }, 
+      description: 'First floor area' 
+    },
+    { 
+      tag_id: 'tag-010', 
+      tag_name: 'Floor 2', 
+      tag_type: 'area_tag', 
+      color: '#a0d911', 
+      tag_objects: { 
+        location: { 
+          'unit-201': 'Room 201', 
+          'unit-202': 'Room 202', 
+          'unit-203': 'Room 203', 
+          'unit-204': 'Room 204', 
+          'unit-205': 'Room 205' 
+        } 
+      }, 
+      description: 'Second floor area' 
+    },
+    { 
+      tag_id: 'tag-011', 
+      tag_name: 'Technical', 
+      tag_type: 'user_tag', 
+      color: '#ff4d4f', 
+      tag_objects: { 
+        user: { 
+          'user-004': 'Tech User 1', 
+          'user-005': 'Tech User 2' 
+        },
+        location: {
+          'loc-001': 'Tech Lab'
+        }
+      }, 
+      description: 'Technical staff' 
+    },
+    { 
+      tag_id: 'tag-012', 
+      tag_name: 'System', 
+      tag_type: 'user_tag', 
+      color: '#9254de', 
+      tag_objects: { 
+        user: { 
+          'user-003': 'IT User' 
+        } 
+      }, 
+      description: 'System administrators' 
+    }
   ].map(tag => ({
     ...tag,
     tenant_id: 'demo_tenant_001',
