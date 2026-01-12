@@ -41,6 +41,33 @@ export default defineConfig({
     // 排除 vue_radar 的依赖预构建，让它们按需加载
     exclude: [],
   },
+  build: {
+    // 增加分块大小警告限制
+    chunkSizeWarningLimit: 2000,
+    // 关闭源码映射以加快构建
+    sourcemap: false,
+    // 优化构建输出
+    rollupOptions: {
+      output: {
+        // 手动分块，避免单个文件过大
+        manualChunks: {
+          'vue-vendor': ['vue', 'vue-router', 'pinia'],
+          'ant-design': ['ant-design-vue'],
+          'charts': ['echarts', 'vue-echarts'],
+        },
+      },
+      // 忽略某些警告
+      onwarn(warning, warn) {
+        // 忽略 "Use of eval" 警告
+        if (warning.code === 'EVAL') return
+        // 忽略循环依赖警告
+        if (warning.code === 'CIRCULAR_DEPENDENCY') return
+        // 忽略动态导入警告
+        if (warning.message.includes('dynamic import')) return
+        warn(warning)
+      },
+    },
+  },
   server: {
     host: '0.0.0.0', // 监听所有网络接口，允许局域网访问
     port: 3100,
