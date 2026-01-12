@@ -407,7 +407,8 @@ const pagination = ref({
 
 // Format functions
 const formatDateTime = (timestamp: number): string => {
-  return dayjs(timestamp * 1000).format('YYYY-MM-DD HH:mm:ss')
+  // timestamp is already in milliseconds, don't multiply by 1000
+  return dayjs(timestamp).format('YYYY-MM-DD HH:mm:ss')
 }
 
 const formatAddress = (record: AlarmEvent): string => {
@@ -536,8 +537,8 @@ const formatDeviceInfo = (record: AlarmEvent): string => {
 }
 
 const formatDateTimeLocal = (timestamp: number): string => {
-  // Format with local timezone
-  return dayjs(timestamp * 1000).format('YYYY-MM-DD HH:mm:ss')
+  // timestamp is already in milliseconds, don't multiply by 1000
+  return dayjs(timestamp).format('YYYY-MM-DD HH:mm:ss')
 }
 
 const getCategoryColor = (category?: string): string => {
