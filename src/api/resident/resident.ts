@@ -185,14 +185,11 @@ export async function resetContactPasswordApi(
   // Import hashPassword function
   const { hashPassword } = await import('@/utils/crypto')
   
-  // Hash password: SHA256(password) �?hex string
+  // Hash password: SHA256(password) → hex string
   const passwordHash = await hashPassword(password)
   
   console.log('%c[Mock] Reset Contact Password API Request', 'color: #1890ff; font-weight: bold', { contactId, passwordHash })
-      return Promise.resolve({ success: true })
-    })
-  }
-
+  
   return defHttp.post(
     {
       url: Api.ResetContactPasswordByID.replace(':contact_id', contactId),
@@ -217,10 +214,7 @@ export function resetContactPasswordBySlotApi(
   mode: ErrorMessageMode = 'modal',
 ) {
   console.log('%c[Mock] Reset Contact Password API Request', 'color: #1890ff; font-weight: bold', { residentId, slot, password })
-      return Promise.resolve({ success: true })
-    })
-  }
-
+  
   return defHttp.post(
     {
       url: Api.ResetContactPassword.replace(':id', residentId).replace(':slot', slot),
