@@ -37,7 +37,7 @@ export enum Api {
 }
 
 // Mock mode: In development, use mock data instead of real API calls
-// DEV 姒涙顓荤挧鎵埂鐎圭偛鎮楃粩顖ょ幢閸欘亝婀侀弰鎯х础鐠佸墽鐤?VITE_USE_MOCK='true' 閹靛秴鎯庨悽?mock
+// Check VITE_USE_MOCK='true' in .env file to enable mock
 const useMock = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true'
 
 // Display mock status in console
@@ -235,8 +235,8 @@ export function updateResidentContactApi(
   params: UpdateResidentContactParams,
   mode: ErrorMessageMode = 'modal',
 ) {
-  // 婵″倹鐏夐幓鎰返娴?contact_id閿涘奔濞囬悽?contact_id閿涙稑鎯侀崚娆庡▏�?slot
-  // API 鐠侯垰绶為崣顖濆厴闂団偓鐟曚浇鐨熼弫杈剧礉鏉╂瑩鍣烽崗鍫滅箽閹镐礁甯弽?  return defHttp.put<{ success: boolean }>(
+  // Update contact by resident ID and contact params
+  return defHttp.put<{ success: boolean }>(
     {
       url: Api.UpdateContact.replace(':id', residentId),
       data: params,
@@ -246,8 +246,9 @@ export function updateResidentContactApi(
 }
 
 /**
- * @deprecated 瀹歌尪绺肩粔璇插�?/api/account/accountSettings.ts
- * 濮濄倕鍤遍弫棰佺�?Sidebar.vue 娴ｈ法鏁ら敍瀛瞚debar 鏉╀胶些閸掔増鏌?API 閸氬骸鐨㈢悮顐㈠灩闂? * 
+ * @deprecated Use /api/account/accountSettings.ts instead
+ * This function was used by Sidebar.vue but has been moved to accountSettings API
+ * 
  * @description: Get resident/contact account settings
  * @param residentId - Resident ID or contact ID
  * @param mode - Error message mode
@@ -273,8 +274,9 @@ export function getResidentAccountSettingsApi(residentId: string, mode: ErrorMes
 */
 
 /**
- * @deprecated 瀹歌尪绺肩粔璇插�?/api/account/accountSettings.ts
- * 濮濄倕鍤遍弫棰佺�?Sidebar.vue 娴ｈ法鏁ら敍瀛瞚debar 鏉╀胶些閸掔増鏌?API 閸氬骸鐨㈢悮顐㈠灩闂? * 
+ * @deprecated Use /api/account/accountSettings.ts instead
+ * This function was used by Sidebar.vue but has been moved to accountSettings API
+ * 
  * @description: Update resident/contact account settings (unified API)
  * @param residentId - Resident ID or contact ID
  * @param params - Update account settings parameters
