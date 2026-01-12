@@ -13,9 +13,9 @@ RUN npm ci --legacy-peer-deps --timeout=600000
 # 复制项目文件
 COPY . .
 
-# 设置 Node.js 内存限制，构建项目
+# 设置 Node.js 内存限制，构建项目（跳过类型检查以加快构建）
 ENV NODE_OPTIONS="--max-old-space-size=4096"
-RUN npm run build
+RUN npm run build:prod
 
 # 多阶段构建 - Stage 2: 生产阶段
 FROM nginx:alpine
