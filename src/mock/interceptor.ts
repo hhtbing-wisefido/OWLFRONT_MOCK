@@ -12,6 +12,7 @@ import {
   mockGetAlarmEvents,
   mockGetAlarmCloudConfig,
   mockGetCardOverview,
+  mockGetBuildings,
   mockGetBranches,
   mockGetAllUnits,
   mockGetDevices,
@@ -128,6 +129,11 @@ function matchMockRoute(method: string, url: string): any {
     { pattern: /\/data\/api\/v1\/card-overview/, method: 'GET', handler: mockGetCardOverview },
     { pattern: /\/api\/v1\/card-overview/, method: 'GET', handler: mockGetCardOverview },
     { pattern: /\/api\/card-overview/, method: 'GET', handler: mockGetCardOverview },
+    
+    // 建筑/大楼
+    { pattern: /\/admin\/api\/v1\/buildings/, method: 'GET', handler: mockGetBuildings },
+    { pattern: /\/api\/v1\/buildings/, method: 'GET', handler: mockGetBuildings },
+    { pattern: /\/api\/buildings/, method: 'GET', handler: mockGetBuildings },
     
     // 分支/单元
     { pattern: /\/admin\/api\/v1\/branches/, method: 'GET', handler: mockGetBranches },

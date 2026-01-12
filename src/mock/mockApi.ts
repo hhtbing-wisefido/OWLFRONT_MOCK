@@ -327,6 +327,60 @@ export async function mockGetCardOverview() {
 }
 
 // Mock获取分支/单元列表
+export async function mockGetBuildings(params?: any) {
+  await delay()
+  
+  // Mock建筑数据
+  const buildings = [
+    {
+      building_id: 'building_001',
+      building_name: 'Building A',
+      tenant_id: 'tenant_001',
+      branch_id: 'branch_001',
+      branch_name: 'Main Campus'
+    },
+    {
+      building_id: 'building_002',
+      building_name: 'Building B',
+      tenant_id: 'tenant_001',
+      branch_id: 'branch_001',
+      branch_name: 'Main Campus'
+    },
+    {
+      building_id: 'building_003',
+      building_name: 'Building C',
+      tenant_id: 'tenant_001',
+      branch_id: 'branch_002',
+      branch_name: 'North Wing'
+    },
+    {
+      building_id: 'building_004',
+      building_name: 'Building D',
+      tenant_id: 'tenant_001',
+      branch_id: 'branch_002',
+      branch_name: 'North Wing'
+    },
+    {
+      building_id: 'building_005',
+      building_name: 'Building E',
+      tenant_id: 'tenant_001',
+      branch_id: 'branch_003',
+      branch_name: 'Memory Care'
+    }
+  ]
+  
+  return {
+    code: 2000,
+    result: {
+      items: buildings,
+      total: buildings.length,
+      page: 1,
+      pageSize: 20
+    },
+    message: 'Buildings retrieved successfully'
+  }
+}
+
 export async function mockGetBranches(params?: any) {
   await delay()
   
