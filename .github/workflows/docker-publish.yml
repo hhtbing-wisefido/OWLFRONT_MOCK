@@ -27,6 +27,20 @@ jobs:
       - name: 📥 Checkout代码
         uses: actions/checkout@v4
 
+      - name: 🔧 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 📦 安装依赖
+        run: npm ci --legacy-peer-deps
+
+      - name: 🏗️ 构建应用
+        run: npm run build:prod
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+
       - name: 🔐 登录到 GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -54,14 +68,13 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: ./Dockerfile.nginx
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64
-          build-args: |
-            NODE_OPTIONS=--max-old-space-size=4096
 
       - name: ✅ 构建完成通知
         run: |
