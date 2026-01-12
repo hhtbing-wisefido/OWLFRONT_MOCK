@@ -314,7 +314,12 @@ function generateMockCards(): VitalFocusCard[] {
       : hasSleepace ? 's' : hasRadar ? 'r' : '-'
     const breathSource = heartSource
     
-    // 鎶ヨ浜嬩欢 - 浣跨敤鍚堣鏈锛圥attern Change 鏇夸唬 Abnormal锛?
+    // 报警事件 - 使用合规术语（Pattern Change 替代 Abnormal）
+    // 时间戳: 使用过去1-24小时内的随机时间
+    const hoursAgo = randomInt(1, 24)
+    const minutesAgo = randomInt(0, 59)
+    const alarmTriggeredAt = Date.now() - (hoursAgo * 3600000 + minutesAgo * 60000)
+    
     const alarms = hasAlarm ? [{
       event_id: `alarm_${cardId}`,
       event_type: heart > 100 ? 'Radar_HeartRatePatternChange_High' : 
@@ -323,7 +328,7 @@ function generateMockCards(): VitalFocusCard[] {
       category: 'clinical' as const,
       alarm_level: alarmLevel,
       alarm_status: seededRandom.next() > 0.4 ? 'active' as const : 'acknowledged' as const,  // 60% active, 40% acknowledged
-      triggered_at: Date.now(), // Demo妯″紡锛氭瘡娆″埛鏂板綊闆?
+      triggered_at: alarmTriggeredAt,
       triggered_by: hasRadar ? `Radar ${roomNumber}` : 'Cloud',
       trigger_data: {
         heart_rate: heart > 0 ? heart : undefined,

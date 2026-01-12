@@ -289,6 +289,21 @@ export async function mockGetAlarmCloudConfig() {
         emergency: { low: 0, high: 7, duration: 60 },
         warning: { low: 8, high: 9, duration: 300 },
         normal: { low: 10, high: 23 }
+      },
+      // 添加其他报警类型的默认配置
+      commonAlarms: {
+        offlineAlarm: {
+          enabled: true,
+          duration: 300  // 5分钟
+        },
+        lowBatteryAlarm: {
+          enabled: true,
+          threshold: 20  // 20%
+        },
+        deviceFailureAlarm: {
+          enabled: true,
+          autoReport: true
+        }
       }
     },
     message: 'Alarm cloud configuration retrieved successfully'
