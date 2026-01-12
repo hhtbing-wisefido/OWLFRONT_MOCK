@@ -277,33 +277,84 @@ export async function mockGetAlarmEvents(params?: any) {
 export async function mockGetAlarmCloudConfig() {
   await delay()
   
+  // 返回符合AlarmCloud.vue期望的数据格式
   return {
     code: 2000,
     result: {
-      heartRate: {
-        emergency: { low: 0, high: 44, duration: 60 },
-        warning: { low: 45, high: 54, duration: 300 },
-        normal: { low: 55, high: 95 }
-      },
-      respiratoryRate: {
-        emergency: { low: 0, high: 7, duration: 60 },
-        warning: { low: 8, high: 9, duration: 300 },
-        normal: { low: 10, high: 23 }
-      },
-      // 添加其他报警类型的默认配置
-      commonAlarms: {
-        offlineAlarm: {
-          enabled: true,
-          duration: 300  // 5分钟
+      tenant_id: 'demo_tenant_001',
+      // Common alarms - 使用字符串类型的级别
+      OfflineAlarm: 'WARNING',
+      LowBattery: 'WARNING', 
+      DeviceFailure: 'EMERGENCY',
+      // Device-specific alarms
+      device_alarms: {
+        SleepPad: {
+          SleepPad_HeartRate: 'WARNING',
+          SleepPad_RespiratoryRate: 'WARNING',
+          SleepPad_BodyMovement: 'DISABLE',
+          SleepPad_OutOfBed: 'WARNING',
+          SleepPad_GoToBed: 'DISABLE'
         },
-        lowBatteryAlarm: {
-          enabled: true,
-          threshold: 20  // 20%
-        },
-        deviceFailureAlarm: {
-          enabled: true,
-          autoReport: true
+        Radar: {
+          Radar_HeartRate: 'WARNING',
+          Radar_RespiratoryRate: 'WARNING',
+          Radar_Fall: 'EMERGENCY',
+          Radar_OutOfBed: 'WARNING',
+          Radar_InRoom: 'DISABLE',
+          Radar_BodyMovement: 'DISABLE'
         }
+      },
+      // Threshold conditions
+      conditions: {
+        heart_rate: {
+          EMERGENCY: {
+            ranges: [
+              { min: 0, max: 44 },
+              { min: 116, max: 999 }
+            ],
+            duration_sec: 60
+          },
+          WARNING: {
+            ranges: [
+              { min: 45, max: 54 },
+              { min: 96, max: 115 }
+            ],
+            duration_sec: 300
+          },
+          Normal: {
+            ranges: [
+              { min: 55, max: 95 }
+            ],
+            duration_sec: 0
+          }
+        },
+        respiratory_rate: {
+          EMERGENCY: {
+            ranges: [
+              { min: 0, max: 7 },
+              { min: 27, max: 999 }
+            ],
+            duration_sec: 60
+          },
+          WARNING: {
+            ranges: [
+              { min: 8, max: 9 },
+              { min: 24, max: 26 }
+            ],
+            duration_sec: 300
+          },
+          Normal: {
+            ranges: [
+              { min: 10, max: 23 }
+            ],
+            duration_sec: 0
+          }
+        }
+      },
+      notification_rules: {
+        email: true,
+        sms: false,
+        push: true
       }
     },
     message: 'Alarm cloud configuration retrieved successfully'
@@ -418,27 +469,35 @@ export async function mockGetBranches(params?: any) {
 export async function mockGetAllUnits(params?: any) {
   await delay()
   
-  const units = []
-  for (let i = 1; i <= 75; i++) {
-    const floor = Math.floor((i - 1) / 30) + 1
-    const room = ((i - 1) % 30) + 1
-    units.push({
-      id: `unit_${String(i).padStart(3, '0')}`,
-      roomNumber: `${floor}${String(room).padStart(2, '0')}`,
-      building: floor <= 2 ? 'Building A' : 'Building B',
-      floor: floor,
-      status: Math.random() > 0.8 ? 'vacant' : 'occupied',
-      residentId: Math.random() > 0.8 ? null : `resident_${String(Math.floor(Math.random() * 30) + 1).padStart(3, '0')}`
-    })
+  // 从数据存储读取单元列表
+  const { getDataStore } = await import('./mockStore')
+  const store = getDataStore()
+  let units = [...store.units]
+  
+  // 应用搜索过滤
+  if (params?.search) {
+    const searchLower = params.search.toLowerCase()
+    units = units.filter(u => 
+      u.unit_name?.toLowerCase().includes(searchLower) ||
+      u.unit_number?.includes(searchLower) ||
+      u.building?.toLowerCase().includes(searchLower)
+    )
   }
+  
+  // 应用分页
+  const page = params?.page || 1
+  const pageSize = params?.pageSize || params?.size || 100
+  const start = (page - 1) * pageSize
+  const end = start + pageSize
+  const paginatedUnits = units.slice(start, end)
   
   return {
     code: 2000,
     result: {
-      items: units,
+      items: paginatedUnits,
       total: units.length,
-      page: 1,
-      pageSize: 100
+      page: page,
+      pageSize: pageSize
     },
     message: 'Units retrieved successfully'
   }

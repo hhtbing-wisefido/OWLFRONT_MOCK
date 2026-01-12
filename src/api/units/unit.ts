@@ -45,7 +45,7 @@ export enum Api {
 }
 
 // Mock mode: In development, use mock data instead of real API calls
-// DEV 榛樿璧扮湡瀹炲悗绔紱鍙湁鏄惧紡璁剧疆 VITE_USE_MOCK='true' 鎵嶅惎鐢?mock
+// Check VITE_USE_MOCK='true' in .env file to enable mock
 const useMock = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true'
 
 /**

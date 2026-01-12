@@ -162,38 +162,41 @@ function initializeStore(): MockDataStore {
     if (!card.devices || card.devices.length === 0) return []
     
     return card.devices.map((device, deviceIndex) => {
-      const deviceType = device.device_type === 1 ? 'Sleepace' : device.device_type === 2 ? 'Radar' : 'Unknown'
+      const deviceType = device.device_type === 1 ? 'SleepPad' : device.device_type === 2 ? 'Radar' : 'Unknown'
       const serialNumber = `SN${String(cardIndex * 10 + deviceIndex).padStart(6, '0')}`
       const imei = device.device_type === 1 ? `86${String(Math.floor(Math.random() * 10000000000000)).padStart(13, '0')}` : null
+      const roomNumber = card.card_address.match(/Room (\d+)/)?.[1] || String(cardIndex + 101)
       
       return {
+        // 使用snake_case以匹配前端期望
         id: device.device_id,
-        name: `${deviceType}-${card.card_address.match(/Room (\d+)/)?.[1] || cardIndex + 101}`,
-        deviceType: deviceType,
-        deviceModel: deviceModels[cardIndex % deviceModels.length],
-        serialNumber: serialNumber,
+        device_id: device.device_id,
+        device_name: `${deviceType}-Room${roomNumber}`,
+        device_type: deviceType,
+        device_model: deviceModels[cardIndex % deviceModels.length],
+        serial_number: serialNumber,
         uid: device.device_id,
         imei: imei,
-        commMode: commModes[cardIndex % commModes.length],
-        firmwareVersion: firmwareVersions[cardIndex % firmwareVersions.length],
-        mcuModel: mcuModels[cardIndex % mcuModels.length],
-        internalCode: device.device_id,
+        comm_mode: commModes[cardIndex % commModes.length],
+        firmware_version: firmwareVersions[cardIndex % firmwareVersions.length],
+        mcu_model: mcuModels[cardIndex % mcuModels.length],
+        internal_code: device.device_id,
         type: device.device_type,
         status: card.s_connection === 1 || card.r_connection === 1 ? 'online' : 'offline',
+        monitoring_enabled: true,
+        business_access: 'Mapleview Care',
         building: card.card_address.split(' / ')[0] || 'Building A',
         floor: 1 + Math.floor((cardIndex % 25) / 5),
-        room: card.card_address.match(/Room (\d+)/)?.[1] || `${cardIndex + 101}`,
-        monitor: card.residents && card.residents[0] ? `${card.residents[0].first_name} ${card.residents[0].last_name}` : 'Unassigned',
-        businessAccess: 'Mapleview Care',
-        residentId: card.card_type === 'ActiveBed' && card.residents && card.residents[0] 
+        room: roomNumber,
+        resident_id: card.card_type === 'ActiveBed' && card.residents && card.residents[0] 
           ? card.residents[0].resident_id 
           : null,
-        residentName: card.card_type === 'ActiveBed' && card.residents && card.residents[0]
+        resident_name: card.card_type === 'ActiveBed' && card.residents && card.residents[0]
           ? `${card.residents[0].first_name} ${card.residents[0].last_name}`
           : null,
-        lastOnline: new Date(Date.now() - Math.floor(Math.random() * 3600000)).toISOString(),
-        createdAt: new Date(Date.now() - cardIndex * 86400000).toISOString(),
-        updatedAt: new Date().toISOString()
+        last_online: new Date(Date.now() - Math.floor(Math.random() * 3600000)).toISOString(),
+        created_at: new Date(Date.now() - cardIndex * 86400000).toISOString(),
+        updated_at: new Date().toISOString()
       }
     })
   })
@@ -201,6 +204,10 @@ function initializeStore(): MockDataStore {
   // 用户列表（20个管理员用户 - 更真实的数据）
   const userFirstNames = ['John', 'Sarah', 'Michael', 'Emily', 'David', 'Jessica', 'Robert', 'Lisa', 'James', 'Jennifer', 'William', 'Mary', 'Richard', 'Patricia', 'Thomas', 'Linda', 'Charles', 'Barbara', 'Daniel', 'Susan']
   const userLastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Wilson', 'Anderson', 'Taylor', 'Thomas', 'Moore', 'Jackson', 'Martin', 'Lee', 'Thompson', 'White']
+  const branchTags = ['Main', 'West Wing', 'East Wing', 'North Tower']
+  const alarmLevels = [['EMERGENCY', 'WARNING'], ['EMERGENCY'], ['WARNING'], ['EMERGENCY', 'WARNING', 'INFORMATIONAL']]
+  const alarmChannels = [['email', 'sms'], ['email'], ['sms', 'push'], ['email', 'sms', 'push']]
+  const alarmScopes = ['all', 'assigned_only', 'branch_only', 'all']
   
   const users = Array.from({ length: 20 }, (_, i) => {
     const firstName = userFirstNames[i % userFirstNames.length] || `User${i + 1}`
@@ -208,25 +215,28 @@ function initializeStore(): MockDataStore {
     const role = i < 2 ? 'Admin' : i < 5 ? 'Manager' : i < 10 ? 'Staff' : i < 15 ? 'Nurse' : 'Caregiver'
     
     return {
+      // 使用snake_case以匹配前端期望
       id: `user-${String(i + 1).padStart(3, '0')}`,
-      userId: `user-${String(i + 1).padStart(3, '0')}`,
-      username: `${firstName.toLowerCase()}.${lastName.toLowerCase()}`,
+      user_id: `user-${String(i + 1).padStart(3, '0')}`,
+      user_account: `${firstName.toLowerCase()}.${lastName.toLowerCase()}`,
+      nickname: `${firstName} ${lastName}`,
       email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@mapleview.com`,
-      firstName: firstName,
-      lastName: lastName,
-      fullName: `${firstName} ${lastName}`,
       phone: `+1-555-${String(Math.floor(Math.random() * 900) + 100)}-${String(Math.floor(Math.random() * 9000) + 1000)}`,
       role: role,
-      roleId: role.toLowerCase(),
-      roleName: role,
+      role_id: role.toLowerCase(),
+      branch_tag: branchTags[i % branchTags.length],
+      status: i === 19 ? 'inactive' : 'active',
+      alarm_levels: alarmLevels[i % alarmLevels.length],
+      alarm_channels: alarmChannels[i % alarmChannels.length],
+      alarm_scope: alarmScopes[i % alarmScopes.length],
+      tags: i % 3 === 0 ? ['tag-001', 'tag-002'] : i % 3 === 1 ? ['tag-003'] : [],
       department: role === 'Admin' ? 'Administration' : 
                   role === 'Manager' ? 'Management' : 
                   role === 'Staff' ? 'Operations' : 
                   role === 'Nurse' ? 'Medical' : 'Care Services',
-      status: i === 19 ? 'inactive' : 'active',
-      lastLogin: new Date(Date.now() - Math.floor(Math.random() * 86400000 * 7)).toISOString(),
-      createdAt: new Date(Date.now() - i * 86400000 * 30).toISOString(),
-      updatedAt: new Date().toISOString()
+      last_login: new Date(Date.now() - Math.floor(Math.random() * 86400000 * 7)).toISOString(),
+      created_at: new Date(Date.now() - i * 86400000 * 30).toISOString(),
+      updated_at: new Date().toISOString()
     }
   })
   
@@ -287,105 +297,120 @@ function initializeStore(): MockDataStore {
     })
   })
   
-  // 角色列表（更完整的角色定义）
+  // 角色列表（更完整的角色定义 - 使用snake_case以匹配前端）
   const roles = [
     { 
       id: 'role-001', 
-      roleId: 'role-001',
-      name: 'Super Administrator', 
-      code: 'super_admin',
+      role_id: 'role-001',
+      role_code: 'SuperAdmin', 
+      display_name: 'Super Administrator',
       description: 'Full system access with all permissions', 
       permissions: ['*'],
-      userCount: 2,
-      level: 1
+      user_count: 2,
+      level: 1,
+      is_active: true,
+      is_system: true
     },
     { 
       id: 'role-002', 
-      roleId: 'role-002',
-      name: 'Administrator', 
-      code: 'admin',
+      role_id: 'role-002',
+      role_code: 'Admin',
+      display_name: 'Administrator', 
       description: 'Admin access to manage system', 
       permissions: ['users.read', 'users.create', 'users.update', 'users.delete', 'devices.read', 'devices.update', 'residents.read', 'residents.create', 'residents.update'],
-      userCount: 3,
-      level: 2
+      user_count: 3,
+      level: 2,
+      is_active: true,
+      is_system: true
     },
     { 
       id: 'role-003', 
-      roleId: 'role-003',
-      name: 'Manager', 
-      code: 'manager',
+      role_id: 'role-003',
+      role_code: 'Manager',
+      display_name: 'Manager', 
       description: 'Manager access to oversee operations', 
       permissions: ['users.read', 'devices.read', 'residents.read', 'residents.update', 'reports.read'],
-      userCount: 5,
-      level: 3
+      user_count: 5,
+      level: 3,
+      is_active: true,
+      is_system: false
     },
     { 
       id: 'role-004', 
-      roleId: 'role-004',
-      name: 'Nurse', 
-      code: 'nurse',
+      role_id: 'role-004',
+      role_code: 'Nurse',
+      display_name: 'Nurse', 
       description: 'Medical staff access to patient care', 
       permissions: ['residents.read', 'residents.update', 'vitals.read', 'vitals.update', 'alarms.read', 'alarms.acknowledge'],
-      userCount: 8,
-      level: 4
+      user_count: 8,
+      level: 4,
+      is_active: true,
+      is_system: false
     },
     { 
       id: 'role-005', 
-      roleId: 'role-005',
-      name: 'Caregiver', 
-      code: 'caregiver',
+      role_id: 'role-005',
+      role_code: 'Caregiver',
+      display_name: 'Caregiver', 
       description: 'Care staff access to daily activities', 
       permissions: ['residents.read', 'vitals.read', 'alarms.read'],
-      userCount: 12,
-      level: 5
+      user_count: 12,
+      level: 5,
+      is_active: true,
+      is_system: false
     },
     { 
       id: 'role-006', 
-      roleId: 'role-006',
-      name: 'Staff', 
-      code: 'staff',
+      role_id: 'role-006',
+      role_code: 'Staff',
+      display_name: 'Staff', 
       description: 'General staff access', 
       permissions: ['residents.read', 'devices.read', 'alarms.read'],
-      userCount: 7,
-      level: 6
+      user_count: 7,
+      level: 6,
+      is_active: true,
+      is_system: false
     },
     { 
       id: 'role-007', 
-      roleId: 'role-007',
-      name: 'Viewer', 
-      code: 'viewer',
+      role_id: 'role-007',
+      role_code: 'Viewer',
+      display_name: 'Viewer', 
       description: 'Read-only access to view information', 
       permissions: ['residents.read', 'vitals.read', 'reports.read'],
-      userCount: 4,
-      level: 7
+      user_count: 4,
+      level: 7,
+      is_active: false,
+      is_system: false
     }
   ].map(role => ({
     ...role,
-    status: 'active',
-    isSystem: role.level <= 2,
-    createdAt: new Date(Date.now() - Math.random() * 86400000 * 365).toISOString(),
-    updatedAt: new Date().toISOString()
+    tenant_id: 'demo_tenant_001',
+    created_at: new Date(Date.now() - Math.random() * 86400000 * 365).toISOString(),
+    updated_at: new Date().toISOString()
   }))
   
-  // 标签列表（扩展更多标签）
+  // 标签列表（扩展更多标签 - 使用snake_case以匹配前端）
   const tags = [
-    { tag_id: 'tag-001', tag_name: 'High Risk', tag_type: 'risk', color: '#f5222d', count: 15, description: 'High risk patients requiring close monitoring' },
-    { tag_id: 'tag-002', tag_name: 'Fall Prevention', tag_type: 'care', color: '#fa8c16', count: 32, description: 'Patients at risk of falling' },
-    { tag_id: 'tag-003', tag_name: 'Night Care', tag_type: 'care', color: '#1890ff', count: 28, description: 'Patients requiring special night care' },
-    { tag_id: 'tag-004', tag_name: 'Dementia', tag_type: 'condition', color: '#722ed1', count: 18, description: 'Patients with dementia diagnosis' },
-    { tag_id: 'tag-005', tag_name: 'Diabetes', tag_type: 'condition', color: '#52c41a', count: 24, description: 'Diabetic patients' },
-    { tag_id: 'tag-006', tag_name: 'VIP', tag_type: 'level', color: '#faad14', count: 8, description: 'VIP residents' },
-    { tag_id: 'tag-007', tag_name: 'Cardiac', tag_type: 'condition', color: '#eb2f96', count: 14, description: 'Patients with heart conditions' },
-    { tag_id: 'tag-008', tag_name: 'Mobility Issues', tag_type: 'care', color: '#13c2c2', count: 22, description: 'Patients with mobility limitations' },
-    { tag_id: 'tag-009', tag_name: 'Respiratory', tag_type: 'condition', color: '#2f54eb', count: 11, description: 'Patients with respiratory issues' },
-    { tag_id: 'tag-010', tag_name: 'New Admission', tag_type: 'status', color: '#a0d911', count: 5, description: 'Recently admitted residents' }
+    { tag_id: 'tag-001', tag_name: 'High Risk', tag_type: 'resident_tag', color: '#f5222d', objects: ['Resident 001', 'Resident 005', 'Resident 012'], description: 'High risk patients requiring close monitoring' },
+    { tag_id: 'tag-002', tag_name: 'Fall Prevention', tag_type: 'resident_tag', color: '#fa8c16', objects: ['Resident 002', 'Resident 008', 'Resident 015', 'Resident 022'], description: 'Patients at risk of falling' },
+    { tag_id: 'tag-003', tag_name: 'Night Care', tag_type: 'resident_tag', color: '#1890ff', objects: ['Resident 003', 'Resident 011', 'Resident 019'], description: 'Patients requiring special night care' },
+    { tag_id: 'tag-004', tag_name: 'Dementia', tag_type: 'condition_tag', color: '#722ed1', objects: ['Resident 004', 'Resident 013', 'Resident 021'], description: 'Patients with dementia diagnosis' },
+    { tag_id: 'tag-005', tag_name: 'Diabetes', tag_type: 'condition_tag', color: '#52c41a', objects: ['Resident 006', 'Resident 014', 'Resident 020', 'Resident 025'], description: 'Diabetic patients' },
+    { tag_id: 'tag-006', tag_name: 'VIP', tag_type: 'resident_tag', color: '#faad14', objects: ['Resident 007', 'Resident 018'], description: 'VIP residents' },
+    { tag_id: 'tag-007', tag_name: 'Main', tag_type: 'branch_tag', color: '#eb2f96', objects: ['Building A', 'Building B'], description: 'Main building branch' },
+    { tag_id: 'tag-008', tag_name: 'West Wing', tag_type: 'branch_tag', color: '#13c2c2', objects: ['Building C'], description: 'West Wing branch' },
+    { tag_id: 'tag-009', tag_name: 'Floor 1', tag_type: 'area_tag', color: '#2f54eb', objects: ['Room 101-105'], description: 'First floor area' },
+    { tag_id: 'tag-010', tag_name: 'Floor 2', tag_type: 'area_tag', color: '#a0d911', objects: ['Room 201-205'], description: 'Second floor area' },
+    { tag_id: 'tag-011', tag_name: 'Cardiac', tag_type: 'condition_tag', color: '#ff4d4f', objects: ['Resident 009', 'Resident 016'], description: 'Patients with cardiac conditions' },
+    { tag_id: 'tag-012', tag_name: 'Mobility Issues', tag_type: 'resident_tag', color: '#9254de', objects: ['Resident 010', 'Resident 017', 'Resident 023'], description: 'Patients with mobility limitations' }
   ].map(tag => ({
     ...tag,
     tenant_id: 'demo_tenant_001',
     status: 'active',
-    createdBy: 'admin',
-    createdAt: new Date(Date.now() - Math.random() * 86400000 * 365).toISOString(),
-    updatedAt: new Date().toISOString()
+    created_by: 'admin',
+    created_at: new Date(Date.now() - Math.random() * 86400000 * 365).toISOString(),
+    updated_at: new Date().toISOString()
   }))
   
   // 报警事件（从卡片数据生成）
