@@ -2,9 +2,9 @@
 
 ## 📦 快速开始
 
-> 💡 **说明**: 本项目是纯前端 Mock Demo，推荐使用简单的 Docker 命令即可。Docker Compose 配置保留供参考。
+> 💡 **说明**: 本项目是纯前端 Mock Demo，**推荐使用 `docker` 命令**即可。Docker Compose 配置保留供参考，但不是必需的。
 
-### 方式一：从 GitHub Container Registry 拉取（推荐）
+### 方式一：从 GitHub Container Registry 拉取（✅ 推荐）
 
 ```bash
 # 拉取最新镜像
@@ -19,9 +19,14 @@ docker run -d \
 
 # 查看日志
 docker logs -f owl-monitor-mock
+
+# 查看运行状态
+docker ps | grep owl-monitor-mock
 ```
 
 访问地址: http://localhost:3100
+
+**在线演示**: http://www.wisefido.com:3100
 
 ### 方式二：本地构建 Docker 镜像
 
@@ -37,18 +42,20 @@ docker run -d \
   owl-monitor-mock:latest
 ```
 
-### 方式三：使用 Docker Compose（可选）
+### 方式三：使用 Docker Compose（可选，不推荐）
+
+> ⚠️ **注意**: 对于单一前端应用，直接使用 `docker run` 命令更简单。Docker Compose 适合多服务编排。
 
 如果您更习惯使用 Docker Compose：
 
 ```bash
-# 构建并启动
+# 启动
 docker-compose up -d
 
 # 查看日志
 docker-compose logs -f
 
-# 停止容器
+# 停止
 docker-compose down
 ```
 
@@ -56,22 +63,22 @@ docker-compose down
 
 虽然本项目是纯前端 Mock Demo，但保留 Docker Compose 配置的原因：
 
-1. **统一接口**: 对于习惯 Docker Compose 的开发者更友好
-2. **配置管理**: 所有参数集中在 `docker-compose.yml` 中，便于维护
-3. **示例参考**: 如果将来需要扩展，可以作为参考
+1. **兼容性**: 对于习惯 Docker Compose 的开发者
+2. **配置管理**: 参数集中在 `docker-compose.yml` 中
+3. **扩展性**: 如果将来需要添加其他服务
 
-**但对于本项目，直接使用 Docker 命令更简单直接！** ✅
+**但对于本项目，直接使用 `docker` 命令更简单！** ✅
 
 ---
 
 ## 📋 部署方式选择指南
 
-| 场景 | 推荐方式 | 理由 |
-|-----|---------|------|
-| **服务器部署** | ✅ 从 GHCR 拉取 | 自动构建，无需本地编译 |
-| **本地开发测试** | 本地构建 | 快速验证修改 |
-| **习惯 Compose** | Docker Compose | 配置集中，命令统一 |
-| **快速体验** | ✅ 从 GHCR 拉取 | 一行命令启动 |
+| 场景 | 推荐方式 | 命令 | 理由 |
+|-----|---------|------|------|
+| **生产环境** | ✅ 从 GHCR 拉取 | `docker pull + docker run` | 自动构建，无需本地编译 |
+| **快速测试** | ✅ 从 GHCR 拉取 | `docker pull + docker run` | 一键启动 |
+| **本地开发** | 本地构建 | `docker build + docker run` | 快速验证修改 |
+| **习惯 Compose** | Docker Compose | `docker-compose up -d` | 配置集中（但非必需） |
 
 ---
 
@@ -92,14 +99,16 @@ docker-compose down
 访问 GitHub Packages 页面查看所有可用镜像：
 https://github.com/hhtbing-wisefido/OWLFRONT_MOCK/pkgs/container/owlfront_mock
 
-### 更新到最新版本
+### 🔄 更新到最新版本（重要）
+
+当 GitHub Actions 构建完成后，使用以下命令更新服务器上的 Docker 容器：
 
 ```bash
 # 停止并删除旧容器
 docker stop owl-monitor-mock
 docker rm owl-monitor-mock
 
-# 拉取最新镜像
+# 拉取最新镜像（会自动覆盖旧镜像）
 docker pull ghcr.io/hhtbing-wisefido/owlfront_mock:latest
 
 # 启动新容器
@@ -108,6 +117,53 @@ docker run -d \
   -p 3100:80 \
   --restart unless-stopped \
   ghcr.io/hhtbing-wisefido/owlfront_mock:latest
+
+# 验证运行状态
+docker ps | grep owl-monitor-mock
+docker logs -f owl-monitor-mock
+```
+
+#### 一键更新脚本（推荐）
+
+创建更新脚本 `update-owl-docker.sh`：
+
+```bash
+#!/bin/bash
+# OWL Monitor Mock - Docker 一键更新脚本
+
+echo "🔄 停止旧容器..."
+docker stop owl-monitor-mock 2>/dev/null
+docker rm owl-monitor-mock 2>/dev/null
+
+echo "📦 拉取最新镜像..."
+docker pull ghcr.io/hhtbing-wisefido/owlfront_mock:latest
+
+echo "🚀 启动新容器..."
+docker run -d \
+  --name owl-monitor-mock \
+  -p 3100:80 \
+  --restart unless-stopped \
+  ghcr.io/hhtbing-wisefido/owlfront_mock:latest
+
+echo ""
+echo "✅ 更新完成！"
+echo "📊 容器状态："
+docker ps | grep owl-monitor-mock
+
+echo ""
+echo "🌐 访问地址："
+echo "   本地: http://localhost:3100"
+echo "   服务器: http://$(hostname -I | awk '{print $1}'):3100"
+```
+
+使用方法：
+
+```bash
+# 添加执行权限
+chmod +x update-owl-docker.sh
+
+# 执行更新
+./update-owl-docker.sh
 ```
 
 ---

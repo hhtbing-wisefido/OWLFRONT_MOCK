@@ -6,6 +6,17 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-7.x-purple.svg)](https://vitejs.dev/)
 [![License](https://img.shields.io/badge/License-Demo-orange.svg)]()
+[![Docker](https://img.shields.io/badge/Docker-Available-blue.svg)](https://github.com/hhtbing-wisefido/OWLFRONT_MOCK/pkgs/container/owlfront_mock)
+
+## 🌐 在线演示
+
+**直接访问体验（无需安装）**：
+
+🔗 **http://www.wisefido.com:3100**
+
+> 💡 使用演示账号登录：`admin` / `admin123`
+
+---
 
 ## 📋 项目简介
 
@@ -46,25 +57,47 @@ npm run dev
 
 使用 Docker 快速部署，无需安装 Node.js 环境：
 
+#### 首次安装
+
 ```bash
-# 推荐：从 GitHub Container Registry 拉取
+# 拉取最新镜像
 docker pull ghcr.io/hhtbing-wisefido/owlfront_mock:latest
+
+# 运行容器
 docker run -d \
   --name owl-monitor-mock \
   -p 3100:80 \
   --restart unless-stopped \
   ghcr.io/hhtbing-wisefido/owlfront_mock:latest
+```
 
-# 或本地构建
-docker build -t owl-monitor-mock:latest .
+#### 更新到最新版本
+
+```bash
+# 停止并删除旧容器
+docker stop owl-monitor-mock
+docker rm owl-monitor-mock
+
+# 拉取最新镜像
+docker pull ghcr.io/hhtbing-wisefido/owlfront_mock:latest
+
+# 启动新容器
 docker run -d \
   --name owl-monitor-mock \
   -p 3100:80 \
   --restart unless-stopped \
-  owl-monitor-mock:latest
+  ghcr.io/hhtbing-wisefido/owlfront_mock:latest
+```
 
-# 可选：使用 Docker Compose
-docker-compose up -d
+#### 一键更新脚本（推荐）
+
+```bash
+#!/bin/bash
+# 保存为 update-docker.sh，执行 chmod +x update-docker.sh
+docker stop owl-monitor-mock && docker rm owl-monitor-mock
+docker pull ghcr.io/hhtbing-wisefido/owlfront_mock:latest
+docker run -d --name owl-monitor-mock -p 3100:80 --restart unless-stopped ghcr.io/hhtbing-wisefido/owlfront_mock:latest
+echo "✅ 更新完成！访问 http://localhost:3100"
 ```
 
 访问地址：**http://localhost:3100**
@@ -204,8 +237,11 @@ owl-monitor-mock/
 # 开发模式（热更新）
 npm run dev
 
-# 构建生产版本
+# 构建生产版本（包含类型检查）
 npm run build
+
+# 构建生产版本（跳过类型检查，CI/CD使用）
+npm run build:prod
 
 # 预览构建结果
 npm run preview
@@ -217,23 +253,36 @@ npm run test
 npm run type-check
 ```
 
+> **💡 build vs build:prod 区别**：
+> - `npm run build` = `vue-tsc -b && vite build`（先TypeScript类型检查，再构建）
+> - `npm run build:prod` = `vite build`（直接构建，跳过类型检查，速度更快）
+> 
+> CI/CD 使用 `build:prod` 因为：
+> 1. ⚡ 构建速度更快（跳过类型检查）
+> 2. 📦 生产环境不包含 test/ 目录，避免582个类型错误
+> 3. ✅ 类型检查应在开发阶段完成
+
 ### Docker 命令
 
 ```bash
-# 构建镜像
-docker build -t owl-monitor-mock:latest .
-
-# 启动容器
-docker-compose up -d
-
-# 查看日志
-docker-compose logs -f
+# 从 GHCR 拉取并运行（推荐）
+docker pull ghcr.io/hhtbing-wisefido/owlfront_mock:latest
+docker run -d --name owl-monitor-mock -p 3100:80 --restart unless-stopped ghcr.io/hhtbing-wisefido/owlfront_mock:latest
 
 # 停止容器
-docker-compose down
+docker stop owl-monitor-mock
 
-# 重新构建并部署
-docker-compose up -d --build
+# 删除容器
+docker rm owl-monitor-mock
+
+# 查看日志
+docker logs -f owl-monitor-mock
+
+# 查看运行状态
+docker ps -a | grep owl-monitor-mock
+
+# 清理旧镜像
+docker image prune -a
 ```
 
 > 📖 更多 Docker 操作请查看 [DOCKER_DEPLOY.md](./DOCKER_DEPLOY.md)
