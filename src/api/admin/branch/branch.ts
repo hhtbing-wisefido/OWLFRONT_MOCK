@@ -21,17 +21,7 @@ enum Api {
  * 获取分支机构列表
  */
 export async function getBranchesApi(): Promise<GetBranchesResult> {
-  // Mock mode check
-  const useMock = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true'
-  
-  if (useMock) {
-    // Return mock data
-    return {
-      items: [],
-      total: 0,
-    }
-  }
-
+  // 始终通过HTTP请求，让Mock拦截器处理
   return defHttp.get<GetBranchesResult>({
     url: Api.GetBranches,
   })
