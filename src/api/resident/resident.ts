@@ -37,7 +37,7 @@ export enum Api {
 }
 
 // Mock mode: In development, use mock data instead of real API calls
-// DEV 榛樿璧扮湡瀹炲悗绔紱鍙湁鏄惧紡璁剧疆 VITE_USE_MOCK='true' 鎵嶅惎鐢?mock
+// DEV 姒涙顓荤挧鎵埂鐎圭偛鎮楃粩顖ょ幢閸欘亝婀侀弰鎯х础鐠佸墽鐤?VITE_USE_MOCK='true' 閹靛秴鎯庨悽?mock
 const useMock = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true'
 
 // Display mock status in console
@@ -51,19 +51,6 @@ if (useMock) {
  * @param mode - Error message mode
  */
 export function getResidentsApi(params?: GetResidentsParams, mode: ErrorMessageMode = 'modal') {
-  // In development with mock enabled, return mock data directly
-  console.log('%c[Mock] Get Residents API Request', 'color: #1890ff; font-weight: bold', { params })
-      return residents.mockGetResidents(params).then((result) => {
-        console.log('%c[Mock] Get Residents API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Get Residents API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      })
-    })
-  }
-
-  // Production: Call real API
   return defHttp.get<GetResidentsResult>(
     {
       url: Api.GetList,
@@ -84,19 +71,6 @@ export function getResidentApi(
   params?: GetResidentParams,
   mode: ErrorMessageMode = 'modal',
 ) {
-  // In development with mock enabled, return mock data directly
-  console.log('%c[Mock] Get Resident API Request', 'color: #1890ff; font-weight: bold', { residentId, params })
-      return residents.mockGetResident(residentId, params).then((result) => {
-        console.log('%c[Mock] Get Resident API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Get Resident API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      })
-    })
-  }
-
-  // Production: Call real API
   return defHttp.get<Resident>(
     {
       url: Api.GetDetail.replace(':id', residentId),
@@ -112,19 +86,6 @@ export function getResidentApi(
  * @param mode - Error message mode
  */
 export function createResidentApi(params: CreateResidentParams, mode: ErrorMessageMode = 'modal') {
-  // In development with mock enabled, return mock data directly
-  console.log('%c[Mock] Create Resident API Request', 'color: #1890ff; font-weight: bold', { params })
-      return residents.mockCreateResident(params).then((result) => {
-        console.log('%c[Mock] Create Resident API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Create Resident API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      })
-    })
-  }
-
-  // Production: Call real API
   return defHttp.post<CreateResidentResult>(
     {
       url: Api.Create,
@@ -145,19 +106,6 @@ export function updateResidentApi(
   params: UpdateResidentParams,
   mode: ErrorMessageMode = 'modal',
 ) {
-  // In development with mock enabled, return mock data directly
-  console.log('%c[Mock] Update Resident API Request', 'color: #1890ff; font-weight: bold', { residentId, params })
-      return residents.mockUpdateResident(residentId, params).then((result) => {
-        console.log('%c[Mock] Update Resident API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Update Resident API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      })
-    })
-  }
-
-  // Production: Call real API
   return defHttp.put<{ success: boolean }>(
     {
       url: Api.Update.replace(':id', residentId),
@@ -173,19 +121,6 @@ export function updateResidentApi(
  * @param mode - Error message mode
  */
 export function deleteResidentApi(residentId: string, mode: ErrorMessageMode = 'modal') {
-  // In development with mock enabled, return mock data directly
-  console.log('%c[Mock] Delete Resident API Request', 'color: #1890ff; font-weight: bold', { residentId })
-      return residents.mockDeleteResident(residentId).then((result) => {
-        console.log('%c[Mock] Delete Resident API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Delete Resident API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      })
-    })
-  }
-
-  // Production: Call real API
   return defHttp.delete<{ success: boolean }>(
     {
       url: Api.Delete.replace(':id', residentId),
@@ -205,19 +140,6 @@ export function updateResidentPHIApi(
   params: UpdateResidentPHIParams,
   mode: ErrorMessageMode = 'modal',
 ) {
-  // In development with mock enabled, return mock data directly
-  console.log('%c[Mock] Update Resident PHI API Request', 'color: #1890ff; font-weight: bold', { residentId, params })
-      return residents.mockUpdateResidentPHI(residentId, params).then((result) => {
-        console.log('%c[Mock] Update Resident PHI API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Update Resident PHI API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      })
-    })
-  }
-
-  // Production: Call real API
   return defHttp.put<{ success: boolean }>(
     {
       url: Api.UpdatePHI.replace(':id', residentId),
@@ -266,7 +188,7 @@ export async function resetContactPasswordApi(
   // Import hashPassword function
   const { hashPassword } = await import('@/utils/crypto')
   
-  // Hash password: SHA256(password) 鈫?hex string
+  // Hash password: SHA256(password) 閳?hex string
   const passwordHash = await hashPassword(password)
   
   console.log('%c[Mock] Reset Contact Password API Request', 'color: #1890ff; font-weight: bold', { contactId, passwordHash })
@@ -322,21 +244,8 @@ export function updateResidentContactApi(
   params: UpdateResidentContactParams,
   mode: ErrorMessageMode = 'modal',
 ) {
-  // 濡傛灉鎻愪緵浜?contact_id锛屼娇鐢?contact_id锛涘惁鍒欎娇鐢?slot
-  // API 璺緞鍙兘闇€瑕佽皟鏁达紝杩欓噷鍏堜繚鎸佸師鏍?  // In development with mock enabled, return mock data directly
-  console.log('%c[Mock] Update Resident Contact API Request', 'color: #1890ff; font-weight: bold', { residentId, params })
-      return residents.mockUpdateResidentContact(residentId, params).then((result) => {
-        console.log('%c[Mock] Update Resident Contact API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Update Resident Contact API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      })
-    })
-  }
-
-  // Production: Call real API
-  return defHttp.put<{ success: boolean }>(
+  // 婵″倹鐏夐幓鎰返娴?contact_id閿涘奔濞囬悽?contact_id閿涙稑鎯侀崚娆庡▏閻?slot
+  // API 鐠侯垰绶為崣顖濆厴闂団偓鐟曚浇鐨熼弫杈剧礉鏉╂瑩鍣烽崗鍫滅箽閹镐礁甯弽?  return defHttp.put<{ success: boolean }>(
     {
       url: Api.UpdateContact.replace(':id', residentId),
       data: params,
@@ -346,8 +255,8 @@ export function updateResidentContactApi(
 }
 
 /**
- * @deprecated 宸茶縼绉诲埌 /api/account/accountSettings.ts
- * 姝ゅ嚱鏁颁粎 Sidebar.vue 浣跨敤锛孲idebar 杩佺Щ鍒版柊 API 鍚庡皢琚垹闄? * 
+ * @deprecated 瀹歌尪绺肩粔璇插煂 /api/account/accountSettings.ts
+ * 濮濄倕鍤遍弫棰佺矌 Sidebar.vue 娴ｈ法鏁ら敍瀛瞚debar 鏉╀胶些閸掔増鏌?API 閸氬骸鐨㈢悮顐㈠灩闂? * 
  * @description: Get resident/contact account settings
  * @param residentId - Resident ID or contact ID
  * @param mode - Error message mode
@@ -385,8 +294,8 @@ export function getResidentAccountSettingsApi(residentId: string, mode: ErrorMes
 */
 
 /**
- * @deprecated 宸茶縼绉诲埌 /api/account/accountSettings.ts
- * 姝ゅ嚱鏁颁粎 Sidebar.vue 浣跨敤锛孲idebar 杩佺Щ鍒版柊 API 鍚庡皢琚垹闄? * 
+ * @deprecated 瀹歌尪绺肩粔璇插煂 /api/account/accountSettings.ts
+ * 濮濄倕鍤遍弫棰佺矌 Sidebar.vue 娴ｈ法鏁ら敍瀛瞚debar 鏉╀胶些閸掔増鏌?API 閸氬骸鐨㈢悮顐㈠灩闂? * 
  * @description: Update resident/contact account settings (unified API)
  * @param residentId - Resident ID or contact ID
  * @param params - Update account settings parameters

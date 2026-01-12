@@ -37,15 +37,6 @@ export function getVitalFocusCardsApi(
   mode: ErrorMessageMode = 'modal',
   params?: Record<string, any>,
 ) {
-  // In development with mock enabled, return mock data directly
-  console.log('%c[Mock] Get Vital Focus Cards API Request', 'color: #1890ff; font-weight: bold', {
-        params,
-      })
-      return vitalFocus.mockGetVitalFocusCards(params)
-    })
-  }
-
-  // Production: Call real API
   return defHttp.get<GetVitalFocusCardsModel>(
     {
       url: Api.GetVitalFocusCards,
@@ -65,15 +56,6 @@ export function getVitalFocusCardByResidentApi(
   residentId: string,
   mode: ErrorMessageMode = 'modal',
 ) {
-  // In development with mock enabled, return mock data directly
-  console.log('%c[Mock] Get Vital Focus Card by Resident API Request', 'color: #1890ff; font-weight: bold', {
-        residentId,
-      })
-      return vitalFocus.mockGetVitalFocusCardByResident(residentId)
-    })
-  }
-
-  // Production: Call real API
   return defHttp.get<VitalFocusCardInfo>(
     {
       url: Api.GetVitalFocusCardByResident.replace(':residentId', residentId),
@@ -92,15 +74,6 @@ export function getVitalFocusCardDetailApi(
   cardId: string,
   mode: ErrorMessageMode = 'modal',
 ) {
-  // In development with mock enabled, return mock data directly
-  console.log('%c[Mock] Get Vital Focus Card Detail API Request', 'color: #1890ff; font-weight: bold', {
-        cardId,
-      })
-      return vitalFocus.mockGetVitalFocusCardDetail(cardId)
-    })
-  }
-
-  // Production: Call real API
   return defHttp.get<VitalFocusCardInfo>(
     {
       url: Api.GetVitalFocusCardDetail.replace(':cardId', cardId),
@@ -128,15 +101,6 @@ export function saveVitalFocusSelectionApi(
   params: SaveVitalFocusSelectionParams,
   mode: ErrorMessageMode = 'modal',
 ) {
-  // In development with mock enabled, return mock data directly
-  console.log('%c[Mock] Save Vital Focus Selection API Request', 'color: #1890ff; font-weight: bold', {
-        params,
-      })
-      return vitalFocus.mockSaveVitalFocusSelection(params)
-    })
-  }
-
-  // Production: Call real API
   return defHttp.post<SaveVitalFocusSelectionResult>(
     {
       url: Api.SaveVitalFocusSelection,
