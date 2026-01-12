@@ -7,13 +7,14 @@ WORKDIR /app
 # 复制package文件
 COPY package*.json ./
 
-# 安装依赖
-RUN npm ci --legacy-peer-deps
+# 安装依赖（增加超时时间）
+RUN npm ci --legacy-peer-deps --timeout=600000
 
 # 复制项目文件
 COPY . .
 
-# 构建项目
+# 设置 Node.js 内存限制，构建项目
+ENV NODE_OPTIONS="--max-old-space-size=4096"
 RUN npm run build
 
 # 多阶段构建 - Stage 2: 生产阶段
