@@ -65,26 +65,26 @@ const locationNames = [
   { name: 'Cafe Corner', address: 'Building E / 1F Cafe Corner', floor: 1 }
 ]
 
-// 鐢熸垚100涓狹ock鍗＄墖鏁版嵁 (90涓狝ctiveBed + 10涓狶ocation)
+// 鐢熸垚220涓狹ock鍗＄墖鏁版嵁 (200涓狝ctiveBed + 20涓狶ocation)
 function generateMockCards(): VitalFocusCard[] {
   // 🔴 重置随机数种子，确保每次生成相同的数据
   seededRandom.reset(12345)
   
   const cards: VitalFocusCard[] = []
-  const buildings = ['Building A', 'Building B', 'Building C', 'Building D', 'Building E']
+  const buildings = ['Building A', 'Building B', 'Building C', 'Building D', 'Building E', 'Building F', 'Building G', 'Building H']
   
-  // 鍓?0寮犲崱鐗囩殑鍥哄畾鍦烘櫙閰嶇疆锛堢‘淇滵emo鏈夊畬鏁寸殑绀轰緥锛?
-  // 绱㈠紩: 0=蹇冪巼杩囬珮鎶ヨ, 1=璺屽€掓姤璀? 2=3浜鸿瀹? 3-9=闅忔満
-  const FIXED_HEART_ALARM_INDEX = 0    // 蹇冪巼杩囬珮鎶ヨ鍗＄墖
+  // 鍓?0寮犲崱鐗囩殑鍥哄畾鍦烘櫙閰嶇疆锛堢'淇滵emo鏈夊畬鏁寸殑绀轰緥锛?
+  // 绱㈠紩: 0=蹇冪巼杩囬珮鎶ヨ, 1=璺屽€掓姤璀? 2=3浜鸿瀹? 3-9=闅忔満
+  const FIXED_HEART_ALARM_INDEX = 0    // 蹇冪巼杩囬珮鎶ヨ鍗＄墖
   const FIXED_FALL_ALARM_INDEX = 1     // 璺屽€掓姤璀﹀崱鐗? 
-  const FIXED_VISITOR_3_INDEX = 2      // 3浜鸿瀹㈠崱鐗?
+  const FIXED_VISITOR_3_INDEX = 2      // 3浜鸿瀹㈠崱鐗?
   
-  // 鐢熸垚90涓狝ctiveBed鍗＄墖
-  for (let i = 0; i < 90; i++) {
+  // 鐢熸垚200涓狝ctiveBed鍗＄墖
+  for (let i = 0; i < 200; i++) {
     const cardId = `card_${String(i + 1).padStart(3, '0')}`
-    const building = buildings[Math.floor(i / 20)]
-    const floor = Math.floor((i % 20) / 4) + 1
-    const room = (i % 4) + 1
+    const building = buildings[Math.floor(i / 25)]
+    const floor = Math.floor((i % 25) / 5) + 1
+    const room = (i % 5) + 1
     const roomNumber = `${floor}0${room}`
     
     // 灞呮皯淇℃伅
@@ -382,11 +382,14 @@ function generateMockCards(): VitalFocusCard[] {
     })
   }
   
-  // 鐢熸垚10涓狶ocation鍗＄墖
-  for (let i = 0; i < 10; i++) {
-    const location = locationNames[i]
+  // 鐢熸垚20涓狶ocation鍗＄墖
+  for (let i = 0; i < 20; i++) {
+    // 澶嶇敤location鍚嶇О锛屽惊鐜娇鐢?
+    const locationIndex = i % locationNames.length
+    const location = locationNames[locationIndex]
     if (!location) continue // 璺宠繃undefined鐨刲ocation
     const cardId = `location_${String(i + 1).padStart(3, '0')}`
+    const locationSuffix = i >= locationNames.length ? ` (${Math.floor(i / locationNames.length) + 1})` : ''
     
     // 闆疯揪璁惧 (Location鍗＄墖鍙湁闆疯揪,娌℃湁鐫＄湢甯?
     const devices = [{
@@ -468,7 +471,7 @@ function generateMockCards(): VitalFocusCard[] {
       tenant_id: 'demo_tenant_001',
       card_type: 'Location',
       location_id: `loc_${String(i + 1).padStart(3, '0')}`,
-      card_name: location.name,
+      card_name: `${location.name}${locationSuffix}`,
       card_address: location.address,
       primary_resident_id: undefined,
       
