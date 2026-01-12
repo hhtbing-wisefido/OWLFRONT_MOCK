@@ -5,8 +5,8 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# 构建输出
-dist/
+# 构建输出（本地构建时排除，CI/CD 构建时需要保留）
+# dist/  # 不排除 dist，因为 CI/CD 需要复制构建产物
 dist-ssr/
 *.local
 
