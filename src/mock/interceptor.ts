@@ -108,20 +108,23 @@ function matchMockRoute(method: string, url: string): any {
     { pattern: /\/api\/alarm\/list/, method: 'GET', handler: mockGetAlarms },
     { pattern: /\/api\/alarm\/resolve/, method: 'POST', handler: mockResolveAlarm },
     
-    // 报警记录/事件
+    // 报警记录/事件 - 注意：API定义使用alarm-events（带连字符）
+    { pattern: /\/admin\/api\/v1\/alarm-events/, method: 'GET', handler: mockGetAlarmEvents },
     { pattern: /\/alarm\/api\/v1\/events/, method: 'GET', handler: mockGetAlarmEvents },
     { pattern: /\/api\/v1\/alarm\/events/, method: 'GET', handler: mockGetAlarmEvents },
     { pattern: /\/api\/alarm\/events/, method: 'GET', handler: mockGetAlarmEvents },
     { pattern: /\/alarm\/events/, method: 'GET', handler: mockGetAlarmEvents },
     { pattern: /\/alarm\/history/, method: 'GET', handler: mockGetAlarmEvents },
     
-    // 报警云配置
+    // 报警云配置 - 注意：API定义使用alarm-cloud（带连字符）
+    { pattern: /\/admin\/api\/v1\/alarm-cloud/, method: 'GET', handler: mockGetAlarmCloudConfig },
     { pattern: /\/alarm\/api\/v1\/cloud/, method: 'GET', handler: mockGetAlarmCloudConfig },
     { pattern: /\/api\/v1\/alarm\/cloud/, method: 'GET', handler: mockGetAlarmCloudConfig },
     { pattern: /\/api\/alarm\/cloud/, method: 'GET', handler: mockGetAlarmCloudConfig },
     { pattern: /\/alarm\/cloud/, method: 'GET', handler: mockGetAlarmCloudConfig },
     
     // 卡片概览
+    { pattern: /\/admin\/api\/v1\/card-overview/, method: 'GET', handler: mockGetCardOverview },
     { pattern: /\/data\/api\/v1\/card-overview/, method: 'GET', handler: mockGetCardOverview },
     { pattern: /\/api\/v1\/card-overview/, method: 'GET', handler: mockGetCardOverview },
     { pattern: /\/api\/card-overview/, method: 'GET', handler: mockGetCardOverview },
@@ -135,6 +138,7 @@ function matchMockRoute(method: string, url: string): any {
     { pattern: /\/api\/units/, method: 'GET', handler: mockGetAllUnits },
     
     // 设备
+    { pattern: /\/admin\/api\/v1\/devices/, method: 'GET', handler: mockGetDevices },
     { pattern: /\/device\/api\/v1\/devices/, method: 'GET', handler: mockGetDevices },
     { pattern: /\/api\/v1\/devices/, method: 'GET', handler: mockGetDevices },
     { pattern: /\/api\/devices/, method: 'GET', handler: mockGetDevices },
