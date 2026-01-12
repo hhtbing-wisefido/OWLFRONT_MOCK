@@ -260,3 +260,250 @@ export async function mockGetRolePermissions() {
     message: 'Role permissions retrieved successfully'
   }
 }
+
+// Mock获取报警事件/记录
+export async function mockGetAlarmEvents(params?: any) {
+  await delay()
+  
+  const events = mockCards
+    .filter(card => card.alarms && card.alarms.length > 0)
+    .flatMap(card => card.alarms!.map(alarm => ({
+      ...alarm,
+      resident_name: card.resident_name,
+      room_number: card.room_number,
+      card_id: card.card_id
+    })))
+  
+  return {
+    code: 2000,
+    result: {
+      items: events,
+      total: events.length,
+      page: params?.page || 1,
+      pageSize: params?.pageSize || 20
+    },
+    message: 'Alarm events retrieved successfully'
+  }
+}
+
+// Mock获取报警云配置
+export async function mockGetAlarmCloudConfig() {
+  await delay()
+  
+  return {
+    code: 2000,
+    result: {
+      heartRate: {
+        emergency: { low: 0, high: 44, duration: 60 },
+        warning: { low: 45, high: 54, duration: 300 },
+        normal: { low: 55, high: 95 }
+      },
+      respiratoryRate: {
+        emergency: { low: 0, high: 7, duration: 60 },
+        warning: { low: 8, high: 9, duration: 300 },
+        normal: { low: 10, high: 23 }
+      }
+    },
+    message: 'Alarm cloud configuration retrieved successfully'
+  }
+}
+
+// Mock获取卡片概览
+export async function mockGetCardOverview() {
+  await delay()
+  
+  const overview = {
+    totalCards: mockCards.length,
+    activeCards: mockCards.filter(c => c.card_status === 'online').length,
+    alarmCards: mockCards.filter(c => c.alarms && c.alarms.length > 0).length,
+    offlineCards: mockCards.filter(c => c.card_status === 'offline').length
+  }
+  
+  return {
+    code: 2000,
+    result: overview,
+    message: 'Card overview retrieved successfully'
+  }
+}
+
+// Mock获取分支/单元列表
+export async function mockGetBranches(params?: any) {
+  await delay()
+  
+  const branches = [
+    { id: 'branch_001', name: 'Main Floor', building: 'Building A', floor: 1, units: 30 },
+    { id: 'branch_002', name: 'Second Floor', building: 'Building A', floor: 2, units: 25 },
+    { id: 'branch_003', name: 'Memory Care Unit', building: 'Building B', floor: 1, units: 20 }
+  ]
+  
+  return {
+    code: 2000,
+    result: {
+      items: branches,
+      total: branches.length,
+      page: 1,
+      pageSize: 20
+    },
+    message: 'Branches retrieved successfully'
+  }
+}
+
+// Mock获取所有单元
+export async function mockGetAllUnits(params?: any) {
+  await delay()
+  
+  const units = []
+  for (let i = 1; i <= 75; i++) {
+    const floor = Math.floor((i - 1) / 30) + 1
+    const room = ((i - 1) % 30) + 1
+    units.push({
+      id: `unit_${String(i).padStart(3, '0')}`,
+      roomNumber: `${floor}${String(room).padStart(2, '0')}`,
+      building: floor <= 2 ? 'Building A' : 'Building B',
+      floor: floor,
+      status: Math.random() > 0.8 ? 'vacant' : 'occupied',
+      residentId: Math.random() > 0.8 ? null : `resident_${String(Math.floor(Math.random() * 30) + 1).padStart(3, '0')}`
+    })
+  }
+  
+  return {
+    code: 2000,
+    result: {
+      items: units,
+      total: units.length,
+      page: 1,
+      pageSize: 100
+    },
+    message: 'Units retrieved successfully'
+  }
+}
+
+// Mock获取设备列表
+export async function mockGetDevices(params?: any) {
+  await delay()
+  
+  const devices = []
+  const deviceTypes = ['SleepPad', 'VitalMonitor', 'Gateway', 'Sensor']
+  
+  for (let i = 0; i < 50; i++) {
+    const type = deviceTypes[Math.floor(Math.random() * deviceTypes.length)]
+    devices.push({
+      id: `device_${String(i + 1).padStart(3, '0')}`,
+      deviceId: `DEV${String(i + 1).padStart(5, '0')}`,
+      deviceType: type,
+      serialNumber: `SN${type.toUpperCase()}${String(i + 1).padStart(6, '0')}`,
+      status: Math.random() > 0.9 ? 'offline' : 'online',
+      location: i < 30 ? `Room ${Math.floor(i / 10) + 1}${String((i % 10) + 1).padStart(2, '0')}` : 'Unassigned',
+      lastSeen: new Date(Date.now() - Math.random() * 3600000).toISOString(),
+      batteryLevel: type === 'Gateway' ? null : Math.floor(Math.random() * 100)
+    })
+  }
+  
+  return {
+    code: 2000,
+    result: {
+      items: devices,
+      total: devices.length,
+      page: 1,
+      pageSize: 50
+    },
+    message: 'Devices retrieved successfully'
+  }
+}
+
+// Mock获取用户列表
+export async function mockGetUsers(params?: any) {
+  await delay()
+  
+  const users = mockAccounts.map((acc, index) => ({
+    id: acc.userId,
+    username: acc.username,
+    fullName: acc.fullName,
+    email: `${acc.username}@mapleview.com`,
+    role: acc.role,
+    userType: acc.user_type,
+    status: 'active',
+    createdAt: '2024-01-01T00:00:00Z',
+    lastLogin: new Date(Date.now() - Math.random() * 86400000 * 30).toISOString()
+  }))
+  
+  return {
+    code: 2000,
+    result: {
+      items: users,
+      total: users.length,
+      page: 1,
+      pageSize: 20
+    },
+    message: 'Users retrieved successfully'
+  }
+}
+
+// Mock获取标签列表
+export async function mockGetTags(params?: any) {
+  await delay()
+  
+  const tags = [
+    { id: 'tag_001', name: 'VIP', color: '#ff0000', description: 'VIP resident' },
+    { id: 'tag_002', name: 'High Risk', color: '#ff9900', description: 'High risk of falls' },
+    { id: 'tag_003', name: 'Diabetic', color: '#00cc00', description: 'Diabetes care required' },
+    { id: 'tag_004', name: 'Dementia', color: '#0099ff', description: 'Memory care required' }
+  ]
+  
+  return {
+    code: 2000,
+    result: {
+      items: tags,
+      total: tags.length,
+      page: 1,
+      pageSize: 20
+    },
+    message: 'Tags retrieved successfully'
+  }
+}
+
+// Mock获取分支标签
+export async function mockGetBranchTags(params?: any) {
+  await delay()
+  
+  const branchTags = [
+    { id: 'btag_001', branchId: 'branch_001', name: 'Floor 1', color: '#3366ff' },
+    { id: 'btag_002', branchId: 'branch_002', name: 'Floor 2', color: '#ff6633' },
+    { id: 'btag_003', branchId: 'branch_003', name: 'Memory Unit', color: '#9933ff' }
+  ]
+  
+  return {
+    code: 2000,
+    result: {
+      items: branchTags,
+      total: branchTags.length,
+      page: 1,
+      pageSize: 20
+    },
+    message: 'Branch tags retrieved successfully'
+  }
+}
+
+// Mock获取角色列表
+export async function mockGetRoles(params?: any) {
+  await delay()
+  
+  const roles = [
+    { id: 'role_001', name: 'SystemAdmin', displayName: 'System Administrator', description: 'Full system access' },
+    { id: 'role_002', name: 'Admin', displayName: 'Administrator', description: 'Facility administration' },
+    { id: 'role_003', name: 'Nurse', displayName: 'Nurse', description: 'Clinical care staff' },
+    { id: 'role_004', name: 'Caregiver', displayName: 'Caregiver', description: 'Direct care staff' },
+    { id: 'role_005', name: 'Resident', displayName: 'Resident/Family', description: 'Resident or family member' }
+  ]
+  
+  return {
+    code: 2000,
+    result: {
+      items: roles,
+      total: roles.length,
+      page: 1,
+      pageSize: 20
+    },
+    message: 'Roles retrieved successfully'
+  }
+}

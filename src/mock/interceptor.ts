@@ -8,7 +8,17 @@ import {
   mockGetAlarms,
   mockResolveAlarm,
   mockGetResidents,
-  mockGetRolePermissions
+  mockGetRolePermissions,
+  mockGetAlarmEvents,
+  mockGetAlarmCloudConfig,
+  mockGetCardOverview,
+  mockGetBranches,
+  mockGetAllUnits,
+  mockGetDevices,
+  mockGetUsers,
+  mockGetTags,
+  mockGetBranchTags,
+  mockGetRoles
 } from './mockApi'
 
 // Mock模式开关
@@ -96,7 +106,58 @@ function matchMockRoute(method: string, url: string): any {
     // 报警
     { pattern: /\/api\/alarms/, method: 'GET', handler: mockGetAlarms },
     { pattern: /\/api\/alarm\/list/, method: 'GET', handler: mockGetAlarms },
-    { pattern: /\/api\/alarm\/resolve/, method: 'POST', handler: mockResolveAlarm }
+    { pattern: /\/api\/alarm\/resolve/, method: 'POST', handler: mockResolveAlarm },
+    
+    // 报警记录/事件
+    { pattern: /\/alarm\/api\/v1\/events/, method: 'GET', handler: mockGetAlarmEvents },
+    { pattern: /\/api\/v1\/alarm\/events/, method: 'GET', handler: mockGetAlarmEvents },
+    { pattern: /\/api\/alarm\/events/, method: 'GET', handler: mockGetAlarmEvents },
+    { pattern: /\/alarm\/events/, method: 'GET', handler: mockGetAlarmEvents },
+    { pattern: /\/alarm\/history/, method: 'GET', handler: mockGetAlarmEvents },
+    
+    // 报警云配置
+    { pattern: /\/alarm\/api\/v1\/cloud/, method: 'GET', handler: mockGetAlarmCloudConfig },
+    { pattern: /\/api\/v1\/alarm\/cloud/, method: 'GET', handler: mockGetAlarmCloudConfig },
+    { pattern: /\/api\/alarm\/cloud/, method: 'GET', handler: mockGetAlarmCloudConfig },
+    { pattern: /\/alarm\/cloud/, method: 'GET', handler: mockGetAlarmCloudConfig },
+    
+    // 卡片概览
+    { pattern: /\/data\/api\/v1\/card-overview/, method: 'GET', handler: mockGetCardOverview },
+    { pattern: /\/api\/v1\/card-overview/, method: 'GET', handler: mockGetCardOverview },
+    { pattern: /\/api\/card-overview/, method: 'GET', handler: mockGetCardOverview },
+    
+    // 分支/单元
+    { pattern: /\/admin\/api\/v1\/branches/, method: 'GET', handler: mockGetBranches },
+    { pattern: /\/api\/v1\/branches/, method: 'GET', handler: mockGetBranches },
+    { pattern: /\/api\/branches/, method: 'GET', handler: mockGetBranches },
+    { pattern: /\/admin\/api\/v1\/units/, method: 'GET', handler: mockGetAllUnits },
+    { pattern: /\/api\/v1\/units/, method: 'GET', handler: mockGetAllUnits },
+    { pattern: /\/api\/units/, method: 'GET', handler: mockGetAllUnits },
+    
+    // 设备
+    { pattern: /\/device\/api\/v1\/devices/, method: 'GET', handler: mockGetDevices },
+    { pattern: /\/api\/v1\/devices/, method: 'GET', handler: mockGetDevices },
+    { pattern: /\/api\/devices/, method: 'GET', handler: mockGetDevices },
+    
+    // 用户管理
+    { pattern: /\/admin\/api\/v1\/users/, method: 'GET', handler: mockGetUsers },
+    { pattern: /\/api\/v1\/users/, method: 'GET', handler: mockGetUsers },
+    { pattern: /\/api\/users/, method: 'GET', handler: mockGetUsers },
+    
+    // 标签
+    { pattern: /\/admin\/api\/v1\/tags/, method: 'GET', handler: mockGetTags },
+    { pattern: /\/api\/v1\/tags/, method: 'GET', handler: mockGetTags },
+    { pattern: /\/api\/tags/, method: 'GET', handler: mockGetTags },
+    
+    // 分支标签
+    { pattern: /\/admin\/api\/v1\/branch-tags/, method: 'GET', handler: mockGetBranchTags },
+    { pattern: /\/api\/v1\/branch-tags/, method: 'GET', handler: mockGetBranchTags },
+    { pattern: /\/api\/branch-tags/, method: 'GET', handler: mockGetBranchTags },
+    
+    // 角色
+    { pattern: /\/admin\/api\/v1\/roles/, method: 'GET', handler: mockGetRoles },
+    { pattern: /\/api\/v1\/roles/, method: 'GET', handler: mockGetRoles },
+    { pattern: /\/api\/roles/, method: 'GET', handler: mockGetRoles }
   ]
   
   for (const route of routes) {
