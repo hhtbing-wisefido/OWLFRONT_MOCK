@@ -87,54 +87,88 @@ export async function mockSearchInstitutions(params?: any) {
 export async function mockGetResidents(params?: any) {
   await delay()
   
-  // 生成30个模拟居民数据
-  const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Martinez', 'Wilson']
-  const firstNames = ['James', 'Mary', 'Robert', 'Patricia', 'Michael', 'Linda', 'William', 'Barbara', 'David', 'Elizabeth']
-  const serviceLevels = [
-    { code: 'L1', name: 'Independent' },
-    { code: 'L2', name: 'Assisted' },
-    { code: 'L3', name: 'Memory Care' },
-    { code: 'L4', name: 'Skilled Nursing' }
-  ]
-  
-  const residents = []
-  for (let i = 0; i < 30; i++) {
-    const lastName = lastNames[Math.floor(Math.random() * lastNames.length)]
-    const firstName = firstNames[Math.floor(Math.random() * firstNames.length)]
-    const serviceLevel = serviceLevels[Math.floor(Math.random() * serviceLevels.length)]
-    const floor = Math.floor(i / 10) + 1
-    const room = (i % 10) + 1
-    
-    residents.push({
-      id: `resident_${String(i + 1).padStart(3, '0')}`,
-      firstName,
-      lastName,
-      fullName: `${firstName} ${lastName}`,
-      dateOfBirth: `19${30 + Math.floor(Math.random() * 40)}-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}`,
-      gender: Math.random() > 0.5 ? 'Male' : 'Female',
-      roomNumber: `${floor}0${room}`,
-      building: `Building ${String.fromCharCode(65 + Math.floor(i / 20))}`,
-      serviceLevel: serviceLevel.code,
-      serviceLevelName: serviceLevel.name,
-      admissionDate: `2024-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}`,
-      status: Math.random() > 0.9 ? 'Discharged' : 'Active',
-      emergencyContact: {
-        name: `${firstNames[Math.floor(Math.random() * firstNames.length)]} ${lastNames[Math.floor(Math.random() * lastNames.length)]}`,
-        relationship: Math.random() > 0.5 ? 'Son' : 'Daughter',
-        phone: `555-${String(Math.floor(Math.random() * 900) + 100)}-${String(Math.floor(Math.random() * 9000) + 1000)}`
-      },
-      hasVitalMonitor: Math.random() > 0.2,
-      hasSleepMonitor: Math.random() > 0.3
+  // 🔴 修正：从mockCards提取居民数据，确保与卡片同步
+  const residents = mockCards
+    .filter(card => card.card_type === 'ActiveBed' && card.residents && card.residents.length > 0)
+    .map((card, index) => {
+      const resident = card.residents![0]
+      const address = card.card_address.split(' / ')
+      const building = address[0] || 'Building A'
+      const roomMatch = address[1]?.match(/Room (\d+)/)
+      const roomNumber = roomMatch ? roomMatch[1] : `${Math.floor(index / 10) + 1}0${(index % 10) + 1}`
+      
+      return {
+        id: resident.resident_id,
+        resident_id: resident.resident_id,
+        firstName: resident.first_name,
+        lastName: resident.last_name,
+        fullName: `${resident.first_name} ${resident.last_name}`,
+        first_name: resident.first_name,
+        last_name: resident.last_name,
+        full_name: `${resident.first_name} ${resident.last_name}`,
+        dateOfBirth: `19${30 + Math.floor(Math.random() * 40)}-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}`,
+        date_of_birth: `19${30 + Math.floor(Math.random() * 40)}-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}`,
+        gender: Math.random() > 0.5 ? 'Male' : 'Female',
+        roomNumber: roomNumber,
+        room_number: roomNumber,
+        building: building,
+        serviceLevel: resident.service_level,
+        service_level: resident.service_level,
+        serviceLevelName: resident.service_level_info?.display_name || 'Independent',
+        service_level_name: resident.service_level_info?.display_name || 'Independent',
+        admissionDate: `2024-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}`,
+        admission_date: `2024-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}`,
+        status: 'Active',
+        emergencyContact: {
+          name: `John ${resident.last_name}`,
+          relationship: 'Son',
+          phone: `555-${String(Math.floor(Math.random() * 900) + 100)}-${String(Math.floor(Math.random() * 9000) + 1000)}`
+        },
+        emergency_contact: {
+          name: `John ${resident.last_name}`,
+          relationship: 'Son',
+          phone: `555-${String(Math.floor(Math.random() * 900) + 100)}-${String(Math.floor(Math.random() * 9000) + 1000)}`
+        },
+        hasVitalMonitor: card.device_count > 0,
+        has_vital_monitor: card.device_count > 0,
+        hasSleepMonitor: card.devices?.some(d => d.device_type === 1),
+        has_sleep_monitor: card.devices?.some(d => d.device_type === 1),
+        card_id: card.card_id,
+        unit_id: card.bed_id,
+        tenant_id: card.tenant_id
+      }
     })
+  
+  // 应用搜索过滤
+  let filteredResidents = residents
+  if (params?.search) {
+    const searchLower = params.search.toLowerCase()
+    filteredResidents = filteredResidents.filter(r => 
+      r.fullName.toLowerCase().includes(searchLower) ||
+      r.roomNumber.includes(searchLower)
+    )
   }
+  
+  // 应用状态过滤
+  if (params?.status && params.status !== 'all') {
+    filteredResidents = filteredResidents.filter(r => r.status === params.status)
+  }
+  
+  // 应用分页
+  const page = params?.page || 1
+  const pageSize = params?.pageSize || params?.size || 20
+  const start = (page - 1) * pageSize
+  const end = start + pageSize
+  const paginatedResidents = filteredResidents.slice(start, end)
   
   return {
     code: 2000,
     result: {
-      items: residents,
-      total: 30,
-      page: 1,
-      pageSize: 30
+      items: paginatedResidents,
+      total: filteredResidents.length,
+      page: page,
+      pageSize: pageSize,
+      size: pageSize
     },
     message: 'Residents retrieved successfully'
   }
@@ -309,19 +343,62 @@ export async function mockGetAlarmCloudConfig() {
 }
 
 // Mock获取卡片概览
-export async function mockGetCardOverview() {
+export async function mockGetCardOverview(params?: any) {
   await delay()
   
-  const overview = {
-    totalCards: mockCards.length,
-    activeCards: mockCards.filter(c => c.card_status === 'online').length,
-    alarmCards: mockCards.filter(c => c.alarms && c.alarms.length > 0).length,
-    offlineCards: mockCards.filter(c => c.card_status === 'offline').length
+  // 🔴 修正：Card Overview页面期望的是卡片列表，不是统计数据
+  // 从mockCards转换为CardOverviewItem格式
+  const cardOverviewItems = mockCards
+    .filter(card => card.card_type === 'ActiveBed') // 只包含ActiveBed卡片
+    .map(card => ({
+      card_id: card.card_id,
+      card_name: card.card_name,
+      card_address: card.card_address,
+      unit_type: 'Facility' as const,
+      is_multi_person_room: false,
+      is_public_space: false,
+      family_view: true,
+      devices: card.devices || [],
+      residents: card.residents || [],
+      caregiver_groups: [],
+      caregivers: [],
+      device_count: card.device_count || 0,
+      resident_count: card.resident_count || 1,
+      caregiver_group_count: 0,
+      caregiver_count: 0,
+      tenant_id: card.tenant_id
+    }))
+  
+  // 应用搜索过滤
+  let filteredItems = cardOverviewItems
+  if (params?.search) {
+    const searchLower = params.search.toLowerCase()
+    filteredItems = filteredItems.filter(item => 
+      item.card_name.toLowerCase().includes(searchLower) ||
+      item.card_address.toLowerCase().includes(searchLower)
+    )
   }
+  
+  // 应用分页
+  const page = params?.page || 1
+  const size = params?.size || 20
+  const start = (page - 1) * size
+  const end = start + size
+  const paginatedItems = filteredItems.slice(start, end)
   
   return {
     code: 2000,
-    result: overview,
+    result: {
+      items: paginatedItems,
+      pagination: {
+        size: size,
+        page: page,
+        count: paginatedItems.length,
+        total: filteredItems.length,
+        sort: params?.sort,
+        direction: params?.direction === 'asc' ? 1 : -1
+      }
+    },
     message: 'Card overview retrieved successfully'
   }
 }
