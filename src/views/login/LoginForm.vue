@@ -7,13 +7,14 @@
     layout="vertical"
     class="login-form"
   >
-    <!-- Mock快速登录按钮区域 -->
+    <!-- Mock Quick Login Buttons -->
     <div class="mock-quick-login" v-if="showMockButtons">
-      <div class="mock-title">🎯 快速登录 (Mock演示)</div>
+      <div class="mock-title">🎯 Quick Login (Mock Demo)</div>
+      <div class="mock-subtitle">👇 Click to auto-fill credentials</div>
       <div class="mock-buttons">
-        <Button size="small" @click="fillMockAccount('admin')">👨‍💼 管理员</Button>
-        <Button size="small" @click="fillMockAccount('nurse1')">👩‍⚕️ 护士</Button>
-        <Button size="small" @click="fillMockAccount('doctor1')">👨‍⚕️ 医生</Button>
+        <Button size="small" @click="fillMockAccount('admin')">👨‍💼 Admin</Button>
+        <Button size="small" @click="fillMockAccount('nurse1')">👩‍⚕️ Nurse</Button>
+        <Button size="small" @click="fillMockAccount('doctor1')">👨‍⚕️ Doctor</Button>
       </div>
     </div>
 
@@ -140,10 +141,10 @@ const ASelect = Select
 const ASelectOption = Select.Option
 const ACheckbox = Checkbox
 
-// 显示Mock快速登录按钮（开发模式）
+// Show Mock Quick Login Buttons (Development Mode)
 const showMockButtons = ref(true)
 
-// Mock账号填充函数
+// Mock Account Auto-Fill Function
 const fillMockAccount = (accountType: string) => {
   const account = mockAccounts.find(acc => acc.username === accountType)
   if (account) {
@@ -151,7 +152,7 @@ const fillMockAccount = (accountType: string) => {
     formData.password = account.password
     formData.tenant_name = 'Mapleview Care Community'
     formData.tenant_id = 'mapleview-001'
-    message.success(`已填充${account.fullName}的登录信息`)
+    message.success(`Filled with ${account.fullName}'s login credentials`)
   }
 }
 
@@ -732,8 +733,26 @@ onMounted(() => {
   color: white;
   font-size: 13px;
   font-weight: 600;
+  margin-bottom: 4px;
+  text-align: center;
+}
+
+.mock-subtitle {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 11px;
+  font-weight: 400;
   margin-bottom: 10px;
   text-align: center;
+  animation: subtitleBounce 1.5s ease-in-out infinite;
+}
+
+@keyframes subtitleBounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
 }
 
 .mock-buttons {
