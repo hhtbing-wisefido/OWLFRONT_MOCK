@@ -1864,6 +1864,9 @@ onMounted(async () => {
 
 onUnmounted(() => {
   stopTimer()
+  // Stop alarm sound when component is unmounted (e.g., logout, navigation)
+  alarmSound.stopAlarm()
+  console.log('[Overview] Component unmounted, alarm sound stopped')
 })
 </script>
 

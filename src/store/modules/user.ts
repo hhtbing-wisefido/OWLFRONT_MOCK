@@ -630,6 +630,15 @@ export const useUserStore = defineStore('user', {
         }
       }
       
+      // Stop alarm sound before logout
+      try {
+        const { alarmSound } = await import('@/utils/radar/alarmSound')
+        alarmSound.stopAlarm()
+        console.log('[User Store] Alarm sound stopped on logout')
+      } catch (error) {
+        console.error('[User Store] Failed to stop alarm sound:', error)
+      }
+      
       // Clear state
       this.resetState()
       
