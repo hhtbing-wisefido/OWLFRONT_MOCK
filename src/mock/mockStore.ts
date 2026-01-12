@@ -168,6 +168,16 @@ function initializeStore(): MockDataStore {
       const imei = device.device_type === 1 ? `86${String(Math.floor(Math.random() * 10000000000000)).padStart(13, '0')}` : null
       const roomNumber = card.card_address.match(/Room (\d+)/)?.[1] || String(cardIndex + 101)
       
+      // 计算unit_id以匹配rooms数据
+      const parts = card.card_address.split(' / ')
+      const buildingPart = parts[0] || 'Building A'
+      const buildingLetter = buildingPart.replace('Building ', '')
+      const unitId = `unit-${buildingLetter}-${roomNumber}`
+      
+      // 绑定到unit_room（主房间）和第一个床位
+      const boundRoomId = `room-${unitId}-main`
+      const boundBedId = `bed-${unitId}-${deviceIndex + 1}`
+      
       return {
         // 使用snake_case以匹配前端期望
         id: device.device_id,
@@ -189,6 +199,9 @@ function initializeStore(): MockDataStore {
         building: card.card_address.split(' / ')[0] || 'Building A',
         floor: 1 + Math.floor((cardIndex % 25) / 5),
         room: roomNumber,
+        // 添加绑定字段
+        bound_room_id: boundRoomId,
+        bound_bed_id: boundBedId,
         resident_id: card.card_type === 'ActiveBed' && card.residents && card.residents[0] 
           ? card.residents[0].resident_id 
           : null,
