@@ -2,25 +2,28 @@
 
 ## 📦 快速开始
 
-### 方式一：使用 Docker Compose（推荐）
+> 💡 **说明**: 本项目是纯前端 Mock Demo，推荐使用简单的 Docker 命令即可。Docker Compose 配置保留供参考。
+
+### 方式一：从 GitHub Container Registry 拉取（推荐）
 
 ```bash
-# 构建并启动容器
-docker-compose up -d
+# 拉取最新镜像
+docker pull ghcr.io/hhtbing-wisefido/owlfront_mock:latest
+
+# 运行容器
+docker run -d \
+  --name owl-monitor-mock \
+  -p 3100:80 \
+  --restart unless-stopped \
+  ghcr.io/hhtbing-wisefido/owlfront_mock:latest
 
 # 查看日志
-docker-compose logs -f
-
-# 停止容器
-docker-compose down
-
-# 重新构建
-docker-compose up -d --build
+docker logs -f owl-monitor-mock
 ```
 
 访问地址: http://localhost:3100
 
-### 方式二：使用 Docker 命令
+### 方式二：本地构建 Docker 镜像
 
 ```bash
 # 构建镜像
@@ -32,20 +35,102 @@ docker run -d \
   -p 3100:80 \
   --restart unless-stopped \
   owl-monitor-mock:latest
+```
+
+### 方式三：使用 Docker Compose（可选）
+
+如果您更习惯使用 Docker Compose：
+
+```bash
+# 构建并启动
+docker-compose up -d
 
 # 查看日志
-docker logs -f owl-monitor-mock
+docker-compose logs -f
 
 # 停止容器
-docker stop owl-monitor-mock
-
-# 删除容器
-docker rm owl-monitor-mock
+docker-compose down
 ```
+
+## 🤔 为什么保留 Docker Compose？
+
+虽然本项目是纯前端 Mock Demo，但保留 Docker Compose 配置的原因：
+
+1. **统一接口**: 对于习惯 Docker Compose 的开发者更友好
+2. **配置管理**: 所有参数集中在 `docker-compose.yml` 中，便于维护
+3. **示例参考**: 如果将来需要扩展，可以作为参考
+
+**但对于本项目，直接使用 Docker 命令更简单直接！** ✅
+
+---
+
+## 📋 部署方式选择指南
+
+| 场景 | 推荐方式 | 理由 |
+|-----|---------|------|
+| **服务器部署** | ✅ 从 GHCR 拉取 | 自动构建，无需本地编译 |
+| **本地开发测试** | 本地构建 | 快速验证修改 |
+| **习惯 Compose** | Docker Compose | 配置集中，命令统一 |
+| **快速体验** | ✅ 从 GHCR 拉取 | 一行命令启动 |
+
+---
+
+## 🔄 CI/CD 自动构建
+
+本项目配置了 GitHub Actions，每次推送代码到 `main` 分支时自动构建并推送 Docker 镜像到 GitHub Container Registry (GHCR)。
+
+### 镜像标签说明
+
+| 标签 | 说明 | 示例 |
+|-----|------|------|
+| `latest` | 最新稳定版本 | `ghcr.io/hhtbing-wisefido/owlfront_mock:latest` |
+| `main-{sha}` | 具体提交版本 | `ghcr.io/hhtbing-wisefido/owlfront_mock:main-abc1234` |
+| `v{version}` | 语义化版本号 | `ghcr.io/hhtbing-wisefido/owlfront_mock:v1.3.0` |
+
+### 查看可用镜像
+
+访问 GitHub Packages 页面查看所有可用镜像：
+https://github.com/hhtbing-wisefido/OWLFRONT_MOCK/pkgs/container/owlfront_mock
+
+### 更新到最新版本
+
+```bash
+# 停止并删除旧容器
+docker stop owl-monitor-mock
+docker rm owl-monitor-mock
+
+# 拉取最新镜像
+docker pull ghcr.io/hhtbing-wisefido/owlfront_mock:latest
+
+# 启动新容器
+docker run -d \
+  --name owl-monitor-mock \
+  -p 3100:80 \
+  --restart unless-stopped \
+  ghcr.io/hhtbing-wisefido/owlfront_mock:latest
+```
+
+---
+| **单一前端应用** | ✅ Docker 命令 | 简单、直接、无需额外依赖 |
+| **习惯 Compose** | Docker Compose | 配置集中，命令统一 |
+| **快速测试** | ✅ Docker 命令 | 一行命令启动 |
+
+---
 
 ## 🔧 高级配置
 
-### 自定义端口
+### 自定义端口（Docker 命令）
+
+```bash
+# 使用不同的端口
+docker run -d \
+  --name owl-monitor-mock \
+  -p 8080:80 \
+  --restart unless-stopped \
+  owl-monitor-mock:latest
+```
+
+### 自定义端口（Docker Compose）
 
 修改 `docker-compose.yml` 中的端口映射：
 
@@ -54,14 +139,31 @@ ports:
   - "8080:80"  # 将3100改为8080
 ```
 
-### 环境变量配置
+### 容器资源限制（Docker 命令）
 
-在 `docker-compose.yml` 中添加环境变量：
+```bash
+docker run -d \
+  --name owl-monitor-mock \
+  -p 3100:80 \
+  --memory="512m" \
+  --cpus="1.0" \
+  --restart unless-stopped \
+  owl-monitor-mock:latest
+```
+
+### 容器资源限制（Docker Compose）
+
+修改 `docker-compose.yml`：
 
 ```yaml
-environment:
-  - TZ=Asia/Shanghai
-  - NODE_ENV=production
+deploy:
+  resources:
+    limits:
+      cpus: '1.0'
+      memory: 512M
+    reservations:
+      cpus: '0.5'
+      memory: 256M
 ```
 
 ### 使用自定义 Nginx 配置

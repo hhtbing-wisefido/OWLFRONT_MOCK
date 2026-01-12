@@ -47,17 +47,31 @@ npm run dev
 使用 Docker 快速部署，无需安装 Node.js 环境：
 
 ```bash
-# 使用 Docker Compose（推荐）
-docker-compose up -d
+# 推荐：从 GitHub Container Registry 拉取
+docker pull ghcr.io/hhtbing-wisefido/owlfront_mock:latest
+docker run -d \
+  --name owl-monitor-mock \
+  -p 3100:80 \
+  --restart unless-stopped \
+  ghcr.io/hhtbing-wisefido/owlfront_mock:latest
 
-# 或使用 Docker 命令
-docker build -t owl-monitor-mock .
-docker run -d -p 3100:80 owl-monitor-mock
+# 或本地构建
+docker build -t owl-monitor-mock:latest .
+docker run -d \
+  --name owl-monitor-mock \
+  -p 3100:80 \
+  --restart unless-stopped \
+  owl-monitor-mock:latest
+
+# 可选：使用 Docker Compose
+docker-compose up -d
 ```
 
 访问地址：**http://localhost:3100**
 
 > 📖 详细部署指南请查看 [DOCKER_DEPLOY.md](./DOCKER_DEPLOY.md)
+> 
+> 🔄 每次推送代码到 `main` 分支，GitHub Actions 会自动构建并推送镜像到 GHCR
 
 ## 🔐 Demo 登录账号
 

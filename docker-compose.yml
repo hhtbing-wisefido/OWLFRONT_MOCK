@@ -2,10 +2,13 @@ version: '3.8'
 
 services:
   owl-monitor-mock:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: owl-monitor-mock:latest
+    # 优先使用预构建镜像（从 GitHub Container Registry）
+    image: ghcr.io/hhtbing-wisefido/owlfront_mock:latest
+    # 如果想使用本地构建，注释上面的 image 行，取消下面的 build 部分注释
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+    # image: owl-monitor-mock:latest
     container_name: owl-monitor-mock
     restart: unless-stopped
     ports:
@@ -22,7 +25,7 @@ services:
       retries: 3
     labels:
       - "com.owl.description=OWL Monitor Mock System"
-      - "com.owl.version=1.2.0"
+      - "com.owl.version=1.3.0"
 
 networks:
   owl-network:
