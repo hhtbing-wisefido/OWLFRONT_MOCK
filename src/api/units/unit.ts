@@ -56,15 +56,6 @@ export async function createBuildingApi(
   params: CreateBuildingParams & { tag_name?: string },
   mode: ErrorMessageMode = 'modal'
 ): Promise<Building> {
-  // Mock layer also needs to handle tag_name -> branch_tag conversion
-    const mockParams: CreateBuildingParams = {
-      building_name: params.building_name,
-      floors: params.floors,
-      branch_name: (params as any).tag_name || params.branch_tag,
-    }
-    return unit.mock.mockCreateBuilding(mockParams)
-  }
-
   // Convert frontend tag_name to API branch_tag
   const apiParams: CreateBuildingParams = {
     building_name: params.building_name,
@@ -88,9 +79,6 @@ export async function createBuildingApi(
 export async function getBuildingsApi(
   mode: ErrorMessageMode = 'none'
 ): Promise<Building[]> {
-  return unit.mock.mockGetBuildings()
-  }
-
   return defHttp.get<Building[]>(
     {
       url: Api.GetBuildings,
@@ -108,15 +96,6 @@ export async function updateBuildingApi(
   params: UpdateBuildingParams & { tag_name?: string },
   mode: ErrorMessageMode = 'modal'
 ): Promise<Building> {
-  // Mock layer also needs to handle tag_name -> branch_tag conversion
-    const mockParams: UpdateBuildingParams = {
-      building_name: params.building_name,
-      floors: params.floors,
-      branch_name: (params as any).tag_name || params.branch_tag,
-    }
-    return unit.mock.mockUpdateBuilding(id, mockParams)
-  }
-
   // Convert frontend tag_name to API branch_tag
   const apiParams: UpdateBuildingParams = {
     building_name: params.building_name,
@@ -140,9 +119,6 @@ export async function deleteBuildingApi(
   id: string,
   mode: ErrorMessageMode = 'modal'
 ): Promise<void> {
-  return unit.mock.mockDeleteBuilding(id)
-  }
-
   return defHttp.delete<void>(
     {
       url: Api.DeleteBuilding.replace(':id', id),
@@ -158,9 +134,6 @@ export async function createUnitApi(
   params: CreateUnitParams,
   mode: ErrorMessageMode = 'modal'
 ): Promise<Unit> {
-  return unit.mock.mockCreateUnit(params)
-  }
-
   return defHttp.post<Unit>(
     {
       url: Api.CreateUnit,
@@ -177,9 +150,6 @@ export async function getUnitsApi(
   params: GetUnitsParams,
   mode: ErrorMessageMode = 'none'
 ): Promise<GetUnitsResult> {
-  return unit.mock.mockGetUnits(params)
-  }
-
   return defHttp.get<GetUnitsResult>(
     {
       url: Api.GetUnits,
@@ -196,9 +166,6 @@ export async function getUnitDetailApi(
   id: string,
   mode: ErrorMessageMode = 'modal'
 ): Promise<Unit> {
-  return unit.mock.mockGetUnitDetail(id)
-  }
-
   return defHttp.get<Unit>(
     {
       url: Api.GetUnitDetail.replace(':id', id),
@@ -215,9 +182,6 @@ export async function updateUnitApi(
   params: UpdateUnitParams,
   mode: ErrorMessageMode = 'modal'
 ): Promise<Unit> {
-  return unit.mock.mockUpdateUnit(id, params)
-  }
-
   return defHttp.put<Unit>(
     {
       url: Api.UpdateUnit.replace(':id', id),
@@ -234,9 +198,6 @@ export async function deleteUnitApi(
   id: string,
   mode: ErrorMessageMode = 'modal'
 ): Promise<void> {
-  return unit.mock.mockDeleteUnit(id)
-  }
-
   return defHttp.delete<void>(
     {
       url: Api.DeleteUnit.replace(':id', id),
@@ -252,9 +213,6 @@ export async function getRoomsApi(
   params: GetRoomsParams,
   mode: ErrorMessageMode = 'none'
 ): Promise<RoomWithBeds[]> {
-  return unit.mock.mockGetRooms(params.unit_id)
-  }
-
   return defHttp.get<RoomWithBeds[]>(
     {
       url: Api.GetRooms,
@@ -271,9 +229,6 @@ export async function createRoomApi(
   params: CreateRoomParams,
   mode: ErrorMessageMode = 'modal'
 ): Promise<Room> {
-  return unit.mock.mockCreateRoom(params)
-  }
-
   return defHttp.post<Room>(
     {
       url: Api.CreateRoom,
@@ -291,9 +246,6 @@ export async function updateRoomApi(
   params: UpdateRoomParams,
   mode: ErrorMessageMode = 'modal'
 ): Promise<Room> {
-  return unit.mock.mockUpdateRoom(id, params)
-  }
-
   return defHttp.put<Room>(
     {
       url: Api.UpdateRoom.replace(':id', id),
@@ -310,9 +262,6 @@ export async function deleteRoomApi(
   id: string,
   mode: ErrorMessageMode = 'modal'
 ): Promise<void> {
-  return unit.mock.mockDeleteRoom(id)
-  }
-
   return defHttp.delete<void>(
     {
       url: Api.DeleteRoom.replace(':id', id),
@@ -328,9 +277,6 @@ export async function createBedApi(
   params: CreateBedParams,
   mode: ErrorMessageMode = 'modal'
 ): Promise<Bed> {
-  return unit.mock.mockCreateBed(params)
-  }
-
   return defHttp.post<Bed>(
     {
       url: Api.CreateBed,
@@ -348,9 +294,6 @@ export async function updateBedApi(
   params: UpdateBedParams,
   mode: ErrorMessageMode = 'modal'
 ): Promise<Bed> {
-  return unit.mock.mockUpdateBed(id, params)
-  }
-
   return defHttp.put<Bed>(
     {
       url: Api.UpdateBed.replace(':id', id),
@@ -367,9 +310,6 @@ export async function deleteBedApi(
   id: string,
   mode: ErrorMessageMode = 'modal'
 ): Promise<void> {
-  return unit.mock.mockDeleteBed(id)
-  }
-
   return defHttp.delete<void>(
     {
       url: Api.DeleteBed.replace(':id', id),

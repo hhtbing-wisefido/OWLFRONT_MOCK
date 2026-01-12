@@ -38,6 +38,16 @@ export enum Api {
 const useMock = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true'
 
 // Display mock status in console
+if (useMock) {
+  console.log('%c[Mock] User API Mock enabled - Using test data', 'color: #52c41a; font-weight: bold')
+}
+
+/**
+ * @description: Get user list
+ * @param params - Query parameters
+ * @param mode - Error message mode
+ */
+export function getUsersApi(params?: GetUsersParams, mode: ErrorMessageMode = 'modal') {
   return defHttp.get<GetUsersResult>(
     {
       url: Api.GetList,

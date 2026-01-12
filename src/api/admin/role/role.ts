@@ -28,6 +28,16 @@ export enum Api {
 const useMock = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true'
 
 // Display mock status in console
+if (useMock) {
+  console.log('%c[Mock] Role API Mock enabled - Using test data', 'color: #52c41a; font-weight: bold')
+}
+
+/**
+ * @description: Get role list
+ * @param params - Query parameters
+ * @param mode - Error message mode
+ */
+export function getRolesApi(params?: GetRolesParams, mode: ErrorMessageMode = 'modal') {
   return defHttp.get<GetRolesResult>(
     {
       url: Api.GetList,
