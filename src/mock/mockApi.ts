@@ -467,7 +467,7 @@ export async function mockGetCardOverview(params?: any) {
 }
 
 // Mock获取分支/单元列表
-// Mock获取建筑列表
+// Mock获取建筑列表 - 返回格式必须是Building[]数组
 export async function mockGetBuildings(params?: any) {
   await delay()
   
@@ -476,14 +476,10 @@ export async function mockGetBuildings(params?: any) {
   const store = getDataStore()
   let buildings = [...store.buildings]
   
+  // 返回Building[]数组（transformResponseHook会从result字段提取）
   return {
     code: 2000,
-    result: {
-      items: buildings,
-      total: buildings.length,
-      page: 1,
-      pageSize: 20
-    },
+    result: buildings,
     message: 'Buildings retrieved successfully'
   }
 }
@@ -491,12 +487,12 @@ export async function mockGetBuildings(params?: any) {
 export async function mockGetBranches(params?: any) {
   await delay()
   
-  // 返回符合Branch接口的数据格式
+  // 返回符合GetBranchesResult接口的数据格式 { items: Branch[], total: number }
   const branches = [
-    { branch_id: 'branch-001', branch_name: 'Main', tenant_id: 'demo_tenant_001', description: 'Main branch' },
-    { branch_id: 'branch-002', branch_name: 'West Wing', tenant_id: 'demo_tenant_001', description: 'West Wing branch' },
-    { branch_id: 'branch-003', branch_name: 'East Wing', tenant_id: 'demo_tenant_001', description: 'East Wing branch' },
-    { branch_id: 'branch-004', branch_name: 'North Tower', tenant_id: 'demo_tenant_001', description: 'North Tower branch' }
+    { branch_id: 'branch-001', branch_name: 'DV', tenant_id: 'demo_tenant_001', description: 'DV branch' },
+    { branch_id: 'branch-002', branch_name: 'SP', tenant_id: 'demo_tenant_001', description: 'SP branch' },
+    { branch_id: 'branch-003', branch_name: 'MC', tenant_id: 'demo_tenant_001', description: 'Memory Care branch' },
+    { branch_id: 'branch-004', branch_name: 'AL', tenant_id: 'demo_tenant_001', description: 'Assisted Living branch' }
   ]
   
   return {
@@ -509,7 +505,7 @@ export async function mockGetBranches(params?: any) {
   }
 }
 
-// Mock获取所有单元
+// Mock获取所有单元 - 支持building和branch_name过滤
 export async function mockGetAllUnits(params?: any) {
   await delay()
   
@@ -517,6 +513,26 @@ export async function mockGetAllUnits(params?: any) {
   const { getDataStore } = await import('./mockStore')
   const store = getDataStore()
   let units = [...store.units]
+  
+  // 按building过滤
+  if (params?.building) {
+    units = units.filter(u => u.building === params.building)
+  }
+  
+  // 按branch_name过滤
+  if (params?.branch_name !== undefined) {
+    // 空字符串表示查询branch_name为NULL的情况
+    if (params.branch_name === '') {
+      units = units.filter(u => !u.branch_name)
+    } else {
+      units = units.filter(u => u.branch_name === params.branch_name)
+    }
+  }
+  
+  // 按floor过滤
+  if (params?.floor) {
+    units = units.filter(u => u.floor === params.floor)
+  }
   
   // 应用搜索过滤
   if (params?.search) {

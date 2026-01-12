@@ -240,64 +240,114 @@ function initializeStore(): MockDataStore {
     }
   })
   
-  // 建筑列表（8栋建筑 - 符合Building接口）
-  const branchNames = ['Main', 'West Wing', 'East Wing', 'North Tower']
-  const buildings = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map((letter, i) => ({
-    building_id: `building-${letter}`,
-    building_name: `Building ${letter}`,
+  // 建筑列表 - 格式：显示为 ${branch_name}-${building_name}
+  // 示例：DV-A, DV-B, SP-H 等
+  // 从卡片数据中提取唯一的building组合
+  const buildingsFromCards = new Map<string, { branch_name: string; building_name: string }>()
+  
+  // 从200张卡片中提取建筑信息
+  cards.forEach((card: VitalFocusCard) => {
+    if (card.card_type === 'ActiveBed' && card.card_address) {
+      // card_address格式: "Building A / Room 101 / Bed 1"
+      const parts = card.card_address.split(' / ')
+      const buildingPart = parts[0] || 'Building A' // e.g., "Building A"
+      const buildingLetter = buildingPart.replace('Building ', '') // e.g., "A"
+      
+      // 根据building分配branch (模拟真实场景)
+      let branchName: string
+      if (['A', 'B', 'C'].includes(buildingLetter)) {
+        branchName = 'DV' // DaVita branch
+      } else if (['D', 'E'].includes(buildingLetter)) {
+        branchName = 'SP' // Special Care branch
+      } else if (['F', 'G'].includes(buildingLetter)) {
+        branchName = 'MC' // Memory Care branch
+      } else {
+        branchName = 'AL' // Assisted Living branch
+      }
+      
+      const key = `${branchName}-${buildingLetter}`
+      if (!buildingsFromCards.has(key)) {
+        buildingsFromCards.set(key, {
+          branch_name: branchName,
+          building_name: buildingLetter
+        })
+      }
+    }
+  })
+  
+  // 转换为Building数组
+  const buildings = Array.from(buildingsFromCards.entries()).map(([key, value]) => ({
+    building_id: `building-${key}`,
+    building_name: value.building_name,
     tenant_id: 'demo_tenant_001',
-    branch_id: `branch-${String((i % 4) + 1).padStart(3, '0')}`,
-    branch_name: branchNames[i % branchNames.length]
+    branch_id: `branch-${value.branch_name.toLowerCase()}`,
+    branch_name: value.branch_name
   }))
   
-  // 单元列表（完整版 - 符合Unit接口）
-  const floors = 5 // 每栋楼5层
-  const unitsPerFloor = 5 // 每层5个单元
+  // 单元列表 - 从卡片数据中提取
+  // 根据card_address解析出unit信息
+  const unitsFromCards = new Map<string, any>()
   
-  const units = buildings.flatMap(building => {
-    const unitCount = floors * unitsPerFloor
-    const buildingLetter = building.building_name?.split(' ')[1] || 'A' // 从 "Building A" 提取 "A"
-    
-    return Array.from({ length: unitCount }, (_, index) => {
-      const floor = Math.floor(index / unitsPerFloor) + 1
-      const unitNumberOnFloor = (index % unitsPerFloor) + 1
-      const unitNumber = `${floor}${String(unitNumberOnFloor).padStart(2, '0')}` // 例如: 101, 102, 201, 202
-      const unitId = `unit-${buildingLetter}-${unitNumber}`
+  cards.forEach((card: VitalFocusCard, cardIndex: number) => {
+    if (card.card_type === 'ActiveBed' && card.card_address) {
+      // card_address格式: "Building A / Room 101 / Bed 1"
+      const parts = card.card_address.split(' / ')
+      const buildingPart = parts[0] || 'Building A'
+      const roomPart = parts[1] || 'Room 101'
       
-      // 找到该单元的住户
-      const resident = residents.find(r => 
-        r.building === building.building_name && 
-        r.unit_number === unitNumber
-      )
+      const buildingLetter = buildingPart.replace('Building ', '') // e.g., "A"
+      const roomNumber = roomPart.replace('Room ', '') // e.g., "101"
+      const floor = roomNumber.charAt(0) // e.g., "1"
       
-      return {
-        unit_id: unitId,
-        tenant_id: 'demo_tenant_001',
-        branch_name: building.branch_name,
-        unit_name: `${building.building_name} - ${unitNumber}`,
-        building: building.building_name,
-        floor: `${floor}F`,
-        unit_number: unitNumber,
-        layout_config: {
-          beds: index % 10 === 0 ? 2 : 1,
-          bathrooms: 1,
-          livingArea: index % 3 === 0 ? 'Yes' : 'No'
-        },
-        unit_type: 'Facility' as const,
-        primary_resident_id: resident?.resident_id || undefined,
-        is_public_space: index % 20 === 0,
-        is_multi_person_room: index % 10 === 0,
-        timezone: 'America/Los_Angeles',
-        alarm_user_ids: index % 3 === 0 ? ['user-001', 'user-002'] : undefined,
-        alarm_tags: index % 2 === 0 ? ['urgent', 'high-priority'] : undefined,
-        status: 'active' as const,
-        occupancy: resident ? 'occupied' : 'vacant',
-        residentName: resident ? resident.nickname : undefined,
-        createdAt: new Date(Date.now() - index * 86400000).toISOString(),
-        updatedAt: new Date().toISOString()
+      // 根据building分配branch
+      let branchName: string
+      if (['A', 'B', 'C'].includes(buildingLetter)) {
+        branchName = 'DV'
+      } else if (['D', 'E'].includes(buildingLetter)) {
+        branchName = 'SP'
+      } else if (['F', 'G'].includes(buildingLetter)) {
+        branchName = 'MC'
+      } else {
+        branchName = 'AL'
       }
-    })
+      
+      const unitId = `unit-${buildingLetter}-${roomNumber}`
+      
+      if (!unitsFromCards.has(unitId)) {
+        // 找到该单元的住户
+        const resident = card.residents && card.residents[0]
+        
+        unitsFromCards.set(unitId, {
+          unit_id: unitId,
+          tenant_id: 'demo_tenant_001',
+          branch_name: branchName,
+          unit_name: roomNumber,
+          building: buildingLetter,
+          floor: `${floor}F`,
+          unit_number: roomNumber,
+          layout_config: {
+            beds: cardIndex % 10 === 0 ? 2 : 1,
+            bathrooms: 1,
+            livingArea: cardIndex % 3 === 0 ? 'Yes' : 'No'
+          },
+          unit_type: 'Facility' as const,
+          primary_resident_id: resident?.resident_id || undefined,
+          is_public_space: false,
+          is_multi_person_room: cardIndex % 10 === 0,
+          timezone: 'America/Los_Angeles',
+          alarm_user_ids: cardIndex % 3 === 0 ? ['user-001', 'user-002'] : undefined,
+          alarm_tags: cardIndex % 2 === 0 ? ['urgent', 'high-priority'] : undefined,
+          status: 'active' as const,
+          occupancy: resident ? 'occupied' : 'vacant',
+          residentName: resident ? `${resident.first_name} ${resident.last_name}` : undefined,
+          createdAt: new Date(Date.now() - cardIndex * 86400000).toISOString(),
+          updatedAt: new Date().toISOString()
+        })
+      }
+    }
   })
+  
+  const units = Array.from(unitsFromCards.values())
   
   // 角色列表（更完整的角色定义 - 使用snake_case以匹配前端）
   const roles = [
