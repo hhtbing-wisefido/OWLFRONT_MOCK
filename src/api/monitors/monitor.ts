@@ -18,7 +18,7 @@ enum Api {
 }
 
 // Mock mode: In development, use mock data instead of real API calls
-// DEV 默认走真实后端；只有显式设置 VITE_USE_MOCK='true' 才启用 mock
+// DEV 榛樿璧扮湡瀹炲悗绔紱鍙湁鏄惧紡璁剧疆 VITE_USE_MOCK='true' 鎵嶅惎鐢?mock
 const useMock = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true'
 
 // Display mock status in console
@@ -38,9 +38,7 @@ export function getVitalFocusCardsApi(
   params?: Record<string, any>,
 ) {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ vitalFocus }) => {
-      console.log('%c[Mock] Get Vital Focus Cards API Request', 'color: #1890ff; font-weight: bold', {
+  console.log('%c[Mock] Get Vital Focus Cards API Request', 'color: #1890ff; font-weight: bold', {
         params,
       })
       return vitalFocus.mockGetVitalFocusCards(params)
@@ -68,9 +66,7 @@ export function getVitalFocusCardByResidentApi(
   mode: ErrorMessageMode = 'modal',
 ) {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ vitalFocus }) => {
-      console.log('%c[Mock] Get Vital Focus Card by Resident API Request', 'color: #1890ff; font-weight: bold', {
+  console.log('%c[Mock] Get Vital Focus Card by Resident API Request', 'color: #1890ff; font-weight: bold', {
         residentId,
       })
       return vitalFocus.mockGetVitalFocusCardByResident(residentId)
@@ -97,9 +93,7 @@ export function getVitalFocusCardDetailApi(
   mode: ErrorMessageMode = 'modal',
 ) {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ vitalFocus }) => {
-      console.log('%c[Mock] Get Vital Focus Card Detail API Request', 'color: #1890ff; font-weight: bold', {
+  console.log('%c[Mock] Get Vital Focus Card Detail API Request', 'color: #1890ff; font-weight: bold', {
         cardId,
       })
       return vitalFocus.mockGetVitalFocusCardDetail(cardId)
@@ -135,9 +129,7 @@ export function saveVitalFocusSelectionApi(
   mode: ErrorMessageMode = 'modal',
 ) {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ vitalFocus }) => {
-      console.log('%c[Mock] Save Vital Focus Selection API Request', 'color: #1890ff; font-weight: bold', {
+  console.log('%c[Mock] Save Vital Focus Selection API Request', 'color: #1890ff; font-weight: bold', {
         params,
       })
       return vitalFocus.mockSaveVitalFocusSelection(params)

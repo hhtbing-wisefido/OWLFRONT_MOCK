@@ -28,31 +28,6 @@ export enum Api {
 const useMock = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true'
 
 // Display mock status in console
-if (useMock) {
-  console.log('%c[Mock] Role API Mock enabled - Using test data', 'color: #52c41a; font-weight: bold')
-}
-
-/**
- * @description: Get role list
- * @param params - Query parameters (optional search keyword)
- * @param mode - Error message mode
- */
-export function getRolesApi(params?: GetRolesParams, mode: ErrorMessageMode = 'modal') {
-  // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ roles }) => {
-      console.log('%c[Mock] Get Roles API Request', 'color: #1890ff; font-weight: bold', { params })
-      return roles.mockGetRoles(params).then((result) => {
-        console.log('%c[Mock] Get Roles API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Get Roles API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      })
-    })
-  }
-
-  // Production: Call real API
   return defHttp.get<GetRolesResult>(
     {
       url: Api.GetList,
@@ -71,20 +46,6 @@ export function getRolesApi(params?: GetRolesParams, mode: ErrorMessageMode = 'm
  */
 export function createRoleApi(params: CreateRoleParams, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ roles }) => {
-      console.log('%c[Mock] Create Role API Request', 'color: #1890ff; font-weight: bold', { params })
-      return roles.mockCreateRole(params).then((result) => {
-        console.log('%c[Mock] Create Role API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Create Role API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      })
-    })
-  }
-
-  // Production: Call real API
   return defHttp.post<CreateRoleResult>(
     {
       url: Api.Create,
@@ -104,20 +65,6 @@ export function createRoleApi(params: CreateRoleParams, mode: ErrorMessageMode =
  */
 export function updateRoleApi(roleId: string, params: UpdateRoleParams, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ roles }) => {
-      console.log('%c[Mock] Update Role API Request', 'color: #1890ff; font-weight: bold', { roleId, params })
-      return roles.mockUpdateRole(roleId, params).then((result) => {
-        console.log('%c[Mock] Update Role API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Update Role API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      })
-    })
-  }
-
-  // Production: Call real API
   return defHttp.put(
     {
       url: Api.Update.replace(':id', roleId),
@@ -136,20 +83,6 @@ export function updateRoleApi(roleId: string, params: UpdateRoleParams, mode: Er
  */
 export function deleteRoleApi(roleId: string, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ roles }) => {
-      console.log('%c[Mock] Delete Role API Request', 'color: #1890ff; font-weight: bold', { roleId })
-      return roles.mockDeleteRole(roleId).then((result) => {
-        console.log('%c[Mock] Delete Role API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Delete Role API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      })
-    })
-  }
-
-  // Production: Call real API
   return defHttp.delete(
     {
       url: Api.Delete.replace(':id', roleId),
@@ -168,20 +101,6 @@ export function deleteRoleApi(roleId: string, mode: ErrorMessageMode = 'modal') 
  */
 export function changeRoleStatusApi(roleId: string, params: UpdateRoleStatusParams, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ roles }) => {
-      console.log('%c[Mock] Change Role Status API Request', 'color: #1890ff; font-weight: bold', { roleId, params })
-      return roles.mockChangeRoleStatus(roleId, params).then((result) => {
-        console.log('%c[Mock] Change Role Status API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Change Role Status API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      })
-    })
-  }
-
-  // Production: Call real API
   return defHttp.put(
     {
       url: Api.UpdateStatus.replace(':id', roleId),

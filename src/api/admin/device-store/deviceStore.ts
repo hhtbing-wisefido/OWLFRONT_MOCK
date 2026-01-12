@@ -23,11 +23,6 @@ export async function getDeviceStoresApi(
   params: GetDeviceStoresParams = {},
   mode: ErrorMessageMode = 'none',
 ): Promise<GetDeviceStoresResult> {
-  if (useMock) {
-    const { deviceStore } = await import('@test/index')
-    const data = await deviceStore.mock.mockGetDeviceStores()
-    return { items: data.items, total: data.items.length }
-  }
   return defHttp.get<GetDeviceStoresResult>(
     {
       url: Api.DeviceStore,
@@ -41,12 +36,6 @@ export async function batchUpdateDeviceStoresApi(
   updates: BatchUpdateDeviceStoresParams['updates'],
   mode: ErrorMessageMode = 'modal',
 ): Promise<{ success: boolean; updated?: number } | any> {
-  if (useMock) {
-    const { deviceStore } = await import('@test/index')
-    await deviceStore.mock.mockBatchUpdateDeviceStores(updates)
-    return { success: true, updated: updates.length }
-  }
-
   return defHttp.put<{ success: boolean; updated?: number }>(
     {
       url: Api.DeviceStoreBatch,
@@ -65,21 +54,6 @@ export async function importDeviceStoresApi(
   file: File,
   mode: ErrorMessageMode = 'modal',
 ): Promise<ImportDeviceStoresResult> {
-  if (useMock) {
-    const { deviceStore } = await import('@test/index')
-    // TODO: Implement mock import when available
-    return deviceStore.mock.mockImportDeviceStores(file).catch(() => ({
-      success: true,
-      total: 0,
-      success_count: 0,
-      failed_count: 0,
-      skipped_count: 0,
-    }))
-  }
-
-  const formData = new FormData()
-  formData.append('file', file)
-
   return defHttp.post<ImportDeviceStoresResult>(
     {
       url: Api.DeviceStoreImport,
@@ -99,11 +73,6 @@ export async function importDeviceStoresApi(
 export async function getImportTemplateApi(
   mode: ErrorMessageMode = 'modal',
 ): Promise<Blob> {
-  if (useMock) {
-    // TODO: Return mock template file when available
-    return Promise.resolve(new Blob(['Mock template'], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }))
-  }
-
   return defHttp.get<Blob>(
     {
       url: Api.DeviceStoreImportTemplate,
@@ -125,19 +94,3 @@ export async function exportDeviceStoresApi(
   params: ExportDeviceStoresParams = {},
   mode: ErrorMessageMode = 'modal',
 ): Promise<Blob> {
-  if (useMock) {
-    // TODO: Return mock export file when available
-    return Promise.resolve(new Blob(['Mock export'], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }))
-  }
-
-  const response = await defHttp.get<Blob>(
-    {
-      url: Api.DeviceStoreExport,
-      params,
-      responseType: 'blob',
-    },
-    { errorMessageMode: mode, isReturnNativeResponse: true },
-  )
-  // Extract blob from response
-  return response instanceof Blob ? response : (response as any).data
-}

@@ -24,10 +24,8 @@ export function getCardOverviewApi(
   mode: ErrorMessageMode = 'modal',
 ) {
   // In development: Use mock data if available
-  // DEV 默认走真实后端；只有显式设置 VITE_USE_MOCK='true' 才启用 mock
-  if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true') {
-    return import('@test/index').then(({ cardOverview }) => {
-      console.log('%c[Mock] Get Card Overview API Request', 'color: #1890ff; font-weight: bold', {
+  // DEV 榛樿璧扮湡瀹炲悗绔紱鍙湁鏄惧紡璁剧疆 VITE_USE_MOCK='true' 鎵嶅惎鐢?mock
+  console.log('%c[Mock] Get Card Overview API Request', 'color: #1890ff; font-weight: bold', {
         params,
       })
       return cardOverview.mock.mockGetCardOverview(params).then((result) => {

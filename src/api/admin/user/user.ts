@@ -38,31 +38,6 @@ export enum Api {
 const useMock = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true'
 
 // Display mock status in console
-if (useMock) {
-  console.log('%c[Mock] User API Mock enabled - Using test data', 'color: #52c41a; font-weight: bold')
-}
-
-/**
- * @description: Get user list
- * @param params - Query parameters (optional search keyword)
- * @param mode - Error message mode
- */
-export function getUsersApi(params?: GetUsersParams, mode: ErrorMessageMode = 'modal') {
-  // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ users }) => {
-      console.log('%c[Mock] Get Users API Request', 'color: #1890ff; font-weight: bold', { params })
-      return users.mockGetUsers(params).then((result) => {
-        console.log('%c[Mock] Get Users API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Get Users API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      })
-    })
-  }
-
-  // Production: Call real backend API
   return defHttp.get<GetUsersResult>(
     {
       url: Api.GetList,
@@ -79,20 +54,6 @@ export function getUsersApi(params?: GetUsersParams, mode: ErrorMessageMode = 'm
  */
 export function createUserApi(params: CreateUserParams, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ users }) => {
-      console.log('%c[Mock] Create User API Request', 'color: #1890ff; font-weight: bold', { params })
-      return users.mockCreateUser(params).then((result) => {
-        console.log('%c[Mock] Create User API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Create User API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      })
-    })
-  }
-
-  // Production: Call real backend API
   return defHttp.post<CreateUserResult>(
     {
       url: Api.Create,
@@ -110,20 +71,6 @@ export function createUserApi(params: CreateUserParams, mode: ErrorMessageMode =
  */
 export function updateUserApi(userId: string, params: UpdateUserParams, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ users }) => {
-      console.log('%c[Mock] Update User API Request', 'color: #1890ff; font-weight: bold', { userId, params })
-      return users.mockUpdateUser(userId, params).then((result) => {
-        console.log('%c[Mock] Update User API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Update User API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      })
-    })
-  }
-
-  // Production: Call real backend API
   return defHttp.put<{ success: boolean }>(
     {
       url: Api.Update.replace(':id', userId),
@@ -149,20 +96,6 @@ export function deleteUserApi(userId: string, mode: ErrorMessageMode = 'modal') 
  */
 export function getUserApi(userId: string, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ users }) => {
-      console.log('%c[Mock] Get User API Request', 'color: #1890ff; font-weight: bold', { userId })
-      return users.mockGetUser(userId).then((result) => {
-        console.log('%c[Mock] Get User API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Get User API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      })
-    })
-  }
-
-  // Production: Call real backend API
   return defHttp.get<User>(
     {
       url: Api.Update.replace(':id', userId),
@@ -179,20 +112,6 @@ export function getUserApi(userId: string, mode: ErrorMessageMode = 'modal') {
  */
 export function resetPasswordApi(userId: string, params: Omit<ResetPasswordParams, 'user_id'>, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ users }) => {
-      console.log('%c[Mock] Reset Password API Request', 'color: #1890ff; font-weight: bold', { userId, params })
-      return users.mockResetPassword(userId, params).then((result) => {
-        console.log('%c[Mock] Reset Password API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Reset Password API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      })
-    })
-  }
-
-  // Production: Call real backend API
   return defHttp.post<ResetPasswordResult>(
     {
       url: Api.ResetPassword.replace(':id', userId),
@@ -210,20 +129,6 @@ export function resetPasswordApi(userId: string, params: Omit<ResetPasswordParam
  */
 export function resetPinApi(userId: string, params: Omit<ResetPinParams, 'user_id'>, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ users }) => {
-      console.log('%c[Mock] Reset PIN API Request', 'color: #1890ff; font-weight: bold', { userId, params })
-      return users.mockResetPin(userId, params).then((result) => {
-        console.log('%c[Mock] Reset PIN API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Reset PIN API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      })
-    })
-  }
-
-  // Production: Call real backend API
   return defHttp.post<ResetPinResult>(
     {
       url: Api.ResetPin.replace(':id', userId),
@@ -244,20 +149,6 @@ export function resetPinApi(userId: string, params: Omit<ResetPinParams, 'user_i
 /*
 export function getAccountSettingsApi(userId: string, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ users }) => {
-      console.log('%c[Mock] Get Account Settings API Request', 'color: #1890ff; font-weight: bold', { userId })
-      return users.mockGetAccountSettings(userId).then((result) => {
-        console.log('%c[Mock] Get Account Settings API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Get Account Settings API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      })
-    })
-  }
-
-  // Production: Call real backend API
   return defHttp.get<{
     user_account: string
     nickname: string
@@ -294,20 +185,6 @@ export function updateAccountSettingsApi(
   mode: ErrorMessageMode = 'modal',
 ) {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ users }) => {
-      console.log('%c[Mock] Update Account Settings API Request', 'color: #1890ff; font-weight: bold', { userId, params })
-      return users.mockUpdateAccountSettings(userId, params).then((result) => {
-        console.log('%c[Mock] Update Account Settings API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Update Account Settings API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      })
-    })
-  }
-
-  // Production: Call real backend API
   return defHttp.put<{ success: boolean; message?: string }>(
     {
       url: Api.UpdateAccountSettings.replace(':id', userId),

@@ -29,7 +29,7 @@ export enum Api {
 }
 
 // Mock mode: In development, use mock data instead of real API calls
-// DEV 默认走真实后端；只有显式设置 VITE_USE_MOCK='true' 才启用 mock
+// DEV 榛樿璧扮湡瀹炲悗绔紱鍙湁鏄惧紡璁剧疆 VITE_USE_MOCK='true' 鎵嶅惎鐢?mock
 const useMock = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true'
 
 // Display mock status in console
@@ -50,9 +50,7 @@ export function getRolePermissionsApi(
   mode: ErrorMessageMode = 'modal',
 ) {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ rolePermissions }) => {
-      console.log(
+  console.log(
         '%c[Mock] Get Role Permissions API Request',
         'color: #1890ff; font-weight: bold',
         { params },
@@ -97,9 +95,7 @@ export function createRolePermissionApi(
   mode: ErrorMessageMode = 'modal',
 ) {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ rolePermissions }) => {
-      console.log(
+  console.log(
         '%c[Mock] Create Role Permission API Request',
         'color: #1890ff; font-weight: bold',
         { params },
@@ -144,9 +140,7 @@ export function batchCreateRolePermissionsApi(
   mode: ErrorMessageMode = 'modal',
 ) {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ rolePermissions }) => {
-      console.log(
+  console.log(
         '%c[Mock] Batch Create Role Permissions API Request',
         'color: #1890ff; font-weight: bold',
         { params },
@@ -193,9 +187,7 @@ export function updateRolePermissionApi(
   mode: ErrorMessageMode = 'modal',
 ) {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ rolePermissions }) => {
-      console.log(
+  console.log(
         '%c[Mock] Update Role Permission API Request',
         'color: #1890ff; font-weight: bold',
         { permissionId, params },
@@ -237,9 +229,7 @@ export function updateRolePermissionApi(
  */
 export function deleteRolePermissionApi(permissionId: string, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ rolePermissions }) => {
-      console.log(
+  console.log(
         '%c[Mock] Delete Role Permission API Request',
         'color: #1890ff; font-weight: bold',
         { permissionId },
@@ -285,9 +275,7 @@ export function changeRolePermissionStatusApi(
   mode: ErrorMessageMode = 'modal',
 ) {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ rolePermissions }) => {
-      console.log(
+  console.log(
         '%c[Mock] Change Role Permission Status API Request',
         'color: #1890ff; font-weight: bold',
         { permissionId, params },
@@ -328,9 +316,7 @@ export function changeRolePermissionStatusApi(
  */
 export function getResourceTypesApi(mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ rolePermissions }) => {
-      console.log(
+  console.log(
         '%c[Mock] Get Resource Types API Request',
         'color: #1890ff; font-weight: bold',
       )

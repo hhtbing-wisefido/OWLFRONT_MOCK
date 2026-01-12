@@ -37,31 +37,6 @@ export enum Api {
 const useMock = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true'
 
 // Display mock status in console
-if (useMock) {
-  console.log('%c[Mock] Tags API Mock enabled - Using test data', 'color: #52c41a; font-weight: bold')
-}
-
-/**
- * @description: Get Tags list
- * @param params - Query parameters
- * @param mode - Error message mode
- */
-export function getTagsApi(params?: GetTagsParams, mode: ErrorMessageMode = 'modal') {
-  // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ tags }) => {
-      console.log('%c[Mock] Get Tags API Request', 'color: #1890ff; font-weight: bold', { params })
-      return tags.mock.mockGetTags(params).then((result) => {
-        console.log('%c[Mock] Get Tags API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Get Tags API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      })
-    })
-  }
-
-  // Production: Call real backend API
   return defHttp.get<GetTagsResult>(
     {
       url: Api.GetList,
@@ -77,21 +52,6 @@ export function getTagsApi(params?: GetTagsParams, mode: ErrorMessageMode = 'mod
  * @param mode - Error message mode
  */
 export function createTagApi(params: CreateTagParams, mode: ErrorMessageMode = 'modal') {
-  // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ tags }) => {
-      console.log('%c[Mock] Create Tag API Request', 'color: #1890ff; font-weight: bold', { params })
-      return tags.mock.mockCreateTag(params).then((result) => {
-        console.log('%c[Mock] Create Tag API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Create Tag API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      })
-    })
-  }
-
-  // Production: Call real backend API
   return defHttp.post<CreateTagResult>(
     {
       url: Api.Create,
@@ -108,21 +68,6 @@ export function createTagApi(params: CreateTagParams, mode: ErrorMessageMode = '
  * @param mode - Error message mode
  */
 export function updateTagApi(tagId: string, params: UpdateTagParams, mode: ErrorMessageMode = 'modal') {
-  // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ tags }) => {
-      console.log('%c[Mock] Update Tag API Request', 'color: #1890ff; font-weight: bold', { tagId, params })
-      return tags.mock.mockUpdateTag(tagId, params).then((result) => {
-        console.log('%c[Mock] Update Tag API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Update Tag API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      })
-    })
-  }
-
-  // Production: Call real backend API
   return defHttp.put<{ success: boolean }>(
     {
       url: Api.Update.replace(':id', tagId),
@@ -138,22 +83,6 @@ export function updateTagApi(tagId: string, params: UpdateTagParams, mode: Error
  * @param mode - Error message mode
  */
 export function deleteTagApi(params: DeleteTagParams, mode: ErrorMessageMode = 'modal') {
-  // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ tags }) => {
-      console.log('%c[Mock] Delete Tag API Request', 'color: #1890ff; font-weight: bold', { params })
-      return tags.mock.mockDeleteTag(params).then((result) => {
-        console.log('%c[Mock] Delete Tag API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Delete Tag API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      })
-    })
-  }
-
-  // Production: Call real backend API
-  // Note: tag_name is globally unique, tag_type not needed
   return defHttp.delete<{ success: boolean }>(
     {
       url: Api.Delete,
@@ -172,21 +101,6 @@ export function deleteTagApi(params: DeleteTagParams, mode: ErrorMessageMode = '
  * @param mode - Error message mode
  */
 export function addTagObjectsApi(params: AddTagObjectsParams, mode: ErrorMessageMode = 'modal') {
-  // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ tags }) => {
-      console.log('%c[Mock] Add Tag Objects API Request', 'color: #1890ff; font-weight: bold', { params })
-      return tags.mock.mockAddTagObjects?.(params).then((result) => {
-        console.log('%c[Mock] Add Tag Objects API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Add Tag Objects API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      }) || Promise.resolve({ success: true })
-    })
-  }
-
-  // Production: Call real backend API
   return defHttp.post<{ success: boolean }>(
     {
       url: Api.AddObjects.replace(':id', params.tag_id),
@@ -205,21 +119,6 @@ export function addTagObjectsApi(params: AddTagObjectsParams, mode: ErrorMessage
  * @param mode - Error message mode
  */
 export function removeTagObjectsApi(params: RemoveTagObjectsParams, mode: ErrorMessageMode = 'modal') {
-  // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ tags }) => {
-      console.log('%c[Mock] Remove Tag Objects API Request', 'color: #1890ff; font-weight: bold', { params })
-      return tags.mock.mockRemoveTagObjects(params).then((result) => {
-        console.log('%c[Mock] Remove Tag Objects API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Remove Tag Objects API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      })
-    })
-  }
-
-  // Production: Call real backend API
   return defHttp.delete<{ success: boolean }>(
     {
       url: Api.RemoveObjects.replace(':id', params.tag_id),
@@ -239,20 +138,6 @@ export function removeTagObjectsApi(params: RemoveTagObjectsParams, mode: ErrorM
  */
 export function deleteTagTypeApi(params: DeleteTagTypeParams, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ tags }) => {
-      console.log('%c[Mock] Delete Tag Type API Request', 'color: #1890ff; font-weight: bold', { params })
-      return tags.mock.mockDeleteTagType(params).then((result) => {
-        console.log('%c[Mock] Delete Tag Type API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Delete Tag Type API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      })
-    })
-  }
-
-  // Production: Call real backend API
   return defHttp.delete<{ success: boolean }>(
     {
       url: Api.DeleteTagType,
@@ -269,20 +154,6 @@ export function deleteTagTypeApi(params: DeleteTagTypeParams, mode: ErrorMessage
  */
 export function getTagsForObjectApi(params: GetTagsForObjectParams, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ tags }) => {
-      console.log('%c[Mock] Get Tags For Object API Request', 'color: #1890ff; font-weight: bold', { params })
-      return tags.mock.mockGetTagsForObject(params).then((result) => {
-        console.log('%c[Mock] Get Tags For Object API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Get Tags For Object API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      })
-    })
-  }
-
-  // Production: Call real backend API
   return defHttp.get<TagForObject[]>(
     {
       url: Api.GetTagsForObject,

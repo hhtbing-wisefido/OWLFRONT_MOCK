@@ -39,7 +39,7 @@ export enum Api {
 }
 
 // Mock mode: In development, use mock data instead of real API calls
-// DEV 默认走真实后端；只有显式设置 VITE_USE_MOCK='true' 才启用 mock
+// DEV 榛樿璧扮湡瀹炲悗绔紱鍙湁鏄惧紡璁剧疆 VITE_USE_MOCK='true' 鎵嶅惎鐢?mock
 const useMock = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true'
 
 // Display mock status in console
@@ -54,9 +54,7 @@ if (useMock) {
  */
 export function getDevicesApi(params?: GetDevicesParams, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ devices }) => {
-      console.log('%c[Mock] Get Devices API Request', 'color: #1890ff; font-weight: bold', { params })
+  console.log('%c[Mock] Get Devices API Request', 'color: #1890ff; font-weight: bold', { params })
       return devices.mock.mockGetDevices(params).then((result: GetDevicesResult) => {
         console.log('%c[Mock] Get Devices API - Success', 'color: #52c41a; font-weight: bold', { result })
         return result
@@ -84,9 +82,7 @@ export function getDevicesApi(params?: GetDevicesParams, mode: ErrorMessageMode 
  */
 export function getDeviceDetailApi(deviceId: string, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ devices }) => {
-      console.log('%c[Mock] Get Device Detail API Request', 'color: #1890ff; font-weight: bold', { deviceId })
+  console.log('%c[Mock] Get Device Detail API Request', 'color: #1890ff; font-weight: bold', { deviceId })
       return devices.mock.mockGetDeviceDetail(deviceId).then((result: Device) => {
         console.log('%c[Mock] Get Device Detail API - Success', 'color: #52c41a; font-weight: bold', { result })
         return result
@@ -114,9 +110,7 @@ export function getDeviceDetailApi(deviceId: string, mode: ErrorMessageMode = 'm
  */
 export function updateDeviceApi(deviceId: string, params: UpdateDeviceParams, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ devices }) => {
-      console.log('%c[Mock] Update Device API Request', 'color: #1890ff; font-weight: bold', { deviceId, params })
+  console.log('%c[Mock] Update Device API Request', 'color: #1890ff; font-weight: bold', { deviceId, params })
       return devices.mock.mockUpdateDevice(deviceId, params).then((result: { success: boolean }) => {
         console.log('%c[Mock] Update Device API - Success', 'color: #52c41a; font-weight: bold', { result })
         return result
@@ -144,9 +138,7 @@ export function updateDeviceApi(deviceId: string, params: UpdateDeviceParams, mo
  */
 export function deleteDeviceApi(deviceId: string, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ devices }) => {
-      console.log('%c[Mock] Delete Device API Request', 'color: #1890ff; font-weight: bold', { deviceId })
+  console.log('%c[Mock] Delete Device API Request', 'color: #1890ff; font-weight: bold', { deviceId })
       return devices.mock.mockDeleteDevice(deviceId).then((result: { success: boolean }) => {
         console.log('%c[Mock] Delete Device API - Success', 'color: #52c41a; font-weight: bold', { result })
         return result

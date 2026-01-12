@@ -30,7 +30,7 @@ import { ref, computed, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import { batchCreateRolePermissionsApi, getRolePermissionsApi } from '@/api/admin/role-permission/rolePermission'
 import type { RolePermission } from '@/api/admin/role-permission/model/rolePermissionModel'
-import { ROLES } from '@test/admin/role-permissions/data'
+// ROLES now defined in mock system, will be returned from API
 import RoleCard from '@/views/admin/permissions/components/RoleCard.vue'
 import { useUserStore } from '@/store/modules/user'
 

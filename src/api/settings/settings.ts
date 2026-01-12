@@ -20,7 +20,7 @@ enum Api {
 }
 
 // Mock mode: In development, use mock data instead of real API calls
-// DEV 默认走真实后端；只有显式设置 VITE_USE_MOCK='true' 才启用 mock
+// DEV 榛樿璧扮湡瀹炲悗绔紱鍙湁鏄惧紡璁剧疆 VITE_USE_MOCK='true' 鎵嶅惎鐢?mock
 const useMock = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true'
 
 // Display mock status in console
@@ -36,9 +36,7 @@ export function getSleepaceDeviceMonitorSettingsApi(
   mode: ErrorMessageMode = 'modal',
 ): Promise<SleepaceMonitorSettings> {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ settings }) => {
-      console.log('%c[Mock] Get Sleepace Monitor Settings API Request', 'color: #1890ff; font-weight: bold', {
+  console.log('%c[Mock] Get Sleepace Monitor Settings API Request', 'color: #1890ff; font-weight: bold', {
         deviceId,
       })
       return settings.mockGetSleepaceSettings(deviceId)
@@ -65,9 +63,7 @@ export function updateSleepaceDeviceMonitorSettingsApi(
   mode: ErrorMessageMode = 'modal',
 ): Promise<void> {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ settings }) => {
-      console.log('%c[Mock] Update Sleepace Monitor Settings API Request', 'color: #1890ff; font-weight: bold', {
+  console.log('%c[Mock] Update Sleepace Monitor Settings API Request', 'color: #1890ff; font-weight: bold', {
         deviceId,
         params,
       })
@@ -95,9 +91,7 @@ export function getRadarDeviceMonitorSettingsApi(
   mode: ErrorMessageMode = 'modal',
 ): Promise<RadarMonitorSettings> {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ settings }) => {
-      console.log('%c[Mock] Get Radar Monitor Settings API Request', 'color: #1890ff; font-weight: bold', {
+  console.log('%c[Mock] Get Radar Monitor Settings API Request', 'color: #1890ff; font-weight: bold', {
         deviceId,
       })
       return settings.mockGetRadarSettings(deviceId)
@@ -124,9 +118,7 @@ export function updateRadarDeviceMonitorSettingsApi(
   mode: ErrorMessageMode = 'modal',
 ): Promise<void> {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ settings }) => {
-      console.log('%c[Mock] Update Radar Monitor Settings API Request', 'color: #1890ff; font-weight: bold', {
+  console.log('%c[Mock] Update Radar Monitor Settings API Request', 'color: #1890ff; font-weight: bold', {
         deviceId,
         params,
       })
@@ -145,21 +137,4 @@ export function updateRadarDeviceMonitorSettingsApi(
     },
   )
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

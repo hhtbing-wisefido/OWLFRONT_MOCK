@@ -569,24 +569,6 @@ const handleSaveAll = async () => {
       }
     })
 
-    if (useMock) {
-      // Use mock API in development
-      const { deviceStore } = await import('@test/index')
-      // Convert updates to match mock API expected format (handle null values)
-      const mockUpdates = updates.map(update => ({
-        ...update,
-        data: Object.fromEntries(
-          Object.entries(update.data).map(([key, value]) => [key, value === null ? undefined : value])
-        )
-      }))
-      await deviceStore.mock.mockBatchUpdateDeviceStores(mockUpdates as any)
-      console.log('%c[Mock] Update Device Store API - Success', 'color: #52c41a; font-weight: bold', {
-        updateCount: updates.length,
-      })
-    } else {
-      await batchUpdateDeviceStoresApi(updates)
-    }
-
     message.success(`Successfully saved ${updates.length} device(s)`)
     changedRecords.value.clear()
     await fetchData()
@@ -703,37 +685,6 @@ const handleExport = async () => {
 const fetchData = async () => {
   loading.value = true
   try {
-    if (useMock) {
-      // Use mock data in development
-      const { deviceStore } = await import('@test/index')
-      const [deviceData, tenantData] = await Promise.all([
-        deviceStore.mock.mockGetDeviceStores(),
-        deviceStore.mock.mockGetTenants(),
-      ])
-      dataSource.value = deviceData.items
-      tenantList.value = tenantData.items.map(t => ({
-        tenant_id: t.tenant_id,
-        tenant_name: t.tenant_name,
-      }))
-      console.log('%c[Mock] Device Store API - Success', 'color: #52c41a; font-weight: bold', {
-        deviceCount: deviceData.items.length,
-        tenantCount: tenantData.items.length,
-      })
-    } else {
-      const params: GetDeviceStoresParams = {
-        search: searchText.value || undefined,
-      }
-      const [deviceData, tenantsData] = await Promise.all([
-        getDeviceStoresApi(params),
-        getTenantsApi({}),
-      ])
-      dataSource.value = deviceData.items
-      // tenantList only needs tenant_id and tenant_name for dropdown
-      tenantList.value = tenantsData.items.map(t => ({
-        tenant_id: t.tenant_id,
-        tenant_name: t.tenant_name,
-      }))
-    }
     applyFilters()
   } catch (error: any) {
     console.error('Failed to fetch device stores:', error)

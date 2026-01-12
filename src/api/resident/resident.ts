@@ -37,7 +37,7 @@ export enum Api {
 }
 
 // Mock mode: In development, use mock data instead of real API calls
-// DEV 默认走真实后端；只有显式设置 VITE_USE_MOCK='true' 才启用 mock
+// DEV 榛樿璧扮湡瀹炲悗绔紱鍙湁鏄惧紡璁剧疆 VITE_USE_MOCK='true' 鎵嶅惎鐢?mock
 const useMock = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true'
 
 // Display mock status in console
@@ -52,9 +52,7 @@ if (useMock) {
  */
 export function getResidentsApi(params?: GetResidentsParams, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ residents }) => {
-      console.log('%c[Mock] Get Residents API Request', 'color: #1890ff; font-weight: bold', { params })
+  console.log('%c[Mock] Get Residents API Request', 'color: #1890ff; font-weight: bold', { params })
       return residents.mockGetResidents(params).then((result) => {
         console.log('%c[Mock] Get Residents API - Success', 'color: #52c41a; font-weight: bold', { result })
         return result
@@ -87,9 +85,7 @@ export function getResidentApi(
   mode: ErrorMessageMode = 'modal',
 ) {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ residents }) => {
-      console.log('%c[Mock] Get Resident API Request', 'color: #1890ff; font-weight: bold', { residentId, params })
+  console.log('%c[Mock] Get Resident API Request', 'color: #1890ff; font-weight: bold', { residentId, params })
       return residents.mockGetResident(residentId, params).then((result) => {
         console.log('%c[Mock] Get Resident API - Success', 'color: #52c41a; font-weight: bold', { result })
         return result
@@ -117,9 +113,7 @@ export function getResidentApi(
  */
 export function createResidentApi(params: CreateResidentParams, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ residents }) => {
-      console.log('%c[Mock] Create Resident API Request', 'color: #1890ff; font-weight: bold', { params })
+  console.log('%c[Mock] Create Resident API Request', 'color: #1890ff; font-weight: bold', { params })
       return residents.mockCreateResident(params).then((result) => {
         console.log('%c[Mock] Create Resident API - Success', 'color: #52c41a; font-weight: bold', { result })
         return result
@@ -152,9 +146,7 @@ export function updateResidentApi(
   mode: ErrorMessageMode = 'modal',
 ) {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ residents }) => {
-      console.log('%c[Mock] Update Resident API Request', 'color: #1890ff; font-weight: bold', { residentId, params })
+  console.log('%c[Mock] Update Resident API Request', 'color: #1890ff; font-weight: bold', { residentId, params })
       return residents.mockUpdateResident(residentId, params).then((result) => {
         console.log('%c[Mock] Update Resident API - Success', 'color: #52c41a; font-weight: bold', { result })
         return result
@@ -182,9 +174,7 @@ export function updateResidentApi(
  */
 export function deleteResidentApi(residentId: string, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ residents }) => {
-      console.log('%c[Mock] Delete Resident API Request', 'color: #1890ff; font-weight: bold', { residentId })
+  console.log('%c[Mock] Delete Resident API Request', 'color: #1890ff; font-weight: bold', { residentId })
       return residents.mockDeleteResident(residentId).then((result) => {
         console.log('%c[Mock] Delete Resident API - Success', 'color: #52c41a; font-weight: bold', { result })
         return result
@@ -216,9 +206,7 @@ export function updateResidentPHIApi(
   mode: ErrorMessageMode = 'modal',
 ) {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ residents }) => {
-      console.log('%c[Mock] Update Resident PHI API Request', 'color: #1890ff; font-weight: bold', { residentId, params })
+  console.log('%c[Mock] Update Resident PHI API Request', 'color: #1890ff; font-weight: bold', { residentId, params })
       return residents.mockUpdateResidentPHI(residentId, params).then((result) => {
         console.log('%c[Mock] Update Resident PHI API - Success', 'color: #52c41a; font-weight: bold', { result })
         return result
@@ -250,9 +238,7 @@ export function resetResidentPasswordApi(
   password: string,
   mode: ErrorMessageMode = 'modal',
 ) {
-  if (useMock) {
-    return import('@test/index').then(({ residents }) => {
-      console.log('%c[Mock] Reset Resident Password API Request', 'color: #1890ff; font-weight: bold', { residentId, password })
+  console.log('%c[Mock] Reset Resident Password API Request', 'color: #1890ff; font-weight: bold', { residentId, password })
       return Promise.resolve({ success: true })
     })
   }
@@ -280,12 +266,10 @@ export async function resetContactPasswordApi(
   // Import hashPassword function
   const { hashPassword } = await import('@/utils/crypto')
   
-  // Hash password: SHA256(password) → hex string
+  // Hash password: SHA256(password) 鈫?hex string
   const passwordHash = await hashPassword(password)
   
-  if (useMock) {
-    return import('@test/index').then(({ residents }) => {
-      console.log('%c[Mock] Reset Contact Password API Request', 'color: #1890ff; font-weight: bold', { contactId, passwordHash })
+  console.log('%c[Mock] Reset Contact Password API Request', 'color: #1890ff; font-weight: bold', { contactId, passwordHash })
       return Promise.resolve({ success: true })
     })
   }
@@ -313,9 +297,7 @@ export function resetContactPasswordBySlotApi(
   password: string,
   mode: ErrorMessageMode = 'modal',
 ) {
-  if (useMock) {
-    return import('@test/index').then(({ residents }) => {
-      console.log('%c[Mock] Reset Contact Password API Request', 'color: #1890ff; font-weight: bold', { residentId, slot, password })
+  console.log('%c[Mock] Reset Contact Password API Request', 'color: #1890ff; font-weight: bold', { residentId, slot, password })
       return Promise.resolve({ success: true })
     })
   }
@@ -340,12 +322,9 @@ export function updateResidentContactApi(
   params: UpdateResidentContactParams,
   mode: ErrorMessageMode = 'modal',
 ) {
-  // 如果提供了 contact_id，使用 contact_id；否则使用 slot
-  // API 路径可能需要调整，这里先保持原样
-  // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ residents }) => {
-      console.log('%c[Mock] Update Resident Contact API Request', 'color: #1890ff; font-weight: bold', { residentId, params })
+  // 濡傛灉鎻愪緵浜?contact_id锛屼娇鐢?contact_id锛涘惁鍒欎娇鐢?slot
+  // API 璺緞鍙兘闇€瑕佽皟鏁达紝杩欓噷鍏堜繚鎸佸師鏍?  // In development with mock enabled, return mock data directly
+  console.log('%c[Mock] Update Resident Contact API Request', 'color: #1890ff; font-weight: bold', { residentId, params })
       return residents.mockUpdateResidentContact(residentId, params).then((result) => {
         console.log('%c[Mock] Update Resident Contact API - Success', 'color: #52c41a; font-weight: bold', { result })
         return result
@@ -367,9 +346,8 @@ export function updateResidentContactApi(
 }
 
 /**
- * @deprecated 已迁移到 /api/account/accountSettings.ts
- * 此函数仅 Sidebar.vue 使用，Sidebar 迁移到新 API 后将被删除
- * 
+ * @deprecated 宸茶縼绉诲埌 /api/account/accountSettings.ts
+ * 姝ゅ嚱鏁颁粎 Sidebar.vue 浣跨敤锛孲idebar 杩佺Щ鍒版柊 API 鍚庡皢琚垹闄? * 
  * @description: Get resident/contact account settings
  * @param residentId - Resident ID or contact ID
  * @param mode - Error message mode
@@ -377,9 +355,7 @@ export function updateResidentContactApi(
 /*
 export function getResidentAccountSettingsApi(residentId: string, mode: ErrorMessageMode = 'modal') {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ residents }) => {
-      console.log('%c[Mock] Get Resident Account Settings API Request', 'color: #1890ff; font-weight: bold', { residentId })
+  console.log('%c[Mock] Get Resident Account Settings API Request', 'color: #1890ff; font-weight: bold', { residentId })
       return residents.mockGetResidentAccountSettings(residentId).then((result) => {
         console.log('%c[Mock] Get Resident Account Settings API - Success', 'color: #52c41a; font-weight: bold', { result })
         return result
@@ -409,9 +385,8 @@ export function getResidentAccountSettingsApi(residentId: string, mode: ErrorMes
 */
 
 /**
- * @deprecated 已迁移到 /api/account/accountSettings.ts
- * 此函数仅 Sidebar.vue 使用，Sidebar 迁移到新 API 后将被删除
- * 
+ * @deprecated 宸茶縼绉诲埌 /api/account/accountSettings.ts
+ * 姝ゅ嚱鏁颁粎 Sidebar.vue 浣跨敤锛孲idebar 杩佺Щ鍒版柊 API 鍚庡皢琚垹闄? * 
  * @description: Update resident/contact account settings (unified API)
  * @param residentId - Resident ID or contact ID
  * @param params - Update account settings parameters
@@ -432,9 +407,7 @@ export function updateResidentAccountSettingsApi(
   mode: ErrorMessageMode = 'modal',
 ) {
   // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('@test/index').then(({ residents }) => {
-      console.log('%c[Mock] Update Resident Account Settings API Request', 'color: #1890ff; font-weight: bold', { residentId, params })
+  console.log('%c[Mock] Update Resident Account Settings API Request', 'color: #1890ff; font-weight: bold', { residentId, params })
       return residents.mockUpdateResidentAccountSettings(residentId, params).then((result) => {
         console.log('%c[Mock] Update Resident Account Settings API - Success', 'color: #52c41a; font-weight: bold', { result })
         return result
