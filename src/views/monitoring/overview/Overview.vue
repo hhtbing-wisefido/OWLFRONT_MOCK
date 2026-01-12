@@ -546,8 +546,10 @@ const isTimerRunning = ref(false)
 const isSoundEnabled = ref(true)
 // 已知的报警ID集合（用于检测新报警）
 const knownAlarmIds = ref<Set<string>>(new Set())
-// 是否是首次加载（首次加载时不播放声音，只初始化已知报警）
+// 首次加载标志（用于显示用户提示）
 const isFirstLoad = ref(true)
+// 是否需要用户点击才能播放声音（浏览器自动播放限制）
+const needUserInteraction = ref(false)
 
 // Check if current user is SystemAdmin
 const isSystemAdmin = computed(() => {
@@ -950,7 +952,7 @@ const getLatestPopAlarmTypeName = (card: VitalFocusCard): string => {
  * 检测新报警并播放声音
  * @param cards - 所有卡片数据
  */
-const checkAndPlayAlarmSound = (cards: VitalFocusCard[]) => {
+const checkAndPlayAlarmSound = async (cards: VitalFocusCard[]) => {
   let highestNewAlarmLevel = 999 // 最高（最紧急）报警级别（数字越小越紧急）
   let newAlarmCount = 0
   
@@ -967,12 +969,7 @@ const checkAndPlayAlarmSound = (cards: VitalFocusCard[]) => {
         knownAlarmIds.value.add(alarmId)
         newAlarmCount++
         const level = parseAlarmLevel(alarm.alarm_level)
-        
-        // 首次加载时，只记录报警ID，不打印日志
-        if (!isFirstLoad.value) {
-          console.log('[AlarmSound] New alarm detected:', alarmId, 'level:', level)
-        }
-        
+        console.log('[AlarmSound] New alarm detected:', alarmId, 'level:', level)
         if (level < highestNewAlarmLevel) {
           highestNewAlarmLevel = level
         }
@@ -980,25 +977,46 @@ const checkAndPlayAlarmSound = (cards: VitalFocusCard[]) => {
     })
   })
   
-  // 首次加载时，只初始化已知报警列表，不播放声音
-  if (isFirstLoad.value) {
-    if (newAlarmCount > 0) {
-      console.log('[AlarmSound] First load: Initialized', newAlarmCount, 'known alarms (no sound played)')
-    }
-    isFirstLoad.value = false
-    return
-  }
-  
-  // 如果检测到新报警，播放对应级别的声音
+  // 如果检测到新报警（包括首次加载），播放对应级别的声音
   if (highestNewAlarmLevel <= 4) {
-    console.log('[AlarmSound] Playing alarm sound, highest level:', highestNewAlarmLevel, 'new alarms:', newAlarmCount)
-    if (highestNewAlarmLevel <= 1) {
-      // Level 0-1: 紧急报警 (L1)
-      alarmSound.playL1()
+    const isFirst = isFirstLoad.value
+    if (isFirst) {
+      console.log('[AlarmSound] 🚨 FIRST LOAD: Found', newAlarmCount, 'unhandled alarms - MUST play sound!')
+      isFirstLoad.value = false
     } else {
-      // Level 2-4: 一般报警 (L2)
-      alarmSound.playL2()
+      console.log('[AlarmSound] Playing alarm sound, highest level:', highestNewAlarmLevel, 'new alarms:', newAlarmCount)
     }
+    
+    try {
+      if (highestNewAlarmLevel <= 1) {
+        // Level 0-1: 紧急报警 (L1)
+        await alarmSound.playL1()
+      } else {
+        // Level 2-4: 一般报警 (L2)
+        await alarmSound.playL2()
+      }
+      
+      // 播放成功，清除用户交互提示
+      if (needUserInteraction.value) {
+        needUserInteraction.value = false
+      }
+    } catch (error: any) {
+      // 如果是首次加载且播放失败，显示用户交互提示
+      if (isFirst && error.name === 'NotAllowedError') {
+        console.warn('[AlarmSound] ⚠️ First load alarm blocked by browser - showing user prompt')
+        needUserInteraction.value = true
+        // 显示全局提示
+        message.warning({
+          content: '🔔 有未处理报警！请点击页面任意位置启用报警声音',
+          duration: 10,
+          key: 'alarm-interaction-required'
+        })
+      }
+    }
+  } else if (isFirstLoad.value) {
+    // 首次加载但没有报警
+    console.log('[AlarmSound] First load: No unhandled alarms')
+    isFirstLoad.value = false
   }
 }
 
@@ -1775,6 +1793,36 @@ onMounted(async () => {
   // Calculate all status counts on load
   refreshAllStatusCounts()
   startTimer()
+  
+  // 添加全局点击监听器，用于在用户交互后重试播放报警声音
+  const handleUserInteraction = async () => {
+    if (needUserInteraction.value && isSoundEnabled.value) {
+      console.log('[AlarmSound] User interaction detected - retrying alarm sound')
+      needUserInteraction.value = false
+      message.destroy('alarm-interaction-required')
+      
+      // 重新检查报警并播放声音
+      if (dataSource.value?.items) {
+        // 清空已知报警，强制重新检测
+        const tempKnownAlarms = new Set(knownAlarmIds.value)
+        knownAlarmIds.value.clear()
+        await checkAndPlayAlarmSound(dataSource.value.items)
+        // 如果播放失败，恢复已知报警列表
+        if (needUserInteraction.value) {
+          knownAlarmIds.value = tempKnownAlarms
+        }
+      }
+    }
+    
+    // 移除监听器（只需要一次交互）
+    if (!needUserInteraction.value) {
+      document.removeEventListener('click', handleUserInteraction)
+      document.removeEventListener('keydown', handleUserInteraction)
+    }
+  }
+  
+  document.addEventListener('click', handleUserInteraction)
+  document.addEventListener('keydown', handleUserInteraction)
 })
 
 onUnmounted(() => {
