@@ -61,20 +61,23 @@ function initializeStore(): MockDataStore {
       const birthYear = 1940 + (index % 30)
       const birthMonth = index % 12
       const birthDay = (index % 28) + 1
+      const firstName = resident.first_name || `Resident${index + 1}`
+      const lastName = resident.last_name || 'Demo'
+      const unitId = card.card_id || `unit-${index + 1}`
       
       return {
         resident_id: resident.resident_id,
         tenant_id: 'demo_tenant_001',
         resident_account: `R${String(index + 1).padStart(4, '0')}`,
-        nickname: `${resident.first_name} ${resident.last_name}`,
-        email: `${resident.first_name.toLowerCase()}.${resident.last_name.toLowerCase()}@demo.com`,
+        nickname: `${firstName} ${lastName}`,
+        email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@demo.com`,
         phone: `+1-555-${String(1000 + index).slice(-4)}`,
         status: 'active' as const,
         service_level: ['Standard', 'Enhanced', 'Premium', 'VIP'][index % 4],
         admission_date: admissionDate.toISOString().split('T')[0],
         discharge_date: null,
-        note: index % 5 === 0 ? `Special care instructions for ${resident.first_name}` : undefined,
-        unit_id: card.unit_id || `unit-${index + 1}`,
+        note: index % 5 === 0 ? `Special care instructions for ${firstName}` : undefined,
+        unit_id: unitId,
         unit_name: card.card_address.match(/Room \d+/)?.[0] || `Room ${index + 101}`,
         branch_tag: ['Main', 'West Wing', 'East Wing', 'North Tower'][Math.floor(index / 50) % 4],
         building: card.card_address.split(' / ')[0] || 'Building A',
@@ -198,11 +201,10 @@ function initializeStore(): MockDataStore {
   // 用户列表（20个管理员用户 - 更真实的数据）
   const userFirstNames = ['John', 'Sarah', 'Michael', 'Emily', 'David', 'Jessica', 'Robert', 'Lisa', 'James', 'Jennifer', 'William', 'Mary', 'Richard', 'Patricia', 'Thomas', 'Linda', 'Charles', 'Barbara', 'Daniel', 'Susan']
   const userLastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Wilson', 'Anderson', 'Taylor', 'Thomas', 'Moore', 'Jackson', 'Martin', 'Lee', 'Thompson', 'White']
-  const userRoles = ['Admin', 'Manager', 'Staff', 'Nurse', 'Caregiver']
   
   const users = Array.from({ length: 20 }, (_, i) => {
-    const firstName = userFirstNames[i % userFirstNames.length]
-    const lastName = userLastNames[i % userLastNames.length]
+    const firstName = userFirstNames[i % userFirstNames.length] || `User${i + 1}`
+    const lastName = userLastNames[i % userLastNames.length] || 'Demo'
     const role = i < 2 ? 'Admin' : i < 5 ? 'Manager' : i < 10 ? 'Staff' : i < 15 ? 'Nurse' : 'Caregiver'
     
     return {
