@@ -12,9 +12,10 @@
 
 **直接访问体验（无需安装）**：
 
-🔗 **http://www.wisefido.com:3100**
+🔗 **https://demo.wisefido.work/**
 
-> 💡 使用演示账号登录：`admin` / `admin123`
+> 💡 使用演示账号登录：`admin` / `admin123`  
+> 🔒 已配置 HTTPS + Nginx 反向代理 (127.0.0.1:3100)
 
 ---
 
@@ -102,9 +103,44 @@ echo "✅ 更新完成！访问 http://localhost:3100"
 
 访问地址：**http://localhost:3100**
 
-> 📖 详细部署指南请查看 [DOCKER_DEPLOY.md](./DOCKER_DEPLOY.md)
+> 📖 **详细文档**：
+> - [Docker 部署指南](./DOCKER_DEPLOY.md) - 完整部署配置
+> - [CI/CD 指南](./CI_CD_GUIDE.md) - 自动构建流程
+> - [更新脚本](./update-docker.sh) - 一键更新工具
 > 
-> 🔄 每次推送代码到 `main` 分支，GitHub Actions 会自动构建并推送镜像到 GHCR
+> 🔄 **自动构建**：每次推送代码到 `main` 分支，GitHub Actions 自动构建并推送镜像到 GHCR
+
+#### 📡 生产环境部署（Nginx 反向代理）
+
+如果使用 Nginx 反向代理（如本项目演示环境）：
+
+```nginx
+# /etc/nginx/sites-available/demo.wisefido.work
+server {
+    listen 443 ssl http2;
+    server_name demo.wisefido.work;
+
+    ssl_certificate /path/to/cert.pem;
+    ssl_certificate_key /path/to/key.pem;
+
+    location / {
+        proxy_pass http://127.0.0.1:3100;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+# 强制 HTTPS
+server {
+    listen 80;
+    server_name demo.wisefido.work;
+    return 301 https://$server_name$request_uri;
+}
+```
+
+> 💡 在线演示 https://demo.wisefido.work/ 使用此配置
 
 ## 🔐 Demo 登录账号
 
@@ -253,14 +289,17 @@ npm run test
 npm run type-check
 ```
 
-> **💡 build vs build:prod 区别**：
-> - `npm run build` = `vue-tsc -b && vite build`（先TypeScript类型检查，再构建）
-> - `npm run build:prod` = `vite build`（直接构建，跳过类型检查，速度更快）
+> **💡 build vs build:prod 使用场景**：
 > 
-> CI/CD 使用 `build:prod` 因为：
-> 1. ⚡ 构建速度更快（跳过类型检查）
-> 2. 📦 生产环境不包含 test/ 目录，避免582个类型错误
-> 3. ✅ 类型检查应在开发阶段完成
+> | 命令 | 实际执行 | 类型检查 | 使用场景 |
+> |------|---------|---------|----------|
+> | `npm run build` | `vue-tsc -b && vite build` | ✅ 包含 | **本地开发** - 发现类型错误 |
+> | `npm run build:prod` | `vite build` | ❌ 跳过 | **CI/CD 部署** - 快速构建 |
+> 
+> **为什么 CI/CD 使用 build:prod？**
+> 1. ⚡ 构建速度更快（跳过类型检查，节省 ~30-50% 时间）
+> 2. 📦 生产环境不包含 test/ 目录，避免 582 个测试文件类型错误
+> 3. ✅ 类型检查应在开发阶段完成（推送前本地验证）
 
 ### Docker 命令
 

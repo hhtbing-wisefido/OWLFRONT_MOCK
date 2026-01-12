@@ -24,9 +24,9 @@ docker logs -f owl-monitor-mock
 docker ps | grep owl-monitor-mock
 ```
 
-访问地址: http://localhost:3100
-
-**在线演示**: http://www.wisefido.com:3100
+访问地址: 
+- **本地**: http://localhost:3100
+- **在线演示**: https://demo.wisefido.work/ (已配置 Nginx 反向代理 + SSL)
 
 ### 方式二：本地构建 Docker 镜像
 
@@ -42,11 +42,39 @@ docker run -d \
   owl-monitor-mock:latest
 ```
 
-### 方式三：使用 Docker Compose（可选，不推荐）
+### 方式三：使用 Docker Compose（可选，保留供参考）
 
-> ⚠️ **注意**: 对于单一前端应用，直接使用 `docker run` 命令更简单。Docker Compose 适合多服务编排。
+> ⚠️ **重要说明**: 
+> - 本项目是**单一前端应用**，直接使用 `docker run` 命令更简单
+> - Docker Compose 适合**多服务编排**（如前端+后端+数据库）
+> - **保留此配置**是为了兼容习惯使用 Compose 的开发者，但**不推荐**用于单服务部署
+> - 如果你不需要，可以忽略 `docker-compose.yml` 文件
 
 如果您更习惯使用 Docker Compose：
+
+```bash
+# 启动
+docker-compose up -d
+
+# 查看日志
+docker-compose logs -f
+
+# 停止
+docker-compose down
+
+# 重启
+docker-compose restart
+```
+
+**Docker Compose vs Docker Run 对比**：
+
+| 特性 | Docker Run | Docker Compose |
+|-----|-----------|----------------|
+| 适用场景 | ✅ 单一应用 | 多服务编排 |
+| 命令简洁性 | ✅ 一行命令 | 需要配置文件 |
+| 学习成本 | ✅ 低 | 中等 |
+| 配置管理 | 命令行参数 | ✅ YAML 文件 |
+| 本项目推荐 | ✅ **推荐** | 可选 |
 
 ```bash
 # 启动
@@ -247,14 +275,139 @@ docker ps
 docker inspect owl-monitor-mock | grep -A 10 Health
 ```
 
-## 🌐 生产环境部署
+## 🌐 生产环境部署（推荐配置）
 
-### 使用反向代理（推荐）
+### 使用 Nginx 反向代理 + SSL（本项目生产配置）
 
-配合 Nginx 或 Traefik 作为反向代理：
+#### 完整配置示例（参考在线演示 https://demo.wisefido.work/）
 
 ```nginx
-# Nginx 配置示例
+# /etc/nginx/sites-available/demo.wisefido.work
+# 或 /etc/nginx/conf.d/demo.wisefido.work.conf
+
+# HTTPS 配置
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name demo.wisefido.work;
+
+    # SSL 证书配置
+    ssl_certificate /path/to/your/cert.pem;
+    ssl_certificate_key /path/to/your/key.pem;
+
+    # SSL 安全配置
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+
+    # 反向代理到 Docker 容器
+    location / {
+        proxy_pass http://127.0.0.1:3100;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # WebSocket 支持（如果需要）
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+
+    # Gzip 压缩
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_types text/css text/javascript application/javascript application/json;
+}
+
+# HTTP 强制跳转 HTTPS
+server {
+    listen 80;
+    listen [::]:80;
+    server_name demo.wisefido.work;
+    
+    # 强制 HTTPS
+    return 301 https://$server_name$request_uri;
+}
+```
+
+#### 部署步骤
+
+```bash
+# 1. 启动 Docker 容器（监听 3100 端口）
+docker run -d \
+  --name owl-monitor-mock \
+  -p 127.0.0.1:3100:80 \
+  --restart unless-stopped \
+  ghcr.io/hhtbing-wisefido/owlfront_mock:latest
+
+# 2. 配置 Nginx
+sudo nano /etc/nginx/sites-available/demo.wisefido.work
+
+# 3. 启用配置
+sudo ln -s /etc/nginx/sites-available/demo.wisefido.work /etc/nginx/sites-enabled/
+
+# 4. 测试配置
+sudo nginx -t
+
+# 5. 重载 Nginx
+sudo systemctl reload nginx
+
+# 6. 验证
+curl -I https://demo.wisefido.work/
+```
+
+#### 使用 Let's Encrypt 自动获取 SSL 证书
+
+```bash
+# 安装 Certbot
+sudo apt-get update
+sudo apt-get install certbot python3-certbot-nginx
+
+# 自动获取证书并配置 Nginx
+sudo certbot --nginx -d demo.wisefido.work
+
+# Certbot 会自动：
+# 1. 获取 SSL 证书
+# 2. 修改 Nginx 配置添加 SSL
+# 3. 配置自动续期
+
+# 测试自动续期
+sudo certbot renew --dry-run
+```
+
+### 其他反向代理方案
+
+#### Traefik 配置
+
+```yaml
+# docker-compose.yml 中添加 labels
+services:
+  owl-monitor:
+    image: ghcr.io/hhtbing-wisefido/owlfront_mock:latest
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.owl.rule=Host(`demo.wisefido.work`)"
+      - "traefik.http.routers.owl.entrypoints=websecure"
+      - "traefik.http.routers.owl.tls.certresolver=letsencrypt"
+```
+
+#### Caddy 配置
+
+```caddyfile
+demo.wisefido.work {
+    reverse_proxy localhost:3100
+}
+```
+
+### 基础 Nginx 配置（不使用 SSL）
+
+如果只是内网测试或不需要 HTTPS：
+
+```nginx
 server {
     listen 80;
     server_name owl.example.com;
@@ -267,18 +420,6 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 }
-```
-
-### HTTPS 配置
-
-使用 Let's Encrypt 配置 HTTPS：
-
-```bash
-# 安装 Certbot
-sudo apt-get install certbot python3-certbot-nginx
-
-# 获取证书
-sudo certbot --nginx -d owl.example.com
 ```
 
 ## 🐛 故障排查
