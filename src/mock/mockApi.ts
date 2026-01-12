@@ -87,80 +87,24 @@ export async function mockSearchInstitutions(params?: any) {
 export async function mockGetResidents(params?: any) {
   await delay()
   
-  // 🔴 修正：从mockCards提取居民数据，确保与卡片同步
-  const residents = mockCards
-    .filter(card => card.card_type === 'ActiveBed' && card.residents && card.residents.length > 0)
-    .map((card, index) => {
-      const resident = card.residents![0]
-      const address = card.card_address.split(' / ')
-      const building = address[0] || 'Building A'
-      const roomMatch = address[1]?.match(/Room (\d+)/)
-      const roomNumber = roomMatch ? roomMatch[1] : `${Math.floor(index / 10) + 1}0${(index % 10) + 1}`
-      
-      // 使用index生成固定的值，确保每次刷新数据一致
-      const birthYear = 1930 + (index % 40)
-      const birthMonth = ((index * 7) % 12) + 1
-      const birthDay = ((index * 13) % 28) + 1
-      const admitMonth = ((index * 5) % 12) + 1
-      const admitDay = ((index * 11) % 28) + 1
-      const phoneArea = 100 + (index % 900)
-      const phoneExchange = 1000 + (index * 37) % 9000
-      
-      return {
-        id: resident.resident_id,
-        resident_id: resident.resident_id,
-        firstName: resident.first_name,
-        lastName: resident.last_name,
-        fullName: `${resident.first_name} ${resident.last_name}`,
-        first_name: resident.first_name,
-        last_name: resident.last_name,
-        full_name: `${resident.first_name} ${resident.last_name}`,
-        dateOfBirth: `${birthYear}-${String(birthMonth).padStart(2, '0')}-${String(birthDay).padStart(2, '0')}`,
-        date_of_birth: `${birthYear}-${String(birthMonth).padStart(2, '0')}-${String(birthDay).padStart(2, '0')}`,
-        gender: index % 2 === 0 ? 'Male' : 'Female',
-        roomNumber: roomNumber,
-        room_number: roomNumber,
-        building: building,
-        serviceLevel: resident.service_level,
-        service_level: resident.service_level,
-        serviceLevelName: resident.service_level_info?.display_name || 'Independent',
-        service_level_name: resident.service_level_info?.display_name || 'Independent',
-        admissionDate: `2024-${String(admitMonth).padStart(2, '0')}-${String(admitDay).padStart(2, '0')}`,
-        admission_date: `2024-${String(admitMonth).padStart(2, '0')}-${String(admitDay).padStart(2, '0')}`,
-        status: 'Active',
-        emergencyContact: {
-          name: `John ${resident.last_name}`,
-          relationship: 'Son',
-          phone: `555-${String(phoneArea).padStart(3, '0')}-${String(phoneExchange).padStart(4, '0')}`
-        },
-        emergency_contact: {
-          name: `John ${resident.last_name}`,
-          relationship: 'Son',
-          phone: `555-${String(phoneArea).padStart(3, '0')}-${String(phoneExchange).padStart(4, '0')}`
-        },
-        hasVitalMonitor: card.device_count > 0,
-        has_vital_monitor: card.device_count > 0,
-        hasSleepMonitor: card.devices?.some(d => d.device_type === 1),
-        has_sleep_monitor: card.devices?.some(d => d.device_type === 1),
-        card_id: card.card_id,
-        unit_id: card.bed_id,
-        tenant_id: card.tenant_id
-      }
-    })
+  // 🔴 从数据存储读取居民列表（支持修改后保持）
+  const { getDataStore } = await import('./mockStore')
+  const store = getDataStore()
+  let residents = [...store.residents]
   
   // 应用搜索过滤
-  let filteredResidents = residents
   if (params?.search) {
     const searchLower = params.search.toLowerCase()
-    filteredResidents = filteredResidents.filter(r => 
-      r.fullName.toLowerCase().includes(searchLower) ||
-      r.roomNumber.includes(searchLower)
+    residents = residents.filter(r => 
+      r.name?.toLowerCase().includes(searchLower) ||
+      r.room?.includes(searchLower) ||
+      r.building?.toLowerCase().includes(searchLower)
     )
   }
   
   // 应用状态过滤
   if (params?.status && params.status !== 'all') {
-    filteredResidents = filteredResidents.filter(r => r.status === params.status)
+    residents = residents.filter(r => r.status === params.status)
   }
   
   // 应用分页
@@ -168,13 +112,13 @@ export async function mockGetResidents(params?: any) {
   const pageSize = params?.pageSize || params?.size || 20
   const start = (page - 1) * pageSize
   const end = start + pageSize
-  const paginatedResidents = filteredResidents.slice(start, end)
+  const paginatedResidents = residents.slice(start, end)
   
   return {
     code: 2000,
     result: {
       items: paginatedResidents,
-      total: filteredResidents.length,
+      total: residents.length,
       page: page,
       pageSize: pageSize,
       size: pageSize
@@ -413,47 +357,14 @@ export async function mockGetCardOverview(params?: any) {
 }
 
 // Mock获取分支/单元列表
+// Mock获取建筑列表
 export async function mockGetBuildings(params?: any) {
   await delay()
   
-  // Mock建筑数据
-  const buildings = [
-    {
-      building_id: 'building_001',
-      building_name: 'Building A',
-      tenant_id: 'tenant_001',
-      branch_id: 'branch_001',
-      branch_name: 'Main Campus'
-    },
-    {
-      building_id: 'building_002',
-      building_name: 'Building B',
-      tenant_id: 'tenant_001',
-      branch_id: 'branch_001',
-      branch_name: 'Main Campus'
-    },
-    {
-      building_id: 'building_003',
-      building_name: 'Building C',
-      tenant_id: 'tenant_001',
-      branch_id: 'branch_002',
-      branch_name: 'North Wing'
-    },
-    {
-      building_id: 'building_004',
-      building_name: 'Building D',
-      tenant_id: 'tenant_001',
-      branch_id: 'branch_002',
-      branch_name: 'North Wing'
-    },
-    {
-      building_id: 'building_005',
-      building_name: 'Building E',
-      tenant_id: 'tenant_001',
-      branch_id: 'branch_003',
-      branch_name: 'Memory Care'
-    }
-  ]
+  // 从数据存储读取建筑列表
+  const { getDataStore } = await import('./mockStore')
+  const store = getDataStore()
+  let buildings = [...store.buildings]
   
   return {
     code: 2000,
@@ -519,33 +430,39 @@ export async function mockGetAllUnits(params?: any) {
 }
 
 // Mock获取设备列表
+// Mock获取设备列表
 export async function mockGetDevices(params?: any) {
   await delay()
   
-  const devices = []
-  const deviceTypes = ['SleepPad', 'VitalMonitor', 'Gateway', 'Sensor']
+  // 从数据存储读取设备列表
+  const { getDataStore } = await import('./mockStore')
+  const store = getDataStore()
+  let devices = [...store.devices]
   
-  for (let i = 0; i < 50; i++) {
-    const type = deviceTypes[Math.floor(Math.random() * deviceTypes.length)]
-    devices.push({
-      id: `device_${String(i + 1).padStart(3, '0')}`,
-      deviceId: `DEV${String(i + 1).padStart(5, '0')}`,
-      deviceType: type,
-      serialNumber: `SN${type.toUpperCase()}${String(i + 1).padStart(6, '0')}`,
-      status: Math.random() > 0.9 ? 'offline' : 'online',
-      location: i < 30 ? `Room ${Math.floor(i / 10) + 1}${String((i % 10) + 1).padStart(2, '0')}` : 'Unassigned',
-      lastSeen: new Date(Date.now() - Math.random() * 3600000).toISOString(),
-      batteryLevel: type === 'Gateway' ? null : Math.floor(Math.random() * 100)
-    })
+  // 应用搜索过滤
+  if (params?.search) {
+    const searchLower = params.search.toLowerCase()
+    devices = devices.filter(d => 
+      d.name?.toLowerCase().includes(searchLower) ||
+      d.internalCode?.toLowerCase().includes(searchLower) ||
+      d.room?.includes(searchLower)
+    )
   }
+  
+  // 应用分页
+  const page = params?.page || 1
+  const pageSize = params?.pageSize || 50
+  const start = (page - 1) * pageSize
+  const end = start + pageSize
+  const paginatedDevices = devices.slice(start, end)
   
   return {
     code: 2000,
     result: {
-      items: devices,
+      items: paginatedDevices,
       total: devices.length,
-      page: 1,
-      pageSize: 50
+      page: page,
+      pageSize: pageSize
     },
     message: 'Devices retrieved successfully'
   }
@@ -555,25 +472,36 @@ export async function mockGetDevices(params?: any) {
 export async function mockGetUsers(params?: any) {
   await delay()
   
-  const users = mockAccounts.map((acc, index) => ({
-    id: acc.userId,
-    username: acc.username,
-    fullName: acc.fullName,
-    email: `${acc.username}@mapleview.com`,
-    role: acc.role,
-    userType: acc.user_type,
-    status: 'active',
-    createdAt: '2024-01-01T00:00:00Z',
-    lastLogin: new Date(Date.now() - Math.random() * 86400000 * 30).toISOString()
-  }))
+  // 从数据存储读取用户列表
+  const { getDataStore } = await import('./mockStore')
+  const store = getDataStore()
+  let users = [...store.users]
+  
+  // 应用搜索过滤
+  if (params?.search) {
+    const searchLower = params.search.toLowerCase()
+    users = users.filter(u => 
+      u.username?.toLowerCase().includes(searchLower) ||
+      u.email?.toLowerCase().includes(searchLower) ||
+      u.firstName?.toLowerCase().includes(searchLower) ||
+      u.lastName?.toLowerCase().includes(searchLower)
+    )
+  }
+  
+  // 应用分页
+  const page = params?.page || 1
+  const pageSize = params?.pageSize || 20
+  const start = (page - 1) * pageSize
+  const end = start + pageSize
+  const paginatedUsers = users.slice(start, end)
   
   return {
     code: 2000,
     result: {
-      items: users,
+      items: paginatedUsers,
       total: users.length,
-      page: 1,
-      pageSize: 20
+      page: page,
+      pageSize: pageSize
     },
     message: 'Users retrieved successfully'
   }
@@ -583,12 +511,10 @@ export async function mockGetUsers(params?: any) {
 export async function mockGetTags(params?: any) {
   await delay()
   
-  const tags = [
-    { id: 'tag_001', name: 'VIP', color: '#ff0000', description: 'VIP resident' },
-    { id: 'tag_002', name: 'High Risk', color: '#ff9900', description: 'High risk of falls' },
-    { id: 'tag_003', name: 'Diabetic', color: '#00cc00', description: 'Diabetes care required' },
-    { id: 'tag_004', name: 'Dementia', color: '#0099ff', description: 'Memory care required' }
-  ]
+  // 从数据存储读取标签列表
+  const { getDataStore } = await import('./mockStore')
+  const store = getDataStore()
+  let tags = [...store.tags]
   
   return {
     code: 2000,
@@ -628,13 +554,10 @@ export async function mockGetBranchTags(params?: any) {
 export async function mockGetRoles(params?: any) {
   await delay()
   
-  const roles = [
-    { id: 'role_001', name: 'SystemAdmin', displayName: 'System Administrator', description: 'Full system access' },
-    { id: 'role_002', name: 'Admin', displayName: 'Administrator', description: 'Facility administration' },
-    { id: 'role_003', name: 'Nurse', displayName: 'Nurse', description: 'Clinical care staff' },
-    { id: 'role_004', name: 'Caregiver', displayName: 'Caregiver', description: 'Direct care staff' },
-    { id: 'role_005', name: 'Resident', displayName: 'Resident/Family', description: 'Resident or family member' }
-  ]
+  // 从数据存储读取角色列表
+  const { getDataStore } = await import('./mockStore')
+  const store = getDataStore()
+  let roles = [...store.roles]
   
   return {
     code: 2000,
@@ -645,5 +568,463 @@ export async function mockGetRoles(params?: any) {
       pageSize: 20
     },
     message: 'Roles retrieved successfully'
+  }
+}
+
+// ==================== CRUD操作 Mock ====================
+// 以下函数实现真实的增删改查操作
+
+import { getDataStore, generateId } from './mockStore'
+
+// -------------------- 居民管理 CRUD --------------------
+
+/**
+ * 创建居民
+ */
+export async function mockCreateResident(body: any) {
+  await delay(500)
+  
+  const store = getDataStore()
+  const newResident = {
+    id: generateId('resident'),
+    ...body,
+    status: body.status || 'active',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  }
+  
+  store.residents.push(newResident)
+  console.log('✅ 创建居民成功:', newResident)
+  
+  return {
+    code: 2000,
+    result: newResident,
+    message: 'Resident created successfully'
+  }
+}
+
+/**
+ * 更新居民
+ */
+export async function mockUpdateResident(body: any, residentId?: string) {
+  await delay(500)
+  
+  const store = getDataStore()
+  const id = residentId || body.id
+  const index = store.residents.findIndex(r => r.id === id)
+  
+  if (index === -1) {
+    throw new Error('Resident not found')
+  }
+  
+  store.residents[index] = {
+    ...store.residents[index],
+    ...body,
+    id, // 保持ID不变
+    updatedAt: new Date().toISOString()
+  }
+  
+  console.log('✅ 更新居民成功:', store.residents[index])
+  
+  return {
+    code: 2000,
+    result: store.residents[index],
+    message: 'Resident updated successfully'
+  }
+}
+
+/**
+ * 删除居民
+ */
+export async function mockDeleteResident(params: any, residentId?: string) {
+  await delay(500)
+  
+  const store = getDataStore()
+  const id = residentId || params.id
+  const index = store.residents.findIndex(r => r.id === id)
+  
+  if (index === -1) {
+    throw new Error('Resident not found')
+  }
+  
+  const deleted = store.residents.splice(index, 1)[0]
+  console.log('✅ 删除居民成功:', deleted)
+  
+  return {
+    code: 2000,
+    result: { id },
+    message: 'Resident deleted successfully'
+  }
+}
+
+// -------------------- 设备管理 CRUD --------------------
+
+/**
+ * 更新设备
+ */
+export async function mockUpdateDevice(body: any, deviceId?: string) {
+  await delay(500)
+  
+  const store = getDataStore()
+  const id = deviceId || body.id
+  const index = store.devices.findIndex(d => d.id === id)
+  
+  if (index === -1) {
+    throw new Error('Device not found')
+  }
+  
+  store.devices[index] = {
+    ...store.devices[index],
+    ...body,
+    id,
+    updatedAt: new Date().toISOString()
+  }
+  
+  console.log('✅ 更新设备成功:', store.devices[index])
+  
+  return {
+    code: 2000,
+    result: store.devices[index],
+    message: 'Device updated successfully'
+  }
+}
+
+/**
+ * 删除设备
+ */
+export async function mockDeleteDevice(params: any, deviceId?: string) {
+  await delay(500)
+  
+  const store = getDataStore()
+  const id = deviceId || params.id
+  const index = store.devices.findIndex(d => d.id === id)
+  
+  if (index === -1) {
+    throw new Error('Device not found')
+  }
+  
+  const deleted = store.devices.splice(index, 1)[0]
+  console.log('✅ 删除设备成功:', deleted)
+  
+  return {
+    code: 2000,
+    result: { id },
+    message: 'Device deleted successfully'
+  }
+}
+
+// -------------------- 用户管理 CRUD --------------------
+
+/**
+ * 创建用户
+ */
+export async function mockCreateUser(body: any) {
+  await delay(500)
+  
+  const store = getDataStore()
+  const newUser = {
+    id: generateId('user'),
+    ...body,
+    status: body.status || 'active',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  }
+  
+  store.users.push(newUser)
+  console.log('✅ 创建用户成功:', newUser)
+  
+  return {
+    code: 2000,
+    result: newUser,
+    message: 'User created successfully'
+  }
+}
+
+/**
+ * 更新用户
+ */
+export async function mockUpdateUser(body: any, userId?: string) {
+  await delay(500)
+  
+  const store = getDataStore()
+  const id = userId || body.id
+  const index = store.users.findIndex(u => u.id === id)
+  
+  if (index === -1) {
+    throw new Error('User not found')
+  }
+  
+  store.users[index] = {
+    ...store.users[index],
+    ...body,
+    id,
+    updatedAt: new Date().toISOString()
+  }
+  
+  console.log('✅ 更新用户成功:', store.users[index])
+  
+  return {
+    code: 2000,
+    result: store.users[index],
+    message: 'User updated successfully'
+  }
+}
+
+/**
+ * 删除用户
+ */
+export async function mockDeleteUser(params: any, userId?: string) {
+  await delay(500)
+  
+  const store = getDataStore()
+  const id = userId || params.id
+  const index = store.users.findIndex(u => u.id === id)
+  
+  if (index === -1) {
+    throw new Error('User not found')
+  }
+  
+  const deleted = store.users.splice(index, 1)[0]
+  console.log('✅ 删除用户成功:', deleted)
+  
+  return {
+    code: 2000,
+    result: { id },
+    message: 'User deleted successfully'
+  }
+}
+
+// -------------------- 报警管理 --------------------
+
+/**
+ * 处理报警事件（确认/解决）
+ */
+export async function mockHandleAlarmEvent(body: any, eventId?: string) {
+  await delay(500)
+  
+  const store = getDataStore()
+  const id = eventId || body.id || body.eventId
+  const index = store.alarmEvents.findIndex(e => e.id === id)
+  
+  if (index === -1) {
+    throw new Error('Alarm event not found')
+  }
+  
+  const action = body.action || 'acknowledge' // acknowledge, resolve, ignore
+  const userId = body.userId || 'current-user'
+  
+  if (action === 'acknowledge') {
+    store.alarmEvents[index].status = 'acknowledged'
+    store.alarmEvents[index].acknowledgedBy = userId
+    store.alarmEvents[index].acknowledgedAt = new Date().toISOString()
+  } else if (action === 'resolve') {
+    store.alarmEvents[index].status = 'resolved'
+    store.alarmEvents[index].resolvedBy = userId
+    store.alarmEvents[index].resolvedAt = new Date().toISOString()
+  }
+  
+  store.alarmEvents[index].updatedAt = new Date().toISOString()
+  
+  console.log(`✅ 报警事件${action}成功:`, store.alarmEvents[index])
+  
+  return {
+    code: 2000,
+    result: store.alarmEvents[index],
+    message: `Alarm event ${action}d successfully`
+  }
+}
+
+/**
+ * 更新报警云配置
+ */
+export async function mockUpdateAlarmCloudConfig(body: any, configId?: string) {
+  await delay(500)
+  
+  const store = getDataStore()
+  const id = configId || body.id
+  const index = store.alarmCloudConfig.findIndex(c => c.id === id)
+  
+  if (index === -1) {
+    throw new Error('Alarm cloud config not found')
+  }
+  
+  store.alarmCloudConfig[index] = {
+    ...store.alarmCloudConfig[index],
+    ...body,
+    id,
+    updatedAt: new Date().toISOString()
+  }
+  
+  console.log('✅ 更新报警云配置成功:', store.alarmCloudConfig[index])
+  
+  return {
+    code: 2000,
+    result: store.alarmCloudConfig[index],
+    message: 'Alarm cloud config updated successfully'
+  }
+}
+
+// -------------------- 标签管理 CRUD --------------------
+
+/**
+ * 创建标签
+ */
+export async function mockCreateTag(body: any) {
+  await delay(500)
+  
+  const store = getDataStore()
+  const newTag = {
+    tag_id: generateId('tag'),
+    tenant_id: body.tenant_id || 'demo_tenant_001',
+    tag_name: body.tag_name,
+    tag_type: body.tag_type || 'custom_tag',
+    count: 0,
+    status: 'active',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  }
+  
+  store.tags.push(newTag)
+  console.log('✅ 创建标签成功:', newTag)
+  
+  return {
+    code: 2000,
+    result: { tag_id: newTag.tag_id },
+    message: 'Tag created successfully'
+  }
+}
+
+/**
+ * 更新标签
+ */
+export async function mockUpdateTag(body: any, tagId?: string) {
+  await delay(500)
+  
+  const store = getDataStore()
+  const id = tagId || body.tag_id
+  const index = store.tags.findIndex(t => t.tag_id === id)
+  
+  if (index === -1) {
+    throw new Error('Tag not found')
+  }
+  
+  store.tags[index] = {
+    ...store.tags[index],
+    tag_name: body.tag_name || store.tags[index].tag_name,
+    tag_type: body.tag_type || store.tags[index].tag_type,
+    updatedAt: new Date().toISOString()
+  }
+  
+  console.log('✅ 更新标签成功:', store.tags[index])
+  
+  return {
+    code: 2000,
+    result: store.tags[index],
+    message: 'Tag updated successfully'
+  }
+}
+
+/**
+ * 删除标签
+ */
+export async function mockDeleteTag(params: any, tagId?: string) {
+  await delay(500)
+  
+  const store = getDataStore()
+  const id = tagId || params.tag_id
+  const index = store.tags.findIndex(t => t.tag_id === id)
+  
+  if (index === -1) {
+    throw new Error('Tag not found')
+  }
+  
+  const deleted = store.tags.splice(index, 1)[0]
+  console.log('✅ 删除标签成功:', deleted)
+  
+  return {
+    code: 2000,
+    result: { tag_id: id },
+    message: 'Tag deleted successfully'
+  }
+}
+
+// -------------------- 建筑/单元管理 CRUD --------------------
+
+/**
+ * 创建建筑
+ */
+export async function mockCreateBuilding(body: any) {
+  await delay(500)
+  
+  const store = getDataStore()
+  const newBuilding = {
+    id: generateId('building'),
+    ...body,
+    status: 'active',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  }
+  
+  store.buildings.push(newBuilding)
+  console.log('✅ 创建建筑成功:', newBuilding)
+  
+  return {
+    code: 2000,
+    result: newBuilding,
+    message: 'Building created successfully'
+  }
+}
+
+/**
+ * 更新建筑
+ */
+export async function mockUpdateBuilding(body: any, buildingId?: string) {
+  await delay(500)
+  
+  const store = getDataStore()
+  const id = buildingId || body.id
+  const index = store.buildings.findIndex(b => b.id === id)
+  
+  if (index === -1) {
+    throw new Error('Building not found')
+  }
+  
+  store.buildings[index] = {
+    ...store.buildings[index],
+    ...body,
+    id,
+    updatedAt: new Date().toISOString()
+  }
+  
+  console.log('✅ 更新建筑成功:', store.buildings[index])
+  
+  return {
+    code: 2000,
+    result: store.buildings[index],
+    message: 'Building updated successfully'
+  }
+}
+
+/**
+ * 删除建筑
+ */
+export async function mockDeleteBuilding(params: any, buildingId?: string) {
+  await delay(500)
+  
+  const store = getDataStore()
+  const id = buildingId || params.id
+  const index = store.buildings.findIndex(b => b.id === id)
+  
+  if (index === -1) {
+    throw new Error('Building not found')
+  }
+  
+  const deleted = store.buildings.splice(index, 1)[0]
+  console.log('✅ 删除建筑成功:', deleted)
+  
+  return {
+    code: 2000,
+    result: { id },
+    message: 'Building deleted successfully'
   }
 }

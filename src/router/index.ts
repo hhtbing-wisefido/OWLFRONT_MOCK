@@ -40,7 +40,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/',
     component: BasicLayout,
-    redirect: '/monitoring/overview',
+    redirect: '/monitoring/overview', // 登录后默认跳转到 Monitoring Overview
     children: [
       // ==================== 【核心操作区域】 ====================
       {

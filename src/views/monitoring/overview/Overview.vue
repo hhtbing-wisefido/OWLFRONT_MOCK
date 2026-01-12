@@ -546,6 +546,8 @@ const isTimerRunning = ref(false)
 const isSoundEnabled = ref(true)
 // 已知的报警ID集合（用于检测新报警）
 const knownAlarmIds = ref<Set<string>>(new Set())
+// 是否是首次加载（首次加载时不播放声音，只初始化已知报警）
+const isFirstLoad = ref(true)
 
 // Check if current user is SystemAdmin
 const isSystemAdmin = computed(() => {
@@ -965,13 +967,27 @@ const checkAndPlayAlarmSound = (cards: VitalFocusCard[]) => {
         knownAlarmIds.value.add(alarmId)
         newAlarmCount++
         const level = parseAlarmLevel(alarm.alarm_level)
-        console.log('[AlarmSound] New alarm detected:', alarmId, 'level:', level)
+        
+        // 首次加载时，只记录报警ID，不打印日志
+        if (!isFirstLoad.value) {
+          console.log('[AlarmSound] New alarm detected:', alarmId, 'level:', level)
+        }
+        
         if (level < highestNewAlarmLevel) {
           highestNewAlarmLevel = level
         }
       }
     })
   })
+  
+  // 首次加载时，只初始化已知报警列表，不播放声音
+  if (isFirstLoad.value) {
+    if (newAlarmCount > 0) {
+      console.log('[AlarmSound] First load: Initialized', newAlarmCount, 'known alarms (no sound played)')
+    }
+    isFirstLoad.value = false
+    return
+  }
   
   // 如果检测到新报警，播放对应级别的声音
   if (highestNewAlarmLevel <= 4) {
@@ -1132,12 +1148,12 @@ const refreshData = async () => {
     
     // Initialize selected state:
     // Only load from localStorage once on first load (when selectedCardIds is empty)
-    // Don't auto-add new cards to maintain user's focus selection
     if (selectedCardIds.value.length === 0) {
       loadSelectedCardIds()
       
-      // If still no saved selection after loading, default to select all cards
+      // 🔴 Focus默认全选: 如果没有保存的选择，则选择所有卡片
       if (data?.items && selectedCardIds.value.length === 0) {
+        console.log('📋 Focus默认全选: 选择所有', data.items.length, '个卡片')
         selectedCardIds.value = data.items.map((item: VitalFocusCard) => item.card_id)
         saveSelectedCardIds() // Save default selection
       }
@@ -1425,11 +1441,12 @@ const getFocusFilteredCards = (): VitalFocusCard[] => {
 
 /**
  * Calculate outofRoom count
+ * OutRoom: 所有Location卡片（临时测试：显示所有Location）
  */
 const calculateOutofRoomCount = (): number => {
   const cards = getFocusFilteredCards()
   return cards.filter((card) => {
-    return card.card_type === 'Location' && (card.person_count ?? 0) === 0
+    return card.card_type === 'Location'
   }).length
 }
 
@@ -1535,9 +1552,9 @@ const filteredCards = computed(() => {
       })
     
     case 'outofroom':
-      // Show out of room cards (Location cards with person_count=0)
+      // Show all Location cards (临时测试：显示所有Location卡片)
       return cards.filter((card) => {
-        return card.card_type === 'Location' && (card.person_count ?? 0) === 0
+        return card.card_type === 'Location'
       })
     
     case 'leftbed':

@@ -51,7 +51,7 @@ const serviceLevels = [
   { code: 'L5', name: 'Hospice', color: '#f44336', priority: 5 }
 ]
 
-// Location鍗＄墖浣嶇疆鍚嶇О
+// Location卡片位置名称（35个公共区域）
 const locationNames = [
   { name: 'Living Room 1F', address: 'Building A / 1F Living Room', floor: 1 },
   { name: 'Dining Room 1F', address: 'Building A / 1F Dining Room', floor: 1 },
@@ -62,10 +62,35 @@ const locationNames = [
   { name: 'Garden Lounge', address: 'Building D / 1F Garden Lounge', floor: 1 },
   { name: 'Therapy Room 2F', address: 'Building D / 2F Therapy Room', floor: 2 },
   { name: 'Hallway 4F', address: 'Building E / 4F Hallway', floor: 4 },
-  { name: 'Cafe Corner', address: 'Building E / 1F Cafe Corner', floor: 1 }
+  { name: 'Cafe Corner', address: 'Building E / 1F Cafe Corner', floor: 1 },
+  { name: 'Main Entrance', address: 'Building A / 1F Main Entrance', floor: 1 },
+  { name: 'Reception Area', address: 'Building A / 1F Reception', floor: 1 },
+  { name: 'TV Lounge 2F', address: 'Building A / 2F TV Lounge', floor: 2 },
+  { name: 'Library 2F', address: 'Building B / 2F Library', floor: 2 },
+  { name: 'Art Studio 3F', address: 'Building B / 3F Art Studio', floor: 3 },
+  { name: 'Music Room 3F', address: 'Building C / 3F Music Room', floor: 3 },
+  { name: 'Meditation Room', address: 'Building C / 2F Meditation Room', floor: 2 },
+  { name: 'Game Room 1F', address: 'Building D / 1F Game Room', floor: 1 },
+  { name: 'Computer Lab 2F', address: 'Building D / 2F Computer Lab', floor: 2 },
+  { name: 'Craft Workshop', address: 'Building E / 3F Craft Workshop', floor: 3 },
+  { name: 'Chapel 1F', address: 'Building F / 1F Chapel', floor: 1 },
+  { name: 'Wellness Center', address: 'Building F / 2F Wellness Center', floor: 2 },
+  { name: 'Fitness Room 3F', address: 'Building F / 3F Fitness Room', floor: 3 },
+  { name: 'Swimming Pool', address: 'Building G / 1F Swimming Pool', floor: 1 },
+  { name: 'Sauna Room', address: 'Building G / 1F Sauna Room', floor: 1 },
+  { name: 'Movie Theater 2F', address: 'Building G / 2F Movie Theater', floor: 2 },
+  { name: 'Conference Room', address: 'Building H / 3F Conference Room', floor: 3 },
+  { name: 'Visitor Lounge', address: 'Building H / 1F Visitor Lounge', floor: 1 },
+  { name: 'Balcony Garden', address: 'Building H / 4F Balcony Garden', floor: 4 },
+  { name: 'Coffee Shop', address: 'Building A / 1F Coffee Shop', floor: 1 },
+  { name: 'Beauty Salon', address: 'Building B / 1F Beauty Salon', floor: 1 },
+  { name: 'Medical Office', address: 'Building C / 1F Medical Office', floor: 1 },
+  { name: 'Pharmacy', address: 'Building C / 1F Pharmacy', floor: 1 },
+  { name: 'Emergency Exit', address: 'Building D / 1F Emergency Exit', floor: 1 },
+  { name: 'Staff Lounge', address: 'Building E / 2F Staff Lounge', floor: 2 }
 ]
 
-// 鐢熸垚220涓狹ock鍗＄墖鏁版嵁 (200涓狝ctiveBed + 20涓狶ocation)
+// 生成235个Mock卡片数据 (200个ActiveBed + 35个Location)
 function generateMockCards(): VitalFocusCard[] {
   // 🔴 重置随机数种子，确保每次生成相同的数据
   seededRandom.reset(12345)
@@ -382,8 +407,8 @@ function generateMockCards(): VitalFocusCard[] {
     })
   }
   
-  // 鐢熸垚20涓狶ocation鍗＄墖
-  for (let i = 0; i < 20; i++) {
+  // 生成35个Location卡片
+  for (let i = 0; i < 35; i++) {
     // 澶嶇敤location鍚嶇О锛屽惊鐜娇鐢?
     const locationIndex = i % locationNames.length
     const location = locationNames[locationIndex]
@@ -429,25 +454,29 @@ function generateMockCards(): VitalFocusCard[] {
       postures = [6] // 韬?
       hasAlarm = true
       alarmLevel = 2
-    } else if (rand < 0.45) {
-      // 23%: 1浜猴紙澧炲姞姒傜巼锛屾浛浠?浜哄満鏅級
+    } else if (rand < 0.35) {
+      // 13%: 无人（OutRoom场景）
+      personCount = 0
+      postures = []
+    } else if (rand < 0.55) {
+      // 20%: 1人
       personCount = 1
-      postures = [randomChoice([1, 3, 4, 6])] // 璧?鍧?绔?韬?
-    } else if (rand < 0.70) {
-      // 25%: 2浜?
+      postures = [randomChoice([1, 3, 4, 6])] // 走/坐/站/躺
+    } else if (rand < 0.75) {
+      // 20%: 2人
       personCount = 2
       postures = Array.from({ length: personCount }, () => randomChoice([1, 3, 4]))
-    } else if (rand < 0.88) {
-      // 18%: 3浜?
+    } else if (rand < 0.90) {
+      // 15%: 3人
       personCount = 3
       postures = Array.from({ length: personCount }, () => randomChoice([1, 3, 4]))
     } else {
-      // 12%: 4浜?
+      // 10%: 4人
       personCount = 4
       postures = Array.from({ length: personCount }, () => randomChoice([1, 3, 4]))
     }
     
-    // 鎶ヨ浜嬩欢 (鏍规嵁鎶ヨ绾у埆鐢熸垚涓嶅悓绫诲瀷)
+    // 鎶ヨ浜嬩欢 (鏍规嵁鎶ヨ绾у埆鐢熸垚涓嶅悓绫诲瀷)
     const alarms = hasAlarm ? [{
       event_id: `alarm_${cardId}`,
       event_type: alarmLevel === 0 ? 'Fall' : 
@@ -539,7 +568,12 @@ function generateMockCards(): VitalFocusCard[] {
     ...shuffledActiveBeds.slice(27)
   ].filter((card): card is VitalFocusCard => card !== undefined).sort(() => seededRandom.next() - 0.5)
   
-  return [...first15, ...next15, ...remaining]
+  const finalCards = [...first15, ...next15, ...remaining]
+  console.log(`📊 生成卡片统计: ActiveBed=${activeBedCards.length}, Location=${locationCards.length}, 总计=${cards.length}`)
+  console.log(`✅ 最终卡片数量: ${finalCards.length}`)
+  console.log(`📋 预期: ActiveBed=200, Location=35, 总计=235`)
+  
+  return finalCards
 }
 
 export const mockCards = generateMockCards()

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Tags 测试数据
  * 对应 src/api/admin/tags/tags.ts 和 owlRD/db/20_tags_catalog.sql
  */
@@ -11,7 +11,7 @@ import type { TagCatalogItem } from '@/api/admin/tags/model/tagsModel'
 export const mockTagsData: TagCatalogItem[] = [
   {
     tag_id: '1',
-    tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+    tenant_id: 'mapleview-001',
     tag_type: 'user_tag',
     tag_name: 'Management',
     tag_objects: {
@@ -23,7 +23,7 @@ export const mockTagsData: TagCatalogItem[] = [
   },
   {
     tag_id: '2',
-    tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+    tenant_id: 'mapleview-001',
     tag_type: 'user_tag',
     tag_name: 'System',
     tag_objects: {
@@ -34,7 +34,7 @@ export const mockTagsData: TagCatalogItem[] = [
   },
   {
     tag_id: '3',
-    tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+    tenant_id: 'mapleview-001',
     tag_type: 'user_tag',
     tag_name: 'Technical',
     tag_objects: {
@@ -49,7 +49,7 @@ export const mockTagsData: TagCatalogItem[] = [
   },
   {
     tag_id: '5',
-    tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+    tenant_id: 'mapleview-001',
     tag_type: 'user_tag',
     tag_name: 'NightShift',
     tag_objects: {
@@ -62,7 +62,7 @@ export const mockTagsData: TagCatalogItem[] = [
   },
   {
     tag_id: '6',
-    tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+    tenant_id: 'mapleview-001',
     tag_type: 'family_tag',
     tag_name: 'Group.A',
     tag_objects: {
@@ -74,7 +74,7 @@ export const mockTagsData: TagCatalogItem[] = [
   },
   {
     tag_id: '7',
-    tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+    tenant_id: 'mapleview-001',
     tag_type: 'location_tag',
     tag_name: 'DV1',
     tag_objects: {
@@ -85,7 +85,7 @@ export const mockTagsData: TagCatalogItem[] = [
   },
   {
     tag_id: '10',
-    tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+    tenant_id: 'mapleview-001',
     tag_type: 'location_tag',
     tag_name: 'SPR',
     tag_objects: {
@@ -96,7 +96,7 @@ export const mockTagsData: TagCatalogItem[] = [
   },
   {
     tag_id: '14',
-    tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+    tenant_id: 'mapleview-001',
     tag_type: 'location_tag',
     tag_name: 'BD1',
     tag_objects: {
@@ -108,7 +108,7 @@ export const mockTagsData: TagCatalogItem[] = [
   },
   {
     tag_id: '8',
-    tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+    tenant_id: 'mapleview-001',
     tag_type: 'location_tag', // Changed from nursestation_tag (not in schema)
     tag_name: 'Station-A',
     tag_objects: {
@@ -119,28 +119,28 @@ export const mockTagsData: TagCatalogItem[] = [
   },
   {
     tag_id: '9',
-    tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+    tenant_id: 'mapleview-001',
     tag_type: 'user_tag', // 用户标签（默认类型）
     tag_name: 'Custom-Tag-1',
     tag_objects: {},
   },
   {
     tag_id: '11',
-    tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+    tenant_id: 'mapleview-001',
     tag_type: 'area_tag',
     tag_name: 'East',
     tag_objects: {},
   },
   {
     tag_id: '12',
-    tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+    tenant_id: 'mapleview-001',
     tag_type: 'area_tag',
     tag_name: 'West',
     tag_objects: {},
   },
   {
     tag_id: '13',
-    tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+    tenant_id: 'mapleview-001',
     tag_type: 'area_tag',
     tag_name: 'MemaryCare',
     tag_objects: {},
