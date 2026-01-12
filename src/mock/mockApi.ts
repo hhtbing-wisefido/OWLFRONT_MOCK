@@ -1162,3 +1162,29 @@ export async function mockDeleteBuilding(params: any, buildingId?: string) {
     message: 'Building deleted successfully'
   }
 }
+
+/**
+ * 获取房间列表（包含床位）- 按unit_id过滤
+ */
+export async function mockGetRooms(params?: any) {
+  await delay()
+  
+  const { getDataStore } = await import('./mockStore')
+  const store = getDataStore()
+  
+  let rooms = [...store.rooms]
+  
+  // 按unit_id过滤
+  if (params?.unit_id) {
+    rooms = rooms.filter(r => r.unit_id === params.unit_id)
+  }
+  
+  console.log(`📦 mockGetRooms - unit_id: ${params?.unit_id}, found: ${rooms.length} rooms`)
+  
+  // getRoomsApi期望直接返回RoomWithBeds[]数组
+  return {
+    code: 2000,
+    result: rooms,
+    message: 'Rooms retrieved successfully'
+  }
+}

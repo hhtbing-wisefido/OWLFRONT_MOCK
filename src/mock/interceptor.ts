@@ -15,6 +15,7 @@ import {
   mockGetBuildings,
   mockGetBranches,
   mockGetAllUnits,
+  mockGetRooms,
   mockGetDevices,
   mockGetUsers,
   mockGetTags,
@@ -265,6 +266,11 @@ function matchMockRoute(method: string, url: string): any {
     { pattern: /\/admin\/api\/v1\/units/, method: 'GET', handler: mockGetAllUnits },
     { pattern: /\/api\/v1\/units/, method: 'GET', handler: mockGetAllUnits },
     { pattern: /\/api\/units/, method: 'GET', handler: mockGetAllUnits },
+    
+    // 房间
+    { pattern: /\/admin\/api\/v1\/rooms/, method: 'GET', handler: mockGetRooms },
+    { pattern: /\/api\/v1\/rooms/, method: 'GET', handler: mockGetRooms },
+    { pattern: /\/api\/rooms/, method: 'GET', handler: mockGetRooms },
     
     // 分支标签
     { pattern: /\/admin\/api\/v1\/branch-tags/, method: 'GET', handler: mockGetBranchTags },

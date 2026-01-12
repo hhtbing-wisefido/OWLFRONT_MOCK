@@ -13,6 +13,7 @@ interface MockDataStore {
   users: any[]
   buildings: any[]
   units: any[]
+  rooms: any[]
   tags: any[]
   roles: any[]
   cards: VitalFocusCard[]
@@ -348,6 +349,65 @@ function initializeStore(): MockDataStore {
   })
   
   const units = Array.from(unitsFromCards.values())
+  
+  // 房间列表 - 每个unit至少有一个unit_room（同名房间），部分有额外房间和床位
+  const rooms: any[] = []
+  units.forEach((unit: any, index: number) => {
+    const unitId = unit.unit_id
+    const unitName = unit.unit_name
+    
+    // 创建unit_room（与unit同名的默认房间）
+    const unitRoomId = `room-${unitId}-main`
+    const unitRoom = {
+      room_id: unitRoomId,
+      tenant_id: 'demo_tenant_001',
+      unit_id: unitId,
+      room_name: unitName, // room_name === unit_name 表示这是unit_room
+      is_default: true,
+      layout_config: {},
+      beds: [] as any[]
+    }
+    
+    // 为unit_room添加床位（每个unit至少一个床位）
+    const bedCount = unit.is_multi_person_room ? 2 : 1
+    for (let bedIndex = 0; bedIndex < bedCount; bedIndex++) {
+      unitRoom.beds.push({
+        bed_id: `bed-${unitId}-${bedIndex + 1}`,
+        tenant_id: 'demo_tenant_001',
+        room_id: unitRoomId,
+        bed_name: `Bed ${String.fromCharCode(65 + bedIndex)}`, // Bed A, Bed B
+        bed_type: 'ActiveBed',
+        resident_id: bedIndex === 0 ? unit.primary_resident_id : undefined
+      })
+    }
+    
+    rooms.push(unitRoom)
+    
+    // 部分unit有额外房间（如bathroom, living room）
+    if (index % 3 === 0) {
+      rooms.push({
+        room_id: `room-${unitId}-bathroom`,
+        tenant_id: 'demo_tenant_001',
+        unit_id: unitId,
+        room_name: 'Bathroom',
+        is_default: false,
+        layout_config: {},
+        beds: []
+      })
+    }
+    
+    if (index % 5 === 0) {
+      rooms.push({
+        room_id: `room-${unitId}-living`,
+        tenant_id: 'demo_tenant_001',
+        unit_id: unitId,
+        room_name: 'Living Room',
+        is_default: false,
+        layout_config: {},
+        beds: []
+      })
+    }
+  })
   
   // 角色列表（更完整的角色定义 - 使用snake_case以匹配前端）
   const roles = [
@@ -688,6 +748,7 @@ function initializeStore(): MockDataStore {
     users,
     buildings,
     units,
+    rooms,
     tags,
     roles,
     cards,
