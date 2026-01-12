@@ -11,10 +11,14 @@
     <div class="mock-quick-login" v-if="showMockButtons">
       <div class="mock-title">🎯 Quick Login (Mock Demo)</div>
       <div class="mock-subtitle">👇 Click to auto-fill credentials</div>
-      <div class="mock-buttons">
+      <div class="mock-buttons" v-if="formData.userType === 'staff'">
         <Button size="small" @click="fillMockAccount('admin')">👨‍💼 Admin</Button>
         <Button size="small" @click="fillMockAccount('nurse1')">👩‍⚕️ Nurse</Button>
-        <Button size="small" @click="fillMockAccount('doctor1')">👨‍⚕️ Doctor</Button>
+        <Button size="small" @click="fillMockAccount('doctor1')">👨‍⚕️ Manager</Button>
+      </div>
+      <div class="mock-buttons" v-else>
+        <Button size="small" @click="fillMockAccount('resident1')">👵 Resident</Button>
+        <Button size="small" @click="fillMockAccount('family1')">👨‍👩‍👧 Family</Button>
       </div>
     </div>
 

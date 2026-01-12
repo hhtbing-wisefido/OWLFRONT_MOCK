@@ -127,6 +127,24 @@ export async function mockSearchInstitutions(
 
   // Resident 用户
   if (userType === 'resident') {
+    // 快速登录账号：resident1 / resident123
+    if (normalizedAccount === 'resident1' && password === 'resident123') {
+      return [{
+        id: 'mapleview-001',
+        name: 'Mapleview Care Community',
+        tenant_id: 'mapleview-001',
+      }]
+    }
+    
+    // 快速登录账号：family1 / family123
+    if (normalizedAccount === 'family1' && password === 'family123') {
+      return [{
+        id: 'mapleview-001',
+        name: 'Mapleview Care Community',
+        tenant_id: 'mapleview-001',
+      }]
+    }
+    
     // R1: R1 / 82010101 / R1@test.com | Ts123@123 → Sunset (单个)
     if (
       (account === testAccounts.resident.r1.account ||
@@ -197,6 +215,7 @@ export async function mockLogin(params: LoginParams): Promise<LoginResult> {
         ...loginSuccessStaff,
         userId: 'staff-admin',
         user_account: 'admin',
+        role: 'Admin',
         tenant_id: params.tenant_id || 'mapleview-001',
         tenant_name: params.tenant_name || 'Mapleview Care Community',
       }
@@ -208,6 +227,7 @@ export async function mockLogin(params: LoginParams): Promise<LoginResult> {
         ...loginSuccessStaff,
         userId: 'staff-nurse1',
         user_account: 'nurse1',
+        role: 'Nurse',
         tenant_id: params.tenant_id || 'mapleview-001',
         tenant_name: params.tenant_name || 'Mapleview Care Community',
       }
@@ -219,6 +239,7 @@ export async function mockLogin(params: LoginParams): Promise<LoginResult> {
         ...loginSuccessStaff,
         userId: 'staff-doctor1',
         user_account: 'doctor1',
+        role: 'Manager',
         tenant_id: params.tenant_id || 'mapleview-001',
         tenant_name: params.tenant_name || 'Mapleview Care Community',
       }
@@ -312,6 +333,30 @@ export async function mockLogin(params: LoginParams): Promise<LoginResult> {
 
   // Resident 用户登录
   if (params.userType === 'resident') {
+    // 快速登录账号：resident1 / resident123
+    if (normalizedAccount === 'resident1' && params.password === 'resident123') {
+      return {
+        ...loginSuccessResident,
+        userId: 'resident-001',
+        user_account: 'resident1',
+        role: 'Resident',
+        tenant_id: params.tenant_id || 'mapleview-001',
+        tenant_name: params.tenant_name || 'Mapleview Care Community',
+      }
+    }
+    
+    // 快速登录账号：family1 / family123
+    if (normalizedAccount === 'family1' && params.password === 'family123') {
+      return {
+        ...loginSuccessResident,
+        userId: 'family-001',
+        user_account: 'family1',
+        role: 'Family',
+        tenant_id: params.tenant_id || 'mapleview-001',
+        tenant_name: params.tenant_name || 'Mapleview Care Community',
+      }
+    }
+    
     // R1: R1 / 82010101 / R1@test.com | Ts123@123 → Sunset
     // Note: Username and email are case-insensitive, phone is numeric
     if (

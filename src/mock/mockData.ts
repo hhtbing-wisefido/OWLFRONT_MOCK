@@ -520,8 +520,8 @@ export const mockAccounts = [
   {
     username: 'admin',
     password: 'admin123',
-    role: 'SystemAdmin',
-    fullName: 'John Smith',
+    role: 'Admin',
+    fullName: 'John Smith (Admin)',
     email: 'admin@owlcare.com',
     user_type: 'staff'
   },
@@ -529,16 +529,32 @@ export const mockAccounts = [
     username: 'nurse1',
     password: 'nurse123',
     role: 'Nurse',
-    fullName: 'Mary Johnson',
+    fullName: 'Mary Johnson (Nurse)',
     email: 'mary.j@owlcare.com',
     user_type: 'staff'
   },
   {
     username: 'doctor1',
     password: 'doctor123',
-    role: 'Doctor',
-    fullName: 'Dr. David Wilson',
+    role: 'Manager',
+    fullName: 'Dr. David Wilson (Manager)',
     email: 'david.w@owlcare.com',
     user_type: 'staff'
+  },
+  {
+    username: 'resident1',
+    password: 'resident123',
+    role: 'Resident',
+    fullName: 'Emily Brown (Resident)',
+    email: 'emily.b@owlcare.com',
+    user_type: 'resident'
+  },
+  {
+    username: 'family1',
+    password: 'family123',
+    role: 'Family',
+    fullName: 'Robert Brown (Family)',
+    email: 'robert.b@owlcare.com',
+    user_type: 'resident'
   }
 ]
