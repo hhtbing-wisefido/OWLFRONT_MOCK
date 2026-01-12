@@ -36,7 +36,12 @@ export enum Api {
 // DEV 默认走真实后端；只有显式设置 VITE_USE_MOCK='true' 才启用 mock
 const useMock = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true'
 
-// Display mock status in console
+/**
+ * @description: Get Tags list
+ * @param params - Query parameters
+ * @param mode - Error message mode
+ */
+export function getTagsApi(params?: GetTagsParams, mode: ErrorMessageMode = 'modal') {
   return defHttp.get<GetTagsResult>(
     {
       url: Api.GetList,
