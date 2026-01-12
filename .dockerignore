@@ -1,0 +1,65 @@
+# Node.js相关
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# 构建输出
+dist/
+dist-ssr/
+*.local
+
+# IDE相关
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# 环境变量
+.env
+.env.local
+.env.*.local
+
+# 临时文件
+*.log
+.DS_Store
+Thumbs.db
+
+# 测试覆盖率
+coverage/
+
+# 缓存
+.cache/
+.temp/
+*.cache
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# 文档和说明
+*.md
+!README.md
+docs/
+
+# 配置文件（Docker镜像不需要这些）
+.eslintrc*
+.prettierrc*
+tsconfig*.json
+vite.config.ts
+vitest.config.ts
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# 其他
+*.swp
+*.swo
+*~

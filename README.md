@@ -24,21 +24,40 @@
 
 ## 🚀 快速开始
 
-### 1. 安装依赖
+### 方式一：本地开发
+
+#### 1. 安装依赖
 
 ```bash
 npm install
 ```
 
-### 2. 启动开发服务器
+#### 2. 启动开发服务器
 
 ```bash
 npm run dev
 ```
 
-### 3. 访问应用
+#### 3. 访问应用
 
 服务启动后访问：**http://localhost:3100**
+
+### 方式二：Docker 部署（推荐生产环境）
+
+使用 Docker 快速部署，无需安装 Node.js 环境：
+
+```bash
+# 使用 Docker Compose（推荐）
+docker-compose up -d
+
+# 或使用 Docker 命令
+docker build -t owl-monitor-mock .
+docker run -d -p 3100:80 owl-monitor-mock
+```
+
+访问地址：**http://localhost:3100**
+
+> 📖 详细部署指南请查看 [DOCKER_DEPLOY.md](./DOCKER_DEPLOY.md)
 
 ## 🔐 Demo 登录账号
 
@@ -165,6 +184,8 @@ owl-monitor-mock/
 
 ## 🔧 常用命令
 
+### 开发命令
+
 ```bash
 # 开发模式（热更新）
 npm run dev
@@ -181,6 +202,27 @@ npm run test
 # 类型检查
 npm run type-check
 ```
+
+### Docker 命令
+
+```bash
+# 构建镜像
+docker build -t owl-monitor-mock:latest .
+
+# 启动容器
+docker-compose up -d
+
+# 查看日志
+docker-compose logs -f
+
+# 停止容器
+docker-compose down
+
+# 重新构建并部署
+docker-compose up -d --build
+```
+
+> 📖 更多 Docker 操作请查看 [DOCKER_DEPLOY.md](./DOCKER_DEPLOY.md)
 
 ## 📱 响应式断点
 

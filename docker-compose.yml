@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  owl-monitor-mock:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: owl-monitor-mock:latest
+    container_name: owl-monitor-mock
+    restart: unless-stopped
+    ports:
+      - "3100:80"
+    environment:
+      - TZ=Asia/Shanghai
+    networks:
+      - owl-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 3s
+      start_period: 10s
+      retries: 3
+    labels:
+      - "com.owl.description=OWL Monitor Mock System"
+      - "com.owl.version=1.2.0"
+
+networks:
+  owl-network:
+    driver: bridge
