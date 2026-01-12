@@ -39,7 +39,7 @@ export enum Api {
 }
 
 // Mock mode: In development, use mock data instead of real API calls
-// DEV 榛樿璧扮湡瀹炲悗绔紱鍙湁鏄惧紡璁剧疆 VITE_USE_MOCK='true' 鎵嶅惎鐢?mock
+// DEV 榛樿璧扮湡瀹炲悗绔紱鍙湁鏄惧紡璁剧�?VITE_USE_MOCK='true' 鎵嶅惎鐢?mock
 const useMock = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true'
 
 // Display mock status in console
@@ -53,18 +53,6 @@ if (useMock) {
  * @param mode - Error message mode
  */
 export function getDevicesApi(params?: GetDevicesParams, mode: ErrorMessageMode = 'modal') {
-  // In development with mock enabled, return mock data directly
-  console.log('%c[Mock] Get Devices API Request', 'color: #1890ff; font-weight: bold', { params })
-      return devices.mock.mockGetDevices(params).then((result: GetDevicesResult) => {
-        console.log('%c[Mock] Get Devices API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Get Devices API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      })
-    })
-  }
-
   // Production: Call real backend API
   return defHttp.get<GetDevicesResult>(
     {
@@ -81,18 +69,6 @@ export function getDevicesApi(params?: GetDevicesParams, mode: ErrorMessageMode 
  * @param mode - Error message mode
  */
 export function getDeviceDetailApi(deviceId: string, mode: ErrorMessageMode = 'modal') {
-  // In development with mock enabled, return mock data directly
-  console.log('%c[Mock] Get Device Detail API Request', 'color: #1890ff; font-weight: bold', { deviceId })
-      return devices.mock.mockGetDeviceDetail(deviceId).then((result: Device) => {
-        console.log('%c[Mock] Get Device Detail API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Get Device Detail API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      })
-    })
-  }
-
   // Production: Call real backend API
   return defHttp.get<Device>(
     {
@@ -109,18 +85,6 @@ export function getDeviceDetailApi(deviceId: string, mode: ErrorMessageMode = 'm
  * @param mode - Error message mode
  */
 export function updateDeviceApi(deviceId: string, params: UpdateDeviceParams, mode: ErrorMessageMode = 'modal') {
-  // In development with mock enabled, return mock data directly
-  console.log('%c[Mock] Update Device API Request', 'color: #1890ff; font-weight: bold', { deviceId, params })
-      return devices.mock.mockUpdateDevice(deviceId, params).then((result: { success: boolean }) => {
-        console.log('%c[Mock] Update Device API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Update Device API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      })
-    })
-  }
-
   // Production: Call real backend API
   return defHttp.put<{ success: boolean }>(
     {
@@ -137,18 +101,6 @@ export function updateDeviceApi(deviceId: string, params: UpdateDeviceParams, mo
  * @param mode - Error message mode
  */
 export function deleteDeviceApi(deviceId: string, mode: ErrorMessageMode = 'modal') {
-  // In development with mock enabled, return mock data directly
-  console.log('%c[Mock] Delete Device API Request', 'color: #1890ff; font-weight: bold', { deviceId })
-      return devices.mock.mockDeleteDevice(deviceId).then((result: { success: boolean }) => {
-        console.log('%c[Mock] Delete Device API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Delete Device API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      })
-    })
-  }
-
   // Production: Call real backend API
   // Note: Server determines whether it's physical delete or soft delete (set status = 'disabled')
   return defHttp.delete<{ success: boolean }>(

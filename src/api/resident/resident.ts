@@ -188,7 +188,7 @@ export async function resetContactPasswordApi(
   // Import hashPassword function
   const { hashPassword } = await import('@/utils/crypto')
   
-  // Hash password: SHA256(password) 閳?hex string
+  // Hash password: SHA256(password) �?hex string
   const passwordHash = await hashPassword(password)
   
   console.log('%c[Mock] Reset Contact Password API Request', 'color: #1890ff; font-weight: bold', { contactId, passwordHash })
@@ -244,7 +244,7 @@ export function updateResidentContactApi(
   params: UpdateResidentContactParams,
   mode: ErrorMessageMode = 'modal',
 ) {
-  // 婵″倹鐏夐幓鎰返娴?contact_id閿涘奔濞囬悽?contact_id閿涙稑鎯侀崚娆庡▏閻?slot
+  // 婵″倹鐏夐幓鎰返娴?contact_id閿涘奔濞囬悽?contact_id閿涙稑鎯侀崚娆庡▏�?slot
   // API 鐠侯垰绶為崣顖濆厴闂団偓鐟曚浇鐨熼弫杈剧礉鏉╂瑩鍣烽崗鍫滅箽閹镐礁甯弽?  return defHttp.put<{ success: boolean }>(
     {
       url: Api.UpdateContact.replace(':id', residentId),
@@ -255,26 +255,14 @@ export function updateResidentContactApi(
 }
 
 /**
- * @deprecated 瀹歌尪绺肩粔璇插煂 /api/account/accountSettings.ts
- * 濮濄倕鍤遍弫棰佺矌 Sidebar.vue 娴ｈ法鏁ら敍瀛瞚debar 鏉╀胶些閸掔増鏌?API 閸氬骸鐨㈢悮顐㈠灩闂? * 
+ * @deprecated 瀹歌尪绺肩粔璇插�?/api/account/accountSettings.ts
+ * 濮濄倕鍤遍弫棰佺�?Sidebar.vue 娴ｈ法鏁ら敍瀛瞚debar 鏉╀胶些閸掔増鏌?API 閸氬骸鐨㈢悮顐㈠灩闂? * 
  * @description: Get resident/contact account settings
  * @param residentId - Resident ID or contact ID
  * @param mode - Error message mode
  */
 /*
 export function getResidentAccountSettingsApi(residentId: string, mode: ErrorMessageMode = 'modal') {
-  // In development with mock enabled, return mock data directly
-  console.log('%c[Mock] Get Resident Account Settings API Request', 'color: #1890ff; font-weight: bold', { residentId })
-      return residents.mockGetResidentAccountSettings(residentId).then((result) => {
-        console.log('%c[Mock] Get Resident Account Settings API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Get Resident Account Settings API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      })
-    })
-  }
-
   // Production: Call real backend API
   return defHttp.get<{
     resident_account?: string
@@ -294,8 +282,8 @@ export function getResidentAccountSettingsApi(residentId: string, mode: ErrorMes
 */
 
 /**
- * @deprecated 瀹歌尪绺肩粔璇插煂 /api/account/accountSettings.ts
- * 濮濄倕鍤遍弫棰佺矌 Sidebar.vue 娴ｈ法鏁ら敍瀛瞚debar 鏉╀胶些閸掔増鏌?API 閸氬骸鐨㈢悮顐㈠灩闂? * 
+ * @deprecated 瀹歌尪绺肩粔璇插�?/api/account/accountSettings.ts
+ * 濮濄倕鍤遍弫棰佺�?Sidebar.vue 娴ｈ法鏁ら敍瀛瞚debar 鏉╀胶些閸掔増鏌?API 閸氬骸鐨㈢悮顐㈠灩闂? * 
  * @description: Update resident/contact account settings (unified API)
  * @param residentId - Resident ID or contact ID
  * @param params - Update account settings parameters
@@ -315,18 +303,6 @@ export function updateResidentAccountSettingsApi(
   },
   mode: ErrorMessageMode = 'modal',
 ) {
-  // In development with mock enabled, return mock data directly
-  console.log('%c[Mock] Update Resident Account Settings API Request', 'color: #1890ff; font-weight: bold', { residentId, params })
-      return residents.mockUpdateResidentAccountSettings(residentId, params).then((result) => {
-        console.log('%c[Mock] Update Resident Account Settings API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Update Resident Account Settings API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      })
-    })
-  }
-
   // Production: Call real backend API
   return defHttp.put<{ success: boolean; message?: string }>(
     {

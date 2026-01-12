@@ -23,7 +23,7 @@ export enum Api {
 }
 
 // Mock mode: In development, use mock data instead of real API calls
-// DEV 榛樿璧扮湡瀹炲悗绔紱鍙湁鏄惧紡璁剧疆 VITE_USE_MOCK='true' 鎵嶅惎鐢?mock
+// DEV 榛樿璧扮湡瀹炲悗绔紱鍙湁鏄惧紡璁剧�?VITE_USE_MOCK='true' 鎵嶅惎鐢?mock
 const useMock = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true'
 
 // Display mock status in console
@@ -37,18 +37,6 @@ if (useMock) {
  * @param mode - Error message mode
  */
 export function getAlarmCloudApi(params?: GetAlarmCloudParams, mode: ErrorMessageMode = 'modal') {
-  // In development with mock enabled, return mock data directly
-  console.log('%c[Mock] Get Alarm Cloud API Request', 'color: #1890ff; font-weight: bold', { params })
-      return alarmCloud.mock.mockGetAlarmCloud(params).then((result: AlarmCloudResult) => {
-        console.log('%c[Mock] Get Alarm Cloud API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Get Alarm Cloud API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      })
-    })
-  }
-
   // Production: Call real backend API
   return defHttp.get<AlarmCloudResult>(
     {
@@ -67,18 +55,6 @@ export function getAlarmCloudApi(params?: GetAlarmCloudParams, mode: ErrorMessag
  * @param mode - Error message mode
  */
 export function updateAlarmCloudApi(params: UpdateAlarmCloudParams, mode: ErrorMessageMode = 'modal') {
-  // In development with mock enabled, return mock data directly
-  console.log('%c[Mock] Update Alarm Cloud API Request', 'color: #1890ff; font-weight: bold', { params })
-      return alarmCloud.mock.mockUpdateAlarmCloud(params).then((result: AlarmCloudResult) => {
-        console.log('%c[Mock] Update Alarm Cloud API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Update Alarm Cloud API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      })
-    })
-  }
-
   // Production: Call real backend API
   return defHttp.put<AlarmCloudResult>(
     {
@@ -97,18 +73,6 @@ export function updateAlarmCloudApi(params: UpdateAlarmCloudParams, mode: ErrorM
  * @param mode - Error message mode
  */
 export function getAlarmEventsApi(params: GetAlarmEventsParams, mode: ErrorMessageMode = 'modal') {
-  // In development with mock enabled, return mock data directly
-  console.log('%c[Mock] Get Alarm Events API Request', 'color: #1890ff; font-weight: bold', { params })
-      return alarmEvents.mock.mockGetAlarmEvents(params).then((result: GetAlarmEventsResult) => {
-        console.log('%c[Mock] Get Alarm Events API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Get Alarm Events API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      })
-    })
-  }
-
   // Production: Call real backend API
   return defHttp.get<GetAlarmEventsResult>(
     {
@@ -132,18 +96,6 @@ export function handleAlarmEventApi(
   params: HandleAlarmEventParams,
   mode: ErrorMessageMode = 'modal',
 ) {
-  // In development with mock enabled, return mock data directly
-  console.log('%c[Mock] Handle Alarm Event API Request', 'color: #1890ff; font-weight: bold', { eventId, params })
-      return alarmEvents.mock.mockHandleAlarmEvent(eventId, params).then((result) => {
-        console.log('%c[Mock] Handle Alarm Event API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Handle Alarm Event API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      })
-    })
-  }
-
   // Production: Call real backend API
   return defHttp.put<{ success: boolean }>(
     {

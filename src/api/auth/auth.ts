@@ -19,7 +19,7 @@ export enum Api {
 }
 
 // Mock mode: In development, use mock data instead of real API calls
-// DEV 默认走真实后端；只有显式设置 VITE_USE_MOCK='true' 才启用 mock
+// DEV 默认走真实后端；只有显式设置 VITE_USE_MOCK='true' 才启�?mock
 const useMock = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true'
 
 // Display mock status in console
@@ -55,34 +55,6 @@ export async function loginApi(params: LoginParams, mode: ErrorMessageMode = 'mo
   // Use original password (no trim) - password hash should only depend on password itself
   const passwordHash = await hashPassword(params.password)
   
-  // In development with mock enabled, return mock data directly
-  if (useMock) {
-    // Use relative path to avoid Vite alias resolution issues in dynamic imports
-    return import('../../../test/index').then(({ login }) => {
-      console.log('%c[Mock] Login API Request', 'color: #1890ff; font-weight: bold', {
-        account: accountTrimmed,
-        accountHash: accountHash.substring(0, 16) + '...', // Show partial hash for debugging
-        passwordHash: passwordHash.substring(0, 16) + '...', // Show partial hash for debugging
-        userType: params.userType,
-        tenant_id: params.tenant_id,
-        note: 'Only hashes are sent, no raw PHI (phone/email) transmitted',
-      })
-      
-      // For mock, we still pass plain account/password for testing
-      return login.mockLogin({ ...params, account: accountTrimmed }).then((result) => {
-        console.log('%c[Mock] Login API - Success', 'color: #52c41a; font-weight: bold', {
-          result,
-        })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Login API - Failed', 'color: #ff4d4f; font-weight: bold', {
-          error: error.message,
-        })
-        throw error
-      })
-    })
-  }
-
   // Production: Call real API with hashed account and password
   // Chrome DevTools will show only hashes in Network tab, proving no raw PHI is transmitted
   // account_hash and password_hash are independent: account_hash = SHA256(account), password_hash = SHA256(password)
@@ -142,29 +114,6 @@ export async function searchInstitutionsApi(
   // Use original password (no trim) - password hash should only depend on password itself
   const passwordHash = await hashPassword(password)
   
-  // In development with mock enabled, return mock data directly
-  if (useMock) {
-    // Use relative path to avoid Vite alias resolution issues in dynamic imports
-    return import('../../../test/index').then(({ login }) => {
-      console.log('%c[Mock] Institution Search API Request', 'color: #1890ff; font-weight: bold', {
-        account: accountTrimmed,
-        accountHash: accountHash.substring(0, 16) + '...', // Show partial hash for debugging
-        passwordHash: passwordHash.substring(0, 16) + '...', // Show partial hash for debugging
-        userType,
-        note: 'Only hashes are sent, no raw PHI (phone/email) transmitted',
-      })
-      
-      // For mock, we still pass plain account/password for testing, but in production only hashes are sent
-      return login.mockSearchInstitutions(accountTrimmed, password, userType).then((result) => {
-        console.log('%c[Mock] Institution Search API - Result', 'color: #1890ff; font-weight: bold', {
-          count: result.length,
-          institutions: result,
-        })
-        return result
-      })
-    })
-  }
-
   // Production: Call real API with hashed account and password
   // Chrome DevTools will show only hashes in Network tab, proving no raw PHI is transmitted
   // account_hash and password_hash are independent: account_hash = SHA256(account), password_hash = SHA256(password)
@@ -203,31 +152,6 @@ export async function sendVerificationCodeApi(
   params: SendVerificationCodeParams,
   mode: ErrorMessageMode = 'modal',
 ): Promise<ForgotPasswordResult> {
-  // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('../../../test/index').then(({ forgotPassword }) => {
-      console.log('%c[Mock] Send Verification Code API Request', 'color: #1890ff; font-weight: bold', {
-        account: params.account,
-        userType: params.userType,
-        tenant_name: params.tenant_name,
-        tenant_id: params.tenant_id,
-        note: 'Raw phone/email transmitted via HTTPS for verification code delivery',
-      })
-      
-      return forgotPassword.mockSendVerificationCode(params).then((result: any) => {
-        console.log('%c[Mock] Send Verification Code API - Success', 'color: #52c41a; font-weight: bold', {
-          result,
-        })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Send Verification Code API - Failed', 'color: #ff4d4f; font-weight: bold', {
-          error: error.message,
-        })
-        throw error
-      })
-    })
-  }
-
   // Production: Call real API
   return defHttp.post<ForgotPasswordResult>(
     {
@@ -255,30 +179,6 @@ export async function verifyCodeApi(
   params: VerifyCodeParams,
   mode: ErrorMessageMode = 'modal',
 ): Promise<ForgotPasswordResult> {
-  // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('../../../test/index').then(({ forgotPassword }) => {
-      console.log('%c[Mock] Verify Code API Request', 'color: #1890ff; font-weight: bold', {
-        account: params.account,
-        code: params.code,
-        userType: params.userType,
-        tenant_name: params.tenant_name,
-      })
-      
-      return forgotPassword.mockVerifyCode(params).then((result: any) => {
-        console.log('%c[Mock] Verify Code API - Success', 'color: #52c41a; font-weight: bold', {
-          result,
-        })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Verify Code API - Failed', 'color: #ff4d4f; font-weight: bold', {
-          error: error.message,
-        })
-        throw error
-      })
-    })
-  }
-
   // Production: Call real API
   return defHttp.post<ForgotPasswordResult>(
     {
@@ -312,32 +212,6 @@ export async function resetPasswordApi(
   params: ResetPasswordParams,
   mode: ErrorMessageMode = 'modal',
 ): Promise<ForgotPasswordResult> {
-  // In development with mock enabled, return mock data directly
-  if (useMock) {
-    return import('../../../test/index').then(({ forgotPassword }) => {
-      console.log('%c[Mock] Reset Password API Request', 'color: #1890ff; font-weight: bold', {
-        account: params.account,
-        code: params.code,
-        userType: params.userType,
-        tenant_name: params.tenant_name,
-        newPasswordLength: params.newPassword.length,
-        note: 'New password will be hashed by backend',
-      })
-      
-      return forgotPassword.mockResetPassword(params).then((result: any) => {
-        console.log('%c[Mock] Reset Password API - Success', 'color: #52c41a; font-weight: bold', {
-          result,
-        })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Reset Password API - Failed', 'color: #ff4d4f; font-weight: bold', {
-          error: error.message,
-        })
-        throw error
-      })
-    })
-  }
-
   // Production: Call real API
   return defHttp.post<ForgotPasswordResult>(
     {

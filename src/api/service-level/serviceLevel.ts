@@ -19,7 +19,7 @@ export enum Api {
 }
 
 // Mock mode: In development, use mock data instead of real API calls
-// DEV 榛樿璧扮湡瀹炲悗绔紱鍙湁鏄惧紡璁剧疆 VITE_USE_MOCK='true' 鎵嶅惎鐢?mock
+// DEV 榛樿璧扮湡瀹炲悗绔紱鍙湁鏄惧紡璁剧�?VITE_USE_MOCK='true' 鎵嶅惎鐢?mock
 const useMock = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true'
 
 // Display mock status in console
@@ -32,18 +32,6 @@ if (useMock) {
  * @param mode - Error message mode
  */
 export function getServiceLevelsApi(mode: ErrorMessageMode = 'modal') {
-  // In development with mock enabled, return mock data directly
-  console.log('%c[Mock] Get Service Levels API Request', 'color: #1890ff; font-weight: bold')
-      return serviceLevels.mockGetServiceLevels().then((result) => {
-        console.log('%c[Mock] Get Service Levels API - Success', 'color: #52c41a; font-weight: bold', { result })
-        return result
-      }).catch((error: any) => {
-        console.log('%c[Mock] Get Service Levels API - Failed', 'color: #ff4d4f; font-weight: bold', { error: error.message })
-        throw error
-      })
-    })
-  }
-
   // Production: Call real backend API
   return defHttp.get<GetServiceLevelsResult>(
     {
