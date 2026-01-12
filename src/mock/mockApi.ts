@@ -97,6 +97,15 @@ export async function mockGetResidents(params?: any) {
       const roomMatch = address[1]?.match(/Room (\d+)/)
       const roomNumber = roomMatch ? roomMatch[1] : `${Math.floor(index / 10) + 1}0${(index % 10) + 1}`
       
+      // 使用index生成固定的值，确保每次刷新数据一致
+      const birthYear = 1930 + (index % 40)
+      const birthMonth = ((index * 7) % 12) + 1
+      const birthDay = ((index * 13) % 28) + 1
+      const admitMonth = ((index * 5) % 12) + 1
+      const admitDay = ((index * 11) % 28) + 1
+      const phoneArea = 100 + (index % 900)
+      const phoneExchange = 1000 + (index * 37) % 9000
+      
       return {
         id: resident.resident_id,
         resident_id: resident.resident_id,
@@ -106,9 +115,9 @@ export async function mockGetResidents(params?: any) {
         first_name: resident.first_name,
         last_name: resident.last_name,
         full_name: `${resident.first_name} ${resident.last_name}`,
-        dateOfBirth: `19${30 + Math.floor(Math.random() * 40)}-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}`,
-        date_of_birth: `19${30 + Math.floor(Math.random() * 40)}-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}`,
-        gender: Math.random() > 0.5 ? 'Male' : 'Female',
+        dateOfBirth: `${birthYear}-${String(birthMonth).padStart(2, '0')}-${String(birthDay).padStart(2, '0')}`,
+        date_of_birth: `${birthYear}-${String(birthMonth).padStart(2, '0')}-${String(birthDay).padStart(2, '0')}`,
+        gender: index % 2 === 0 ? 'Male' : 'Female',
         roomNumber: roomNumber,
         room_number: roomNumber,
         building: building,
@@ -116,18 +125,18 @@ export async function mockGetResidents(params?: any) {
         service_level: resident.service_level,
         serviceLevelName: resident.service_level_info?.display_name || 'Independent',
         service_level_name: resident.service_level_info?.display_name || 'Independent',
-        admissionDate: `2024-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}`,
-        admission_date: `2024-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}`,
+        admissionDate: `2024-${String(admitMonth).padStart(2, '0')}-${String(admitDay).padStart(2, '0')}`,
+        admission_date: `2024-${String(admitMonth).padStart(2, '0')}-${String(admitDay).padStart(2, '0')}`,
         status: 'Active',
         emergencyContact: {
           name: `John ${resident.last_name}`,
           relationship: 'Son',
-          phone: `555-${String(Math.floor(Math.random() * 900) + 100)}-${String(Math.floor(Math.random() * 9000) + 1000)}`
+          phone: `555-${String(phoneArea).padStart(3, '0')}-${String(phoneExchange).padStart(4, '0')}`
         },
         emergency_contact: {
           name: `John ${resident.last_name}`,
           relationship: 'Son',
-          phone: `555-${String(Math.floor(Math.random() * 900) + 100)}-${String(Math.floor(Math.random() * 9000) + 1000)}`
+          phone: `555-${String(phoneArea).padStart(3, '0')}-${String(phoneExchange).padStart(4, '0')}`
         },
         hasVitalMonitor: card.device_count > 0,
         has_vital_monitor: card.device_count > 0,

@@ -1,25 +1,48 @@
-import type { VitalFocusCard } from '@/api/monitors/model/monitorModel'
+﻿import type { VitalFocusCard } from '@/api/monitors/model/monitorModel'
 
 /**
- * HIPAA合规声明：
- * 本文件包含的所有数据均为测试/演示用途的模拟数据
- * 不包含任何真实的受保护健康信息(PHI)
- * 所有姓名、ID、生理数据均为随机生成
+ * HIPAA鍚堣澹版槑锛?
+ * 鏈枃浠跺寘鍚殑鎵€鏈夋暟鎹潎涓烘祴璇?婕旂ず鐢ㄩ€旂殑妯℃嫙鏁版嵁
+ * 涓嶅寘鍚换浣曠湡瀹炵殑鍙椾繚鎶ゅ仴搴蜂俊鎭?PHI)
+ * 鎵€鏈夊鍚嶃€両D銆佺敓鐞嗘暟鎹潎涓洪殢鏈虹敓鎴?
  */
 
-// 生成随机数辅助函数
-const randomInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min
-const randomChoice = <T>(arr: T[]): T => {
-  if (arr.length === 0) throw new Error('Array cannot be empty')
-  return arr[Math.floor(Math.random() * arr.length)]!
+// 馃敶 绉嶅瓙闅忔満鏁扮敓鎴愬櫒 - 纭繚姣忔鍒锋柊鐢熸垚鐩稿悓鐨勬暟鎹?
+class SeededRandom {
+  private seed: number
+
+  constructor(seed: number = 12345) {
+    this.seed = seed
+  }
+
+  // 绾挎€у悓浣欑敓鎴愬櫒 (LCG)
+  next(): number {
+    this.seed = (this.seed * 9301 + 49297) % 233280
+    return this.seed / 233280
+  }
+
+  // 閲嶇疆绉嶅瓙
+  reset(seed: number = 12345) {
+    this.seed = seed
+  }
 }
 
-// 测试用姓名（HIPAA合规 - 非真实患者信息）
-// 使用"Demo"前缀明确标识为演示数据，适合商业宣传使用
+// 鍒涘缓鍏ㄥ眬闅忔満鏁扮敓鎴愬櫒瀹炰緥
+const seededRandom = new SeededRandom(12345)
+
+// 鐢熸垚闅忔満鏁拌緟鍔╁嚱鏁?- 浣跨敤绉嶅瓙闅忔満鏁?
+const randomInt = (min: number, max: number) => Math.floor(seededRandom.next() * (max - min + 1)) + min
+const randomChoice = <T>(arr: T[]): T => {
+  if (arr.length === 0) throw new Error('Array cannot be empty')
+  return arr[Math.floor(seededRandom.next() * arr.length)]!
+}
+
+// 娴嬭瘯鐢ㄥ鍚嶏紙HIPAA鍚堣 - 闈炵湡瀹炴偅鑰呬俊鎭級
+// 浣跨敤"Demo"鍓嶇紑鏄庣‘鏍囪瘑涓烘紨绀烘暟鎹紝閫傚悎鍟嗕笟瀹ｄ紶浣跨敤
 const lastNames = ['Demo-Smith', 'Demo-Johnson', 'Demo-Williams', 'Demo-Brown', 'Demo-Jones', 'Demo-Garcia', 'Demo-Miller', 'Demo-Davis', 'Demo-Martinez', 'Demo-Wilson']
 const firstNames = ['James', 'Mary', 'Robert', 'Patricia', 'Michael', 'Linda', 'William', 'Barbara', 'David', 'Elizabeth']
 
-// 服务等级配置
+// 鏈嶅姟绛夌骇閰嶇疆
 const serviceLevels = [
   { code: 'L1', name: 'Independent', color: '#28a745', priority: 1 },
   { code: 'L2', name: 'Assisted', color: '#007bff', priority: 2 },
@@ -28,7 +51,7 @@ const serviceLevels = [
   { code: 'L5', name: 'Hospice', color: '#f44336', priority: 5 }
 ]
 
-// Location卡片位置名称
+// Location鍗＄墖浣嶇疆鍚嶇О
 const locationNames = [
   { name: 'Living Room 1F', address: 'Building A / 1F Living Room', floor: 1 },
   { name: 'Dining Room 1F', address: 'Building A / 1F Dining Room', floor: 1 },
@@ -42,18 +65,21 @@ const locationNames = [
   { name: 'Cafe Corner', address: 'Building E / 1F Cafe Corner', floor: 1 }
 ]
 
-// 生成100个Mock卡片数据 (90个ActiveBed + 10个Location)
+// 鐢熸垚100涓狹ock鍗＄墖鏁版嵁 (90涓狝ctiveBed + 10涓狶ocation)
 function generateMockCards(): VitalFocusCard[] {
+  // 🔴 重置随机数种子，确保每次生成相同的数据
+  seededRandom.reset(12345)
+  
   const cards: VitalFocusCard[] = []
   const buildings = ['Building A', 'Building B', 'Building C', 'Building D', 'Building E']
   
-  // 前10张卡片的固定场景配置（确保Demo有完整的示例）
-  // 索引: 0=心率过高报警, 1=跌倒报警, 2=3人访客, 3-9=随机
-  const FIXED_HEART_ALARM_INDEX = 0    // 心率过高报警卡片
-  const FIXED_FALL_ALARM_INDEX = 1     // 跌倒报警卡片  
-  const FIXED_VISITOR_3_INDEX = 2      // 3人访客卡片
+  // 鍓?0寮犲崱鐗囩殑鍥哄畾鍦烘櫙閰嶇疆锛堢‘淇滵emo鏈夊畬鏁寸殑绀轰緥锛?
+  // 绱㈠紩: 0=蹇冪巼杩囬珮鎶ヨ, 1=璺屽€掓姤璀? 2=3浜鸿瀹? 3-9=闅忔満
+  const FIXED_HEART_ALARM_INDEX = 0    // 蹇冪巼杩囬珮鎶ヨ鍗＄墖
+  const FIXED_FALL_ALARM_INDEX = 1     // 璺屽€掓姤璀﹀崱鐗? 
+  const FIXED_VISITOR_3_INDEX = 2      // 3浜鸿瀹㈠崱鐗?
   
-  // 生成90个ActiveBed卡片
+  // 鐢熸垚90涓狝ctiveBed鍗＄墖
   for (let i = 0; i < 90; i++) {
     const cardId = `card_${String(i + 1).padStart(3, '0')}`
     const building = buildings[Math.floor(i / 20)]
@@ -61,15 +87,15 @@ function generateMockCards(): VitalFocusCard[] {
     const room = (i % 4) + 1
     const roomNumber = `${floor}0${room}`
     
-    // 居民信息
+    // 灞呮皯淇℃伅
     const lastName = randomChoice(lastNames)
     const firstName = randomChoice(firstNames)
     const serviceLevel = randomChoice(serviceLevels)
     
-    // 设备配置 (需求: 所有设备都在线,不要离线示例)
-    // 大部分是双设备,少数单设备
-    const hasSleepace = Math.random() > 0.05  // 95%有Sleepace
-    const hasRadar = Math.random() > 0.15     // 85%有Radar
+    // 璁惧閰嶇疆 (闇€姹? 鎵€鏈夎澶囬兘鍦ㄧ嚎,涓嶈绂荤嚎绀轰緥)
+    // 澶ч儴鍒嗘槸鍙岃澶?灏戞暟鍗曡澶?
+    const hasSleepace = seededRandom.next() > 0.05  // 95%鏈塖leepace
+    const hasRadar = seededRandom.next() > 0.15     // 85%鏈塕adar
     
     const devices = []
     if (hasSleepace) {
@@ -91,13 +117,13 @@ function generateMockCards(): VitalFocusCard[] {
       })
     }
     
-    // 设备连接状态 (所有设备都在线)
+    // 璁惧杩炴帴鐘舵€?(鎵€鏈夎澶囬兘鍦ㄧ嚎)
     const s_connection = hasSleepace ? 1 : 0
     const r_connection = hasRadar ? 1 : 0
     
-    // 决定卡片状态类型
-    let bedStatus = 0  // 默认在床
-    let sleepStage = 2 // 默认浅睡眠
+    // 鍐冲畾鍗＄墖鐘舵€佺被鍨?
+    let bedStatus = 0  // 榛樿鍦ㄥ簥
+    let sleepStage = 2 // 榛樿娴呯潯鐪?
     let heart = randomInt(65, 80)
     let breath = randomInt(14, 18)
     let personCount = 1
@@ -105,165 +131,165 @@ function generateMockCards(): VitalFocusCard[] {
     let hasAlarm = false
     let alarmLevel = 3
     
-    // ========== 前10张卡片的固定场景 ==========
+    // ========== 鍓?0寮犲崱鐗囩殑鍥哄畾鍦烘櫙 ==========
     if (i === FIXED_HEART_ALARM_INDEX) {
-      // 卡片1: 心率过高报警（有报警条）
+      // 鍗＄墖1: 蹇冪巼杩囬珮鎶ヨ锛堟湁鎶ヨ鏉★級
       hasAlarm = true
       bedStatus = 0
       sleepStage = 1
-      alarmLevel = 1  // ALERT level，显示报警条
-      heart = randomInt(120, 139)  // 心率过高
+      alarmLevel = 1  // ALERT level锛屾樉绀烘姤璀︽潯
+      heart = randomInt(120, 139)  // 蹇冪巼杩囬珮
       breath = randomInt(16, 20)
       personCount = 1
       postures = [6]
     } else if (i === FIXED_FALL_ALARM_INDEX) {
-      // 卡片2: 跌倒报警（有报警条）
+      // 鍗＄墖2: 璺屽€掓姤璀︼紙鏈夋姤璀︽潯锛?
       hasAlarm = true
-      bedStatus = 1  // 离床
+      bedStatus = 1  // 绂诲簥
       sleepStage = 1
-      alarmLevel = 0  // EMERG level，紧急跌倒
+      alarmLevel = 0  // EMERG level锛岀揣鎬ヨ穼鍊?
       heart = randomInt(85, 100)
       breath = randomInt(18, 24)
       personCount = 1
-      postures = [5]  // 跌倒姿态
+      postures = [5]  // 璺屽€掑Э鎬?
     } else if (i === FIXED_VISITOR_3_INDEX) {
-      // 卡片3: 3人访客场景
+      // 鍗＄墖3: 3浜鸿瀹㈠満鏅?
       hasAlarm = false
       bedStatus = 0
-      sleepStage = 1  // 清醒
+      sleepStage = 1  // 娓呴啋
       heart = randomInt(70, 85)
       breath = randomInt(14, 18)
-      personCount = 3  // 3个人
-      postures = [3, 4, 1]  // 坐、站、走
+      personCount = 3  // 3涓汉
+      postures = [3, 4, 1]  // 鍧愩€佺珯銆佽蛋
     } else {
-      // ========== 其他卡片随机分配 ==========
-      // 随机分配状态场景 (模拟真实情况,各种状态混合分布)
-      const rand = Math.random()
+      // ========== 鍏朵粬鍗＄墖闅忔満鍒嗛厤 ==========
+      // 闅忔満鍒嗛厤鐘舵€佸満鏅?(妯℃嫙鐪熷疄鎯呭喌,鍚勭鐘舵€佹贩鍚堝垎甯?
+      const rand = seededRandom.next()
     
       if (rand < 0.45) {
-        // 45%: 正常睡眠 (Deep Sleep / Light Sleep)
-        bedStatus = 0  // 在床
-        sleepStage = Math.random() > 0.6 ? 2 : 4  // 60%浅睡眠, 40%深睡眠
+        // 45%: 姝ｅ父鐫＄湢 (Deep Sleep / Light Sleep)
+        bedStatus = 0  // 鍦ㄥ簥
+        sleepStage = seededRandom.next() > 0.6 ? 2 : 4  // 60%娴呯潯鐪? 40%娣辩潯鐪?
         heart = randomInt(55, 70)
         breath = randomInt(12, 16)
         personCount = 1
-        // 【测试】睡眠时显示躺姿图标（posture=6）
+        // 銆愭祴璇曘€戠潯鐪犳椂鏄剧ず韬哄Э鍥炬爣锛坧osture=6锛?
         postures = [6]
       } else if (rand < 0.58) {
-        // 13%: 清醒状态 (Awake in bed)
-      bedStatus = 0  // 在床
+        // 13%: 娓呴啋鐘舵€?(Awake in bed)
+      bedStatus = 0  // 鍦ㄥ簥
       sleepStage = 1
       heart = randomInt(70, 85)
       breath = randomInt(14, 20)
       personCount = 1
-      // 清醒状态90%有姿势图标，行走和站立姿势增加
-      const hasPosture = Math.random() < 0.9
+      // 娓呴啋鐘舵€?0%鏈夊Э鍔垮浘鏍囷紝琛岃蛋鍜岀珯绔嬪Э鍔垮鍔?
+      const hasPosture = seededRandom.next() < 0.9
       if (hasPosture) {
-        const postureRand = Math.random()
-        if (postureRand < 0.25) postures = [3]      // 坐着 sitting 25%
-        else if (postureRand < 0.50) postures = [4] // 站立 stand 25%
-        else if (postureRand < 0.75) postures = [1] // 行走 walk 25%
-        else postures = [6]                          // 躺着 lying 25%
+        const postureRand = seededRandom.next()
+        if (postureRand < 0.25) postures = [3]      // 鍧愮潃 sitting 25%
+        else if (postureRand < 0.50) postures = [4] // 绔欑珛 stand 25%
+        else if (postureRand < 0.75) postures = [1] // 琛岃蛋 walk 25%
+        else postures = [6]                          // 韬虹潃 lying 25%
       } else {
-        postures = []  // 10%无姿势
+        postures = []  // 10%鏃犲Э鍔?
       }
     } else if (rand < 0.70) {
-      // 12%: 离床状态 (Out of bed) ⭐ 新增场景
-      bedStatus = 1  // 离床
-      sleepStage = 1  // 离床时默认清醒
+      // 12%: 绂诲簥鐘舵€?(Out of bed) 猸?鏂板鍦烘櫙
+      bedStatus = 1  // 绂诲簥
+      sleepStage = 1  // 绂诲簥鏃堕粯璁ゆ竻閱?
       heart = randomInt(75, 90)
       breath = randomInt(15, 22)
-      // 离床时：60%有姿态（人在房间但不在床上），40%无姿态（人已离开）
-      const hasPosture = Math.random() < 0.6
+      // 绂诲簥鏃讹細60%鏈夊Э鎬侊紙浜哄湪鎴块棿浣嗕笉鍦ㄥ簥涓婏級锛?0%鏃犲Э鎬侊紙浜哄凡绂诲紑锛?
+      const hasPosture = seededRandom.next() < 0.6
       personCount = hasPosture ? 1 : 0
       if (hasPosture) {
-        // 🔴 离床时的姿态：只能是站立、行走，不能坐着或躺着！
-        const postureRand = Math.random()
-        if (postureRand < 0.5) postures = [4]   // 站立 standing 50%
-        else postures = [1]                      // 行走 walking 50%
+        // 馃敶 绂诲簥鏃剁殑濮挎€侊細鍙兘鏄珯绔嬨€佽璧帮紝涓嶈兘鍧愮潃鎴栬汉鐫€锛?
+        const postureRand = seededRandom.next()
+        if (postureRand < 0.5) postures = [4]   // 绔欑珛 standing 50%
+        else postures = [1]                      // 琛岃蛋 walking 50%
       } else {
-        postures = []  // 人已离开房间，无姿态
+        postures = []  // 浜哄凡绂诲紑鎴块棿锛屾棤濮挎€?
         personCount = 0
       }
     } else if (rand < 0.82) {
-      // 12%: 报警场景 (心率或呼吸异常)
+      // 12%: 鎶ヨ鍦烘櫙 (蹇冪巼鎴栧懠鍚稿紓甯?
       hasAlarm = true
       bedStatus = 0
       sleepStage = 1
       
-      const alarmType = Math.random()
+      const alarmType = seededRandom.next()
       if (alarmType < 0.15) {
-        // 15%: 心率极高 - EMERG (level 0)
+        // 15%: 蹇冪巼鏋侀珮 - EMERG (level 0)
         heart = randomInt(140, 180)
         breath = randomInt(20, 25)
         alarmLevel = 0
       } else if (alarmType < 0.35) {
-        // 20%: 心率过高 - ALERT (level 1)
+        // 20%: 蹇冪巼杩囬珮 - ALERT (level 1)
         heart = randomInt(105, 139)
         breath = randomInt(15, 20)
         alarmLevel = 1
       } else if (alarmType < 0.50) {
-        // 15%: 心率过低 - ALERT (level 1)
+        // 15%: 蹇冪巼杩囦綆 - ALERT (level 1)
         heart = randomInt(38, 48)
         breath = randomInt(12, 16)
         alarmLevel = 1
       } else if (alarmType < 0.65) {
-        // 15%: 呼吸异常严重 - CRIT (level 2)
+        // 15%: 鍛煎惛寮傚父涓ラ噸 - CRIT (level 2)
         heart = randomInt(70, 85)
-        breath = Math.random() > 0.5 ? randomInt(30, 40) : randomInt(4, 7)
+        breath = seededRandom.next() > 0.5 ? randomInt(30, 40) : randomInt(4, 7)
         alarmLevel = 2
       } else if (alarmType < 0.85) {
-        // 20%: 呼吸异常一般 - ERR (level 3)
+        // 20%: 鍛煎惛寮傚父涓€鑸?- ERR (level 3)
         heart = randomInt(70, 85)
-        breath = Math.random() > 0.5 ? randomInt(26, 29) : randomInt(8, 9)
+        breath = seededRandom.next() > 0.5 ? randomInt(26, 29) : randomInt(8, 9)
         alarmLevel = 3
       } else {
-        // 15%: 轻微异常 - WARNING (level 4)
+        // 15%: 杞诲井寮傚父 - WARNING (level 4)
         heart = randomInt(95, 104)
         breath = randomInt(21, 24)
         alarmLevel = 4
       }
       personCount = 1
-      postures = [6]  // 报警时显示躺姿图标（人在床上）
+      postures = [6]  // 鎶ヨ鏃舵樉绀鸿汉濮垮浘鏍囷紙浜哄湪搴婁笂锛?
     } else if (rand < 0.92) {
-      // 10%: 访客场景 (person_count > 1)
+      // 10%: 璁垮鍦烘櫙 (person_count > 1)
       bedStatus = 0
       sleepStage = 1
       heart = randomInt(70, 85)
       breath = randomInt(14, 20)
       personCount = 2
-      postures = [3, 4, 1] // 多个姿态
+      postures = [3, 4, 1] // 澶氫釜濮挎€?
     } else {
-      // 8%: 特殊姿态或其他场景
+      // 8%: 鐗规畩濮挎€佹垨鍏朵粬鍦烘櫙
       bedStatus = 0
-      sleepStage = 1  // 🔴 修正: 只能是清醒状态(1),睡眠时不能有姿态
+      sleepStage = 1  // 馃敶 淇: 鍙兘鏄竻閱掔姸鎬?1),鐫＄湢鏃朵笉鑳芥湁濮挎€?
       heart = randomInt(65, 85)
       breath = randomInt(13, 19)
       personCount = 1
-      // 🔴 修正: 清醒且在床时,允许少量姿态(躺/坐),不允许跌倒
-      postures = Math.random() > 0.5 ? [randomChoice([2, 3])] : []  // 只有躺(2)或坐(3)
+      // 馃敶 淇: 娓呴啋涓斿湪搴婃椂,鍏佽灏戦噺濮挎€?韬?鍧?,涓嶅厑璁歌穼鍊?
+      postures = seededRandom.next() > 0.5 ? [randomChoice([2, 3])] : []  // 鍙湁韬?2)鎴栧潗(3)
     }
-    } // 结束 else 块（非固定场景卡片）
+    } // 缁撴潫 else 鍧楋紙闈炲浐瀹氬満鏅崱鐗囷級
     
-    // 【测试】强制睡眠状态显示躺姿图标（固定场景卡片除外）
+    // 銆愭祴璇曘€戝己鍒剁潯鐪犵姸鎬佹樉绀鸿汉濮垮浘鏍囷紙鍥哄畾鍦烘櫙鍗＄墖闄ゅ锛?
     if (i > FIXED_VISITOR_3_INDEX && (sleepStage === 2 || sleepStage === 4)) {
-      postures = [6]  // 睡眠时显示lying图标
+      postures = [6]  // 鐫＄湢鏃舵樉绀簂ying鍥炬爣
     }
     
-    // 🔴 关键验证: ActiveBed卡片在床时不允许跌倒姿态(5)
-    // 跌倒只能发生在Location卡片(公共区域)或离床场景
-    // 注意：固定跌倒卡片(FIXED_FALL_ALARM_INDEX)是离床的，允许跌倒
+    // 馃敶 鍏抽敭楠岃瘉: ActiveBed鍗＄墖鍦ㄥ簥鏃朵笉鍏佽璺屽€掑Э鎬?5)
+    // 璺屽€掑彧鑳藉彂鐢熷湪Location鍗＄墖(鍏叡鍖哄煙)鎴栫搴婂満鏅?
+    // 娉ㄦ剰锛氬浐瀹氳穼鍊掑崱鐗?FIXED_FALL_ALARM_INDEX)鏄搴婄殑锛屽厑璁歌穼鍊?
     if (bedStatus === 0 && postures.includes(5) && i !== FIXED_FALL_ALARM_INDEX) {
-      postures = postures.filter(p => p !== 5)  // 移除跌倒姿态
+      postures = postures.filter(p => p !== 5)  // 绉婚櫎璺屽€掑Э鎬?
     }
     
-    // 数据来源
+    // 鏁版嵁鏉ユ簮
     const heartSource = hasSleepace && hasRadar 
-      ? (Math.random() > 0.5 ? 's' : 'r')
+      ? (seededRandom.next() > 0.5 ? 's' : 'r')
       : hasSleepace ? 's' : hasRadar ? 'r' : '-'
     const breathSource = heartSource
     
-    // 报警事件 - 使用合规术语（Pattern Change 替代 Abnormal）
+    // 鎶ヨ浜嬩欢 - 浣跨敤鍚堣鏈锛圥attern Change 鏇夸唬 Abnormal锛?
     const alarms = hasAlarm ? [{
       event_id: `alarm_${cardId}`,
       event_type: heart > 100 ? 'Radar_HeartRatePatternChange_High' : 
@@ -271,8 +297,8 @@ function generateMockCards(): VitalFocusCard[] {
                   breath > 25 ? 'Radar_RespirationPatternChange_High' : 'Radar_RespirationPatternChange_Low',
       category: 'clinical' as const,
       alarm_level: alarmLevel,
-      alarm_status: Math.random() > 0.4 ? 'active' as const : 'acknowledged' as const,  // 60% active, 40% acknowledged
-      triggered_at: Date.now(), // Demo模式：每次刷新归零
+      alarm_status: seededRandom.next() > 0.4 ? 'active' as const : 'acknowledged' as const,  // 60% active, 40% acknowledged
+      triggered_at: Date.now(), // Demo妯″紡锛氭瘡娆″埛鏂板綊闆?
       triggered_by: hasRadar ? `Radar ${roomNumber}` : 'Cloud',
       trigger_data: {
         heart_rate: heart > 0 ? heart : undefined,
@@ -283,17 +309,17 @@ function generateMockCards(): VitalFocusCard[] {
       }
     }] : []
     
-    // 🔴 修正: 时间信息必须始终有值,不能为undefined
-    // bedStatus=1(离床)时显示离床时间,bedStatus=0(在床)时显示上床时间
+    // 馃敶 淇: 鏃堕棿淇℃伅蹇呴』濮嬬粓鏈夊€?涓嶈兘涓簎ndefined
+    // bedStatus=1(绂诲簥)鏃舵樉绀虹搴婃椂闂?bedStatus=0(鍦ㄥ簥)鏃舵樉绀轰笂搴婃椂闂?
     const bedStatusTimestamp = bedStatus === 1 
-      ? `${String(randomInt(0, 23)).padStart(2, '0')}:${String(randomInt(0, 59)).padStart(2, '0')}`  // 离床时间: 随机0-23点
-      : `${String(randomInt(18, 23)).padStart(2, '0')}:${String(randomInt(0, 59)).padStart(2, '0')}`  // 上床时间: 随机18-23点
+      ? `${String(randomInt(0, 23)).padStart(2, '0')}:${String(randomInt(0, 59)).padStart(2, '0')}`  // 绂诲簥鏃堕棿: 闅忔満0-23鐐?
+      : `${String(randomInt(18, 23)).padStart(2, '0')}:${String(randomInt(0, 59)).padStart(2, '0')}`  // 涓婂簥鏃堕棿: 闅忔満18-23鐐?
     
     const statusDuration = bedStatus === 1
-      ? `${randomInt(0, 5)}h ${randomInt(0, 59)}m`  // 离床时长
+      ? `${randomInt(0, 5)}h ${randomInt(0, 59)}m`  // 绂诲簥鏃堕暱
       : sleepStage === 1 
-        ? `${randomInt(0, 2)}h ${randomInt(0, 59)}m`  // 清醒时长
-        : `${randomInt(1, 8)}h ${randomInt(0, 59)}m`  // 睡眠时长
+        ? `${randomInt(0, 2)}h ${randomInt(0, 59)}m`  // 娓呴啋鏃堕暱
+        : `${randomInt(1, 8)}h ${randomInt(0, 59)}m`  // 鐫＄湢鏃堕暱
     
     cards.push({
       card_id: cardId,
@@ -356,13 +382,13 @@ function generateMockCards(): VitalFocusCard[] {
     })
   }
   
-  // 生成10个Location卡片
+  // 鐢熸垚10涓狶ocation鍗＄墖
   for (let i = 0; i < 10; i++) {
     const location = locationNames[i]
-    if (!location) continue // 跳过undefined的location
+    if (!location) continue // 璺宠繃undefined鐨刲ocation
     const cardId = `location_${String(i + 1).padStart(3, '0')}`
     
-    // 雷达设备 (Location卡片只有雷达,没有睡眠带)
+    // 闆疯揪璁惧 (Location鍗＄墖鍙湁闆疯揪,娌℃湁鐫＄湢甯?
     const devices = [{
       device_id: `radar_${cardId}`,
       device_name: `Radar ${location.name}`,
@@ -371,54 +397,54 @@ function generateMockCards(): VitalFocusCard[] {
       binding_type: 'direct' as const
     }]
     
-    // 设备连接状态 (雷达在线)
+    // 璁惧杩炴帴鐘舵€?(闆疯揪鍦ㄧ嚎)
     const r_connection = 1
     
-    // 随机人数和姿态场景
+    // 闅忔満浜烘暟鍜屽Э鎬佸満鏅?
     let personCount = 0
     let postures: number[] = []
     let hasAlarm = false
     let alarmLevel = 3
     
-    const rand = Math.random()
+    const rand = seededRandom.next()
     
     if (rand < 0.10) {
-      // 10%: 跌倒报警场景 (EMERG)
+      // 10%: 璺屽€掓姤璀﹀満鏅?(EMERG)
       personCount = 1
-      postures = [5] // 跌倒
+      postures = [5] // 璺屽€?
       hasAlarm = true
-      alarmLevel = 0 // 紧急报警
+      alarmLevel = 0 // 绱ф€ユ姤璀?
     } else if (rand < 0.18) {
-      // 8%: 疑似跌倒 (ALERT)
+      // 8%: 鐤戜技璺屽€?(ALERT)
       personCount = 1
-      postures = [2] // 疑似跌倒
+      postures = [2] // 鐤戜技璺屽€?
       hasAlarm = true
       alarmLevel = 1
     } else if (rand < 0.22) {
-      // 4%: 长时间躺地 (CRIT)
+      // 4%: 闀挎椂闂磋汉鍦?(CRIT)
       personCount = 1
-      postures = [6] // 躺
+      postures = [6] // 韬?
       hasAlarm = true
       alarmLevel = 2
     } else if (rand < 0.45) {
-      // 23%: 1人（增加概率，替代0人场景）
+      // 23%: 1浜猴紙澧炲姞姒傜巼锛屾浛浠?浜哄満鏅級
       personCount = 1
-      postures = [randomChoice([1, 3, 4, 6])] // 走/坐/站/躺
+      postures = [randomChoice([1, 3, 4, 6])] // 璧?鍧?绔?韬?
     } else if (rand < 0.70) {
-      // 25%: 2人
+      // 25%: 2浜?
       personCount = 2
       postures = Array.from({ length: personCount }, () => randomChoice([1, 3, 4]))
     } else if (rand < 0.88) {
-      // 18%: 3人
+      // 18%: 3浜?
       personCount = 3
       postures = Array.from({ length: personCount }, () => randomChoice([1, 3, 4]))
     } else {
-      // 12%: 4人
+      // 12%: 4浜?
       personCount = 4
       postures = Array.from({ length: personCount }, () => randomChoice([1, 3, 4]))
     }
     
-    // 报警事件 (根据报警级别生成不同类型)
+    // 鎶ヨ浜嬩欢 (鏍规嵁鎶ヨ绾у埆鐢熸垚涓嶅悓绫诲瀷)
     const alarms = hasAlarm ? [{
       event_id: `alarm_${cardId}`,
       event_type: alarmLevel === 0 ? 'Fall' : 
@@ -426,8 +452,8 @@ function generateMockCards(): VitalFocusCard[] {
                   alarmLevel === 2 ? 'LyingOnFloor' : 'Fall',
       category: 'safety' as const,
       alarm_level: alarmLevel,
-      alarm_status: Math.random() > 0.4 ? 'active' as const : 'acknowledged' as const,  // 60% active, 40% acknowledged
-      triggered_at: Date.now(), // Demo模式：每次刷新归零
+      alarm_status: seededRandom.next() > 0.4 ? 'active' as const : 'acknowledged' as const,  // 60% active, 40% acknowledged
+      triggered_at: Date.now(), // Demo妯″紡锛氭瘡娆″埛鏂板綊闆?
       triggered_by: `Radar ${location.name}`,
       trigger_data: {
         posture: alarmLevel === 0 ? 'fall' : 
@@ -446,7 +472,7 @@ function generateMockCards(): VitalFocusCard[] {
       card_address: location.address,
       primary_resident_id: undefined,
       
-      residents: [], // Location卡片通常没有固定住户
+      residents: [], // Location鍗＄墖閫氬父娌℃湁鍥哄畾浣忔埛
       
       devices,
       device_count: 1,
@@ -461,17 +487,17 @@ function generateMockCards(): VitalFocusCard[] {
       pop_alarm_emerge: hasAlarm && alarmLevel === 0 ? 1 : 0,
       
       r_connection,
-      s_connection: 0, // Location没有睡眠带
+      s_connection: 0, // Location娌℃湁鐫＄湢甯?
       
-      breath: undefined, // Location不显示生命体征
+      breath: undefined, // Location涓嶆樉绀虹敓鍛戒綋寰?
       heart: undefined,
       breath_source: '-' as const,
       heart_source: '-' as const,
       
-      sleep_stage: undefined, // Location没有睡眠状态
+      sleep_stage: undefined, // Location娌℃湁鐫＄湢鐘舵€?
       sleep_state_display: undefined,
       
-      bed_status: undefined, // Location没有床位状态
+      bed_status: undefined, // Location娌℃湁搴婁綅鐘舵€?
       
       person_count: personCount,
       postures: postures.length > 0 ? postures : undefined,
@@ -483,39 +509,39 @@ function generateMockCards(): VitalFocusCard[] {
     })
   }
   
-  // 打乱卡片顺序，确保前15个中至少有1个Location，前30个中至少有3个Location
+  // 鎵撲贡鍗＄墖椤哄簭锛岀‘淇濆墠15涓腑鑷冲皯鏈?涓狶ocation锛屽墠30涓腑鑷冲皯鏈?涓狶ocation
   const locationCards = cards.filter(c => c.card_type === 'Location')
   const activeBedCards = cards.filter(c => c.card_type === 'ActiveBed')
   
-  // 打乱两种卡片
-  const shuffledLocations = locationCards.sort(() => Math.random() - 0.5)
-  const shuffledActiveBeds = activeBedCards.sort(() => Math.random() - 0.5)
+  // 鎵撲贡涓ょ鍗＄墖
+  const shuffledLocations = locationCards.sort(() => seededRandom.next() - 0.5)
+  const shuffledActiveBeds = activeBedCards.sort(() => seededRandom.next() - 0.5)
   
-  // 确保前15个中至少有1个Location
+  // 纭繚鍓?5涓腑鑷冲皯鏈?涓狶ocation
   const first15 = [
-    shuffledLocations[0], // 第1个Location放在前15
+    shuffledLocations[0], // 绗?涓狶ocation鏀惧湪鍓?5
     ...shuffledActiveBeds.slice(0, 14)
-  ].filter((card): card is VitalFocusCard => card !== undefined).sort(() => Math.random() - 0.5)
+  ].filter((card): card is VitalFocusCard => card !== undefined).sort(() => seededRandom.next() - 0.5)
   
-  // 确保第16-30个中至少有2个Location
+  // 纭繚绗?6-30涓腑鑷冲皯鏈?涓狶ocation
   const next15 = [
     shuffledLocations[1],
     shuffledLocations[2],
     ...shuffledActiveBeds.slice(14, 27)
-  ].filter((card): card is VitalFocusCard => card !== undefined).sort(() => Math.random() - 0.5)
+  ].filter((card): card is VitalFocusCard => card !== undefined).sort(() => seededRandom.next() - 0.5)
   
-  // 剩余的卡片
+  // 鍓╀綑鐨勫崱鐗?
   const remaining = [
     ...shuffledLocations.slice(3),
     ...shuffledActiveBeds.slice(27)
-  ].filter((card): card is VitalFocusCard => card !== undefined).sort(() => Math.random() - 0.5)
+  ].filter((card): card is VitalFocusCard => card !== undefined).sort(() => seededRandom.next() - 0.5)
   
   return [...first15, ...next15, ...remaining]
 }
 
 export const mockCards = generateMockCards()
 
-// Mock账号
+// Mock璐﹀彿
 export const mockAccounts = [
   {
     username: 'admin',
@@ -558,3 +584,4 @@ export const mockAccounts = [
     user_type: 'resident'
   }
 ]
+
