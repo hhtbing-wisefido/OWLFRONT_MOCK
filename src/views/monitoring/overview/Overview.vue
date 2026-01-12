@@ -954,7 +954,9 @@ const getLatestPopAlarmTypeName = (card: VitalFocusCard): string => {
  */
 const checkAndPlayAlarmSound = async (cards: VitalFocusCard[]) => {
   let highestNewAlarmLevel = 999 // 最高（最紧急）报警级别（数字越小越紧急）
+  let highestCurrentAlarmLevel = 999 // 当前所有active报警中的最高级别
   let newAlarmCount = 0
+  let totalActiveAlarms = 0
   
   cards.forEach(card => {
     if (!card.alarms || card.alarms.length === 0) return
@@ -963,12 +965,19 @@ const checkAndPlayAlarmSound = async (cards: VitalFocusCard[]) => {
       // 只检查active状态的报警
       if (alarm.alarm_status !== 'active') return
       
+      totalActiveAlarms++
+      const level = parseAlarmLevel(alarm.alarm_level)
+      
+      // 更新当前最高报警级别
+      if (level < highestCurrentAlarmLevel) {
+        highestCurrentAlarmLevel = level
+      }
+      
       const alarmId = alarm.event_id
       // 检查是否是新报警
       if (!knownAlarmIds.value.has(alarmId)) {
         knownAlarmIds.value.add(alarmId)
         newAlarmCount++
-        const level = parseAlarmLevel(alarm.alarm_level)
         console.log('[AlarmSound] New alarm detected:', alarmId, 'level:', level)
         if (level < highestNewAlarmLevel) {
           highestNewAlarmLevel = level
@@ -977,6 +986,21 @@ const checkAndPlayAlarmSound = async (cards: VitalFocusCard[]) => {
     })
   })
   
+  console.log('[AlarmSound] Check result:', {
+    totalActiveAlarms,
+    highestCurrentAlarmLevel,
+    newAlarmCount,
+    highestNewAlarmLevel
+  })
+  
+  // 如果没有active报警，停止声音
+  if (totalActiveAlarms === 0) {
+    console.log('[AlarmSound] ✅ No active alarms - stopping sound')
+    alarmSound.stopAlarm()
+    return
+  }
+  
+  // 如果有active报警，确保声音在播放
   // 如果检测到新报警（包括首次加载），播放对应级别的声音
   if (highestNewAlarmLevel <= 4) {
     const isFirst = isFirstLoad.value
@@ -1017,6 +1041,19 @@ const checkAndPlayAlarmSound = async (cards: VitalFocusCard[]) => {
     // 首次加载但没有报警
     console.log('[AlarmSound] First load: No unhandled alarms')
     isFirstLoad.value = false
+  } else if (highestCurrentAlarmLevel <= 4) {
+    // 没有新报警，但有existing报警在持续，确保声音在播放
+    console.log('[AlarmSound] Existing alarms present (level:', highestCurrentAlarmLevel, '), ensuring sound is playing')
+    try {
+      if (highestCurrentAlarmLevel <= 1) {
+        await alarmSound.playL1()
+      } else {
+        await alarmSound.playL2()
+      }
+    } catch (error: any) {
+      // 忽略错误，可能是浏览器限制
+      console.log('[AlarmSound] Could not play sound for existing alarm:', error.message)
+    }
   }
 }
 

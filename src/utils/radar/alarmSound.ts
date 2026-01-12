@@ -21,6 +21,10 @@ class AlarmSound {
     this.l1Audio.volume = 0.7;
     this.l2Audio.volume = 0.7;
     
+    // 设置循环播放 - 报警声应该持续播放直到报警被处理
+    this.l1Audio.loop = true;
+    this.l2Audio.loop = true;
+    
     this.l1Audio.preload = 'auto';
     this.l2Audio.preload = 'auto';
     
@@ -41,11 +45,18 @@ class AlarmSound {
 
   // 播放报警声
   playAlarm(level: number = 1) {
-    console.log('[AlarmSound] playAlarm called, level:', level, 'isPlaying:', this.isPlaying);
+    console.log('[AlarmSound] playAlarm called, level:', level, 'isPlaying:', this.isPlaying, 'currentLevel:', this.currentLevel);
     
-    if (this.isPlaying) {
-      console.log('[AlarmSound] Already playing, skipping');
+    // 如果正在播放相同级别的报警，继续播放（不需要重新开始）
+    if (this.isPlaying && this.currentLevel === level) {
+      console.log('[AlarmSound] Already playing same level alarm, continuing...');
       return;
+    }
+    
+    // 如果正在播放不同级别的报警，停止当前报警
+    if (this.isPlaying && this.currentLevel !== level) {
+      console.log('[AlarmSound] Switching alarm level from', this.currentLevel, 'to', level);
+      this.stopAlarm();
     }
     
     this.isPlaying = true;
@@ -56,12 +67,12 @@ class AlarmSound {
     // 重置播放位置
     audio.currentTime = 0;
     
-    console.log('[AlarmSound] Attempting to play audio...');
+    console.log('[AlarmSound] Starting LOOPED audio playback...');
     
-    // 播放音频
+    // 播放音频（循环播放）
     audio.play()
       .then(() => {
-        console.log('[AlarmSound] Audio playback started successfully');
+        console.log('[AlarmSound] Audio playback started successfully (LOOPED)');
       })
       .catch(err => {
         console.error('[AlarmSound] Playback failed:', err.name, err.message);
@@ -69,12 +80,6 @@ class AlarmSound {
         console.error('[AlarmSound] User must interact with the page first (click anywhere).');
         this.isPlaying = false;
       });
-    
-    // 播放结束后重置状态
-    audio.onended = () => {
-      console.log('[AlarmSound] Audio playback ended');
-      this.isPlaying = false;
-    };
   }
 
   // 播放L1报警（一级报警）
@@ -89,6 +94,7 @@ class AlarmSound {
 
   // 停止报警声
   stopAlarm() {
+    console.log('[AlarmSound] Stopping alarm sound');
     this.l1Audio.pause();
     this.l2Audio.pause();
     this.l1Audio.currentTime = 0;
