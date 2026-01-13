@@ -178,11 +178,7 @@ export const useUserStore = defineStore('user', {
 
       // Role-based landing pages (prevent "login success but no redirect" due to permission guard loop)
       if (role === 'SystemOperator') {
-        return '/admin/tenants'
-      }
-      if (role === 'SystemAdmin') {
-        // SystemAdmin manages global rules/permissions; landing on permissions is the most useful default.
-        return '/admin/permissions'
+        return '/alarm/cloud'
       }
 
       // Prefer backend-returned homePath only if it's permitted by current role.

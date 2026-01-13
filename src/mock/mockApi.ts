@@ -54,11 +54,8 @@ export async function mockLogin(body: any) {
       domain: 'mapleview.owlcare.local',
       branchTag: 'MAIN',
       locationName: 'Main Floor',
-      homePath: matchedAccount.role === 'SystemOperator' ? '/admin/tenants' 
-              : matchedAccount.role === 'SystemAdmin' ? '/admin/permissions'
-              : matchedAccount.role === 'Nurse' ? '/residents'
-              : matchedAccount.role === 'Resident' ? '/residents'
-              : '/monitoring/overview', // Caregiver, Manager, IT等默认到Monitoring Overview
+      homePath: matchedAccount.role === 'SystemOperator' ? '/alarm/cloud'
+              : '/monitoring/overview', // SystemAdmin, Admin, Manager, IT, Nurse, Caregiver, Resident, Family全部默认到Monitoring Overview
       avatar: matchedAccount.avatar
     },
     message: 'Login successful'
