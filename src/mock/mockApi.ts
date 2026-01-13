@@ -641,6 +641,30 @@ export async function mockGetUsers(params?: any) {
   }
 }
 
+// Mock获取单个用户详情
+export async function mockGetUser(userId: string) {
+  await delay()
+  
+  // 从数据存储读取用户
+  const { getDataStore } = await import('./mockStore')
+  const store = getDataStore()
+  const user = store.users.find(u => u.id === userId)
+  
+  if (!user) {
+    return {
+      code: 4040,
+      result: null,
+      message: `User not found: ${userId}`
+    }
+  }
+  
+  return {
+    code: 2000,
+    result: user,
+    message: 'User retrieved successfully'
+  }
+}
+
 // Mock获取标签列表
 export async function mockGetTags(params?: any) {
   await delay()
