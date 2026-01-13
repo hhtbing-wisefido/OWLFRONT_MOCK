@@ -56,7 +56,6 @@ export async function mockLogin(body: any) {
       locationName: 'Main Floor',
       homePath: matchedAccount.role === 'SystemOperator' ? '/admin/tenants' 
               : matchedAccount.role === 'SystemAdmin' ? '/admin/permissions'
-              : matchedAccount.role === 'SysOperator' ? '/alarm/cloud'
               : matchedAccount.role === 'Nurse' ? '/residents'
               : matchedAccount.role === 'Resident' ? '/residents'
               : '/monitoring/overview', // Caregiver, Manager, IT等默认到Monitoring Overview
