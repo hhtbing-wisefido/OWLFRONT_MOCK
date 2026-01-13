@@ -24,11 +24,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { RouterView } from 'vue-router'
 import Sidebar from '@/components/layout/Sidebar.vue'
+import { useGlobalAlarmSound } from '@/composables/useGlobalAlarmSound'
 
 const collapsed = ref(false)
+
+// 启动全局报警声音监控
+const { startMonitoring } = useGlobalAlarmSound()
+
+onMounted(() => {
+  // 用户已登录（能看到这个布局说明已通过认证），启动报警监控
+  console.log('[BasicLayout] Starting global alarm monitoring')
+  startMonitoring()
+})
 </script>
 
 <style scoped>

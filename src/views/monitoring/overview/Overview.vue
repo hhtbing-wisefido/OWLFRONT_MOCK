@@ -1215,10 +1215,7 @@ const refreshData = async () => {
     }
     // Note: If user has a saved selection, we respect it and don't auto-add new cards
     
-    // 检测新报警并播放声音
-    if (isSoundEnabled.value && data?.items) {
-      checkAndPlayAlarmSound(data.items)
-    }
+    // 注意：报警声音现在由全局管理（useGlobalAlarmSound），不需要在这里处理
     
     // 更新刷新时间戳，触发AlarmHandleModal中的计时器重置
     alarmRefreshTimestamp.value = Date.now()
@@ -1838,17 +1835,7 @@ onMounted(async () => {
       needUserInteraction.value = false
       message.destroy('alarm-interaction-required')
       
-      // 重新检查报警并播放声音
-      if (dataSource.value?.items) {
-        // 清空已知报警，强制重新检测
-        const tempKnownAlarms = new Set(knownAlarmIds.value)
-        knownAlarmIds.value.clear()
-        await checkAndPlayAlarmSound(dataSource.value.items)
-        // 如果播放失败，恢复已知报警列表
-        if (needUserInteraction.value) {
-          knownAlarmIds.value = tempKnownAlarms
-        }
-      }
+      // 注意：报警声音现在由全局管理，用户交互会自动触发全局声音播放
     }
     
     // 移除监听器（只需要一次交互）
@@ -1864,9 +1851,8 @@ onMounted(async () => {
 
 onUnmounted(() => {
   stopTimer()
-  // Stop alarm sound when component is unmounted (e.g., logout, navigation)
-  alarmSound.stopAlarm()
-  console.log('[Overview] Component unmounted, alarm sound stopped')
+  // 注意：报警声音现在由全局管理（BasicLayout），这里不需要停止
+  console.log('[Overview] Component unmounted')
 })
 </script>
 
