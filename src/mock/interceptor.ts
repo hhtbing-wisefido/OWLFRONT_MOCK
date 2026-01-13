@@ -41,10 +41,21 @@ import {
   mockCreateBuilding,
   mockUpdateBuilding,
   mockDeleteBuilding,
+  // Unit CRUD
+  mockCreateUnit,
+  mockUpdateUnit,
+  mockDeleteUnit,
+  // Room CRUD
+  mockCreateRoom,
+  mockUpdateRoom,
+  mockDeleteRoom,
+  // Bed CRUD
+  mockCreateBed,
+  mockUpdateBed,
+  mockDeleteBed,
   // Device Store
   mockGetDeviceStores,
   mockBatchUpdateDeviceStores,
-  mockGetTenantList,
   mockGetImportTemplate,
   mockImportDeviceStores,
   mockExportDeviceStores,
@@ -302,14 +313,62 @@ function matchMockRoute(method: string, url: string): any {
     { pattern: /\/admin\/api\/v1\/branches/, method: 'GET', handler: mockGetBranches },
     { pattern: /\/api\/v1\/branches/, method: 'GET', handler: mockGetBranches },
     { pattern: /\/api\/branches/, method: 'GET', handler: mockGetBranches },
-    { pattern: /\/admin\/api\/v1\/units/, method: 'GET', handler: mockGetAllUnits },
-    { pattern: /\/api\/v1\/units/, method: 'GET', handler: mockGetAllUnits },
-    { pattern: /\/api\/units/, method: 'GET', handler: mockGetAllUnits },
+    
+    // GET - 单元列表
+    { pattern: /\/admin\/api\/v1\/units(?:\?|$)/, method: 'GET', handler: mockGetAllUnits },
+    { pattern: /\/api\/v1\/units(?:\?|$)/, method: 'GET', handler: mockGetAllUnits },
+    { pattern: /\/api\/units(?:\?|$)/, method: 'GET', handler: mockGetAllUnits },
+    
+    // POST - 创建单元
+    { pattern: /\/admin\/api\/v1\/units$/, method: 'POST', handler: mockCreateUnit },
+    { pattern: /\/api\/v1\/units$/, method: 'POST', handler: mockCreateUnit },
+    { pattern: /\/api\/units$/, method: 'POST', handler: mockCreateUnit },
+    
+    // PUT - 更新单元
+    { pattern: /\/admin\/api\/v1\/units\/[^\/?]+/, method: 'PUT', handler: mockUpdateUnit },
+    { pattern: /\/api\/v1\/units\/[^\/?]+/, method: 'PUT', handler: mockUpdateUnit },
+    { pattern: /\/api\/units\/[^\/?]+/, method: 'PUT', handler: mockUpdateUnit },
+    
+    // DELETE - 删除单元
+    { pattern: /\/admin\/api\/v1\/units\/[^\/?]+/, method: 'DELETE', handler: mockDeleteUnit },
+    { pattern: /\/api\/v1\/units\/[^\/?]+/, method: 'DELETE', handler: mockDeleteUnit },
+    { pattern: /\/api\/units\/[^\/?]+/, method: 'DELETE', handler: mockDeleteUnit },
     
     // 房间
     { pattern: /\/admin\/api\/v1\/rooms/, method: 'GET', handler: mockGetRooms },
     { pattern: /\/api\/v1\/rooms/, method: 'GET', handler: mockGetRooms },
     { pattern: /\/api\/rooms/, method: 'GET', handler: mockGetRooms },
+    
+    // POST - 创建房间
+    { pattern: /\/admin\/api\/v1\/rooms$/, method: 'POST', handler: mockCreateRoom },
+    { pattern: /\/api\/v1\/rooms$/, method: 'POST', handler: mockCreateRoom },
+    { pattern: /\/api\/rooms$/, method: 'POST', handler: mockCreateRoom },
+    
+    // PUT - 更新房间
+    { pattern: /\/admin\/api\/v1\/rooms\/[^\/?]+/, method: 'PUT', handler: mockUpdateRoom },
+    { pattern: /\/api\/v1\/rooms\/[^\/?]+/, method: 'PUT', handler: mockUpdateRoom },
+    { pattern: /\/api\/rooms\/[^\/?]+/, method: 'PUT', handler: mockUpdateRoom },
+    
+    // DELETE - 删除房间
+    { pattern: /\/admin\/api\/v1\/rooms\/[^\/?]+/, method: 'DELETE', handler: mockDeleteRoom },
+    { pattern: /\/api\/v1\/rooms\/[^\/?]+/, method: 'DELETE', handler: mockDeleteRoom },
+    { pattern: /\/api\/rooms\/[^\/?]+/, method: 'DELETE', handler: mockDeleteRoom },
+    
+    // ==================== 床位管理 ====================
+    // POST - 创建床位
+    { pattern: /\/admin\/api\/v1\/beds$/, method: 'POST', handler: mockCreateBed },
+    { pattern: /\/api\/v1\/beds$/, method: 'POST', handler: mockCreateBed },
+    { pattern: /\/api\/beds$/, method: 'POST', handler: mockCreateBed },
+    
+    // PUT - 更新床位
+    { pattern: /\/admin\/api\/v1\/beds\/[^\/?]+/, method: 'PUT', handler: mockUpdateBed },
+    { pattern: /\/api\/v1\/beds\/[^\/?]+/, method: 'PUT', handler: mockUpdateBed },
+    { pattern: /\/api\/beds\/[^\/?]+/, method: 'PUT', handler: mockUpdateBed },
+    
+    // DELETE - 删除床位
+    { pattern: /\/admin\/api\/v1\/beds\/[^\/?]+/, method: 'DELETE', handler: mockDeleteBed },
+    { pattern: /\/api\/v1\/beds\/[^\/?]+/, method: 'DELETE', handler: mockDeleteBed },
+    { pattern: /\/api\/beds\/[^\/?]+/, method: 'DELETE', handler: mockDeleteBed },
     
     // ==================== Device Store 设备库存 ====================
     // GET - 设备库存列表
@@ -333,13 +392,10 @@ function matchMockRoute(method: string, url: string): any {
     { pattern: /\/admin\/api\/v1\/device-store\/export/, method: 'GET', handler: mockExportDeviceStores },
     { pattern: /\/api\/v1\/device-store\/export/, method: 'GET', handler: mockExportDeviceStores },
     
-    // GET - 租户列表（Device Store分配用）
-    { pattern: /\/admin\/api\/v1\/tenants/, method: 'GET', handler: mockGetTenantList },
-    { pattern: /\/api\/v1\/tenants/, method: 'GET', handler: mockGetTenantList },
-    
     // ==================== 租户管理 Tenant Management ====================
-    // GET - 租户列表（完整管理功能）
+    // GET - 租户列表（完整管理功能，也用于Device Store分配）
     { pattern: /\/admin\/api\/v1\/tenants(?:\?|$)/, method: 'GET', handler: mockGetTenants },
+    { pattern: /\/api\/v1\/tenants(?:\?|$)/, method: 'GET', handler: mockGetTenants },
     
     // POST - 创建租户
     { pattern: /\/admin\/api\/v1\/tenants$/, method: 'POST', handler: mockCreateTenant },

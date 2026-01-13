@@ -1360,26 +1360,120 @@ export async function mockUpdateBuilding(body: any, buildingId?: string) {
 }
 
 /**
- * 删除建筑
+ * 删除建筑（硬删除）
  */
 export async function mockDeleteBuilding(params: any, buildingId?: string) {
   await delay(500)
   
   const store = getDataStore()
-  const id = buildingId || params.id
-  const index = store.buildings.findIndex(b => b.id === id)
+  const id = buildingId || params.building_id || params.id
+  
+  // 使用正确的字段名 building_id
+  const index = store.buildings.findIndex(b => b.building_id === id)
   
   if (index === -1) {
+    console.log('❌ 删除建筑失败 - 找不到建筑:', id)
     throw new Error('Building not found')
   }
   
   const deleted = store.buildings.splice(index, 1)[0]
-  console.log('✅ 删除建筑成功:', deleted)
+  console.log('✅ 删除建筑成功:', deleted.building_name, 'ID:', id)
   
   return {
     code: 2000,
-    result: { id },
+    result: { building_id: id },
     message: 'Building deleted successfully'
+  }
+}
+
+// -------------------- Unit管理 CRUD --------------------
+
+/**
+ * 创建Unit
+ */
+export async function mockCreateUnit(body: any) {
+  await delay(500)
+  
+  const store = getDataStore()
+  
+  const newUnit = {
+    unit_id: `unit-${Date.now()}`,
+    unit_name: body.unit_name,
+    unit_number: body.unit_number || body.unit_name,
+    unit_type: body.unit_type || 'Facility',
+    building: body.building,
+    building_id: body.building_id,
+    branch_name: body.branch_name,
+    floor: body.floor || '1F',
+    is_public_space: body.is_public_space || false,
+    is_multi_person_room: body.is_multi_person_room || false,
+    timezone: body.timezone || 'America/Denver',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  }
+  
+  store.units.push(newUnit)
+  console.log('✅ 创建Unit成功:', newUnit.unit_name, 'Total:', store.units.length)
+  
+  return {
+    code: 2000,
+    result: newUnit,
+    message: 'Unit created successfully'
+  }
+}
+
+/**
+ * 更新Unit
+ */
+export async function mockUpdateUnit(body: any, unitId?: string) {
+  await delay(500)
+  
+  const store = getDataStore()
+  const id = unitId || body.unit_id
+  
+  const index = store.units.findIndex(u => u.unit_id === id)
+  if (index !== -1) {
+    store.units[index] = {
+      ...store.units[index],
+      ...body,
+      unit_id: id,
+      updated_at: new Date().toISOString()
+    }
+    console.log('✅ 更新Unit成功:', store.units[index].unit_name)
+  }
+  
+  const result = index !== -1 ? { ...store.units[index] } : { unit_id: id, ...body }
+  
+  return {
+    code: 2000,
+    result: result,
+    message: 'Unit updated successfully'
+  }
+}
+
+/**
+ * 删除Unit（硬删除）
+ */
+export async function mockDeleteUnit(params: any, unitId?: string) {
+  await delay(500)
+  
+  const store = getDataStore()
+  const id = unitId || params.unit_id || params.id
+  
+  const index = store.units.findIndex(u => u.unit_id === id)
+  
+  if (index === -1) {
+    console.log('❌ 删除Unit失败 - 找不到Unit:', id)
+    throw new Error('Unit not found')
+  }
+  
+  const deleted = store.units.splice(index, 1)[0]
+  console.log('✅ 删除Unit成功:', deleted.unit_name, 'ID:', id)
+  
+  return {
+    code: 2000,
+    result: { unit_id: id },
+    message: 'Unit deleted successfully'
   }
 }
 
@@ -1406,6 +1500,211 @@ export async function mockGetRooms(params?: any) {
     code: 2000,
     result: rooms,
     message: 'Rooms retrieved successfully'
+  }
+}
+
+/**
+ * 创建房间
+ */
+export async function mockCreateRoom(body: any) {
+  await delay()
+  
+  const { getDataStore } = await import('./mockStore')
+  const store = getDataStore()
+  
+  const data = typeof body === 'string' ? JSON.parse(body) : body
+  
+  const newRoom = {
+    room_id: `room-${Date.now()}`,
+    tenant_id: 'demo_tenant_001',
+    unit_id: data.unit_id,
+    room_name: data.room_name,
+    is_default: false,
+    layout_config: {},
+    beds: []
+  }
+  
+  store.rooms.push(newRoom)
+  console.log('✅ 创建Room成功:', newRoom.room_name, 'ID:', newRoom.room_id)
+  
+  return {
+    code: 2000,
+    result: newRoom,
+    message: 'Room created successfully'
+  }
+}
+
+/**
+ * 更新房间
+ */
+export async function mockUpdateRoom(body: any, roomId?: string) {
+  await delay()
+  
+  const { getDataStore } = await import('./mockStore')
+  const store = getDataStore()
+  
+  const data = typeof body === 'string' ? JSON.parse(body) : body
+  const id = roomId || data.room_id
+  
+  const index = store.rooms.findIndex((r: any) => r.room_id === id)
+  if (index === -1) {
+    console.log('❌ Room不存在:', id)
+    return {
+      code: 4004,
+      result: null,
+      message: 'Room not found'
+    }
+  }
+  
+  store.rooms[index] = { ...store.rooms[index], ...data }
+  console.log('✅ 更新Room成功:', store.rooms[index].room_name, 'ID:', id)
+  
+  return {
+    code: 2000,
+    result: store.rooms[index],
+    message: 'Room updated successfully'
+  }
+}
+
+/**
+ * 删除房间
+ */
+export async function mockDeleteRoom(params: any, roomId?: string) {
+  await delay()
+  
+  const { getDataStore } = await import('./mockStore')
+  const store = getDataStore()
+  
+  const id = roomId || params?.room_id
+  
+  const index = store.rooms.findIndex((r: any) => r.room_id === id)
+  if (index === -1) {
+    console.log('❌ Room不存在:', id)
+    return {
+      code: 4004,
+      result: null,
+      message: 'Room not found'
+    }
+  }
+  
+  const deleted = store.rooms.splice(index, 1)[0]
+  console.log('✅ 删除Room成功:', deleted.room_name, 'ID:', id)
+  
+  return {
+    code: 2000,
+    result: { room_id: id },
+    message: 'Room deleted successfully'
+  }
+}
+
+/**
+ * 创建床位
+ */
+export async function mockCreateBed(body: any) {
+  await delay()
+  
+  const { getDataStore } = await import('./mockStore')
+  const store = getDataStore()
+  
+  const data = typeof body === 'string' ? JSON.parse(body) : body
+  
+  const newBed = {
+    bed_id: `bed-${Date.now()}`,
+    tenant_id: 'demo_tenant_001',
+    room_id: data.room_id,
+    bed_name: data.bed_name,
+    bed_type: data.bed_type || 'ActiveBed',
+    resident_id: data.resident_id || undefined
+  }
+  
+  // 同时添加到对应的room的beds数组中
+  const roomIndex = store.rooms.findIndex((r: any) => r.room_id === data.room_id)
+  if (roomIndex !== -1) {
+    if (!store.rooms[roomIndex].beds) {
+      store.rooms[roomIndex].beds = []
+    }
+    store.rooms[roomIndex].beds.push(newBed)
+  }
+  
+  console.log('✅ 创建Bed成功:', newBed.bed_name, 'ID:', newBed.bed_id)
+  
+  return {
+    code: 2000,
+    result: newBed,
+    message: 'Bed created successfully'
+  }
+}
+
+/**
+ * 更新床位
+ */
+export async function mockUpdateBed(body: any, bedId?: string) {
+  await delay()
+  
+  const { getDataStore } = await import('./mockStore')
+  const store = getDataStore()
+  
+  const data = typeof body === 'string' ? JSON.parse(body) : body
+  const id = bedId || data.bed_id
+  
+  // 在所有room中查找并更新bed
+  for (const room of store.rooms) {
+    if (room.beds) {
+      const bedIndex = room.beds.findIndex((b: any) => b.bed_id === id)
+      if (bedIndex !== -1) {
+        room.beds[bedIndex] = { ...room.beds[bedIndex], ...data }
+        console.log('✅ 更新Bed成功:', room.beds[bedIndex].bed_name, 'ID:', id)
+        
+        return {
+          code: 2000,
+          result: room.beds[bedIndex],
+          message: 'Bed updated successfully'
+        }
+      }
+    }
+  }
+  
+  console.log('❌ Bed不存在:', id)
+  return {
+    code: 4004,
+    result: null,
+    message: 'Bed not found'
+  }
+}
+
+/**
+ * 删除床位
+ */
+export async function mockDeleteBed(params: any, bedId?: string) {
+  await delay()
+  
+  const { getDataStore } = await import('./mockStore')
+  const store = getDataStore()
+  
+  const id = bedId || params?.bed_id
+  
+  // 在所有room中查找并删除bed
+  for (const room of store.rooms) {
+    if (room.beds) {
+      const bedIndex = room.beds.findIndex((b: any) => b.bed_id === id)
+      if (bedIndex !== -1) {
+        const deleted = room.beds.splice(bedIndex, 1)[0]
+        console.log('✅ 删除Bed成功:', deleted.bed_name, 'ID:', id)
+        
+        return {
+          code: 2000,
+          result: { bed_id: id },
+          message: 'Bed deleted successfully'
+        }
+      }
+    }
+  }
+  
+  console.log('❌ Bed不存在:', id)
+  return {
+    code: 4004,
+    result: null,
+    message: 'Bed not found'
   }
 }
 
