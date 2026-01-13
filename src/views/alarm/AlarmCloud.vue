@@ -1,5 +1,5 @@
 <template>
-  <div style="padding: 15px">
+  <div class="alarm-cloud-page">
     <div class="form-container">
       <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
         <a-space>
@@ -749,6 +749,15 @@ onMounted(() => {
   height: auto !important;
   line-height: 1.5;
   padding: 10px 50px 10px 50px;
+}
+
+/* 页面高度和滚动控制 */
+.alarm-cloud-page {
+  padding: 15px;
+  height: calc(100vh - 20px);
+  max-height: calc(100vh - 20px);
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 </style>
