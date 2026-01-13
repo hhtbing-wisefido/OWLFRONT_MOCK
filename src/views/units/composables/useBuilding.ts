@@ -71,18 +71,24 @@ export function useBuilding() {
   // Create building
   const handleCreateBuilding = async () => {
     try {
-      if (!createBuildingForm.value.branch_name && !createBuildingForm.value.building_name) {
-        message.error('Please provide either branch_name or Building name')
+      // 需求2&3: 新建Building时必须选择Branch，新建Branch时必须有Building
+      if (!createBuildingForm.value.branch_name || !createBuildingForm.value.building_name) {
+        message.error('Please select or input both Branch and Building name')
         return
       }
 
-      // Both branch_name and building_name default to '-' when empty
-      const buildingName = createBuildingForm.value.building_name?.trim() || '-'
-      const branchTag = createBuildingForm.value.branch_name?.trim() || '-'
+      const buildingName = createBuildingForm.value.building_name?.trim()
+      const branchTag = createBuildingForm.value.branch_name?.trim()
+      
+      if (!buildingName || !branchTag) {
+        message.error('Branch and Building name cannot be empty')
+        return
+      }
 
       await createBuildingApi({
         building_name: buildingName,
         branch_name: branchTag,
+        branch_id: (createBuildingForm.value as any).branch_id,
       } as any)
 
       message.success('Building created successfully')

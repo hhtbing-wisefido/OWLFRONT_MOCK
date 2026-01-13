@@ -1,5 +1,5 @@
 <template>
-  <div class="device-store-page">
+  <div style="padding: 15px">
     <div class="form-container">
       <div class="form-left">
         <a-form layout="inline" class="flex-form">
@@ -592,7 +592,7 @@ const downloadTemplate = async () => {
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `device-store-import-template.xlsx`
+    link.download = `device-store-import-template.csv`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -662,14 +662,14 @@ const handleImportCancel = () => {
 const handleExport = async () => {
   try {
     const params: ExportDeviceStoresParams = {
-      format: 'excel',
+      format: 'csv',  // Mock返回CSV格式
       search: searchText.value || undefined,
     }
     const blob = await exportDeviceStoresApi(params)
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `device-store-export-${dayjs().format('YYYYMMDD-HHmmss')}.xlsx`
+    link.download = `device-store-export-${dayjs().format('YYYYMMDD-HHmmss')}.csv`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -754,52 +754,5 @@ onMounted(() => {
 
 .device-store-table :deep(.ant-table-container) {
   overflow-x: auto;
-}
-
-/* 页面高度和滚动控制 - 简洁样式 */
-.device-store-page {
-  padding: 15px;
-  height: calc(100vh - 20px);
-  max-height: calc(100vh - 20px);
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-/* 简洁滚动条样式 */
-.device-store-page::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-.device-store-page::-webkit-scrollbar-track {
-  background: #f0f0f0;
-}
-
-.device-store-page::-webkit-scrollbar-thumb {
-  background: #bfbfbf;
-  border-radius: 4px;
-}
-
-.device-store-page::-webkit-scrollbar-thumb:hover {
-  background: #999;
-}
-
-/* 表格滚动条 */
-.device-store-table :deep(.ant-table-body)::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-.device-store-table :deep(.ant-table-body)::-webkit-scrollbar-track {
-  background: #f0f0f0;
-}
-
-.device-store-table :deep(.ant-table-body)::-webkit-scrollbar-thumb {
-  background: #bfbfbf;
-  border-radius: 4px;
-}
-
-.device-store-table :deep(.ant-table-body)::-webkit-scrollbar-thumb:hover {
-  background: #999;
 }
 </style>

@@ -1,5 +1,5 @@
 <template>
-  <div class="alarm-cloud-page">
+  <div style="padding: 15px">
     <div class="form-container">
       <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
         <a-space>
@@ -749,33 +749,6 @@ onMounted(() => {
   height: auto !important;
   line-height: 1.5;
   padding: 10px 50px 10px 50px;
-}
-
-/* 页面高度和滚动控制 - 简洁样式 */
-.alarm-cloud-page {
-  padding: 15px;
-  height: calc(100vh - 20px);
-  max-height: calc(100vh - 20px);
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-/* 简洁滚动条样式 */
-.alarm-cloud-page::-webkit-scrollbar {
-  width: 8px;
-}
-
-.alarm-cloud-page::-webkit-scrollbar-track {
-  background: #f0f0f0;
-}
-
-.alarm-cloud-page::-webkit-scrollbar-thumb {
-  background: #bfbfbf;
-  border-radius: 4px;
-}
-
-.alarm-cloud-page::-webkit-scrollbar-thumb:hover {
-  background: #999;
 }
 
 </style>

@@ -14,16 +14,13 @@ export enum Api {
   TenantBootstrapReset = '/admin/api/v1/tenants/:id/bootstrap-accounts/reset',
 }
 
-// DEV 默认走真实后端；只有显式设置 VITE_USE_MOCK='true' 才启用 mock
-const useMock = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true'
-
+/**
+ * 获取租户列表
+ */
 export async function getTenantsApi(
   params: GetTenantsParams,
   mode: ErrorMessageMode = 'none'
 ): Promise<GetTenantsResult> {
-  if (useMock) {
-    return { items: [], total: 0 }
-  }
   return defHttp.get<GetTenantsResult>(
     {
       url: Api.Tenants,
@@ -33,21 +30,13 @@ export async function getTenantsApi(
   )
 }
 
+/**
+ * 创建租户
+ */
 export async function createTenantApi(
   data: CreateTenantParams,
   mode: ErrorMessageMode = 'modal'
 ): Promise<Tenant> {
-  if (useMock) {
-    return {
-      tenant_id: 'mock-tenant',
-      tenant_name: data.tenant_name,
-      domain: data.domain,
-      email: data.email,
-      phone: data.phone,
-      status: data.status || 'active',
-      metadata: data.metadata,
-    }
-  }
   return defHttp.post<Tenant>(
     {
       url: Api.Tenants,
@@ -57,22 +46,14 @@ export async function createTenantApi(
   )
 }
 
+/**
+ * 更新租户
+ */
 export async function updateTenantApi(
   id: string,
   data: UpdateTenantParams,
   mode: ErrorMessageMode = 'modal'
 ): Promise<Tenant> {
-  if (useMock) {
-    return {
-      tenant_id: id,
-      tenant_name: data.tenant_name || 'mock',
-      domain: data.domain,
-      email: data.email,
-      phone: data.phone,
-      status: data.status || 'active',
-      metadata: data.metadata,
-    }
-  }
   return defHttp.put<Tenant>(
     {
       url: Api.TenantByID.replace(':id', id),
@@ -82,13 +63,13 @@ export async function updateTenantApi(
   )
 }
 
+/**
+ * 删除租户
+ */
 export async function deleteTenantApi(
   id: string,
   mode: ErrorMessageMode = 'modal'
 ): Promise<void> {
-  if (useMock) {
-    return
-  }
   return defHttp.delete<void>(
     {
       url: Api.TenantByID.replace(':id', id),
@@ -97,18 +78,13 @@ export async function deleteTenantApi(
   )
 }
 
+/**
+ * 重置租户引导账户
+ */
 export async function resetTenantBootstrapAccountsApi(
   id: string,
   mode: ErrorMessageMode = 'modal'
 ): Promise<any> {
-  if (useMock) {
-    return {
-      tenant_id: id,
-      bootstrap_accounts: [
-        { user_account: 'admin', role: 'Admin', temp_password: 'mock-admin-pass' },
-      ],
-    }
-  }
   return defHttp.post<any>(
     {
       url: Api.TenantBootstrapReset.replace(':id', id),
@@ -117,24 +93,15 @@ export async function resetTenantBootstrapAccountsApi(
   )
 }
 
+/**
+ * 重置租户引导账户密码
+ */
 export async function resetTenantBootstrapAccountApi(
   id: string,
   userAccount: 'admin',
   password?: string,
   mode: ErrorMessageMode = 'modal'
 ): Promise<any> {
-  if (useMock) {
-    return {
-      tenant_id: id,
-      bootstrap_accounts: [
-        {
-          user_account: userAccount,
-          role: 'Admin',
-          temp_password: password || 'mock-admin-pass',
-        },
-      ],
-    }
-  }
   const data: any = {}
   if (password) {
     data.new_password = password

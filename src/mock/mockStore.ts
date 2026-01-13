@@ -1,10 +1,17 @@
 /**
  * Mock数据存储 - 用于在会话期间保持数据修改
- * 这是一个内存存储，重新加载页面会重置
+ * 使用window对象存储，避免Vite HMR时数据丢失
  */
 
 import { mockCards } from './mockData'
 import type { VitalFocusCard } from '@/api/monitors/model/monitorModel'
+
+// 扩展Window接口
+declare global {
+  interface Window {
+    __MOCK_DATA_STORE__?: MockDataStore
+  }
+}
 
 // 数据存储接口
 interface MockDataStore {
@@ -19,20 +26,19 @@ interface MockDataStore {
   cards: VitalFocusCard[]
   alarmEvents: any[]
   alarmCloudConfig: any[]
+  tenants: any[]
 }
-
-// 初始化数据存储
-let dataStore: MockDataStore | null = null
 
 /**
  * 获取数据存储实例（单例模式）
+ * 使用window对象存储，避免Vite HMR时数据丢失
  */
 export function getDataStore(): MockDataStore {
-  if (!dataStore) {
-    console.log('🔄 初始化Mock数据存储')
-    dataStore = initializeStore()
+  if (!window.__MOCK_DATA_STORE__) {
+    console.log('🔄 初始化Mock数据存储 (window持久化)')
+    window.__MOCK_DATA_STORE__ = initializeStore()
   }
-  return dataStore
+  return window.__MOCK_DATA_STORE__
 }
 
 /**
@@ -40,8 +46,8 @@ export function getDataStore(): MockDataStore {
  */
 export function resetDataStore() {
   console.log('🔄 重置Mock数据存储')
-  dataStore = initializeStore()
-  return dataStore
+  window.__MOCK_DATA_STORE__ = initializeStore()
+  return window.__MOCK_DATA_STORE__
 }
 
 /**
@@ -774,7 +780,49 @@ function initializeStore(): MockDataStore {
     roles,
     cards,
     alarmEvents,
-    alarmCloudConfig
+    alarmCloudConfig,
+    tenants: [
+      { 
+        tenant_id: 'system-tenant',
+        tenant_name: 'System Tenant',
+        domain: 'system.owlmonitor.com',
+        email: 'admin@system.com',
+        phone: '+1-555-0000',
+        status: 'active',
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z'
+      },
+      { 
+        tenant_id: 'demo_tenant_001',
+        tenant_name: 'Mapleview Care',
+        domain: 'mapleview.care',
+        email: 'admin@mapleview.care',
+        phone: '+1-555-0001',
+        status: 'active',
+        created_at: '2024-01-15T00:00:00Z',
+        updated_at: '2024-12-01T00:00:00Z'
+      },
+      { 
+        tenant_id: 'demo_tenant_002',
+        tenant_name: 'Sunrise Senior Living',
+        domain: 'sunrise.care',
+        email: 'admin@sunrise.care',
+        phone: '+1-555-0002',
+        status: 'active',
+        created_at: '2024-02-01T00:00:00Z',
+        updated_at: '2024-11-15T00:00:00Z'
+      },
+      { 
+        tenant_id: 'demo_tenant_003',
+        tenant_name: 'Golden Years Care',
+        domain: 'goldenyears.care',
+        email: 'admin@goldenyears.care',
+        phone: '+1-555-0003',
+        status: 'suspended',
+        created_at: '2024-03-01T00:00:00Z',
+        updated_at: '2024-12-15T00:00:00Z'
+      }
+    ]
   }
 }
 

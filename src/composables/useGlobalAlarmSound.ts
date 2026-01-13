@@ -12,6 +12,14 @@ import { ref, watch, onUnmounted } from 'vue'
 import { alarmSound } from '@/utils/radar/alarmSound'
 import { getVitalFocusCardsApi } from '@/api/monitors/monitor'
 import type { VitalFocusCard } from '@/api/monitors/model/monitorModel'
+import { useUserStore } from '@/store/modules/user'
+
+/**
+ * 不应该接收报警的角色列表
+ * SystemOperator是平台运维角色，没有监控页面权限，不应该接收报警
+ * SystemAdmin也是平台管理角色，主要管理权限配置，不直接参与监控
+ */
+const ALARM_EXCLUDED_ROLES = ['SystemOperator', 'SystemAdmin']
 
 // 全局状态
 const isMonitoring = ref(false)
@@ -188,6 +196,16 @@ export function useGlobalAlarmSound() {
   const startMonitoring = () => {
     if (isMonitoring.value) {
       console.log('[GlobalAlarmSound] Already monitoring')
+      return
+    }
+    
+    // 检查用户角色 - SystemOperator/SystemAdmin等不应该接收报警
+    const userStore = useUserStore()
+    const userRole = userStore.getUserInfo?.role
+    
+    if (userRole && ALARM_EXCLUDED_ROLES.includes(userRole)) {
+      console.log(`[GlobalAlarmSound] 🚫 Alarm monitoring disabled for role: ${userRole}`)
+      console.log('[GlobalAlarmSound] This role does not have monitoring permissions')
       return
     }
     
