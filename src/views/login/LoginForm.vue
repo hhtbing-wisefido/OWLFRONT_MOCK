@@ -10,10 +10,17 @@
     <!-- Mock Quick Login Buttons -->
     <div class="mock-quick-login" v-if="showMockButtons">
       <div class="mock-title">🎯 Quick Login (Mock Demo)</div>
-      <div class="mock-subtitle">👇 Select Level & Role</div>
+      <div class="mock-subtitle">👇 {{ quickLoginMode === 'simple' ? 'Select Role' : 'Select Level & Role' }}</div>
       
-      <!-- Staff Roles: Two-layer selection -->
-      <div v-if="formData.userType === 'staff'">
+      <!-- Simple Mode: 只显示3个核心角色 (Production) -->
+      <div v-if="quickLoginMode === 'simple' && formData.userType === 'staff'" class="mock-buttons">
+        <Button size="small" class="role-btn role-simple" @click="fillMockAccount('admin')">👨‍💼 Admin</Button>
+        <Button size="small" class="role-btn role-simple" @click="fillMockAccount('doctor1')">👨‍⚕️ Manager</Button>
+        <Button size="small" class="role-btn role-simple" @click="fillMockAccount('caregiver1')">🤝 Caregiver</Button>
+      </div>
+      
+      <!-- Full Mode: 显示L1-L4所有角色 (Development/Testing) -->
+      <div v-else-if="quickLoginMode === 'full' && formData.userType === 'staff'">
         <!-- Layer 1: Level Selection -->
         <div class="mock-level-buttons">
           <Button 
@@ -201,6 +208,9 @@ const ACheckbox = Checkbox
 
 // Show Mock Quick Login Buttons (Development Mode)
 const showMockButtons = ref(true)
+
+// Quick Login Mode: 'simple' (3个核心角色) or 'full' (L1-L4所有角色)
+const quickLoginMode = import.meta.env.VITE_QUICK_LOGIN_MODE || 'full'
 
 // Selected Level for two-layer Quick Login (Default: L4)
 const selectedLevel = ref<'L1' | 'L2' | 'L3' | 'L4' | null>('L4')
@@ -1012,6 +1022,25 @@ onMounted(() => {
   border-color: #b37feb;
   color: #391085;
   box-shadow: 0 4px 8px rgba(114, 46, 209, 0.2);
+}
+
+/* Simple Mode - Core Roles (Gradient styles) */
+.mock-buttons .role-simple {
+  flex: 1;
+  min-width: 100px;
+  background: linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%);
+  border: 1px solid #91d5ff;
+  color: #0050b3;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.mock-buttons .role-simple:hover {
+  background: linear-gradient(135deg, #bae7ff 0%, #91d5ff 100%);
+  border-color: #69c0ff;
+  color: #003a8c;
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
+  transform: translateY(-2px);
 }
 
 .mock-group-title {
