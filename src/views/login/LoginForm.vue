@@ -847,7 +847,54 @@ onMounted(() => {
   min-width: 80px;
   max-width: 95px;
   font-size: 13px;
-  padding: 4px 8px !important;
+  padding: 6px 8px !important;
+  height: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.4;
+  font-weight: 600;
+  border: none;
+  transition: all 0.3s;
+}
+
+/* Admin - Orange (L2 管理层) */
+.mock-buttons-inline .role-btn:nth-child(1) {
+  background: linear-gradient(135deg, #fa8c16 0%, #d46b08 100%);
+  color: white;
+  box-shadow: 0 2px 6px rgba(250, 140, 22, 0.3);
+}
+
+.mock-buttons-inline .role-btn:nth-child(1):hover {
+  background: linear-gradient(135deg, #ff9c2e 0%, #e67c18 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(250, 140, 22, 0.4);
+}
+
+/* Manager - Blue (L2 管理层) */
+.mock-buttons-inline .role-btn:nth-child(2) {
+  background: linear-gradient(135deg, #1890ff 0%, #0050b3 100%);
+  color: white;
+  box-shadow: 0 2px 6px rgba(24, 144, 255, 0.3);
+}
+
+.mock-buttons-inline .role-btn:nth-child(2):hover {
+  background: linear-gradient(135deg, #40a9ff 0%, #096dd9 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(24, 144, 255, 0.4);
+}
+
+/* Caregiver - Green (L4 操作层) */
+.mock-buttons-inline .role-btn:nth-child(3) {
+  background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%);
+  color: white;
+  box-shadow: 0 2px 6px rgba(82, 196, 26, 0.3);
+}
+
+.mock-buttons-inline .role-btn:nth-child(3):hover {
+  background: linear-gradient(135deg, #73d13d 0%, #49aa19 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(82, 196, 26, 0.4);
 }
 
 .mock-level-buttons {
