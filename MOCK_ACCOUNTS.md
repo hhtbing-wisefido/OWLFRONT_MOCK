@@ -4,6 +4,18 @@
 
 ## Staff 账号（工作人员）
 
+### 🔴 系统管理员账号（最高权限）
+- **用户名**: `sysadmin`
+- **密码**: `sysadmin123`
+- **角色**: SystemAdmin
+- **姓名**: System Administrator
+- **邮箱**: sysadmin@owlcare.com
+- **权限**: 系统级别完整权限
+  - ✅ Permission Management（权限管理）
+  - ✅ **Device Store（设备库存管理）** ⭐
+  - ✅ Tenant Management（租户管理）
+  - ✅ 所有其他页面
+
 ### 管理员账号
 - **用户名**: `admin`
 - **密码**: `admin123`
@@ -11,6 +23,10 @@
 - **姓名**: John Smith (Admin)
 - **邮箱**: admin@owlcare.com
 - **权限**: 完整管理权限，可访问所有页面（除系统级别页面）
+  - ❌ 无法访问 Device Store（需要 SystemAdmin 角色）
+  - ❌ 无法访问 Permission Management
+  - ✅ Device Management（设备运维管理）
+  - ✅ User Management、Role Management 等
 
 ### 护士账号
 - **用户名**: `nurse1`

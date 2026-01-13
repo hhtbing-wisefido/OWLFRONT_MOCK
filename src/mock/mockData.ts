@@ -586,12 +586,24 @@ export const mockCards = generateMockCards()
 // Mock璐﹀彿
 export const mockAccounts = [
   {
+    username: 'sysadmin',
+    password: 'sysadmin123',
+    role: 'SystemAdmin',
+    fullName: 'System Administrator',
+    email: 'sysadmin@owlcare.com',
+    user_type: 'staff',
+    userId: 'user_sysadmin_001',
+    avatar: '/avatars/sysadmin.png'
+  },
+  {
     username: 'admin',
     password: 'admin123',
     role: 'Admin',
     fullName: 'John Smith (Admin)',
     email: 'admin@owlcare.com',
-    user_type: 'staff'
+    user_type: 'staff',
+    userId: 'user_admin_001',
+    avatar: '/avatars/admin.png'
   },
   {
     username: 'nurse1',
@@ -599,7 +611,9 @@ export const mockAccounts = [
     role: 'Nurse',
     fullName: 'Mary Johnson (Nurse)',
     email: 'mary.j@owlcare.com',
-    user_type: 'staff'
+    user_type: 'staff',
+    userId: 'user_nurse_001',
+    avatar: '/avatars/nurse.png'
   },
   {
     username: 'doctor1',
@@ -607,7 +621,9 @@ export const mockAccounts = [
     role: 'Manager',
     fullName: 'Dr. David Wilson (Manager)',
     email: 'david.w@owlcare.com',
-    user_type: 'staff'
+    user_type: 'staff',
+    userId: 'user_manager_001',
+    avatar: '/avatars/doctor.png'
   },
   {
     username: 'resident1',
@@ -615,7 +631,9 @@ export const mockAccounts = [
     role: 'Resident',
     fullName: 'Emily Brown (Resident)',
     email: 'emily.b@owlcare.com',
-    user_type: 'resident'
+    user_type: 'resident',
+    userId: 'user_resident_001',
+    avatar: '/avatars/resident.png'
   },
   {
     username: 'family1',
@@ -623,7 +641,9 @@ export const mockAccounts = [
     role: 'Family',
     fullName: 'Robert Brown (Family)',
     email: 'robert.b@owlcare.com',
-    user_type: 'resident'
+    user_type: 'resident',
+    userId: 'user_family_001',
+    avatar: '/avatars/family.png'
   }
 ]
 
