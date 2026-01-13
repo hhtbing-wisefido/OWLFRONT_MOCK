@@ -301,7 +301,24 @@ export async function mockGetRolePermissions() {
 export async function mockGetAlarmEvents(params?: any) {
   await delay()
   
-  const events = mockCards
+  // 解析请求参数
+  const statusFilter = params?.status || params?.alarm_status || null  // 'active' | 'resolved' | null
+  
+  // 处理人员名称列表（用于 resolved 报警）
+  const handlerNames = ['Dr. Smith', 'Nurse Johnson', 'Caregiver Williams', 'Admin Chen', 'Supervisor Lee']
+  // 处理状态列表
+  const handlingStates = ['verified', 'false_alarm', 'test']
+  // 处理详情模板
+  const handlingDetailsTemplates = [
+    'Resident verified safe, vitals normal',
+    'False alarm triggered by equipment adjustment',
+    'Test event for system verification',
+    'Checked and confirmed resident is fine',
+    'Nurse responded and provided assistance',
+    'Caregiver verified condition stable'
+  ]
+  
+  let events = mockCards
     .filter(card => card.alarms && card.alarms.length > 0)
     .flatMap(card => {
       // 获取居民信息
@@ -315,18 +332,98 @@ export async function mockGetAlarmEvents(params?: any) {
       // 构建地址显示
       const addressDisplay = card.card_address || '-'
       
-      return card.alarms!.map(alarm => ({
-        ...alarm,
-        // Alarm Records页面需要的字段
-        resident_name: residentName,
-        address_display: addressDisplay,
-        device_name: deviceName,
-        // 其他关联字段
-        card_id: card.card_id,
-        resident_id: resident?.resident_id,
-        device_id: device?.device_id
-      }))
+      return card.alarms!.map((alarm, index) => {
+        // 基础报警数据
+        const baseAlarm = {
+          ...alarm,
+          // Alarm Records页面需要的字段
+          resident_name: residentName,
+          address_display: addressDisplay,
+          device_name: deviceName,
+          // 其他关联字段
+          card_id: card.card_id,
+          resident_id: resident?.resident_id,
+          device_id: device?.device_id,
+          // 位置字段
+          branch_tag: card.card_address?.split(' / ')[0] || 'Building A',
+          building: card.card_address?.split(' / ')[1] || 'Main',
+          floor: card.card_address?.match(/Floor (\d+)/i)?.[1] || '1',
+          area_tag: 'Care Zone',
+          unit_name: card.card_name || 'Unit',
+          room_name: card.card_address?.match(/Room (\d+)/i)?.[1] || '101',
+          bed_name: card.card_address?.match(/Bed (\w+)/i)?.[1] || 'A'
+        }
+        
+        // 如果是 resolved 状态，添加处理信息
+        if (alarm.alarm_status === 'resolved' || alarm.alarm_status === 'acknowledged') {
+          const triggeredAt = alarm.triggered_at || Date.now() - 3600000
+          const handledDelay = Math.floor(Math.random() * 600000) + 60000 // 1-11分钟后处理
+          
+          return {
+            ...baseAlarm,
+            alarm_status: 'resolved',
+            // 处理信息字段
+            handling_state: handlingStates[Math.floor(Math.random() * handlingStates.length)],
+            handling_details: handlingDetailsTemplates[Math.floor(Math.random() * handlingDetailsTemplates.length)],
+            handler_name: handlerNames[Math.floor(Math.random() * handlerNames.length)],
+            handled_at: triggeredAt + handledDelay
+          }
+        }
+        
+        return baseAlarm
+      })
     })
+  
+  // 按状态过滤
+  if (statusFilter) {
+    events = events.filter(e => {
+      if (statusFilter === 'active') {
+        return e.alarm_status === 'active' || !e.alarm_status
+      } else if (statusFilter === 'resolved') {
+        return e.alarm_status === 'resolved' || e.alarm_status === 'acknowledged'
+      }
+      return true
+    })
+  }
+  
+  // 为了演示，生成一些额外的 resolved 报警记录
+  if (statusFilter === 'resolved' && events.length < 10) {
+    // 复制一些 active 报警并标记为 resolved
+    const additionalResolved = mockCards
+      .filter(card => card.alarms && card.alarms.length > 0)
+      .slice(0, 15)
+      .flatMap((card, cardIndex) => {
+        const resident = card.residents && card.residents[0]
+        const residentName = resident ? `${resident.first_name} ${resident.last_name}` : (card.card_name || '-')
+        const device = card.devices && card.devices[0]
+        const deviceName = device ? device.device_name : '-'
+        const addressDisplay = card.card_address || '-'
+        
+        return [{
+          event_id: `resolved_event_${cardIndex}_${Date.now()}`,
+          event_type: ['Fall', 'Radar_AbnormalHeartRate', 'Radar_AbnormalRespiratoryRate', 'Out_of_Bed', 'Low_Battery'][cardIndex % 5],
+          category: ['safety', 'clinical', 'device'][cardIndex % 3],
+          alarm_level: [0, 1, 2, 3][cardIndex % 4],
+          alarm_status: 'resolved',
+          triggered_at: Date.now() - (3600000 * (cardIndex + 1)),  // 过去几小时
+          resident_name: residentName,
+          address_display: addressDisplay,
+          device_name: deviceName,
+          card_id: card.card_id,
+          resident_id: resident?.resident_id,
+          device_id: device?.device_id,
+          branch_tag: card.card_address?.split(' / ')[0] || 'Building A',
+          building: card.card_address?.split(' / ')[1] || 'Main',
+          // 处理信息
+          handling_state: handlingStates[cardIndex % handlingStates.length],
+          handling_details: handlingDetailsTemplates[cardIndex % handlingDetailsTemplates.length],
+          handler_name: handlerNames[cardIndex % handlerNames.length],
+          handled_at: Date.now() - (3600000 * cardIndex) + 300000  // 触发后5分钟处理
+        }]
+      })
+    
+    events = [...events, ...additionalResolved]
+  }
   
   return {
     code: 2000,

@@ -685,7 +685,7 @@ const handleConfirmHandle = async () => {
     message.success('Alarm handled successfully')
     handleCancelHandle()
     await fetchData()
-  } catch (error: any)) {
+  } catch (error: any) {
     console.error('Failed to handle alarm:', error)
     message.error(error?.message || 'Failed to handle alarm')
   } finally {
