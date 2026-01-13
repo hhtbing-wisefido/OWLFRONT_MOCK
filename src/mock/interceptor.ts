@@ -144,17 +144,14 @@ function matchMockRoute(method: string, url: string): any {
     
     // ==================== 用户管理 ====================
     // GET - 用户详情（必须在列表路由之前，更具体的匹配）
-    { pattern: /\/admin\/api\/v1\/users\/[^/?]+(?:\?|$)/, method: 'GET', handler: (config: any) => {
-      const userId = config.url.match(/\/users\/([^/?]+)/)?.[1]
-      return mockGetUser(userId!)
+    { pattern: /\/admin\/api\/v1\/users\/[^/?]+(?:\?|$)/, method: 'GET', handler: (params: any, userId: string) => {
+      return mockGetUser(userId)
     }},
-    { pattern: /\/api\/v1\/users\/[^/?]+(?:\?|$)/, method: 'GET', handler: (config: any) => {
-      const userId = config.url.match(/\/users\/([^/?]+)/)?.[1]
-      return mockGetUser(userId!)
+    { pattern: /\/api\/v1\/users\/[^/?]+(?:\?|$)/, method: 'GET', handler: (params: any, userId: string) => {
+      return mockGetUser(userId)
     }},
-    { pattern: /\/api\/users\/[^/?]+(?:\?|$)/, method: 'GET', handler: (config: any) => {
-      const userId = config.url.match(/\/users\/([^/?]+)/)?.[1]
-      return mockGetUser(userId!)
+    { pattern: /\/api\/users\/[^/?]+(?:\?|$)/, method: 'GET', handler: (params: any, userId: string) => {
+      return mockGetUser(userId)
     }},
     
     // GET - 用户列表
