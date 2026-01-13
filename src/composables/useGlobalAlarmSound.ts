@@ -30,10 +30,11 @@ function hasAlarm(card: VitalFocusCard): boolean {
 }
 
 /**
- * 获取报警ID
+ * 获取报警ID - 使用 card_id 作为唯一标识
  */
 function getAlarmId(card: VitalFocusCard): string {
-  return `alarm_${card.type}_${card.id.split('_')[1]}`
+  // VitalFocusCard 使用 card_id 和 card_type，不是 id 和 type
+  return `alarm_${card.card_type}_${card.card_id}`
 }
 
 /**
