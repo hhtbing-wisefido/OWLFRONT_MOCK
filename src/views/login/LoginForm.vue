@@ -836,15 +836,18 @@ onMounted(() => {
 /* Simple mode: 一行显示 */
 .mock-buttons-inline {
   display: flex;
-  gap: 10px;
+  gap: 6px;
   justify-content: center;
   flex-wrap: nowrap;
+  padding: 0 10px;
 }
 
 .mock-buttons-inline .role-btn {
   flex: 1;
-  min-width: 100px;
-  max-width: 120px;
+  min-width: 80px;
+  max-width: 95px;
+  font-size: 13px;
+  padding: 4px 8px !important;
 }
 
 .mock-level-buttons {
