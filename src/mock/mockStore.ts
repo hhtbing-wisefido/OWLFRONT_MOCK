@@ -166,8 +166,8 @@ function initializeStore(): MockDataStore {
     return card.devices.map((device, deviceIndex) => {
       const deviceType = device.device_type === 1 ? 'SleepPad' : device.device_type === 2 ? 'Radar' : 'Unknown'
       const serialNumber = `SN${String(cardIndex * 10 + deviceIndex).padStart(6, '0')}`
-      // IMEI 只有 SleepPad 有（因为有4G模块），Radar 通过 WiFi 连接所以没有 IMEI
-      const imei = device.device_type === 1 ? `86${String(Math.floor(Math.random() * 10000000000000)).padStart(13, '0')}` : null
+      // 所有设备都通过 WiFi 连接，没有 4G 模块，所以没有 IMEI
+      const imei = null
       const roomNumber = card.card_address.match(/Room (\d+)/)?.[1] || String(cardIndex + 101)
       
       // 计算unit_id以匹配rooms数据
