@@ -304,11 +304,18 @@ function initializeStore(): MockDataStore {
   })
   
   // 转换为Building数组
+  const branchNameToId: Record<string, string> = {
+    'DV': 'branch-001',
+    'SP': 'branch-002', 
+    'MC': 'branch-003',
+    'AL': 'branch-004'
+  }
+  
   const buildings = Array.from(buildingsFromCards.entries()).map(([key, value]) => ({
     building_id: `building-${key}`,
     building_name: value.building_name,
     tenant_id: 'demo_tenant_001',
-    branch_id: `branch-${value.branch_name.toLowerCase()}`,
+    branch_id: branchNameToId[value.branch_name] || 'branch-001', // 使用正确的branch_id
     branch_name: value.branch_name
   }))
   

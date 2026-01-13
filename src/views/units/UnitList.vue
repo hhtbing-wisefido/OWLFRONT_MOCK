@@ -1072,6 +1072,9 @@ const filterBranchOption = (input: string, option: any) => {
 // Handle branch auto-complete select (existing branch)
 const handleBranchAutoCompleteSelect = (value: string) => {
   const branch = availableBranches.value.find(b => b.branch_name === value)
+  console.log('[Branch Select] value:', value, 'found branch:', branch)
+  console.log('[Branch Select] all buildings:', buildings.value.length)
+  
   if (branch) {
     createBuildingForm.value.branch_id = branch.branch_id
     createBuildingForm.value.branch_name = branch.branch_name
@@ -1079,6 +1082,9 @@ const handleBranchAutoCompleteSelect = (value: string) => {
     
     // 选择Branch时，自动展开该Branch下所有Buildings（显示Floors）
     const branchBuildings = buildings.value.filter(b => b.branch_id === branch.branch_id)
+    console.log('[Branch Select] filtered buildings for branch_id', branch.branch_id, ':', branchBuildings.length)
+    console.log('[Branch Select] buildings detail:', branchBuildings.map(b => ({ id: b.building_id, name: b.building_name, branch_id: b.branch_id })))
+    
     branchBuildings.forEach(building => {
       if (building.building_id) {
         expandedBuildings.value.add(building.building_id)
@@ -1424,9 +1430,14 @@ const buildingsWithDisplayName = computed(() => {
       return !(tagName === '' && buildingName === '')
     })
   
+  console.log('[buildingsWithDisplayName] total buildings after filter:', buildingList.length)
+  console.log('[buildingsWithDisplayName] selectedBranchId:', selectedBranchId.value)
+  
   // Filter by selected branch if one is selected
   if (selectedBranchId.value) {
     buildingList = buildingList.filter(building => building.branch_id === selectedBranchId.value)
+    console.log('[buildingsWithDisplayName] after branch filter:', buildingList.length)
+    console.log('[buildingsWithDisplayName] filtered buildings:', buildingList.map(b => ({ id: b.building_id, name: b.building_name, branch_id: b.branch_id })))
   }
   
   const result = buildingList.map((building) => {
