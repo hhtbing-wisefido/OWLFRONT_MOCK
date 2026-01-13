@@ -236,93 +236,14 @@
       </template>
     </a-table>
 
-    <!-- Handle Alarm Modal -->
-    <a-modal
-      v-model:visible="isHandleModalVisible"
-      title="Handle Alarm"
-      width="600px"
-      @cancel="handleCancelHandle"
-    >
-      <template #footer>
-        <div style="padding: 10px 16px; display: flex; justify-content: flex-end; gap: 12px">
-          <a-button @click="handleCancelHandle">Cancel</a-button>
-          <a-button type="primary" @click="handleConfirmHandle" :loading="handling">
-            Confirm
-          </a-button>
-        </div>
-      </template>
-
-      <div v-if="selectedAlarm" class="modal-content-wrapper">
-        <!-- Alarm Information Display -->
-        <div class="alarm-info-section">
-          <div class="info-item">
-            <span class="info-label">Residents:</span>
-            <span class="info-value">
-              {{ formatResidentInfo(selectedAlarm) }}
-            </span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">Address:</span>
-            <span class="info-value">
-              {{ formatAddressForModal(selectedAlarm) }}
-            </span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">Device:</span>
-            <span class="info-value">
-              {{ formatDeviceInfo(selectedAlarm) }}
-            </span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">Alarm Event:</span>
-            <span class="info-value">
-              {{ formatEventType(selectedAlarm.event_type) }}
-            </span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">Alarm Time:</span>
-            <span class="info-value">
-              {{ formatDateTimeLocal(selectedAlarm.triggered_at) }}
-            </span>
-          </div>
-        </div>
-
-        <!-- Warning Message -->
-        <div class="warning-message">
-          <p style="margin: 0; color: #faad14">
-            * Please check the actual situation of the resident before removing the alarm:
-          </p>
-        </div>
-
-        <!-- Handle Type Buttons -->
-        <div class="handle-type-section">
-          <a-radio-group v-model:value="handleType" button-style="solid" class="handle-type-radio-group">
-            <a-radio-button value="verified" class="handle-type-button">
-              Verified and processed
-            </a-radio-button>
-            <a-radio-button value="false_alarm" class="handle-type-button">
-              False Alarm
-            </a-radio-button>
-            <a-radio-button value="test" class="handle-type-button">
-              Test
-            </a-radio-button>
-          </a-radio-group>
-        </div>
-
-        <!-- Remarks -->
-        <div class="remarks-section">
-          <a-form-item label="Remarks:" class="remarks-form-item">
-            <a-textarea
-              v-model:value="remarks"
-              placeholder="Please enter remarks"
-              :rows="7"
-              :maxlength="600"
-              show-count
-            />
-          </a-form-item>
-        </div>
-      </div>
-    </a-modal>
+    <!-- Handle Alarm Modal - UL 2560/HIPAA/FDA 合规统一界面 -->
+    <AlarmHandleModal
+      :visible="isHandleModalVisible"
+      :alarm="convertToAlarmModalFormat(selectedAlarm)"
+      :card="selectedAlarmCard"
+      @update:visible="isHandleModalVisible = $event"
+      @acknowledge="handleAlarmAcknowledge"
+    />
   </div>
 </template>
 
@@ -336,6 +257,8 @@ import type { AlarmEvent, GetAlarmEventsParams } from '@/api/alarm/model/alarmMo
 import { useUserStore } from '@/store/modules/user'
 import { useCardStore } from '@/store/modules/card'
 import { canHandleAlarm as checkCanHandleAlarm, getPermissionDeniedReason as getDeniedReason } from '@/utils/alarmPermission'
+import AlarmHandleModal from '@/components/AlarmHandleModal.vue'
+import type { VitalFocusCard } from '@/api/monitors/model/monitorModel'
 
 interface Props {
   status: 'active' | 'resolved'
@@ -666,6 +589,73 @@ const handleTableChange = (pag: any, _filters: any, sorter: any) => {
   fetchData()
 }
 
+// 选中报警对应的卡片信息（用于 AlarmHandleModal）
+const selectedAlarmCard = computed((): VitalFocusCard | null => {
+  if (!selectedAlarm.value) return null
+  
+  // 从 AlarmEvent 构造一个简化的 VitalFocusCard 对象用于显示
+  const alarm = selectedAlarm.value
+  return {
+    card_id: alarm.card_id || '',
+    tenant_id: '',
+    card_type: 'ActiveBed',
+    location_id: '',
+    card_name: alarm.resident_name || alarm.resident_network || 'Resident',
+    card_address: formatAddressForModal(alarm),
+    icon_status: 'normal',
+    icon_alarm_level: typeof alarm.alarm_level === 'number' ? alarm.alarm_level : 3,
+  } as VitalFocusCard
+})
+
+/**
+ * 将 AlarmEvent 转换为 AlarmHandleModal 需要的格式
+ */
+const convertToAlarmModalFormat = (alarm: AlarmEvent | null) => {
+  if (!alarm) return null
+  
+  return {
+    event_id: alarm.event_id,
+    event_type: alarm.event_type,
+    category: alarm.category || 'device',
+    alarm_level: typeof alarm.alarm_level === 'number' ? alarm.alarm_level : parseInt(String(alarm.alarm_level)) || 3,
+    alarm_status: alarm.alarm_status || 'active',
+    triggered_at: alarm.triggered_at,
+    triggered_by: alarm.device_name || 'Sensor',
+    trigger_data: {
+      heart_rate: alarm.heart_rate,
+      respiratory_rate: alarm.respiratory_rate,
+      posture: alarm.posture,
+      location: alarm.unit_name,
+    },
+  }
+}
+
+/**
+ * 处理报警确认（从 AlarmHandleModal 回调）
+ */
+const handleAlarmAcknowledge = async (alarm: any) => {
+  if (!selectedAlarm.value) return
+  
+  handling.value = true
+  try {
+    // Handle alarm: update status from 'active' to 'resolved'
+    await handleAlarmEventApi(selectedAlarm.value.event_id, {
+      alarm_status: 'resolved',
+      handle_type: 'verified',
+      remarks: `Acknowledged via Alarm Records`,
+    })
+    message.success('Alarm acknowledged successfully')
+    isHandleModalVisible.value = false
+    selectedAlarm.value = null
+    await fetchData()
+  } catch (error: any) {
+    console.error('Failed to acknowledge alarm:', error)
+    message.error(error?.message || 'Failed to acknowledge alarm')
+  } finally {
+    handling.value = false
+  }
+}
+
 const openHandleModal = (record: AlarmEvent) => {
   selectedAlarm.value = record
   handleType.value = 'verified'
@@ -680,6 +670,7 @@ const handleCancelHandle = () => {
   remarks.value = ''
 }
 
+// 保留原有的 handleConfirmHandle 用于备用
 const handleConfirmHandle = async () => {
   if (!selectedAlarm.value) return
 
@@ -694,7 +685,7 @@ const handleConfirmHandle = async () => {
     message.success('Alarm handled successfully')
     handleCancelHandle()
     await fetchData()
-  } catch (error: any) {
+  } catch (error: any)) {
     console.error('Failed to handle alarm:', error)
     message.error(error?.message || 'Failed to handle alarm')
   } finally {
