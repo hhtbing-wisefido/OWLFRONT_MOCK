@@ -22,7 +22,11 @@ let pollingTimer: NodeJS.Timeout | null = null
  * 检查卡片是否有报警
  */
 function hasAlarm(card: VitalFocusCard): boolean {
-  return card.alarmStatus !== null && card.alarmStatus !== undefined && card.alarmStatus >= 0
+  if (!card.alarms || card.alarms.length === 0) {
+    return false
+  }
+  // 检查是否有active状态的报警
+  return card.alarms.some(alarm => alarm.alarm_status === 'active')
 }
 
 /**
@@ -33,12 +37,48 @@ function getAlarmId(card: VitalFocusCard): string {
 }
 
 /**
+ * 解析报警级别
+ */
+function parseAlarmLevel(alarmLevel: string): number {
+  const match = alarmLevel.match(/L(\d+)/)
+  if (match) {
+    const level = parseInt(match[1], 10)
+    return level - 1 // L1=0, L2=1, L3=2, L4=3
+  }
+  return 999
+}
+
+/**
+ * 获取卡片的最高报警级别
+ */
+function getHighestAlarmLevel(card: VitalFocusCard): number {
+  if (!card.alarms || card.alarms.length === 0) {
+    return 999
+  }
+  
+  const activeAlarms = card.alarms.filter(alarm => alarm.alarm_status === 'active')
+  if (activeAlarms.length === 0) {
+    return 999
+  }
+  
+  let highestLevel = 999
+  activeAlarms.forEach(alarm => {
+    const level = parseAlarmLevel(alarm.alarm_level)
+    if (level < highestLevel) {
+      highestLevel = level
+    }
+  })
+  
+  return highestLevel
+}
+
+/**
  * 按报警级别排序（0=L1最高，1=L2，2=L3，3=L4）
  */
 function sortCardsByAlarmLevel(cards: VitalFocusCard[]): VitalFocusCard[] {
   return cards.slice().sort((a, b) => {
-    const aLevel = a.alarmStatus ?? 999
-    const bLevel = b.alarmStatus ?? 999
+    const aLevel = getHighestAlarmLevel(a)
+    const bLevel = getHighestAlarmLevel(b)
     
     // 级别数字越小，优先级越高
     if (aLevel !== bLevel) {
@@ -65,14 +105,15 @@ async function checkAndPlayAlarmSound(cards: VitalFocusCard[]) {
       currentAlarms.add(alarmId)
       
       // 记录最高报警级别
-      if (card.alarmStatus! < highestLevel) {
-        highestLevel = card.alarmStatus!
+      const cardLevel = getHighestAlarmLevel(card)
+      if (cardLevel < highestLevel) {
+        highestLevel = cardLevel
       }
       
       // 检查是否是新报警
       if (!unhandledAlarms.value.has(alarmId)) {
         hasNewAlarm = true
-        console.log('[GlobalAlarmSound] New alarm detected:', alarmId, 'level:', card.alarmStatus)
+        console.log('[GlobalAlarmSound] New alarm detected:', alarmId, 'level:', cardLevel)
       }
     }
   })

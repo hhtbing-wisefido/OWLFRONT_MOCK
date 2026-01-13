@@ -1277,6 +1277,12 @@ const handleAmbientRounds = () => {
   // Refresh all status counts when Ambient Rounds is clicked
   refreshAllStatusCounts()
   console.log('Ambient Rounds clicked - all status counts refreshed')
+  
+  // 提供视觉反馈
+  message.success({
+    content: '✅ Ambient Rounds completed - All status counts refreshed',
+    duration: 2
+  })
 }
 
 /**
