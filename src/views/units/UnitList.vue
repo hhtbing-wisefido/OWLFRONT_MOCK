@@ -1076,7 +1076,14 @@ const handleBranchAutoCompleteSelect = (value: string) => {
     createBuildingForm.value.branch_id = branch.branch_id
     createBuildingForm.value.branch_name = branch.branch_name
     selectedBranchId.value = branch.branch_id
-    // 不自动展开Buildings，保持源项目的简单过滤逻辑
+    
+    // 选择Branch时，自动展开该Branch下所有Buildings（显示Floors）
+    const branchBuildings = buildings.value.filter(b => b.branch_id === branch.branch_id)
+    branchBuildings.forEach(building => {
+      if (building.building_id) {
+        expandedBuildings.value.add(building.building_id)
+      }
+    })
   }
 }
 
@@ -1151,15 +1158,31 @@ const handleBranchSelectChange = (branchId: string | undefined) => {
 // Handle branch click from branch container
 const handleBranchContainerClick = (branch: Branch & { buildingCount: number }) => {
   if (selectedBranchId.value === branch.branch_id) {
-    // Deselect if already selected
+    // Deselect if already selected - 收起所有Buildings
     selectedBranchId.value = undefined
     createBuildingForm.value.branch_id = undefined
     createBuildingForm.value.branch_name = undefined
+    
+    // 收起该Branch下的所有Buildings
+    const branchBuildings = buildings.value.filter(b => b.branch_id === branch.branch_id)
+    branchBuildings.forEach(building => {
+      if (building.building_id) {
+        expandedBuildings.value.delete(building.building_id)
+      }
+    })
   } else {
-    // Select branch - 只过滤Building列表，不自动展开
+    // Select branch - 展开所有Buildings
     selectedBranchId.value = branch.branch_id
     createBuildingForm.value.branch_id = branch.branch_id
     createBuildingForm.value.branch_name = branch.branch_name
+    
+    // 展开该Branch下的所有Buildings（显示Floors）
+    const branchBuildings = buildings.value.filter(b => b.branch_id === branch.branch_id)
+    branchBuildings.forEach(building => {
+      if (building.building_id) {
+        expandedBuildings.value.add(building.building_id)
+      }
+    })
   }
 }
 
