@@ -177,7 +177,10 @@ export const useUserStore = defineStore('user', {
       const role = userInfo?.role || ''
 
       // Role-based landing pages (prevent "login success but no redirect" due to permission guard loop)
-      // SystemOperator is a platform ops role and doesn't necessarily have monitoring permissions.
+      // SysOperator role defaults to Alarm Cloud
+      if (role === 'SysOperator') {
+        return '/alarm/cloud'
+      }
       if (role === 'SystemOperator') {
         return '/admin/tenants'
       }

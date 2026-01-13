@@ -1028,6 +1028,7 @@ const toggleBedDevices = (bedId: string) => {
 // Fetch branches from branches table
 const availableBranches = ref<Array<Branch & { buildingCount: number }>>([])
 const selectedBranchId = ref<string | undefined>(undefined)
+const selectedBuildingId = ref<string | undefined>(undefined)
 
 // Fetch branches from API
 const fetchBranches = async () => {
@@ -1080,6 +1081,11 @@ const handleBranchAutoCompleteSelect = (value: string) => {
     createBuildingForm.value.branch_name = branch.branch_name
     selectedBranchId.value = branch.branch_id
     
+    // 清除Building选择，因为Branch变了
+    selectedBuildingId.value = undefined
+    createBuildingForm.value.building_id = undefined
+    createBuildingForm.value.building_name = undefined
+    
     // 选择Branch时，自动展开该Branch下所有Buildings（显示Floors）
     const branchBuildings = buildings.value.filter(b => b.branch_id === branch.branch_id)
     console.log('[Branch Select] filtered buildings for branch_id', branch.branch_id, ':', branchBuildings.length)
@@ -1099,36 +1105,53 @@ const handleBranchAutoCompleteChange = (value: string | undefined) => {
     createBuildingForm.value.branch_id = undefined
     createBuildingForm.value.branch_name = undefined
     selectedBranchId.value = undefined
+    // 清除Building选择
+    selectedBuildingId.value = undefined
+    createBuildingForm.value.building_id = undefined
+    createBuildingForm.value.building_name = undefined
   } else {
     // 用户输入新Branch名称
     createBuildingForm.value.branch_name = value
     // 不设置branch_id，让后端创建新Branch
     createBuildingForm.value.branch_id = undefined
     selectedBranchId.value = undefined
+    // 清除Building选择
+    selectedBuildingId.value = undefined
+    createBuildingForm.value.building_id = undefined
+    createBuildingForm.value.building_name = undefined
   }
 }
 
 // Building Options: Extract unique building names from buildings with building_id
+// Filter by selectedBranchId if a branch is selected
 const buildingOptions = computed(() => {
+  // 先根据Branch过滤buildings
+  let filteredBuildings = buildings.value
+  if (selectedBranchId.value) {
+    filteredBuildings = filteredBuildings.filter(b => b.branch_id === selectedBranchId.value)
+  }
+  
   // Extract unique buildings (with building_id and building_name)
-  const buildingMap = new Map<string, { building_id?: string; building_name: string }>()
-  buildings.value.forEach(building => {
+  const buildingMap = new Map<string, { building_id?: string; building_name: string; branch_id?: string }>()
+  filteredBuildings.forEach(building => {
     const buildingName = building.building_name || ''
     if (buildingName && buildingName !== '-') {
       if (!buildingMap.has(buildingName)) {
         buildingMap.set(buildingName, {
           building_id: building.building_id,
           building_name: buildingName,
+          branch_id: building.branch_id,
         })
       }
     }
   })
-  const buildingNames: Array<{ value: string; label: string; building_id?: string }> = []
+  const buildingNames: Array<{ value: string; label: string; building_id?: string; branch_id?: string }> = []
   buildingMap.forEach((building, buildingName) => {
     buildingNames.push({ 
       value: buildingName, 
       label: buildingName,
       building_id: building.building_id,
+      branch_id: building.branch_id,
     })
   })
   return buildingNames.sort((a, b) => a.label.localeCompare(b.label))
@@ -1169,6 +1192,11 @@ const handleBranchContainerClick = (branch: Branch & { buildingCount: number }) 
     createBuildingForm.value.branch_id = undefined
     createBuildingForm.value.branch_name = undefined
     
+    // 清除Building选择
+    selectedBuildingId.value = undefined
+    createBuildingForm.value.building_id = undefined
+    createBuildingForm.value.building_name = undefined
+    
     // 收起该Branch下的所有Buildings
     const branchBuildings = buildings.value.filter(b => b.branch_id === branch.branch_id)
     branchBuildings.forEach(building => {
@@ -1181,6 +1209,11 @@ const handleBranchContainerClick = (branch: Branch & { buildingCount: number }) 
     selectedBranchId.value = branch.branch_id
     createBuildingForm.value.branch_id = branch.branch_id
     createBuildingForm.value.branch_name = branch.branch_name
+    
+    // 清除Building选择
+    selectedBuildingId.value = undefined
+    createBuildingForm.value.building_id = undefined
+    createBuildingForm.value.building_name = undefined
     
     // 展开该Branch下的所有Buildings（显示Floors）
     const branchBuildings = buildings.value.filter(b => b.branch_id === branch.branch_id)
@@ -1199,10 +1232,12 @@ const handleBuildingSelect = (value: string) => {
   if (selectedBuilding) {
     createBuildingForm.value.building_id = selectedBuilding.building_id
     createBuildingForm.value.building_name = selectedBuilding.value
+    selectedBuildingId.value = selectedBuilding.building_id
   } else {
     // User typed a new building name (not selected from options)
     createBuildingForm.value.building_id = undefined
     createBuildingForm.value.building_name = value
+    selectedBuildingId.value = undefined
   }
 }
 
@@ -1432,12 +1467,19 @@ const buildingsWithDisplayName = computed(() => {
   
   console.log('[buildingsWithDisplayName] total buildings after filter:', buildingList.length)
   console.log('[buildingsWithDisplayName] selectedBranchId:', selectedBranchId.value)
+  console.log('[buildingsWithDisplayName] selectedBuildingId:', selectedBuildingId.value)
   
   // Filter by selected branch if one is selected
   if (selectedBranchId.value) {
     buildingList = buildingList.filter(building => building.branch_id === selectedBranchId.value)
     console.log('[buildingsWithDisplayName] after branch filter:', buildingList.length)
     console.log('[buildingsWithDisplayName] filtered buildings:', buildingList.map(b => ({ id: b.building_id, name: b.building_name, branch_id: b.branch_id })))
+  }
+  
+  // Filter by selected building if one is selected
+  if (selectedBuildingId.value) {
+    buildingList = buildingList.filter(building => building.building_id === selectedBuildingId.value)
+    console.log('[buildingsWithDisplayName] after building filter:', buildingList.length)
   }
   
   const result = buildingList.map((building) => {
