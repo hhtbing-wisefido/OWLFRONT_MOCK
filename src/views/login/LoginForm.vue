@@ -12,18 +12,14 @@
       <div class="mock-title">🎯 Quick Login (Mock Demo)</div>
       <div class="mock-subtitle">👇 Click to auto-fill credentials</div>
       <div class="mock-buttons" v-if="formData.userType === 'staff'">
-        <div class="mock-group-title">🔴 System Level</div>
+        <div class="mock-group-title">💻 技术线 (Technology)</div>
         <Button size="small" @click="fillMockAccount('sysadmin')">🔐 SysAdmin</Button>
-        <Button size="small" @click="fillMockAccount('sysoperator')">⚙️ SysOperator</Button>
-        
-        <div class="mock-group-title">🟡 Management Level</div>
         <Button size="small" @click="fillMockAccount('admin')">👨‍💼 Admin</Button>
-        <Button size="small" @click="fillMockAccount('doctor1')">👨‍⚕️ Manager</Button>
-        
-        <div class="mock-group-title">🟢 Support Level</div>
         <Button size="small" @click="fillMockAccount('it1')">💻 IT</Button>
         
-        <div class="mock-group-title">🔵 Execution Level</div>
+        <div class="mock-group-title">🏥 业务线 (Operations)</div>
+        <Button size="small" @click="fillMockAccount('sysoperator')">⚙️ SysOperator</Button>
+        <Button size="small" @click="fillMockAccount('doctor1')">👨‍⚕️ Manager</Button>
         <Button size="small" @click="fillMockAccount('nurse1')">👩‍⚕️ Nurse</Button>
         <Button size="small" @click="fillMockAccount('caregiver1')">🤝 Caregiver</Button>
       </div>
