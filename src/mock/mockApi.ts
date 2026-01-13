@@ -1510,14 +1510,17 @@ export async function mockGetTenantList() {
 export async function mockGetImportTemplate() {
   await delay(300)
   
-  // 创建简单的CSV模板
-  const csvContent = `Serial Number,UID,IMEI,Device Type,Tenant Name,Branch,Status,Notes
-SN001,UID001,IMEI001,床垫,Maple View,East Wing,Active,Example device
-SN002,UID002,IMEI002,雷达,Maple View,West Wing,Active,Example radar`
+  // 创建完整的CSV模板，包含所有Device Store表格的列
+  const csvContent = `Serial Number,UID,IMEI,Device Type,Tenant,Branch,Unit,Resident,Device Status,Firmware Version,OTA Target Version,Last Online,Notes
+SN-EXAMPLE-001,UID-001,IMEI-001,SleepPad,Mapleview Care,East Wing,Room 101,John Smith,Active,1.0.0,1.0.1,2024-01-01 10:00:00,Example sleeppad device
+SN-EXAMPLE-002,UID-002,IMEI-002,Radar,Mapleview Care,West Wing,Room 201,Jane Doe,Active,2.0.0,2.0.1,2024-01-02 15:30:00,Example radar device
+SN-EXAMPLE-003,UID-003,IMEI-003,Gateway,Sunrise Living,,,,Inactive,1.5.0,,2024-01-03 08:00:00,Unassigned gateway`
   
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  // 添加BOM头以确保Excel正确识别UTF-8编码
+  const BOM = '\uFEFF'
+  const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' })
   
-  console.log('📥 Mock: Generating import template')
+  console.log('📥 Mock: Generating import template (CSV format)')
   
   return blob
 }
@@ -1555,16 +1558,18 @@ export async function mockExportDeviceStores() {
   
   const store = getDataStore()
   
-  // 转换为CSV格式
-  const headers = 'Serial Number,UID,IMEI,Device Type,Tenant Name,Branch,Status,Notes\n'
-  const rows = store.deviceStores.slice(0, 20).map(ds => 
-    `${ds.serial_number},${ds.uid},${ds.imei || ''},${ds.device_type || ''},${ds.tenant_name || 'Unallocated'},${ds.branch || ''},${ds.status || 'Active'},${ds.notes || ''}`
+  // 转换为完整的CSV格式，与模板列保持一致
+  const headers = 'Serial Number,UID,IMEI,Device Type,Tenant,Branch,Unit,Resident,Device Status,Firmware Version,OTA Target Version,Last Online,Notes\n'
+  const rows = store.deviceStores.map(ds => 
+    `${ds.serial_number || ''},${ds.uid || ''},${ds.imei || ''},${ds.device_type || ''},${ds.tenant_name || 'Unallocated'},${ds.branch || ''},${ds.unit_name || ''},${ds.resident_name || ''},${ds.status || 'Active'},${ds.firmware_version || ''},${ds.ota_target_firmware_version || ''},${ds.last_online || ''},${ds.notes || ''}`
   ).join('\n')
   
-  const csvContent = headers + rows
+  // 添加BOM头以确保Excel正确识别UTF-8编码
+  const BOM = '\uFEFF'
+  const csvContent = BOM + headers + rows
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
   
-  console.log('📥 Mock: Exporting device stores')
+  console.log('📥 Mock: Exporting device stores, total:', store.deviceStores.length)
   
   return blob
 }
@@ -1577,54 +1582,22 @@ export async function mockExportDeviceStores() {
 export async function mockGetTenants(params?: any) {
   await delay(300)
   
-  const tenants = [
-    { 
-      tenant_id: 'system-tenant',
-      tenant_name: 'System Tenant',
-      domain: 'system.owlmonitor.com',
-      email: 'admin@system.com',
-      phone: '+1-555-0000',
-      status: 'active' as const,
-      created_at: '2024-01-01T00:00:00Z',
-      updated_at: '2024-01-01T00:00:00Z'
-    },
-    { 
-      tenant_id: 'demo_tenant_001',
-      tenant_name: 'Mapleview Care',
-      domain: 'mapleview.care',
-      email: 'admin@mapleview.care',
-      phone: '+1-555-0001',
-      status: 'active' as const,
-      created_at: '2024-01-15T00:00:00Z',
-      updated_at: '2024-12-01T00:00:00Z'
-    },
-    { 
-      tenant_id: 'demo_tenant_002',
-      tenant_name: 'Sunrise Senior Living',
-      domain: 'sunrise.care',
-      email: 'admin@sunrise.care',
-      phone: '+1-555-0002',
-      status: 'active' as const,
-      created_at: '2024-02-01T00:00:00Z',
-      updated_at: '2024-11-15T00:00:00Z'
-    },
-    { 
-      tenant_id: 'demo_tenant_003',
-      tenant_name: 'Golden Years Care',
-      domain: 'goldenyears.care',
-      email: 'admin@goldenyears.care',
-      phone: '+1-555-0003',
-      status: 'suspended' as const,
-      created_at: '2024-03-01T00:00:00Z',
-      updated_at: '2024-12-15T00:00:00Z'
-    }
-  ]
+  const store = getDataStore()
+  const allTenants = store.tenants || []
+  
+  // 返回所有租户（包括deleted状态），因为：
+  // 1. 用户可以创建deleted状态的租户
+  // 2. 软删除后显示Restore按钮，用户可以恢复
+  // 返回深拷贝以确保Vue能检测到变化
+  const result = allTenants.map((t: any) => ({ ...t }))
+  
+  console.log(`📦 mockGetTenants - total: ${allTenants.length} tenants`)
   
   return {
     code: 2000,
     result: {
-      items: tenants,
-      total: tenants.length
+      items: result,
+      total: result.length
     },
     message: 'Tenants retrieved successfully'
   }
@@ -1636,10 +1609,12 @@ export async function mockGetTenants(params?: any) {
 export async function mockCreateTenant(body: any) {
   await delay(500)
   
+  const store = getDataStore()
+  
   const newTenant = {
     tenant_id: `tenant_${Date.now()}`,
     tenant_name: body.tenant_name,
-    domain: body.domain,
+    domain: body.domain || '',
     email: body.email || '',
     phone: body.phone || '',
     status: body.status || 'active',
@@ -1647,7 +1622,10 @@ export async function mockCreateTenant(body: any) {
     updated_at: new Date().toISOString()
   }
   
-  console.log('✅ 创建租户成功:', newTenant)
+  // 添加到store
+  store.tenants.push(newTenant)
+  
+  console.log('✅ 创建租户成功:', newTenant.tenant_name, 'Total:', store.tenants.length)
   
   return {
     code: 2000,
@@ -1662,17 +1640,27 @@ export async function mockCreateTenant(body: any) {
 export async function mockUpdateTenant(body: any, tenantId?: string) {
   await delay(500)
   
+  const store = getDataStore()
   const id = tenantId || body.tenant_id
   
-  console.log('✅ 更新租户成功:', { id, ...body })
+  const index = store.tenants.findIndex((t: any) => t.tenant_id === id)
+  if (index !== -1) {
+    // 更新store中的数据
+    store.tenants[index] = {
+      ...store.tenants[index],
+      ...body,
+      tenant_id: id, // 保持ID不变
+      updated_at: new Date().toISOString()
+    }
+    console.log('✅ 更新租户成功:', store.tenants[index].tenant_name, 'status:', store.tenants[index].status)
+  }
+  
+  // 返回深拷贝
+  const result = index !== -1 ? { ...store.tenants[index] } : { tenant_id: id, ...body }
   
   return {
     code: 2000,
-    result: {
-      tenant_id: id,
-      ...body,
-      updated_at: new Date().toISOString()
-    },
+    result: result,
     message: 'Tenant updated successfully'
   }
 }
@@ -1683,9 +1671,15 @@ export async function mockUpdateTenant(body: any, tenantId?: string) {
 export async function mockDeleteTenant(params: any, tenantId?: string) {
   await delay(500)
   
+  const store = getDataStore()
   const id = tenantId || params
   
-  console.log('✅ 删除租户成功:', id)
+  const index = store.tenants.findIndex((t: any) => t.tenant_id === id)
+  if (index !== -1) {
+    store.tenants[index].status = 'deleted'
+    store.tenants[index].updated_at = new Date().toISOString()
+    console.log('✅ 删除租户成功(软删除):', store.tenants[index].tenant_name, '- 将从列表中隐藏')
+  }
   
   return {
     code: 2000,

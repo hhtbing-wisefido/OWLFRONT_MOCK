@@ -1,5 +1,5 @@
 <template>
-  <div class="tenant-list-page">
+  <div class="p-4">
     <div class="flex items-center justify-between mb-4">
       <div class="text-lg font-semibold">Tenant Management</div>
       <a-space>
@@ -74,12 +74,23 @@
             >
               Disable
             </a-button>
+            <!-- 软删除后显示Restore按钮，否则显示Delete按钮 -->
+            <a-button
+              v-if="record.status === 'deleted'"
+              size="small"
+              type="primary"
+              :disabled="isSystemTenant(record.tenant_id)"
+              @click="restoreTenant(record.tenant_id)"
+            >
+              Restore
+            </a-button>
             <a-popconfirm
+              v-else
               title="Soft delete this tenant?"
-              :disabled="isSystemTenant(record.tenant_id) || record.status === 'deleted'"
+              :disabled="isSystemTenant(record.tenant_id)"
               @confirm="deleteTenant(record.tenant_id)"
             >
-              <a-button size="small" danger :disabled="isSystemTenant(record.tenant_id) || record.status === 'deleted'">
+              <a-button size="small" danger :disabled="isSystemTenant(record.tenant_id)">
                 Delete
               </a-button>
             </a-popconfirm>
@@ -237,15 +248,27 @@ const displayDataSource = computed(() => {
 })
 
 async function fetchTenants() {
+  console.log('📋 [fetchTenants] 开始获取租户列表...')
   loading.value = true
   try {
     const res = await getTenantsApi({
       page: page.value,
       size: size.value,
     })
-    dataSource.value = res.items || []
-    total.value = res.total || 0
+    console.log('📋 [fetchTenants] API返回:', res)
+    console.log('📋 [fetchTenants] res.items:', res?.items?.length, '条')
+    
+    if (res && res.items) {
+      dataSource.value = res.items
+      total.value = res.total || res.items.length
+      console.log('📋 [fetchTenants] dataSource已更新为:', dataSource.value.length, '条')
+    } else {
+      console.error('📋 [fetchTenants] 响应格式异常:', res)
+      dataSource.value = []
+      total.value = 0
+    }
   } catch (e: any) {
+    console.error('📋 [fetchTenants] 错误:', e)
     message.error('Failed to fetch tenants: ' + (e.message || 'Unknown error'))
   } finally {
     loading.value = false
@@ -387,19 +410,29 @@ async function deleteTenant(id: string) {
     message.warning('System tenant cannot be deleted')
     return
   }
-  Modal.confirm({
-    title: 'Confirm',
-    content: 'This will set status to deleted (soft delete). Continue?',
-    async onOk() {
-      try {
-        await deleteTenantApi(id)
-        message.success('Deleted')
-        await fetchTenants()
-      } catch (e: any) {
-        message.error('Failed to delete: ' + (e.message || 'Unknown error'))
-      }
-    },
-  })
+  // 直接软删除，不再弹出确认框（因为popconfirm已经确认过了）
+  try {
+    await deleteTenantApi(id)
+    message.success('Tenant soft deleted')
+    await fetchTenants()
+  } catch (e: any) {
+    message.error('Failed to delete: ' + (e.message || 'Unknown error'))
+  }
+}
+
+// 恢复已删除的租户
+async function restoreTenant(id: string) {
+  if (isSystemTenant(id)) {
+    message.warning('System tenant cannot be modified')
+    return
+  }
+  try {
+    await updateTenantApi(id, { status: 'active' })
+    message.success('Tenant restored')
+    await fetchTenants()
+  } catch (e: any) {
+    message.error('Failed to restore: ' + (e.message || 'Unknown error'))
+  }
 }
 
 // Validate reset admin password strength (reuse UserList.vue logic)
@@ -643,35 +676,11 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.p-4 {
+  padding: 16px;
+}
 .mb-4 {
   margin-bottom: 16px;
-}
-
-/* 页面高度和滚动控制 - 简洁样式 */
-.tenant-list-page {
-  padding: 16px;
-  height: calc(100vh - 20px);
-  max-height: calc(100vh - 20px);
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-/* 简洁滚动条样式 */
-.tenant-list-page::-webkit-scrollbar {
-  width: 8px;
-}
-
-.tenant-list-page::-webkit-scrollbar-track {
-  background: #f0f0f0;
-}
-
-.tenant-list-page::-webkit-scrollbar-thumb {
-  background: #bfbfbf;
-  border-radius: 4px;
-}
-
-.tenant-list-page::-webkit-scrollbar-thumb:hover {
-  background: #999;
 }
 </style>
 
