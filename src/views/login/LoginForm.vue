@@ -13,7 +13,7 @@
       <div class="mock-subtitle">👇 {{ quickLoginMode === 'simple' ? 'Select Role' : 'Select Level & Role' }}</div>
       
       <!-- Simple Mode: 只显示3个核心角色 (Production) -->
-      <div v-if="quickLoginMode === 'simple' && formData.userType === 'staff'" class="mock-buttons">
+      <div v-if="quickLoginMode === 'simple' && formData.userType === 'staff'" class="mock-buttons-inline">
         <Button size="small" class="role-btn role-simple" @click="fillMockAccount('admin')">👨‍💼 Admin</Button>
         <Button size="small" class="role-btn role-simple" @click="fillMockAccount('doctor1')">👨‍⚕️ Manager</Button>
         <Button size="small" class="role-btn role-simple" @click="fillMockAccount('caregiver1')">🤝 Caregiver</Button>
@@ -831,6 +831,20 @@ onMounted(() => {
   gap: 8px;
   justify-content: space-around;
   flex-wrap: wrap;
+}
+
+/* Simple mode: 一行显示 */
+.mock-buttons-inline {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: nowrap;
+}
+
+.mock-buttons-inline .role-btn {
+  flex: 1;
+  min-width: 100px;
+  max-width: 120px;
 }
 
 .mock-level-buttons {
