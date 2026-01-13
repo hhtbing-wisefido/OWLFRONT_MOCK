@@ -1,5 +1,5 @@
 <template>
-  <div class="p-4">
+  <div class="tenant-list-page">
     <div class="flex items-center justify-between mb-4">
       <div class="text-lg font-semibold">Tenant Management</div>
       <a-space>
@@ -643,11 +643,35 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.p-4 {
-  padding: 16px;
-}
 .mb-4 {
   margin-bottom: 16px;
+}
+
+/* 页面高度和滚动控制 - 简洁样式 */
+.tenant-list-page {
+  padding: 16px;
+  height: calc(100vh - 20px);
+  max-height: calc(100vh - 20px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* 简洁滚动条样式 */
+.tenant-list-page::-webkit-scrollbar {
+  width: 8px;
+}
+
+.tenant-list-page::-webkit-scrollbar-track {
+  background: #f0f0f0;
+}
+
+.tenant-list-page::-webkit-scrollbar-thumb {
+  background: #bfbfbf;
+  border-radius: 4px;
+}
+
+.tenant-list-page::-webkit-scrollbar-thumb:hover {
+  background: #999;
 }
 </style>
 

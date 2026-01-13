@@ -1568,3 +1568,149 @@ export async function mockExportDeviceStores() {
   
   return blob
 }
+
+// -------------------- 租户管理 CRUD --------------------
+
+/**
+ * 获取租户列表
+ */
+export async function mockGetTenants(params?: any) {
+  await delay(300)
+  
+  const tenants = [
+    { 
+      tenant_id: 'system-tenant',
+      tenant_name: 'System Tenant',
+      domain: 'system.owlmonitor.com',
+      email: 'admin@system.com',
+      phone: '+1-555-0000',
+      status: 'active' as const,
+      created_at: '2024-01-01T00:00:00Z',
+      updated_at: '2024-01-01T00:00:00Z'
+    },
+    { 
+      tenant_id: 'demo_tenant_001',
+      tenant_name: 'Mapleview Care',
+      domain: 'mapleview.care',
+      email: 'admin@mapleview.care',
+      phone: '+1-555-0001',
+      status: 'active' as const,
+      created_at: '2024-01-15T00:00:00Z',
+      updated_at: '2024-12-01T00:00:00Z'
+    },
+    { 
+      tenant_id: 'demo_tenant_002',
+      tenant_name: 'Sunrise Senior Living',
+      domain: 'sunrise.care',
+      email: 'admin@sunrise.care',
+      phone: '+1-555-0002',
+      status: 'active' as const,
+      created_at: '2024-02-01T00:00:00Z',
+      updated_at: '2024-11-15T00:00:00Z'
+    },
+    { 
+      tenant_id: 'demo_tenant_003',
+      tenant_name: 'Golden Years Care',
+      domain: 'goldenyears.care',
+      email: 'admin@goldenyears.care',
+      phone: '+1-555-0003',
+      status: 'suspended' as const,
+      created_at: '2024-03-01T00:00:00Z',
+      updated_at: '2024-12-15T00:00:00Z'
+    }
+  ]
+  
+  return {
+    code: 2000,
+    result: {
+      items: tenants,
+      total: tenants.length
+    },
+    message: 'Tenants retrieved successfully'
+  }
+}
+
+/**
+ * 创建租户
+ */
+export async function mockCreateTenant(body: any) {
+  await delay(500)
+  
+  const newTenant = {
+    tenant_id: `tenant_${Date.now()}`,
+    tenant_name: body.tenant_name,
+    domain: body.domain,
+    email: body.email || '',
+    phone: body.phone || '',
+    status: body.status || 'active',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  }
+  
+  console.log('✅ 创建租户成功:', newTenant)
+  
+  return {
+    code: 2000,
+    result: newTenant,
+    message: 'Tenant created successfully'
+  }
+}
+
+/**
+ * 更新租户
+ */
+export async function mockUpdateTenant(body: any, tenantId?: string) {
+  await delay(500)
+  
+  const id = tenantId || body.tenant_id
+  
+  console.log('✅ 更新租户成功:', { id, ...body })
+  
+  return {
+    code: 2000,
+    result: {
+      tenant_id: id,
+      ...body,
+      updated_at: new Date().toISOString()
+    },
+    message: 'Tenant updated successfully'
+  }
+}
+
+/**
+ * 删除租户（软删除）
+ */
+export async function mockDeleteTenant(params: any, tenantId?: string) {
+  await delay(500)
+  
+  const id = tenantId || params
+  
+  console.log('✅ 删除租户成功:', id)
+  
+  return {
+    code: 2000,
+    result: { success: true },
+    message: 'Tenant deleted successfully'
+  }
+}
+
+/**
+ * 重置租户管理员密码
+ */
+export async function mockResetTenantAdminPassword(body: any, tenantId?: string) {
+  await delay(500)
+  
+  const id = tenantId || body.tenant_id
+  
+  console.log('✅ 重置管理员密码成功:', { tenant_id: id, username: body.username })
+  
+  return {
+    code: 2000,
+    result: { 
+      success: true,
+      message: 'Admin password reset successfully'
+    },
+    message: 'Password reset successfully'
+  }
+}
+

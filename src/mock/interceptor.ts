@@ -47,7 +47,13 @@ import {
   mockGetTenantList,
   mockGetImportTemplate,
   mockImportDeviceStores,
-  mockExportDeviceStores
+  mockExportDeviceStores,
+  // Tenant Management
+  mockGetTenants,
+  mockCreateTenant,
+  mockUpdateTenant,
+  mockDeleteTenant,
+  mockResetTenantAdminPassword
 } from './mockApi'
 
 // Mock模式开关
@@ -330,6 +336,23 @@ function matchMockRoute(method: string, url: string): any {
     // GET - 租户列表（Device Store分配用）
     { pattern: /\/admin\/api\/v1\/tenants/, method: 'GET', handler: mockGetTenantList },
     { pattern: /\/api\/v1\/tenants/, method: 'GET', handler: mockGetTenantList },
+    
+    // ==================== 租户管理 Tenant Management ====================
+    // GET - 租户列表（完整管理功能）
+    { pattern: /\/admin\/api\/v1\/tenants(?:\?|$)/, method: 'GET', handler: mockGetTenants },
+    
+    // POST - 创建租户
+    { pattern: /\/admin\/api\/v1\/tenants$/, method: 'POST', handler: mockCreateTenant },
+    
+    // PUT - 更新租户
+    { pattern: /\/admin\/api\/v1\/tenants\/[^/?]+/, method: 'PUT', handler: mockUpdateTenant },
+    
+    // DELETE - 删除租户
+    { pattern: /\/admin\/api\/v1\/tenants\/[^/?]+/, method: 'DELETE', handler: mockDeleteTenant },
+    
+    // POST - 重置管理员密码
+    { pattern: /\/admin\/api\/v1\/tenants\/[^/?]+\/reset-bootstrap-account/, method: 'POST', handler: mockResetTenantAdminPassword },
+    { pattern: /\/admin\/api\/v1\/tenants\/[^/?]+\/bootstrap-accounts\/[^/?]+\/reset-password/, method: 'POST', handler: mockResetTenantAdminPassword },
     
     // 分支标签
     { pattern: /\/admin\/api\/v1\/branch-tags/, method: 'GET', handler: mockGetBranchTags },

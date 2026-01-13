@@ -756,12 +756,50 @@ onMounted(() => {
   overflow-x: auto;
 }
 
-/* 页面高度和滚动控制 */
+/* 页面高度和滚动控制 - 简洁样式 */
 .device-store-page {
   padding: 15px;
   height: calc(100vh - 20px);
   max-height: calc(100vh - 20px);
   overflow-y: auto;
   overflow-x: hidden;
+}
+
+/* 简洁滚动条样式 */
+.device-store-page::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.device-store-page::-webkit-scrollbar-track {
+  background: #f0f0f0;
+}
+
+.device-store-page::-webkit-scrollbar-thumb {
+  background: #bfbfbf;
+  border-radius: 4px;
+}
+
+.device-store-page::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+
+/* 表格滚动条 */
+.device-store-table :deep(.ant-table-body)::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.device-store-table :deep(.ant-table-body)::-webkit-scrollbar-track {
+  background: #f0f0f0;
+}
+
+.device-store-table :deep(.ant-table-body)::-webkit-scrollbar-thumb {
+  background: #bfbfbf;
+  border-radius: 4px;
+}
+
+.device-store-table :deep(.ant-table-body)::-webkit-scrollbar-thumb:hover {
+  background: #999;
 }
 </style>
