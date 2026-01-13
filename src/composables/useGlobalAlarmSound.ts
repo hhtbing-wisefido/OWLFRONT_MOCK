@@ -38,12 +38,26 @@ function getAlarmId(card: VitalFocusCard): string {
 
 /**
  * 解析报警级别
+ * @param alarmLevel - 可以是数字 (1, 2, 4) 或字符串 ('L1', 'L2', 'L4')
+ * @returns 优先级数字 (越小优先级越高): 1→0 (最高), 2→1, 4→2
  */
-function parseAlarmLevel(alarmLevel: string): number {
+function parseAlarmLevel(alarmLevel: string | number): number {
+  // 如果是数字类型
+  if (typeof alarmLevel === 'number') {
+    // alarm_level: 1=ALERT(最高), 2=CRIT, 4=WARNING
+    if (alarmLevel === 1) return 0 // ALERT - 最高优先级
+    if (alarmLevel === 2) return 1 // CRIT
+    if (alarmLevel === 4) return 2 // WARNING
+    return 999
+  }
+  
+  // 如果是字符串类型 'L1', 'L2', 'L4'
   const match = alarmLevel.match(/L(\d+)/)
   if (match) {
     const level = parseInt(match[1], 10)
-    return level - 1 // L1=0, L2=1, L3=2, L4=3
+    if (level === 1) return 0
+    if (level === 2) return 1
+    if (level === 4) return 2
   }
   return 999
 }
