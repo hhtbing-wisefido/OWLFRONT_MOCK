@@ -884,7 +884,6 @@ const {
 const handleCreateBuildingWrapper = async () => {
   try {
     const createdBranchName = createBuildingForm.value.branch_name
-    const createdBuildingName = createBuildingForm.value.building_name
     
     // Call the composable's handleCreateBuilding
     // It will handle the API call, show success message, reset form, and fetch buildings
@@ -894,35 +893,16 @@ const handleCreateBuildingWrapper = async () => {
     await fetchBuildings()
     await fetchBranches()
     
-    // 需求4&5: 新建后自动选择和展开
-    // 等待数据刷新完成后，自动选择新创建的Branch和Building
+    // 需求4&5: 新建后自动在下拉菜单显示，并保持Branch选中状态
     await nextTick()
     
     if (createdBranchName) {
       const newBranch = availableBranches.value.find(b => b.branch_name === createdBranchName)
       if (newBranch) {
+        // 保持Branch选中状态，这样新创建的Building会在过滤后的列表中可见
         selectedBranchId.value = newBranch.branch_id
         createBuildingForm.value.branch_id = newBranch.branch_id
         createBuildingForm.value.branch_name = newBranch.branch_name
-        
-        // 展开所有该Branch的Buildings
-        const branchBuildings = buildings.value.filter(b => b.branch_id === newBranch.branch_id)
-        branchBuildings.forEach(building => {
-          if (building.building_id) {
-            expandedBuildings.value.add(building.building_id)
-          }
-        })
-        
-        // 自动选择新创建的Building
-        if (createdBuildingName) {
-          const newBuilding = buildings.value.find(
-            b => b.branch_name === createdBranchName && b.building_name === createdBuildingName
-          )
-          if (newBuilding) {
-            selectedBuilding.value = newBuilding
-            currentBuildingForGrid.value = newBuilding
-          }
-        }
       }
     }
   } catch (error) {
@@ -1096,14 +1076,7 @@ const handleBranchAutoCompleteSelect = (value: string) => {
     createBuildingForm.value.branch_id = branch.branch_id
     createBuildingForm.value.branch_name = branch.branch_name
     selectedBranchId.value = branch.branch_id
-    
-    // 展开所有该Branch的Buildings
-    const branchBuildings = buildings.value.filter(b => b.branch_id === branch.branch_id)
-    branchBuildings.forEach(building => {
-      if (building.building_id) {
-        expandedBuildings.value.add(building.building_id)
-      }
-    })
+    // 不自动展开Buildings，保持源项目的简单过滤逻辑
   }
 }
 
@@ -1113,7 +1086,6 @@ const handleBranchAutoCompleteChange = (value: string | undefined) => {
     createBuildingForm.value.branch_id = undefined
     createBuildingForm.value.branch_name = undefined
     selectedBranchId.value = undefined
-    expandedBuildings.value.clear()
   } else {
     // 用户输入新Branch名称
     createBuildingForm.value.branch_name = value
@@ -1183,21 +1155,11 @@ const handleBranchContainerClick = (branch: Branch & { buildingCount: number }) 
     selectedBranchId.value = undefined
     createBuildingForm.value.branch_id = undefined
     createBuildingForm.value.branch_name = undefined
-    // 清除所有展开状态
-    expandedBuildings.value.clear()
   } else {
-    // Select branch
+    // Select branch - 只过滤Building列表，不自动展开
     selectedBranchId.value = branch.branch_id
     createBuildingForm.value.branch_id = branch.branch_id
     createBuildingForm.value.branch_name = branch.branch_name
-    
-    // 需求1: 选择Branch时，展开所有该Branch的Buildings
-    const branchBuildings = buildings.value.filter(b => b.branch_id === branch.branch_id)
-    branchBuildings.forEach(building => {
-      if (building.building_id) {
-        expandedBuildings.value.add(building.building_id)
-      }
-    })
   }
 }
 
