@@ -27,7 +27,7 @@
 
 | 功能 | 描述 |
 |------|------|
-| 🏠 **100个模拟设备** | 90个ActiveBed卡片 + 10个Location卡片，分布在5栋楼 |
+| 🏠 **235个模拟设备** | 200个ActiveBed卡片 + 35个Location卡片，分布在8栋楼 |
 | 📊 **实时监护卡片** | 呼吸率、心率、在床状态、睡眠阶段实时显示 |
 | 🚨 **多级报警系统** | 5级报警（EMERG/ALERT/CRIT/ERR/WARNING） |
 | 🔊 **报警声音提示** | L1/L2分级声音，可自定义 |
@@ -92,14 +92,24 @@ docker run -d \
 
 #### 一键更新脚本（推荐）
 
+项目提供了一键更新脚本，自动完成停止旧容器、拉取最新镜像、启动新容器的全部流程：
+
 ```bash
-#!/bin/bash
-# 保存为 update-docker.sh，执行 chmod +x update-docker.sh
-docker stop owl-monitor-mock && docker rm owl-monitor-mock
-docker pull ghcr.io/hhtbing-wisefido/owlfront_mock:latest
-docker run -d --name owl-monitor-mock -p 3100:80 --restart unless-stopped ghcr.io/hhtbing-wisefido/owlfront_mock:latest
-echo "✅ 更新完成！访问 http://localhost:3100"
+# Linux/Mac
+cd scripts
+chmod +x update-docker.sh
+./update-docker.sh
+
+# Windows (PowerShell)
+cd scripts
+bash update-docker.sh
 ```
+
+脚本功能：
+- ✅ 自动停止并删除旧容器
+- ✅ 拉取最新Docker镜像
+- ✅ 启动新容器并验证状态
+- ✅ 显示访问地址和管理命令提示
 
 访问地址：**http://localhost:3100**
 
@@ -166,7 +176,7 @@ owl-monitor-mock/
 │   ├── hooks/                  # 组合式函数
 │   ├── layouts/                # 布局组件
 │   ├── mock/                   # Mock 数据系统
-│   │   ├── mockData.ts             # 100个设备模拟数据
+│   │   ├── mockData.ts             # 235个设备模拟数据（200个ActiveBed + 35个Location）
 │   │   ├── mockApi.ts              # API 接口模拟
 │   │   └── interceptor.ts          # 请求拦截器
 │   ├── router/                 # 路由配置
@@ -178,9 +188,13 @@ owl-monitor-mock/
 │   └── views/                  # 页面视图
 │       └── monitoring/
 │           └── overview/           # 监护总览页面
+├── scripts/                    # 脚本工具
+│   └── update-docker.sh        # Docker一键更新脚本
 ├── test/                       # 测试数据
 ├── types/                      # TypeScript 类型定义
 ├── public/                     # 静态资源
+├── Dockerfile                  # Docker构建文件
+├── docker-compose.yml          # Docker Compose配置
 └── package.json
 ```
 
@@ -250,7 +264,7 @@ owl-monitor-mock/
 
 本项目使用完全模拟的数据，**无需后端服务**：
 
-- **设备数据**：`src/mock/mockData.ts` - 生成100个模拟设备
+- **设备数据**：`src/mock/mockData.ts` - 生成235个模拟设备（200个ActiveBed + 35个Location）
 - **API拦截**：`src/mock/interceptor.ts` - 拦截所有API请求
 - **刷新重置**：每次刷新页面，报警时间和部分随机数据会重置（Demo模式）
 - **HIPAA合规**：所有数据为虚构，不包含真实患者信息
@@ -259,8 +273,8 @@ owl-monitor-mock/
 
 | 类型 | 数量 | 说明 |
 |------|------|------|
-| ActiveBed | 90 | 房间监护设备 |
-| Location | 10 | 公共区域监护 |
+| ActiveBed | 200 | 房间监护设备 |
+| Location | 35 | 公共区域监护 |
 | 报警场景 | ~12% | 随机分布各级别报警 |
 | 访客场景 | ~10% | 多人在房间 |
 | 睡眠场景 | ~45% | Deep/Light Sleep |
