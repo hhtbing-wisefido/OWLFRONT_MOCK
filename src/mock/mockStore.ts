@@ -157,7 +157,7 @@ function initializeStore(): MockDataStore {
   const deviceModels = ['S100', 'S200', 'R100', 'R200', 'R300']
   const firmwareVersions = ['v1.2.3', 'v1.2.4', 'v1.3.0', 'v1.3.1']
   const mcuModels = ['STM32F407', 'STM32F103', 'ESP32', 'Nordic nRF52']
-  const commModes = ['WiFi', '4G', 'Ethernet', 'LoRa']
+  // Comm Mode 统一使用 WiFi（根据实际产品需求）
   const businessAccessOptions = ['pending', 'approved', 'rejected'] as const
   
   const devices = cards.flatMap((card: VitalFocusCard, cardIndex: number) => {
@@ -166,6 +166,7 @@ function initializeStore(): MockDataStore {
     return card.devices.map((device, deviceIndex) => {
       const deviceType = device.device_type === 1 ? 'SleepPad' : device.device_type === 2 ? 'Radar' : 'Unknown'
       const serialNumber = `SN${String(cardIndex * 10 + deviceIndex).padStart(6, '0')}`
+      // IMEI 只有 SleepPad 有（因为有4G模块），Radar 通过 WiFi 连接所以没有 IMEI
       const imei = device.device_type === 1 ? `86${String(Math.floor(Math.random() * 10000000000000)).padStart(13, '0')}` : null
       const roomNumber = card.card_address.match(/Room (\d+)/)?.[1] || String(cardIndex + 101)
       
@@ -193,7 +194,7 @@ function initializeStore(): MockDataStore {
         serial_number: serialNumber,
         uid: device.device_id,
         imei: imei,
-        comm_mode: commModes[cardIndex % commModes.length],
+        comm_mode: 'WiFi',  // 统一使用 WiFi
         firmware_version: firmwareVersions[cardIndex % firmwareVersions.length],
         mcu_model: mcuModels[cardIndex % mcuModels.length],
         internal_code: device.device_id,
