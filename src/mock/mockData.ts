@@ -636,7 +636,7 @@ export const mockAccounts = [
     avatar: '/avatars/caregiver.png'
   },
   {
-    username: 'resident1',
+    username: 'doctor1',
     password: 'doctor123',
     role: 'Manager',
     fullName: 'Dr. David Wilson (Manager)',
@@ -656,7 +656,7 @@ export const mockAccounts = [
     avatar: '/avatars/it.png'
   },
   {
-    username: 'nurse1',
+    username: 'resident1',
     password: 'resident123',
     role: 'Resident',
     fullName: 'Emily Brown (Resident)',
