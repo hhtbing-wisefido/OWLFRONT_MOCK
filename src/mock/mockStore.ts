@@ -158,6 +158,7 @@ function initializeStore(): MockDataStore {
   const firmwareVersions = ['v1.2.3', 'v1.2.4', 'v1.3.0', 'v1.3.1']
   const mcuModels = ['STM32F407', 'STM32F103', 'ESP32', 'Nordic nRF52']
   const commModes = ['WiFi', '4G', 'Ethernet', 'LoRa']
+  const businessAccessOptions = ['pending', 'approved', 'rejected'] as const
   
   const devices = cards.flatMap((card: VitalFocusCard, cardIndex: number) => {
     if (!card.devices || card.devices.length === 0) return []
@@ -174,9 +175,13 @@ function initializeStore(): MockDataStore {
       const buildingLetter = buildingPart.replace('Building ', '')
       const unitId = `unit-${buildingLetter}-${roomNumber}`
       
-      // 绑定到unit_room（主房间）和第一个床位
+      // 绑定到unit_room（主房间）
       const boundRoomId = `room-${unitId}-main`
-      const boundBedId = `bed-${unitId}-${deviceIndex + 1}`
+      // 每个卡片对应一个床位，所有设备绑定到同一个床位
+      // 使用 card_address 中的 Bed 信息确定床位号，如果没有则默认为 1
+      const bedMatch = card.card_address.match(/Bed (\d+)/)
+      const bedNumber = bedMatch ? bedMatch[1] : '1'
+      const boundBedId = `bed-${unitId}-${bedNumber}`
       
       return {
         // 使用snake_case以匹配前端期望
@@ -195,7 +200,9 @@ function initializeStore(): MockDataStore {
         type: device.device_type,
         status: card.s_connection === 1 || card.r_connection === 1 ? 'online' : 'offline',
         monitoring_enabled: true,
-        business_access: 'Mapleview Care',
+        // business_access 使用正确的枚举值: pending, approved, rejected
+        // 大部分设备是 approved，少量是 pending 或 rejected
+        business_access: cardIndex % 10 === 0 ? 'pending' : cardIndex % 15 === 0 ? 'rejected' : 'approved',
         building: card.card_address.split(' / ')[0] || 'Building A',
         floor: 1 + Math.floor((cardIndex % 25) / 5),
         room: roomNumber,
