@@ -14,9 +14,9 @@
       
       <!-- Simple Mode: 只显示3个核心角色 (Production) -->
       <div v-if="quickLoginMode === 'simple' && formData.userType === 'staff'" class="mock-buttons-inline">
-        <Button size="small" class="role-btn role-simple" @click="fillMockAccount('admin')">👨‍💼 Admin</Button>
-        <Button size="small" class="role-btn role-simple" @click="fillMockAccount('doctor1')">👨‍⚕️ Manager</Button>
-        <Button size="small" class="role-btn role-simple" @click="fillMockAccount('caregiver1')">🤝 Caregiver</Button>
+        <Button size="small" :class="['role-btn', 'role-simple', { 'role-selected': selectedRole === 'admin' }]" @click="fillMockAccount('admin')">👨‍💼 Admin</Button>
+        <Button size="small" :class="['role-btn', 'role-simple', { 'role-selected': selectedRole === 'doctor1' }]" @click="fillMockAccount('doctor1')">👨‍⚕️ Manager</Button>
+        <Button size="small" :class="['role-btn', 'role-simple', { 'role-selected': selectedRole === 'caregiver1' }]" @click="fillMockAccount('caregiver1')">🤝 Caregiver</Button>
       </div>
       
       <!-- Full Mode: 显示L1-L4所有角色 (Development/Testing) -->
@@ -215,10 +215,14 @@ const quickLoginMode = import.meta.env.VITE_QUICK_LOGIN_MODE || 'full'
 // Selected Level for two-layer Quick Login (Default: L4)
 const selectedLevel = ref<'L1' | 'L2' | 'L3' | 'L4' | null>('L4')
 
+// Selected Role for highlighting (Simple Mode)
+const selectedRole = ref<string | null>(null)
+
 // Mock Account Auto-Fill Function
 const fillMockAccount = (accountType: string) => {
   const account = mockAccounts.find(acc => acc.username === accountType)
   if (account) {
+    selectedRole.value = accountType // 设置选中状态
     formData.account = account.username
     formData.password = account.password
     formData.tenant_name = 'Mapleview Care Community'
@@ -895,6 +899,32 @@ onMounted(() => {
   background: linear-gradient(135deg, #73d13d 0%, #49aa19 100%);
   transform: translateY(-2px);
   box-shadow: 0 4px 10px rgba(82, 196, 26, 0.4);
+}
+
+/* 选中状态 - 加强视觉效果 */
+.mock-buttons-inline .role-btn.role-selected {
+  transform: scale(1.05);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  position: relative;
+  z-index: 1;
+}
+
+/* Admin选中状态 */
+.mock-buttons-inline .role-btn:nth-child(1).role-selected {
+  background: linear-gradient(135deg, #ff9c2e 0%, #e67c18 100%);
+  box-shadow: 0 0 0 3px rgba(250, 140, 22, 0.3), 0 4px 12px rgba(250, 140, 22, 0.5) !important;
+}
+
+/* Manager选中状态 */
+.mock-buttons-inline .role-btn:nth-child(2).role-selected {
+  background: linear-gradient(135deg, #40a9ff 0%, #096dd9 100%);
+  box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.3), 0 4px 12px rgba(24, 144, 255, 0.5) !important;
+}
+
+/* Caregiver选中状态 */
+.mock-buttons-inline .role-btn:nth-child(3).role-selected {
+  background: linear-gradient(135deg, #73d13d 0%, #49aa19 100%);
+  box-shadow: 0 0 0 3px rgba(82, 196, 26, 0.3), 0 4px 12px rgba(82, 196, 26, 0.5) !important;
 }
 
 .mock-level-buttons {
