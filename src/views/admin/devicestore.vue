@@ -685,6 +685,23 @@ const handleExport = async () => {
 const fetchData = async () => {
   loading.value = true
   try {
+    const params: GetDeviceStoresParams = {
+      search: searchText.value || undefined,
+    }
+    const [deviceData, tenantsData] = await Promise.all([
+      getDeviceStoresApi(params),
+      getTenantsApi({}),
+    ])
+    dataSource.value = deviceData.items
+    // tenantList only needs tenant_id and tenant_name for dropdown
+    tenantList.value = tenantsData.items.map(t => ({
+      tenant_id: t.tenant_id,
+      tenant_name: t.tenant_name,
+    }))
+    console.log('%c[Device Store] Data loaded', 'color: #52c41a; font-weight: bold', {
+      deviceCount: deviceData.items.length,
+      tenantCount: tenantsData.items.length,
+    })
     applyFilters()
   } catch (error: any) {
     console.error('Failed to fetch device stores:', error)

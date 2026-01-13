@@ -1393,3 +1393,98 @@ export async function mockGetRooms(params?: any) {
     message: 'Rooms retrieved successfully'
   }
 }
+
+// ==================== Device Store ====================
+
+/**
+ * 获取设备库存列表
+ */
+export async function mockGetDeviceStores(params?: any) {
+  await delay()
+  
+  const { getDataStore } = await import('./mockStore')
+  const store = getDataStore()
+  
+  // 从设备列表转换为 DeviceStore 格式
+  const deviceStores = store.devices.map((device: any, index: number) => ({
+    device_store_id: `ds-${device.device_id}`,
+    device_type: device.device_type || 'SleepPad',
+    device_model: device.device_model || 'S100',
+    serial_number: device.serial_number || `SN${String(index).padStart(6, '0')}`,
+    uid: device.uid || device.device_id,
+    imei: device.imei || null,
+    comm_mode: device.comm_mode || 'WiFi',
+    mcu_model: device.mcu_model || 'STM32F407',
+    firmware_version: device.firmware_version || 'v1.2.3',
+    ota_target_firmware_version: null,
+    ota_target_mcu_model: null,
+    tenant_id: 'demo_tenant_001',
+    tenant_name: 'Mapleview Care',
+    allow_access: device.business_access === 'approved',
+    import_date: new Date(Date.now() - index * 86400000 * 30).toISOString().split('T')[0],
+    allocate_time: new Date(Date.now() - index * 86400000 * 10).toISOString()
+  }))
+  
+  // 搜索过滤
+  let filtered = deviceStores
+  if (params?.search) {
+    const searchLower = params.search.toLowerCase()
+    filtered = deviceStores.filter((ds: any) => 
+      ds.serial_number?.toLowerCase().includes(searchLower) ||
+      ds.uid?.toLowerCase().includes(searchLower) ||
+      ds.imei?.toLowerCase().includes(searchLower)
+    )
+  }
+  
+  console.log(`📦 mockGetDeviceStores - total: ${filtered.length} device stores`)
+  
+  return {
+    code: 2000,
+    result: {
+      items: filtered,
+      total: filtered.length
+    },
+    message: 'Device stores retrieved successfully'
+  }
+}
+
+/**
+ * 批量更新设备库存
+ */
+export async function mockBatchUpdateDeviceStores(body: any) {
+  await delay(500)
+  
+  const updates = body?.updates || []
+  console.log(`📦 mockBatchUpdateDeviceStores - updating ${updates.length} devices`)
+  
+  return {
+    code: 2000,
+    result: {
+      success: true,
+      updated: updates.length
+    },
+    message: `${updates.length} device stores updated successfully`
+  }
+}
+
+/**
+ * 获取租户列表（用于 Device Store 分配）
+ */
+export async function mockGetTenantList() {
+  await delay()
+  
+  const tenants = [
+    { tenant_id: 'demo_tenant_001', tenant_name: 'Mapleview Care', domain: 'mapleview.care', status: 'active' as const },
+    { tenant_id: 'demo_tenant_002', tenant_name: 'Sunrise Senior Living', domain: 'sunrise.care', status: 'active' as const },
+    { tenant_id: 'demo_tenant_003', tenant_name: 'Golden Years Care', domain: 'goldenyears.care', status: 'active' as const }
+  ]
+  
+  return {
+    code: 2000,
+    result: {
+      items: tenants,
+      total: tenants.length
+    },
+    message: 'Tenants retrieved successfully'
+  }
+}

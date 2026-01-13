@@ -134,9 +134,21 @@
           />
         </template>
 
-        <!-- Delete column: delete button -->
+        <!-- Action column: DEL/Enable button based on status -->
         <template v-else-if="column.dataIndex === 'delete'">
-          <a-tooltip title="Device can only be deleted when not in use, otherwise it will be disabled" :mouseEnterDelay="0.1">
+          <!-- Show Enable button for disabled devices -->
+          <a-button
+            v-if="record.status === 'disabled'"
+            type="primary"
+            @click="handleEnable(record)"
+            :loading="enablingDeviceId === record.device_id"
+            size="small"
+            style="background-color: #52c41a; border-color: #52c41a;"
+          >
+            Enable
+          </a-button>
+          <!-- Show DEL button for non-disabled devices -->
+          <a-tooltip v-else title="Device can only be deleted when not in use, otherwise it will be disabled" :mouseEnterDelay="0.1">
             <a-button
               type="primary"
               @click="handleDelete(record)"
@@ -489,6 +501,23 @@ const handleDelete = async (record: Device) => {
     message.error(error?.message || 'Failed to disable device')
   } finally {
     deletingDeviceId.value = null
+  }
+}
+
+// Handle enable (restore disabled device to online)
+const enablingDeviceId = ref<string | null>(null)
+const handleEnable = async (record: Device) => {
+  try {
+    enablingDeviceId.value = record.device_id
+    await updateDeviceApi(record.device_id, {
+      status: 'online',
+    })
+    message.success('Device enabled successfully')
+    await fetchDevices()
+  } catch (error: any) {
+    message.error(error?.message || 'Failed to enable device')
+  } finally {
+    enablingDeviceId.value = null
   }
 }
 

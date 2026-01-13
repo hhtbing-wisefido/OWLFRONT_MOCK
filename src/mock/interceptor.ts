@@ -40,7 +40,11 @@ import {
   mockDeleteTag,
   mockCreateBuilding,
   mockUpdateBuilding,
-  mockDeleteBuilding
+  mockDeleteBuilding,
+  // Device Store
+  mockGetDeviceStores,
+  mockBatchUpdateDeviceStores,
+  mockGetTenantList
 } from './mockApi'
 
 // Mock模式开关
@@ -297,6 +301,20 @@ function matchMockRoute(method: string, url: string): any {
     { pattern: /\/admin\/api\/v1\/rooms/, method: 'GET', handler: mockGetRooms },
     { pattern: /\/api\/v1\/rooms/, method: 'GET', handler: mockGetRooms },
     { pattern: /\/api\/rooms/, method: 'GET', handler: mockGetRooms },
+    
+    // ==================== Device Store 设备库存 ====================
+    // GET - 设备库存列表
+    { pattern: /\/admin\/api\/v1\/device-store(?:\?|$)/, method: 'GET', handler: mockGetDeviceStores },
+    { pattern: /\/api\/v1\/device-store(?:\?|$)/, method: 'GET', handler: mockGetDeviceStores },
+    { pattern: /\/api\/device-store(?:\?|$)/, method: 'GET', handler: mockGetDeviceStores },
+    
+    // PUT - 批量更新设备库存
+    { pattern: /\/admin\/api\/v1\/device-store\/batch/, method: 'PUT', handler: mockBatchUpdateDeviceStores },
+    { pattern: /\/api\/v1\/device-store\/batch/, method: 'PUT', handler: mockBatchUpdateDeviceStores },
+    
+    // GET - 租户列表（Device Store分配用）
+    { pattern: /\/admin\/api\/v1\/tenants/, method: 'GET', handler: mockGetTenantList },
+    { pattern: /\/api\/v1\/tenants/, method: 'GET', handler: mockGetTenantList },
     
     // 分支标签
     { pattern: /\/admin\/api\/v1\/branch-tags/, method: 'GET', handler: mockGetBranchTags },
