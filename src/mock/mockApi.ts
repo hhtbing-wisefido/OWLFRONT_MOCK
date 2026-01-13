@@ -56,10 +56,10 @@ export async function mockLogin(body: any) {
       locationName: 'Main Floor',
       homePath: matchedAccount.role === 'SystemOperator' ? '/admin/tenants' 
               : matchedAccount.role === 'SystemAdmin' ? '/admin/permissions'
+              : matchedAccount.role === 'SysOperator' ? '/alarm/cloud'
               : matchedAccount.role === 'Nurse' ? '/residents'
-              : matchedAccount.role === 'Caregiver' ? '/residents'
               : matchedAccount.role === 'Resident' ? '/residents'
-              : '/monitoring/overview',
+              : '/monitoring/overview', // Caregiver, Manager, IT等默认到Monitoring Overview
       avatar: matchedAccount.avatar
     },
     message: 'Login successful'
