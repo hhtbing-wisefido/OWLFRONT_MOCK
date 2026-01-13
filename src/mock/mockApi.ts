@@ -127,6 +127,55 @@ export async function mockGetResidents(params?: any) {
   }
 }
 
+// Mock获取单个居民
+export async function mockGetResident(params?: any, residentId?: string) {
+  await delay()
+  
+  const { getDataStore } = await import('./mockStore')
+  const store = getDataStore()
+  
+  // 查找 resident - 支持多种 ID 格式
+  const resident = store.residents.find(r => 
+    r.resident_id === residentId || 
+    r.id === residentId ||
+    r.resident_account === residentId
+  )
+  
+  if (!resident) {
+    console.log('❌ 找不到居民:', residentId, '可用ID:', store.residents.slice(0, 3).map(r => r.resident_id))
+    throw new Error('Resident not found')
+  }
+  
+  console.log('✅ 获取居民成功:', resident.resident_id)
+  
+  return {
+    code: 2000,
+    result: resident,
+    message: 'Resident retrieved successfully'
+  }
+}
+
+// Mock获取服务级别列表
+export async function mockGetServiceLevels(params?: any) {
+  await delay()
+  
+  const serviceLevels = [
+    { id: 'sl-001', name: 'Standard', description: 'Basic care services', price: 2500, color: '#52c41a' },
+    { id: 'sl-002', name: 'Enhanced', description: 'Enhanced care with additional support', price: 3500, color: '#1890ff' },
+    { id: 'sl-003', name: 'Premium', description: 'Premium care with 24/7 monitoring', price: 5000, color: '#722ed1' },
+    { id: 'sl-004', name: 'VIP', description: 'VIP care with personal attendant', price: 8000, color: '#eb2f96' },
+  ]
+  
+  return {
+    code: 2000,
+    result: {
+      items: serviceLevels,
+      total: serviceLevels.length
+    },
+    message: 'Service levels retrieved successfully'
+  }
+}
+
 // Mock获取卡片列表 (Overview页面)
 export async function mockGetCards() {
   await delay()
@@ -768,21 +817,29 @@ export async function mockUpdateResident(body: any, residentId?: string) {
   await delay(500)
   
   const store = getDataStore()
-  const id = residentId || body.id
-  const index = store.residents.findIndex(r => r.id === id)
+  const id = residentId || body.resident_id || body.id
+  
+  // 支持多种 ID 格式查找
+  const index = store.residents.findIndex(r => 
+    r.resident_id === id || 
+    r.id === id ||
+    r.resident_account === id
+  )
   
   if (index === -1) {
+    console.log('❌ 更新失败 - 找不到居民:', id)
+    console.log('  可用的 resident_id:', store.residents.slice(0, 5).map(r => r.resident_id))
     throw new Error('Resident not found')
   }
   
   store.residents[index] = {
     ...store.residents[index],
     ...body,
-    id, // 保持ID不变
+    resident_id: store.residents[index].resident_id, // 保持ID不变
     updatedAt: new Date().toISOString()
   }
   
-  console.log('✅ 更新居民成功:', store.residents[index])
+  console.log('✅ 更新居民成功:', store.residents[index].resident_id)
   
   return {
     code: 2000,
@@ -798,19 +855,26 @@ export async function mockDeleteResident(params: any, residentId?: string) {
   await delay(500)
   
   const store = getDataStore()
-  const id = residentId || params.id
-  const index = store.residents.findIndex(r => r.id === id)
+  const id = residentId || params.resident_id || params.id
+  
+  // 支持多种 ID 格式查找
+  const index = store.residents.findIndex(r => 
+    r.resident_id === id || 
+    r.id === id ||
+    r.resident_account === id
+  )
   
   if (index === -1) {
+    console.log('❌ 删除失败 - 找不到居民:', id)
     throw new Error('Resident not found')
   }
   
   const deleted = store.residents.splice(index, 1)[0]
-  console.log('✅ 删除居民成功:', deleted)
+  console.log('✅ 删除居民成功:', deleted.resident_id)
   
   return {
     code: 2000,
-    result: { id },
+    result: { id: deleted.resident_id },
     message: 'Resident deleted successfully'
   }
 }

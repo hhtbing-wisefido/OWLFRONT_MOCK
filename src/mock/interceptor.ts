@@ -8,6 +8,8 @@ import {
   mockGetAlarms,
   mockResolveAlarm,
   mockGetResidents,
+  mockGetResident,
+  mockGetServiceLevels,
   mockGetRolePermissions,
   mockGetAlarmEvents,
   mockGetAlarmCloudConfig,
@@ -107,6 +109,15 @@ function matchMockRoute(method: string, url: string): any {
     { pattern: /\/admin\/api\/v1\/residents(?:\?|$)/, method: 'GET', handler: mockGetResidents },
     { pattern: /\/api\/v1\/residents(?:\?|$)/, method: 'GET', handler: mockGetResidents },
     { pattern: /\/api\/residents(?:\?|$)/, method: 'GET', handler: mockGetResidents },
+    
+    // GET - 单个居民详情
+    { pattern: /\/admin\/api\/v1\/residents\/[^/?]+$/, method: 'GET', handler: mockGetResident },
+    { pattern: /\/api\/v1\/residents\/[^/?]+$/, method: 'GET', handler: mockGetResident },
+    { pattern: /\/api\/residents\/[^/?]+$/, method: 'GET', handler: mockGetResident },
+    
+    // GET - 服务级别
+    { pattern: /\/admin\/api\/v1\/service-levels/, method: 'GET', handler: mockGetServiceLevels },
+    { pattern: /\/api\/v1\/service-levels/, method: 'GET', handler: mockGetServiceLevels },
     
     // POST - 创建居民
     { pattern: /\/admin\/api\/v1\/residents$/, method: 'POST', handler: mockCreateResident },
