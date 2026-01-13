@@ -206,9 +206,12 @@ function matchMockRoute(method: string, url: string): any {
     { pattern: /\/api\/alarm\/cloud/, method: 'GET', handler: mockGetAlarmCloudConfig },
     { pattern: /\/alarm\/cloud/, method: 'GET', handler: mockGetAlarmCloudConfig },
     
-    // PUT - 更新报警云配置
+    // PUT - 更新报警云配置 (支持带ID和不带ID两种方式)
+    { pattern: /\/admin\/api\/v1\/alarm-cloud$/, method: 'PUT', handler: mockUpdateAlarmCloudConfig },
     { pattern: /\/admin\/api\/v1\/alarm-cloud\/[^/?]+/, method: 'PUT', handler: mockUpdateAlarmCloudConfig },
+    { pattern: /\/alarm\/api\/v1\/cloud$/, method: 'PUT', handler: mockUpdateAlarmCloudConfig },
     { pattern: /\/alarm\/api\/v1\/cloud\/[^/?]+/, method: 'PUT', handler: mockUpdateAlarmCloudConfig },
+    { pattern: /\/api\/alarm\/cloud$/, method: 'PUT', handler: mockUpdateAlarmCloudConfig },
     { pattern: /\/api\/alarm\/cloud\/[^/?]+/, method: 'PUT', handler: mockUpdateAlarmCloudConfig },
     
     // ==================== 标签管理 ====================

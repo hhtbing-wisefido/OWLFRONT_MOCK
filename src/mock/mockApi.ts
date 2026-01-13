@@ -529,10 +529,15 @@ export async function mockGetAlarmCloudConfig() {
 export async function mockGetCardOverview(params?: any) {
   await delay()
   
-  // 模拟Caregiver Groups和Caregivers数据
+  // 模拟Caregiver Groups和Caregivers数据 (使用对象格式以匹配前端期望)
   const caregiverGroupPool = [
-    'Day Shift Team', 'Night Shift Team', 'Weekend Team', 'Emergency Response',
-    'Medical Team A', 'Medical Team B', 'Support Staff'
+    { group_id: 'grp-001', group_name: 'Day Shift Team' },
+    { group_id: 'grp-002', group_name: 'Night Shift Team' },
+    { group_id: 'grp-003', group_name: 'Weekend Team' },
+    { group_id: 'grp-004', group_name: 'Emergency Response' },
+    { group_id: 'grp-005', group_name: 'Medical Team A' },
+    { group_id: 'grp-006', group_name: 'Medical Team B' },
+    { group_id: 'grp-007', group_name: 'Support Staff' }
   ]
   const caregiverPool = [
     { caregiver_id: 'cg-001', caregiver_name: 'Sarah Johnson' },
@@ -552,20 +557,35 @@ export async function mockGetCardOverview(params?: any) {
     .map((card, index) => {
       // 为每个卡片分配1-3个caregiver groups
       const groupCount = (index % 3) + 1
-      const groups = caregiverGroupPool.slice(index % caregiverGroupPool.length, (index % caregiverGroupPool.length) + groupCount)
+      const startGroupIdx = index % caregiverGroupPool.length
+      const groups = []
+      for (let i = 0; i < groupCount; i++) {
+        groups.push(caregiverGroupPool[(startGroupIdx + i) % caregiverGroupPool.length])
+      }
       
       // 为每个卡片分配1-4个caregivers
       const cgCount = (index % 4) + 1
-      const caregivers = caregiverPool.slice(index % caregiverPool.length, (index % caregiverPool.length) + cgCount)
+      const startCgIdx = index % caregiverPool.length
+      const caregivers = []
+      for (let i = 0; i < cgCount; i++) {
+        caregivers.push(caregiverPool[(startCgIdx + i) % caregiverPool.length])
+      }
+      
+      // 每10个卡片有1个是公共空间
+      const isPublicSpace = index % 10 === 5
+      // 每5个卡片有1个是多人房间
+      const isMultiPersonRoom = index % 5 === 3
+      // 每3个卡片有1个是家庭公寓类型
+      const unitType = index % 3 === 0 ? 'Family Apartment' : 'Facility'
       
       return {
         card_id: card.card_id,
         card_name: card.card_name,
         card_address: card.card_address,
-        unit_type: 'Facility' as const,
-        is_multi_person_room: false,
-        is_public_space: false,
-        family_view: true,
+        unit_type: unitType as 'Facility' | 'Family Apartment',
+        is_multi_person_room: isMultiPersonRoom,
+        is_public_space: isPublicSpace,
+        family_view: !isPublicSpace, // 公共空间不显示家庭视图
         devices: card.devices || [],
         residents: card.residents || [],
         caregiver_groups: groups,
