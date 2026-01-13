@@ -12,9 +12,20 @@
       <div class="mock-title">🎯 Quick Login (Mock Demo)</div>
       <div class="mock-subtitle">👇 Click to auto-fill credentials</div>
       <div class="mock-buttons" v-if="formData.userType === 'staff'">
+        <div class="mock-group-title">🔴 System Level</div>
+        <Button size="small" @click="fillMockAccount('sysadmin')">🔐 SysAdmin</Button>
+        <Button size="small" @click="fillMockAccount('sysoperator')">⚙️ SysOperator</Button>
+        
+        <div class="mock-group-title">🟡 Management Level</div>
         <Button size="small" @click="fillMockAccount('admin')">👨‍💼 Admin</Button>
-        <Button size="small" @click="fillMockAccount('nurse1')">👩‍⚕️ Nurse</Button>
         <Button size="small" @click="fillMockAccount('doctor1')">👨‍⚕️ Manager</Button>
+        
+        <div class="mock-group-title">🟢 Support Level</div>
+        <Button size="small" @click="fillMockAccount('it1')">💻 IT</Button>
+        
+        <div class="mock-group-title">🔵 Execution Level</div>
+        <Button size="small" @click="fillMockAccount('nurse1')">👩‍⚕️ Nurse</Button>
+        <Button size="small" @click="fillMockAccount('caregiver1')">🤝 Caregiver</Button>
       </div>
       <div class="mock-buttons" v-else>
         <Button size="small" @click="fillMockAccount('resident1')">👵 Resident</Button>
@@ -763,10 +774,26 @@ onMounted(() => {
   display: flex;
   gap: 8px;
   justify-content: space-around;
+  flex-wrap: wrap;
+}
+
+.mock-group-title {
+  width: 100%;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 8px;
+  margin-bottom: 4px;
+  padding-left: 4px;
+  border-left: 3px solid rgba(255, 255, 255, 0.6);
+}
+
+.mock-group-title:first-child {
+  margin-top: 0;
 }
 
 .mock-buttons button {
-  flex: 1;
+  flex: 0 1 auto;
   background: white;
   border: none;
   color: #667eea;

@@ -596,6 +596,16 @@ export const mockAccounts = [
     avatar: '/avatars/sysadmin.png'
   },
   {
+    username: 'sysoperator',
+    password: 'sysop123',
+    role: 'SystemOperator',
+    fullName: 'System Operator',
+    email: 'sysop@owlcare.com',
+    user_type: 'staff',
+    userId: 'user_sysop_001',
+    avatar: '/avatars/operator.png'
+  },
+  {
     username: 'admin',
     password: 'admin123',
     role: 'Admin',
@@ -616,7 +626,17 @@ export const mockAccounts = [
     avatar: '/avatars/nurse.png'
   },
   {
-    username: 'doctor1',
+    username: 'caregiver1',
+    password: 'caregiver123',
+    role: 'Caregiver',
+    fullName: 'Lisa White (Caregiver)',
+    email: 'lisa.w@owlcare.com',
+    user_type: 'staff',
+    userId: 'user_caregiver_001',
+    avatar: '/avatars/caregiver.png'
+  },
+  {
+    username: 'resident1',
     password: 'doctor123',
     role: 'Manager',
     fullName: 'Dr. David Wilson (Manager)',
@@ -626,7 +646,17 @@ export const mockAccounts = [
     avatar: '/avatars/doctor.png'
   },
   {
-    username: 'resident1',
+    username: 'it1',
+    password: 'it123',
+    role: 'IT',
+    fullName: 'Tom Anderson (IT Support)',
+    email: 'tom.a@owlcare.com',
+    user_type: 'staff',
+    userId: 'user_it_001',
+    avatar: '/avatars/it.png'
+  },
+  {
+    username: 'nurse1',
     password: 'resident123',
     role: 'Resident',
     fullName: 'Emily Brown (Resident)',
