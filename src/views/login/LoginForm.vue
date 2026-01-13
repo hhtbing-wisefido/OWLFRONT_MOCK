@@ -10,22 +10,69 @@
     <!-- Mock Quick Login Buttons -->
     <div class="mock-quick-login" v-if="showMockButtons">
       <div class="mock-title">🎯 Quick Login (Mock Demo)</div>
-      <div class="mock-subtitle">👇 Click to auto-fill credentials</div>
-      <div class="mock-buttons" v-if="formData.userType === 'staff'">
-        <div class="mock-group-title">💻 技术线 (Technology)</div>
-        <Button size="small" @click="fillMockAccount('sysadmin')">🔐 SysAdmin</Button>
-        <Button size="small" @click="fillMockAccount('admin')">👨‍💼 Admin</Button>
-        <Button size="small" @click="fillMockAccount('it1')">💻 IT</Button>
+      <div class="mock-subtitle">👇 Select Level & Role</div>
+      
+      <!-- Staff Roles: Two-layer selection -->
+      <div v-if="formData.userType === 'staff'">
+        <!-- Layer 1: Level Selection -->
+        <div class="mock-level-buttons">
+          <Button 
+            size="small" 
+            :type="selectedLevel === 'L1' ? 'primary' : 'default'"
+            class="level-btn level-l1"
+            @click="selectedLevel = 'L1'"
+          >L1-SYS</Button>
+          <Button 
+            size="small" 
+            :type="selectedLevel === 'L2' ? 'primary' : 'default'"
+            class="level-btn level-l2"
+            @click="selectedLevel = 'L2'"
+          >L2-MGT</Button>
+          <Button 
+            size="small" 
+            :type="selectedLevel === 'L3' ? 'primary' : 'default'"
+            class="level-btn level-l3"
+            @click="selectedLevel = 'L3'"
+          >L3-SUP</Button>
+          <Button 
+            size="small" 
+            :type="selectedLevel === 'L4' ? 'primary' : 'default'"
+            class="level-btn level-l4"
+            @click="selectedLevel = 'L4'"
+          >L4-OPS</Button>
+        </div>
         
-        <div class="mock-group-title">🏥 业务线 (Operations)</div>
-        <Button size="small" @click="fillMockAccount('sysoperator')">⚙️ SysOperator</Button>
-        <Button size="small" @click="fillMockAccount('doctor1')">👨‍⚕️ Manager</Button>
-        <Button size="small" @click="fillMockAccount('nurse1')">👩‍⚕️ Nurse</Button>
-        <Button size="small" @click="fillMockAccount('caregiver1')">🤝 Caregiver</Button>
+        <!-- Layer 2: Role Buttons based on selected level -->
+        <div class="mock-role-buttons" v-if="selectedLevel">
+          <!-- L1 Roles -->
+          <template v-if="selectedLevel === 'L1'">
+            <Button size="small" class="role-btn role-l1" @click="fillMockAccount('sysadmin')">🔐 SysAdmin</Button>
+            <Button size="small" class="role-btn role-l1" @click="fillMockAccount('sysoperator')">⚙️ SysOperator</Button>
+          </template>
+          
+          <!-- L2 Roles -->
+          <template v-if="selectedLevel === 'L2'">
+            <Button size="small" class="role-btn role-l2" @click="fillMockAccount('admin')">👨‍💼 Admin</Button>
+            <Button size="small" class="role-btn role-l2" @click="fillMockAccount('doctor1')">👨‍⚕️ Manager</Button>
+          </template>
+          
+          <!-- L3 Roles -->
+          <template v-if="selectedLevel === 'L3'">
+            <Button size="small" class="role-btn role-l3" @click="fillMockAccount('it1')">💻 IT</Button>
+          </template>
+          
+          <!-- L4 Roles -->
+          <template v-if="selectedLevel === 'L4'">
+            <Button size="small" class="role-btn role-l4" @click="fillMockAccount('nurse1')">👩‍⚕️ Nurse</Button>
+            <Button size="small" class="role-btn role-l4" @click="fillMockAccount('caregiver1')">🤝 Caregiver</Button>
+          </template>
+        </div>
       </div>
+      
+      <!-- Resident Roles: Simple selection -->
       <div class="mock-buttons" v-else>
-        <Button size="small" @click="fillMockAccount('resident1')">👵 Resident</Button>
-        <Button size="small" @click="fillMockAccount('family1')">👨‍👩‍👧 Family</Button>
+        <Button size="small" class="role-btn role-resident" @click="fillMockAccount('resident1')">👵 Resident</Button>
+        <Button size="small" class="role-btn role-resident" @click="fillMockAccount('family1')">👨‍👩‍👧 Family</Button>
       </div>
     </div>
 
@@ -154,6 +201,9 @@ const ACheckbox = Checkbox
 
 // Show Mock Quick Login Buttons (Development Mode)
 const showMockButtons = ref(true)
+
+// Selected Level for two-layer Quick Login (Default: L4)
+const selectedLevel = ref<'L1' | 'L2' | 'L3' | 'L4' | null>('L4')
 
 // Mock Account Auto-Fill Function
 const fillMockAccount = (accountType: string) => {
@@ -771,6 +821,197 @@ onMounted(() => {
   gap: 8px;
   justify-content: space-around;
   flex-wrap: wrap;
+}
+
+.mock-level-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+.mock-level-buttons button {
+  flex: 1;
+  background: white;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: #667eea;
+  font-weight: 700;
+  font-size: 12px;
+  transition: all 0.3s;
+}
+
+.mock-level-buttons button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* L1 - Highest privilege (Red) */
+.mock-level-buttons .level-l1 {
+  background: #fff1f0;
+  border-color: #ffa39e;
+  color: #cf1322;
+}
+
+.mock-level-buttons .level-l1:hover {
+  background: #ffccc7;
+  border-color: #ff7875;
+}
+
+.mock-level-buttons .level-l1.ant-btn-primary {
+  background: linear-gradient(135deg, #ff4d4f 0%, #cf1322 100%);
+  border-color: #ff4d4f;
+  color: white;
+  box-shadow: 0 2px 8px rgba(207, 19, 34, 0.3);
+}
+
+/* L2 - High privilege (Orange) */
+.mock-level-buttons .level-l2 {
+  background: #fff7e6;
+  border-color: #ffd591;
+  color: #d46b08;
+}
+
+.mock-level-buttons .level-l2:hover {
+  background: #ffe7ba;
+  border-color: #ffc069;
+}
+
+.mock-level-buttons .level-l2.ant-btn-primary {
+  background: linear-gradient(135deg, #fa8c16 0%, #d46b08 100%);
+  border-color: #fa8c16;
+  color: white;
+  box-shadow: 0 2px 8px rgba(250, 140, 22, 0.3);
+}
+
+/* L3 - Medium privilege (Blue) */
+.mock-level-buttons .level-l3 {
+  background: #e6f7ff;
+  border-color: #91d5ff;
+  color: #0050b3;
+}
+
+.mock-level-buttons .level-l3:hover {
+  background: #bae7ff;
+  border-color: #69c0ff;
+}
+
+.mock-level-buttons .level-l3.ant-btn-primary {
+  background: linear-gradient(135deg, #1890ff 0%, #0050b3 100%);
+  border-color: #1890ff;
+  color: white;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.3);
+}
+
+/* L4 - Low privilege (Green) */
+.mock-level-buttons .level-l4 {
+  background: #f6ffed;
+  border-color: #b7eb8f;
+  color: #389e0d;
+}
+
+.mock-level-buttons .level-l4:hover {
+  background: #d9f7be;
+  border-color: #95de64;
+}
+
+.mock-level-buttons .level-l4.ant-btn-primary {
+  background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%);
+  border-color: #52c41a;
+  color: white;
+  box-shadow: 0 2px 8px rgba(82, 196, 26, 0.3);
+}
+
+.mock-role-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.mock-role-buttons button {
+  flex: 0 1 auto;
+  background: white;
+  border: none;
+  color: #667eea;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.mock-role-buttons button:hover {
+  background: #f0f0f0;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Role button colors matching their level */
+/* L1 Roles - Red */
+.mock-role-buttons .role-l1 {
+  background: linear-gradient(135deg, #fff1f0 0%, #ffccc7 100%);
+  border: 1px solid #ffa39e;
+  color: #cf1322;
+}
+
+.mock-role-buttons .role-l1:hover {
+  background: linear-gradient(135deg, #ffccc7 0%, #ffa39e 100%);
+  border-color: #ff7875;
+  color: #a8071a;
+  box-shadow: 0 4px 8px rgba(207, 19, 34, 0.2);
+}
+
+/* L2 Roles - Orange */
+.mock-role-buttons .role-l2 {
+  background: linear-gradient(135deg, #fff7e6 0%, #ffe7ba 100%);
+  border: 1px solid #ffd591;
+  color: #d46b08;
+}
+
+.mock-role-buttons .role-l2:hover {
+  background: linear-gradient(135deg, #ffe7ba 0%, #ffd591 100%);
+  border-color: #ffc069;
+  color: #ad4e00;
+  box-shadow: 0 4px 8px rgba(250, 140, 22, 0.2);
+}
+
+/* L3 Roles - Blue */
+.mock-role-buttons .role-l3 {
+  background: linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%);
+  border: 1px solid #91d5ff;
+  color: #0050b3;
+}
+
+.mock-role-buttons .role-l3:hover {
+  background: linear-gradient(135deg, #bae7ff 0%, #91d5ff 100%);
+  border-color: #69c0ff;
+  color: #003a8c;
+  box-shadow: 0 4px 8px rgba(24, 144, 255, 0.2);
+}
+
+/* L4 Roles - Green */
+.mock-role-buttons .role-l4 {
+  background: linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%);
+  border: 1px solid #b7eb8f;
+  color: #389e0d;
+}
+
+.mock-role-buttons .role-l4:hover {
+  background: linear-gradient(135deg, #d9f7be 0%, #b7eb8f 100%);
+  border-color: #95de64;
+  color: #237804;
+  box-shadow: 0 4px 8px rgba(82, 196, 26, 0.2);
+}
+
+/* Resident Roles - Purple */
+.mock-buttons .role-resident {
+  background: linear-gradient(135deg, #f9f0ff 0%, #efdbff 100%);
+  border: 1px solid #d3adf7;
+  color: #531dab;
+}
+
+.mock-buttons .role-resident:hover {
+  background: linear-gradient(135deg, #efdbff 0%, #d3adf7 100%);
+  border-color: #b37feb;
+  color: #391085;
+  box-shadow: 0 4px 8px rgba(114, 46, 209, 0.2);
 }
 
 .mock-group-title {

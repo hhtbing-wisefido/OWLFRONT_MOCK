@@ -44,7 +44,10 @@ import {
   // Device Store
   mockGetDeviceStores,
   mockBatchUpdateDeviceStores,
-  mockGetTenantList
+  mockGetTenantList,
+  mockGetImportTemplate,
+  mockImportDeviceStores,
+  mockExportDeviceStores
 } from './mockApi'
 
 // Mock模式开关
@@ -311,6 +314,18 @@ function matchMockRoute(method: string, url: string): any {
     // PUT - 批量更新设备库存
     { pattern: /\/admin\/api\/v1\/device-store\/batch/, method: 'PUT', handler: mockBatchUpdateDeviceStores },
     { pattern: /\/api\/v1\/device-store\/batch/, method: 'PUT', handler: mockBatchUpdateDeviceStores },
+    
+    // GET - 下载导入模板
+    { pattern: /\/admin\/api\/v1\/device-store\/import-template/, method: 'GET', handler: mockGetImportTemplate },
+    { pattern: /\/api\/v1\/device-store\/import-template/, method: 'GET', handler: mockGetImportTemplate },
+    
+    // POST - 导入设备库存
+    { pattern: /\/admin\/api\/v1\/device-store\/import/, method: 'POST', handler: mockImportDeviceStores },
+    { pattern: /\/api\/v1\/device-store\/import/, method: 'POST', handler: mockImportDeviceStores },
+    
+    // GET - 导出设备库存
+    { pattern: /\/admin\/api\/v1\/device-store\/export/, method: 'GET', handler: mockExportDeviceStores },
+    { pattern: /\/api\/v1\/device-store\/export/, method: 'GET', handler: mockExportDeviceStores },
     
     // GET - 租户列表（Device Store分配用）
     { pattern: /\/admin\/api\/v1\/tenants/, method: 'GET', handler: mockGetTenantList },

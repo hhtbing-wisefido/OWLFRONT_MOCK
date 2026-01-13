@@ -1174,19 +1174,34 @@ export async function mockHandleAlarmEvent(body: any, eventId?: string) {
 }
 
 /**
- * 更新报警云配置
+ * 更新报警云配置（如果不存在则创建）
  */
 export async function mockUpdateAlarmCloudConfig(body: any, configId?: string) {
   await delay(500)
   
   const store = getDataStore()
-  const id = configId || body.id
+  const id = configId || body.id || `alarm-cloud-${Date.now()}`
   const index = store.alarmCloudConfig.findIndex(c => c.id === id)
   
   if (index === -1) {
-    throw new Error('Alarm cloud config not found')
+    // 配置不存在，创建新配置
+    const newConfig = {
+      ...body,
+      id,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+    store.alarmCloudConfig.push(newConfig)
+    console.log('✅ 创建报警云配置成功:', newConfig)
+    
+    return {
+      code: 2000,
+      result: newConfig,
+      message: 'Alarm cloud config created successfully'
+    }
   }
   
+  // 配置存在，更新
   store.alarmCloudConfig[index] = {
     ...store.alarmCloudConfig[index],
     ...body,
@@ -1487,4 +1502,69 @@ export async function mockGetTenantList() {
     },
     message: 'Tenants retrieved successfully'
   }
+}
+
+/**
+ * 下载设备导入模板
+ */
+export async function mockGetImportTemplate() {
+  await delay(300)
+  
+  // 创建简单的CSV模板
+  const csvContent = `Serial Number,UID,IMEI,Device Type,Tenant Name,Branch,Status,Notes
+SN001,UID001,IMEI001,床垫,Maple View,East Wing,Active,Example device
+SN002,UID002,IMEI002,雷达,Maple View,West Wing,Active,Example radar`
+  
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  
+  console.log('📥 Mock: Generating import template')
+  
+  return blob
+}
+
+/**
+ * 导入设备库存
+ */
+export async function mockImportDeviceStores(formData: any) {
+  await delay(1000)
+  
+  console.log('📤 Mock: Importing device stores', formData)
+  
+  // 模拟导入结果
+  return {
+    code: 2000,
+    result: {
+      success: true,
+      success_count: 10,
+      failed_count: 2,
+      skipped_count: 1,
+      errors: [
+        { row: 5, error: 'Invalid serial number format' },
+        { row: 8, error: 'Duplicate UID' }
+      ]
+    },
+    message: 'Import completed with some errors'
+  }
+}
+
+/**
+ * 导出设备库存
+ */
+export async function mockExportDeviceStores() {
+  await delay(500)
+  
+  const store = getDataStore()
+  
+  // 转换为CSV格式
+  const headers = 'Serial Number,UID,IMEI,Device Type,Tenant Name,Branch,Status,Notes\n'
+  const rows = store.deviceStores.slice(0, 20).map(ds => 
+    `${ds.serial_number},${ds.uid},${ds.imei || ''},${ds.device_type || ''},${ds.tenant_name || 'Unallocated'},${ds.branch || ''},${ds.status || 'Active'},${ds.notes || ''}`
+  ).join('\n')
+  
+  const csvContent = headers + rows
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  
+  console.log('📥 Mock: Exporting device stores')
+  
+  return blob
 }

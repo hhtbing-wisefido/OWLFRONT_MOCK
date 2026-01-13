@@ -1,5 +1,5 @@
 <template>
-  <div style="padding: 15px">
+  <div class="device-store-page">
     <div class="form-container">
       <div class="form-left">
         <a-form layout="inline" class="flex-form">
@@ -754,5 +754,14 @@ onMounted(() => {
 
 .device-store-table :deep(.ant-table-container) {
   overflow-x: auto;
+}
+
+/* 页面高度和滚动控制 */
+.device-store-page {
+  padding: 15px;
+  height: calc(100vh - 20px);
+  max-height: calc(100vh - 20px);
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 </style>
