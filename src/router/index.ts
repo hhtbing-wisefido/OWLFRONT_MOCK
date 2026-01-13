@@ -25,16 +25,6 @@ const routes: RouteRecordRaw[] = [
       layout: false,
     },
   },
-  {
-    path: '/test-data',
-    name: 'TestDataViewer',
-    component: () => import('@/views/test/TestDataViewer.vue'),
-    meta: {
-      title: 'Test Data Viewer',
-      requiresAuth: false,
-      layout: false,
-    },
-  },
   
   // ==================== 需要布局和认证的路由 ====================
   {
@@ -286,15 +276,6 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/monitoring/radar-trajectory/RadarTrajectory.vue'),
         meta: {
           title: 'Radar Trajectory',
-          requiresAuth: true,
-        },
-      },
-      {
-        path: '/test-radar-layout',
-        name: 'RadarLayoutTest',
-        component: () => import('@/views/test/RadarLayoutTest.vue'),
-        meta: {
-          title: 'Radar Layout Test',
           requiresAuth: true,
         },
       },

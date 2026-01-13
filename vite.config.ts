@@ -27,11 +27,6 @@ export default defineConfig({
         find: /^\/#/,
         replacement: resolve(__dirname, 'types'),
       },
-      // 支持 @test 路径别名，指向 test 目录（用于动态导入测试数据）
-      {
-        find: '@test',
-        replacement: resolve(__dirname, 'test'),
-      },
     ],
     extensions: ['.mjs', '.js', '.mts', '.ts', '.jsx', '.tsx', '.json', '.vue'],
   },

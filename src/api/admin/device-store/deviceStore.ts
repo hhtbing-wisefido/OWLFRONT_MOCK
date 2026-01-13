@@ -16,9 +16,6 @@ export enum Api {
   DeviceStoreExport = '/admin/api/v1/device-store/export',
 }
 
-// DEV 默认走真实后端；只有显式设置 VITE_USE_MOCK='true' 才启用 mock
-const useMock = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true'
-
 export async function getDeviceStoresApi(
   params: GetDeviceStoresParams = {},
   mode: ErrorMessageMode = 'none',
@@ -54,6 +51,9 @@ export async function importDeviceStoresApi(
   file: File,
   mode: ErrorMessageMode = 'modal',
 ): Promise<ImportDeviceStoresResult> {
+  const formData = new FormData()
+  formData.append('file', file)
+
   return defHttp.post<ImportDeviceStoresResult>(
     {
       url: Api.DeviceStoreImport,
@@ -80,7 +80,6 @@ export async function getImportTemplateApi(
     },
     { errorMessageMode: mode, isReturnNativeResponse: true },
   ).then((response) => {
-    // Extract blob from response
     return response instanceof Blob ? response : response.data
   })
 }
@@ -94,3 +93,13 @@ export async function exportDeviceStoresApi(
   params: ExportDeviceStoresParams = {},
   mode: ErrorMessageMode = 'modal',
 ): Promise<Blob> {
+  const response = await defHttp.get<Blob>(
+    {
+      url: Api.DeviceStoreExport,
+      params,
+      responseType: 'blob',
+    },
+    { errorMessageMode: mode, isReturnNativeResponse: true },
+  )
+  return response instanceof Blob ? response : (response as any).data
+}
