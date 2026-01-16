@@ -96,13 +96,13 @@ docker run -d \
 
 ```bash
 # Linux/Mac
-cd scripts
-chmod +x update-docker.sh
-./update-docker.sh
+cd server
+chmod +x update-owl-monitor-mock.sh
+./update-owl-monitor-mock.sh
 
 # Windows (PowerShell)
-cd scripts
-bash update-docker.sh
+cd server
+bash update-owl-monitor-mock.sh
 ```
 
 脚本功能：

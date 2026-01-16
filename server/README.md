@@ -1,10 +1,10 @@
-# 🔧 脚本工具目录
+# 🔧 服务端部署脚本
 
-本目录包含项目的实用脚本工具。
+本目录包含OWL Monitor Mock项目的服务端部署脚本。
 
 ## 📜 脚本列表
 
-### update-docker.sh - Docker一键更新脚本
+### update-owl-monitor-mock.sh - Docker一键更新脚本
 
 **功能**：快速更新服务器上运行的Docker容器到最新版本
 
@@ -12,11 +12,11 @@
 
 ```bash
 # Linux/Mac
-chmod +x update-docker.sh
-./update-docker.sh
+chmod +x update-owl-monitor-mock.sh
+./update-owl-monitor-mock.sh
 
 # Windows (PowerShell)
-bash update-docker.sh
+bash update-owl-monitor-mock.sh
 ```
 
 **执行流程**：
