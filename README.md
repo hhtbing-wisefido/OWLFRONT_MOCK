@@ -67,7 +67,7 @@ docker pull ghcr.io/hhtbing-wisefido/owlfront_mock:latest
 # 运行容器
 docker run -d \
   --name owl-monitor-mock \
-  -p 3100:80 \
+  -p 127.0.0.1:3100:80 \
   --restart unless-stopped \
   ghcr.io/hhtbing-wisefido/owlfront_mock:latest
 ```
@@ -85,7 +85,7 @@ docker pull ghcr.io/hhtbing-wisefido/owlfront_mock:latest
 # 启动新容器
 docker run -d \
   --name owl-monitor-mock \
-  -p 3100:80 \
+  -p 127.0.0.1:3100:80 \
   --restart unless-stopped \
   ghcr.io/hhtbing-wisefido/owlfront_mock:latest
 ```
@@ -320,7 +320,7 @@ npm run type-check
 ```bash
 # 从 GHCR 拉取并运行（推荐）
 docker pull ghcr.io/hhtbing-wisefido/owlfront_mock:latest
-docker run -d --name owl-monitor-mock -p 3100:80 --restart unless-stopped ghcr.io/hhtbing-wisefido/owlfront_mock:latest
+docker run -d --name owl-monitor-mock -p 127.0.0.1:3100:80 --restart unless-stopped ghcr.io/hhtbing-wisefido/owlfront_mock:latest
 
 # 停止容器
 docker stop owl-monitor-mock

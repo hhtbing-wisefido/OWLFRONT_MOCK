@@ -35,7 +35,7 @@ echo ""
 echo "🚀 [3/4] 启动新容器..."
 docker run -d \
   --name $CONTAINER_NAME \
-  -p $PORT:80 \
+  -p 127.0.0.1:$PORT:80 \
   --restart unless-stopped \
   $IMAGE_NAME
 

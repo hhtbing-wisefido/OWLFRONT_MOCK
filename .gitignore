@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Project documentation (managed separately)
+../../项目文档/
+../../知识库/

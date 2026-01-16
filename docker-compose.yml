@@ -12,7 +12,7 @@ services:
     container_name: owl-monitor-mock
     restart: unless-stopped
     ports:
-      - "3100:80"
+      - "127.0.0.1:3100:80"
     environment:
       - TZ=Asia/Shanghai
     networks:
