@@ -72,8 +72,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # 禁用层缓存，确保每次构建都使用最新的 dist 目录
+          no-cache: true
           platforms: linux/amd64
 
       - name: ✅ 构建完成通知
